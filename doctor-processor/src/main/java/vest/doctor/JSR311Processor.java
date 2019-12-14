@@ -169,15 +169,11 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
         for (VariableElement field : providerDefinition.fields(Inject.class)) {
             errorMessage("field injection is not supported: " + ProcessorUtils.debugString(field));
         }
-        try {
-            @SuppressWarnings("unchecked")
-            Class<? extends Annotation> preDestroy = (Class<? extends Annotation>) Class.forName("javax.annotation.PreDestroy");
+        ProcessorUtils.<Annotation>ifClassExists("javax.annotation.PreDestroy", preDestroy -> {
             for (ExecutableElement method : providerDefinition.methods(preDestroy)) {
                 errorMessage("@PreDestroy is not supported (use the AutoCloseable interface instead): " + ProcessorUtils.debugString(method));
             }
-        } catch (ClassNotFoundException e) {
-            // no-op
-        }
+        });
     }
 
     @Override
@@ -229,6 +225,11 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
             errorMessage("cannot register null dependency for " + target);
         }
         typesToDependencies.computeIfAbsent(target, t -> new HashSet<>()).add(dependency);
+    }
+
+    @Override
+    public ProviderDependency buildDependency(TypeElement type, String qualifier, boolean required) {
+        return new Dependency(type, qualifier, required);
     }
 
     private void writeAppLoaderImplementation() {
@@ -315,7 +316,6 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
             return Class.forName(className);
         } catch (ClassNotFoundException e) {
             errorMessage("error loading class: " + className);
-            e.printStackTrace();
             throw new NullPointerException("unreachable");
         }
     }
@@ -327,7 +327,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
         for (Map.Entry<ProviderDependency, Set<ProviderDependency>> entry : typesToDependencies.entrySet()) {
             ProviderDependency target = entry.getKey();
             for (ProviderDependency dependency : entry.getValue()) {
-                if(Objects.equals(eventProducerDependency, dependency)){
+                if (Objects.equals(eventProducerDependency, dependency)) {
                     continue;
                 }
                 if (dependency != null && dependency.required() && !isProvided(dependency)) {

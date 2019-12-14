@@ -19,13 +19,7 @@ public class InjectMethodsCustomizer implements NewInstanceCustomizer {
     static {
         List<Class<? extends Annotation>> temp = new ArrayList<>();
         temp.add(Inject.class);
-        try {
-            @SuppressWarnings("unchecked")
-            Class<? extends Annotation> postConstruct = (Class<? extends Annotation>) Class.forName("javax.annotation.PostConstruct");
-            temp.add(postConstruct);
-        } catch (ClassNotFoundException e) {
-            // no-op
-        }
+        ProcessorUtils.<Annotation>ifClassExists("javax.annotation.PostConstruct", temp::add);
         targetAnnotations = Collections.unmodifiableList(temp);
     }
 

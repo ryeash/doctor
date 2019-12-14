@@ -27,7 +27,6 @@ import java.lang.annotation.Annotation;
 import java.nio.ByteBuffer;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -35,6 +34,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -157,6 +157,16 @@ public class ProcessorUtils {
         return Base64.getEncoder().encodeToString(buf.array())
                 .toLowerCase()
                 .replaceAll("[^a-z0-9]", "");
+    }
+
+    public static <T> void ifClassExists(String fullyQualifierClassName, Consumer<Class<? extends T>> action) {
+        try {
+            @SuppressWarnings("unchecked")
+            Class<? extends T> c = (Class<? extends T>) Class.forName(fullyQualifierClassName);
+            action.accept(c);
+        } catch (ClassNotFoundException e) {
+            // ignored
+        }
     }
 
     private static final Collector<CharSequence, ?, String> AS_LIST = Collectors.joining(", ", "Collections.unmodifiableList(java.util.Arrays.asList(", "))");

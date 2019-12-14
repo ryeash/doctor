@@ -51,9 +51,7 @@ public interface AnnotationProcessorContext {
 
     void registerDependency(ProviderDependency target, ProviderDependency dependency);
 
-    default ProviderDependency buildDependency(TypeElement type, String qualifier, boolean required) {
-        return new Dependency(type, qualifier, required);
-    }
+    ProviderDependency buildDependency(TypeElement type, String qualifier, boolean required);
 
     default String constructorCall(ProviderDefinition providerDefinition, ExecutableElement executableElement, String doctorRef) {
         return methodCall(providerDefinition, executableElement, null, doctorRef);

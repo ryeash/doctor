@@ -58,9 +58,7 @@ public interface ProviderDefinition {
         return annotationSource().getAnnotation(SkipInjection.class) != null;
     }
 
-    default ProviderDependency asDependency() {
-        return new Dependency(providedType(), qualifier());
-    }
+    ProviderDependency asDependency();
 
     void writeProvider();
 

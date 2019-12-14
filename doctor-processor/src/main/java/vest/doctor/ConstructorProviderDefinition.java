@@ -106,6 +106,11 @@ public class ConstructorProviderDefinition implements ProviderDefinition {
     }
 
     @Override
+    public ProviderDependency asDependency() {
+        return new Dependency(providedType(), qualifier());
+    }
+
+    @Override
     public void writeProvider() {
         ClassBuilder classBuilder = ProcessorUtils.defaultProviderClass(this);
 

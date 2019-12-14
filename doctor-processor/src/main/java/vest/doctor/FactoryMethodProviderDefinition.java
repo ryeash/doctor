@@ -10,8 +10,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class FactoryMethodProviderDefinition implements ProviderDefinition {
 
@@ -87,6 +85,11 @@ public class FactoryMethodProviderDefinition implements ProviderDefinition {
     }
 
     @Override
+    public ProviderDependency asDependency() {
+        return new Dependency(providedType(), qualifier());
+    }
+
+    @Override
     public void writeProvider() {
         ClassBuilder classBuilder = ProcessorUtils.defaultProviderClass(this);
 
@@ -112,7 +115,7 @@ public class FactoryMethodProviderDefinition implements ProviderDefinition {
 
         classBuilder.addMethod("public " + providedType().getSimpleName() + " get()", b -> {
             b.line(container.getQualifiedName() + " container = beanProvider.getProvider(" + container.getQualifiedName() + ".class" + ", " + ProcessorUtils.getQualifier(context, container) + ").get();");
-            b.line(providedType().getSimpleName() + " instance = "+ context.methodCall(this, factoryMethod, "container", "beanProvider") + ";");
+            b.line(providedType().getSimpleName() + " instance = " + context.methodCall(this, factoryMethod, "container", "beanProvider") + ";");
             for (NewInstanceCustomizer customizer : context.newInstanceCustomizers()) {
                 customizer.customize(context, this, b, "instance", "beanProvider");
             }
