@@ -5,6 +5,11 @@ import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * A provider that returns a pre-built value.
+ *
+ * @param <T> the provided type
+ */
 public class AdHocProvider<T> implements DoctorProvider<T> {
 
     private final Class<T> type;

@@ -8,6 +8,7 @@ import javax.inject.Inject;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Prototype
@@ -17,11 +18,15 @@ public class TCProperties {
     public TCProperties(@Property("string") String stringProp,
                         @Property("string") char c,
                         @Property("boolean") Boolean bool,
-                        @Property("boolean") boolean primBool) {
+                        @Property("boolean") boolean primBool,
+                        @Property("string") Optional<String> optionalString,
+                        @Property("none-existent-property") Optional<Integer> otherThing) {
         Assert.assertEquals(stringProp, "value");
         Assert.assertEquals(c, 'v');
         Assert.assertTrue(bool);
         Assert.assertTrue(primBool);
+        Assert.assertEquals(optionalString.get(), "value");
+        Assert.assertEquals((int) otherThing.orElse(-1), (int) -1);
     }
 
     @Inject

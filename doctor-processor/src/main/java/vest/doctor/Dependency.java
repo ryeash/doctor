@@ -45,10 +45,12 @@ public class Dependency implements ProviderDependency {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof ProviderDependency)) {
+            return false;
+        }
         Dependency that = (Dependency) o;
-        return Objects.equals(type, that.type) &&
-                Objects.equals(qualifier, that.qualifier);
+        return Objects.equals(type.asType().toString(), that.type.asType().toString())
+                && Objects.equals(qualifier, that.qualifier);
     }
 
     @Override

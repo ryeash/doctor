@@ -35,8 +35,6 @@ public interface AnnotationProcessorContext {
         messager().printMessage(Diagnostic.Kind.ERROR, message);
     }
 
-    void register(ProviderDefinition providerDefinition);
-
     boolean isProvided(ProviderDependency dependency);
 
     List<NewInstanceCustomizer> newInstanceCustomizers();

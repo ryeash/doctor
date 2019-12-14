@@ -54,7 +54,6 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     public synchronized void init(ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
         this.processingEnv = processingEnv;
-        infoMessage("init");
 
         // add default scopes
         scopesToProcess.add(processingEnv.getElementUtils().getTypeElement(Prototype.class.getCanonicalName()));
@@ -135,6 +134,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                         if (provDef != null) {
                             errorChecking(provDef);
                             claimed = true;
+                            typesToDependencies.computeIfAbsent(provDef.asDependency(), d -> new HashSet<>());
                             providerDefinitions.add(provDef);
                             break;
                         }
@@ -179,11 +179,6 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     @Override
     public ProcessingEnvironment processingEnvironment() {
         return processingEnv;
-    }
-
-    @Override
-    public void register(ProviderDefinition providerDefinition) {
-        providerDefinitions.add(providerDefinition);
     }
 
     @Override
@@ -238,7 +233,6 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
 
         MethodBuilder mb = new MethodBuilder("public void load(BeanProvider beanProvider)");
 
-        infoMessage("" + providerDefinitions);
         for (ProviderDefinition providerDefinition : providerDefinitions) {
 
             cb.addImportClass(providerDefinition.providedType().asType().toString());
@@ -331,7 +325,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                     continue;
                 }
                 if (dependency != null && dependency.required() && !isProvided(dependency)) {
-                    errorMessage("missing provider dependency for " + target + ": " + dependency + " -- " +
+                    errorMessage("missing provider dependency for target:" + target + "-> dependency" + dependency + " -- " +
                             providerDefinitions.stream().map(ProviderDefinition::asDependency).map(String::valueOf).collect(Collectors.joining("\n")));
                 }
             }

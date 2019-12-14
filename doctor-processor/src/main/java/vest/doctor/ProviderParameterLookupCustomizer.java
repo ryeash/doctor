@@ -63,7 +63,6 @@ public class ProviderParameterLookupCustomizer implements ParameterLookupCustomi
             if (provider) {
                 element = ProcessorUtils.getParameterizedType(context, variableElement)
                         .orElseThrow(() -> new IllegalArgumentException("failed to find type for provider: " + ProcessorUtils.debugString(variableElement)));
-                context.infoMessage(" --> " + element.asType());
             }
             qualifier = ProcessorUtils.getQualifier(context, variableElement);
             this.type = element;

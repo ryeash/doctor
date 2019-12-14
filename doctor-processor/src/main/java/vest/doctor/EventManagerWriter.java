@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -47,7 +46,7 @@ public class EventManagerWriter implements NewInstanceCustomizer {
             Dependency dependency = new Dependency(providerDefinition.providedType(), providerDefinition.qualifier());
             String fieldName = depToField.computeIfAbsent(dependency, dep -> {
                 String n = "listener" + COUNTER.incrementAndGet();
-                cb.addField("private "+DoctorProvider.class.getCanonicalName()+"<" + providerDefinition.providedType().asType() + "> " + n);
+                cb.addField("private " + DoctorProvider.class.getCanonicalName() + "<" + providerDefinition.providedType().asType() + "> " + n);
                 init.line(n + " = beanProvider.getProvider(" + providerDefinition.providedType().asType() + ".class, " + providerDefinition.qualifier() + ");");
                 return n;
             });

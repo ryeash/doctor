@@ -114,8 +114,8 @@ public class AppTest extends Assert {
     public void scheduled() throws InterruptedException {
         TCScheduled instance = doctor.getInstance(TCScheduled.class);
         TimeUnit.MILLISECONDS.sleep(105);
-        assertEquals(instance.every10Milliseconds.get(), 10);
-        assertEquals(instance.every50Milliseconds.get(), 2);
+        assertTrue(instance.every10Milliseconds.get() >= 10);
+        assertTrue(instance.every50Milliseconds.get() >= 2);
     }
 
     @Test
@@ -131,7 +131,6 @@ public class AppTest extends Assert {
 
     @Test
     public void customQualifiers() {
-        System.out.println(doctor);
         doctor.getInstance(TCCustomQualifierHolder.class);
     }
 

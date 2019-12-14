@@ -137,7 +137,7 @@ public class PropertyParameterCustomizer implements ParameterLookupCustomizer {
         }
         String code = nurseRef + ".configuration()." + confMethod + "(\"" + property.value() + "\", " + converterMethod + ")";
         if (isOptional) {
-            return "java.util.Optional.of(" + code + ")";
+            return "java.util.Optional.ofNullable(" + code + ")";
         } else {
             return "java.util.Objects.requireNonNull(" + code + ", \"missing required property: " + property.value() + "\")";
         }
