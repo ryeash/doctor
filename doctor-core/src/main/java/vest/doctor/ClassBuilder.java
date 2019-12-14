@@ -1,0 +1,165 @@
+package vest.doctor;
+
+import javax.annotation.processing.Filer;
+import javax.tools.JavaFileObject;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.UncheckedIOException;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Consumer;
+
+public class ClassBuilder {
+
+    private String packageName;
+    private String className;
+    private String fullyQualifiedClassName;
+    private String extendsClass;
+    private Set<String> implementsInterfaces;
+    private Set<String> importClasses;
+    private List<String> fields;
+    private String constructor;
+    private List<String> methods;
+
+    public ClassBuilder setClassName(String fullyQualifiedClassName) {
+        this.fullyQualifiedClassName = fullyQualifiedClassName;
+        int i = fullyQualifiedClassName.lastIndexOf(".");
+        if (i < 0) {
+            this.packageName = "";
+            this.className = fullyQualifiedClassName;
+        } else {
+            this.packageName = fullyQualifiedClassName.substring(0, i);
+            this.className = fullyQualifiedClassName.substring(i + 1);
+        }
+        return this;
+    }
+
+    public ClassBuilder setExtendsClass(Class<?> type) {
+        this.extendsClass = type.getSimpleName();
+        this.packageName = type.getPackage().toString();
+        return this;
+    }
+
+    public ClassBuilder setExtendsClass(String extendsClass) {
+        this.extendsClass = extendsClass;
+        return this;
+    }
+
+    public ClassBuilder addImplementsInterface(Class<?> interfaceType) {
+        if (!interfaceType.isInterface()) {
+            throw new IllegalArgumentException("not an interface: " + interfaceType);
+        }
+        return addImplementsInterface(interfaceType.getSimpleName()).
+                addImportClass(interfaceType);
+    }
+
+    public ClassBuilder addImplementsInterface(String interfaceType) {
+        if (implementsInterfaces == null) {
+            implementsInterfaces = new LinkedHashSet<>();
+        }
+        implementsInterfaces.add(interfaceType);
+        return this;
+    }
+
+    public ClassBuilder addImportClass(Class<?> type) {
+        return addImportClass(type.getCanonicalName());
+    }
+
+    public ClassBuilder addImportClass(String className) {
+        if (importClasses == null) {
+            importClasses = new LinkedHashSet<>();
+        }
+        importClasses.add(className);
+        return this;
+    }
+
+    public ClassBuilder addField(String field) {
+        if (fields == null) {
+            fields = new LinkedList<>();
+        }
+        fields.add(field);
+        return this;
+    }
+
+    public ClassBuilder setConstructor(String definition, Consumer<MethodBuilder> builder) {
+        MethodBuilder methodBuilder = new MethodBuilder(definition, this::setConstructor);
+        builder.accept(methodBuilder);
+        methodBuilder.finish();
+        return this;
+    }
+
+    public ClassBuilder setConstructor(String constructor) {
+        this.constructor = constructor;
+        return this;
+    }
+
+    public ClassBuilder addMethod(String method) {
+        if (methods == null) {
+            methods = new LinkedList<>();
+        }
+        methods.add(method);
+        return this;
+    }
+
+    public ClassBuilder addMethod(String definition, Consumer<MethodBuilder> builder) {
+        MethodBuilder methodBuilder = new MethodBuilder(definition, this::addMethod);
+        builder.accept(methodBuilder);
+        methodBuilder.finish();
+        return this;
+    }
+
+    public void writeClass(Filer filer) {
+        try {
+            JavaFileObject builderFile = filer.createSourceFile(fullyQualifiedClassName);
+            try (PrintWriter out = new PrintWriter(builderFile.openWriter())) {
+
+                out.print("package ");
+                out.print(packageName);
+                out.println(";");
+                out.println();
+
+                if (importClasses != null) {
+                    for (String importClass : importClasses) {
+                        out.println("import " + importClass + ";");
+                    }
+                }
+
+                out.print("public class ");
+                out.print(className);
+                if (extendsClass != null && !extendsClass.isEmpty()) {
+                    out.print(" extends " + extendsClass);
+                }
+
+                if (implementsInterfaces != null && !implementsInterfaces.isEmpty()) {
+                    String interfaces = String.join(", ", implementsInterfaces);
+                    out.print(" implements " + interfaces);
+                }
+                out.println("{");
+
+                if (fields != null && !fields.isEmpty()) {
+                    for (String field : fields) {
+                        out.println(field + ';');
+                    }
+                }
+
+                if (constructor != null) {
+                    out.println(constructor);
+                    out.println();
+                }
+
+                if (methods != null && !methods.isEmpty()) {
+                    for (String method : methods) {
+                        out.println(method);
+                        out.println();
+                    }
+                }
+
+                out.println("}");
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException("error writing class " + className, e);
+        }
+    }
+}
