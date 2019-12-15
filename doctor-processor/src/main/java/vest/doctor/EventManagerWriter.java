@@ -29,7 +29,7 @@ public class EventManagerWriter implements NewInstanceCustomizer {
             .line("executor = beanProvider.getInstance(" + ExecutorService.class.getSimpleName() + ".class, \"" + BuiltInAppLoader.DEFAULT_EXECUTOR_NAME + "\");");
     private MethodBuilder mb = new MethodBuilder("public void publish(Object event)");
 
-    private final Map<Dependency, String> depToField = new HashMap<>();
+    private final Map<ProviderDependency, String> depToField = new HashMap<>();
 
     @Override
     public void customize(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String doctorRef) {
@@ -43,7 +43,7 @@ public class EventManagerWriter implements NewInstanceCustomizer {
             cb.addImportClass(messageType.getQualifiedName().toString());
             cb.addImportClass(context.processingEnvironment().getTypeUtils().asElement(message.asType()).toString());
 
-            Dependency dependency = new Dependency(providerDefinition.providedType(), providerDefinition.qualifier());
+            ProviderDependency dependency = context.buildDependency(providerDefinition.providedType(), providerDefinition.qualifier(), true);
             String fieldName = depToField.computeIfAbsent(dependency, dep -> {
                 String n = "listener" + COUNTER.incrementAndGet();
                 cb.addField("private " + DoctorProvider.class.getCanonicalName() + "<" + providerDefinition.providedType().asType() + "> " + n);

@@ -108,6 +108,19 @@ public class AppTest extends Assert {
             return IntStream.range(0, 100).parallel().mapToObj(i -> doctor.getInstance(TCScope.class, "threadLocal")).collect(Collectors.toSet());
         }).get();
         assertEquals(threadLocal.size(), 3);
+
+        Set<TCScope> cached = IntStream.range(0, 1000)
+                .parallel()
+                .mapToObj(i -> {
+                    try {
+                        Thread.sleep(1);
+                    } catch (Throwable t) {
+                        // no-op
+                    }
+                    return doctor.getInstance(TCScope.class, "cached");
+                })
+                .collect(Collectors.toSet());
+        assertTrue(cached.size() < 100 && cached.size() > 5);
     }
 
     @Test

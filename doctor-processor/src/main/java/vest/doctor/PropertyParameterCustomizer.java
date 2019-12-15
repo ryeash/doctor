@@ -1,6 +1,5 @@
 package vest.doctor;
 
-import javax.inject.Provider;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.PrimitiveType;
@@ -89,23 +88,13 @@ public class PropertyParameterCustomizer implements ParameterLookupCustomizer {
     }
 
     private String getObjectPropertyCode(AnnotationProcessorContext context, Property property, VariableElement variableElement, String nurseRef) {
-        TypeElement element = context.toTypeElement(variableElement.asType());
-        boolean isOptional = Optional.class.getCanonicalName().equals(element.getQualifiedName().toString());
-
-        if (isOptional) {
-            element = ProcessorUtils.getParameterizedType(context, variableElement)
-                    .orElseThrow(() -> new IllegalArgumentException("failed to find type for optional dependency: " + ProcessorUtils.debugString(variableElement)));
-        }
-
-        boolean isProvider = Provider.class.getCanonicalName().equals(element.getQualifiedName().toString())
-                || DoctorProvider.class.getCanonicalName().equals(element.getQualifiedName().toString());
-
-        if (isProvider) {
+        VariableElementMetadata metadata = new VariableElementMetadata(context, variableElement);
+        if (metadata.provider) {
             context.errorMessage("Provider types may not be marked with @Property: " + ProcessorUtils.debugString(variableElement));
         }
-        String type = element.getQualifiedName().toString();
+        String type = metadata.type.getQualifiedName().toString();
 
-        List<TypeElement> hierarchy = ProcessorUtils.hierarchy(context, element);
+        List<TypeElement> hierarchy = ProcessorUtils.hierarchy(context, metadata.type);
 
         boolean isCollection = true;
         String confMethod;
@@ -136,7 +125,7 @@ public class PropertyParameterCustomizer implements ParameterLookupCustomizer {
             context.errorMessage("unable to convert collection values for property parameter: " + ProcessorUtils.debugString(variableElement));
         }
         String code = nurseRef + ".configuration()." + confMethod + "(\"" + property.value() + "\", " + converterMethod + ")";
-        if (isOptional) {
+        if (metadata.optional) {
             return "java.util.Optional.ofNullable(" + code + ")";
         } else {
             return "java.util.Objects.requireNonNull(" + code + ", \"missing required property: " + property.value() + "\")";

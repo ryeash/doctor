@@ -1,5 +1,6 @@
 package demo.app;
 
+import vest.doctor.Cached;
 import vest.doctor.Factory;
 import vest.doctor.Modules;
 import vest.doctor.Primary;
@@ -78,6 +79,13 @@ public class TestAppConfig {
     @Prototype
     @Named("prototype")
     public TCScope prototypeScope() {
+        return new TCScope();
+    }
+
+    @Factory
+    @Cached(ttl = 10)
+    @Named("cached")
+    public TCScope cachedScope() {
         return new TCScope();
     }
 

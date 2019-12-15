@@ -139,27 +139,6 @@ public class ConstructorProviderDefinition implements ProviderDefinition {
                 customizer.customize(context, this, b, "instance", "beanProvider");
             }
             b.line("return instance;");
-
-//            int i = 0;
-//            for (VariableElement parameter : injectableConstructor.getParameters()) {
-//                TypeMirror type = parameter.asType();
-//                for (ParameterLookupCustomizer parameterLookupCustomizer : context.parameterLookupCustomizers()) {
-//                    String lookup = parameterLookupCustomizer.lookupCode(context, parameter, "beanProvider");
-//                    if (lookup == null) {
-//                        continue;
-//                    }
-//                    context.registerDependency(asDependency(), parameterLookupCustomizer.targetDependency(context, parameter));
-//                    b.line(type.toString() + " var" + (i++) + " = " + lookup + ";");
-//                    break;
-//                }
-//            }
-//
-//            String vars = IntStream.range(0, i).mapToObj(j -> "var" + j).collect(Collectors.joining(", ", "(", ")"));
-//            b.line(providedType.getSimpleName() + " instance = new " + providedType.getSimpleName() + vars + ";");
-//            for (NewInstanceCustomizer customizer : context.newInstanceCustomizers()) {
-//                customizer.customize(context, this, b, "instance", "beanProvider");
-//            }
-//            b.line("return instance;");
         });
 
         classBuilder.writeClass(context.filer());
