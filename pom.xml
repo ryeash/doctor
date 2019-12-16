@@ -13,6 +13,7 @@
         <module>doctor-processor</module>
         <module>doctor-runtime</module>
         <module>test-app</module>
+        <module>doctor-jaxrs</module>
     </modules>
 
     <properties>
@@ -30,22 +31,6 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <repositories>
-        <repository>
-            <id>rally</id>
-            <name>rally</name>
-            <url>http://repo-depot.f4tech.com/artifactory/rally-maven</url>
-        </repository>
-    </repositories>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>snapshots</id>
-            <name>repodepot-snapshots</name>
-            <url>http://repo-depot.f4tech.com/artifactory/rally-maven</url>
-        </snapshotRepository>
-    </distributionManagement>
 
     <build>
         <plugins>
