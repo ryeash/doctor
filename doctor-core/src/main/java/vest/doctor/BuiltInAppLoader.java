@@ -15,7 +15,7 @@ public class BuiltInAppLoader implements AppLoader {
         beanProvider.register(new AdHocProvider<>(BeanProvider.class, beanProvider, null));
         beanProvider.register(new AdHocProvider<>(ConfigurationFacade.class, beanProvider.configuration(), null));
 
-        Boolean loadBuiltIns = beanProvider.configuration().get("nurse.load.builtins", true, Boolean::valueOf);
+        Boolean loadBuiltIns = beanProvider.configuration().get("doctor.load.builtins", true, Boolean::valueOf);
         if (!loadBuiltIns) {
             return;
         }

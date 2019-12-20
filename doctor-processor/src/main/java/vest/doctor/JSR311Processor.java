@@ -35,8 +35,9 @@ import java.util.stream.Stream;
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 public class JSR311Processor extends AbstractProcessor implements AnnotationProcessorContext {
 
-    public static final String GENERATED_PACKAGE = "vest.doctor.generated.$" + ProcessorUtils.uniqueHash();
-    public static final String APP_LOADER_CLASS_NAME = GENERATED_PACKAGE + ".AppLoaderImpl";
+    // TODO: move these to instance methods and expose via methods
+    public static String GENERATED_PACKAGE;
+    public static String APP_LOADER_CLASS_NAME;
 
     private static final AtomicInteger idGenerator = new AtomicInteger();
 
@@ -54,6 +55,10 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     public synchronized void init(ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
         this.processingEnv = processingEnv;
+
+        GENERATED_PACKAGE = "vest.doctor.generated."
+                + processingEnv.getOptions().getOrDefault("doctor.generated.packagename", "$" + ProcessorUtils.uniqueHash());
+        APP_LOADER_CLASS_NAME = GENERATED_PACKAGE + ".AppLoaderImpl";
 
         // add default scopes
         scopesToProcess.add(processingEnv.getElementUtils().getTypeElement(Prototype.class.getCanonicalName()));
@@ -317,11 +322,14 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     private void compileTimeDependencyCheck() {
         TypeElement typeElement = processingEnv.getElementUtils().getTypeElement(EventProducer.class.getCanonicalName());
         ProviderDependency eventProducerDependency = buildDependency(typeElement, null, false);
+        TypeElement cfType = processingEnv.getElementUtils().getTypeElement(ConfigurationFacade.class.getCanonicalName());
+        ProviderDependency cfDependency = buildDependency(cfType, null, false);
 
         for (Map.Entry<ProviderDependency, Set<ProviderDependency>> entry : typesToDependencies.entrySet()) {
             ProviderDependency target = entry.getKey();
             for (ProviderDependency dependency : entry.getValue()) {
-                if (Objects.equals(eventProducerDependency, dependency)) {
+                if (Objects.equals(eventProducerDependency, dependency)
+                        || Objects.equals(cfDependency, dependency)) {
                     continue;
                 }
                 if (dependency != null && dependency.required() && !isProvided(dependency)) {

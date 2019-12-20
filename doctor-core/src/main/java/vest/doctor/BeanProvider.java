@@ -18,6 +18,10 @@ public interface BeanProvider {
 
     <T> DoctorProvider<T> getProvider(Class<T> type, String qualifier);
 
+    default <T> Optional<DoctorProvider<T>> getProviderOpt(Class<T> type) {
+        return getProviderOpt(type, null);
+    }
+
     <T> Optional<DoctorProvider<T>> getProviderOpt(Class<T> type, String qualifier);
 
     <T> Stream<DoctorProvider<T>> getProviders(Class<T> type);

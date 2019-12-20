@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -15,7 +16,7 @@ import java.util.stream.Stream;
 
 public class DefaultConfigurationFacade implements ConfigurationFacade {
 
-    static ConfigurationFacade defaultConfigurationFacade() {
+    public static ConfigurationFacade defaultConfigurationFacade() {
         ConfigurationFacade facade = new DefaultConfigurationFacade()
                 .addSource(new EnvironmentVariablesConfigurationSource())
                 .addSource(new SystemPropertiesConfigurationSource());
@@ -141,6 +142,11 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
         }
         sb.append(value, prev, value.length());
         return sb.toString();
+    }
+
+    @Override
+    public Properties toProperties() {
+        return new FacadeToProperties(this);
     }
 
     private static List<String> split(String str, char delimiter) {

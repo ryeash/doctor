@@ -1,10 +1,13 @@
 package demo.app;
 
+import io.restassured.RestAssured;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 import vest.doctor.ConfigurationFacade;
+import vest.doctor.DefaultConfigurationFacade;
 import vest.doctor.Doctor;
+import vest.doctor.MapConfigurationSource;
 
 import javax.inject.Provider;
 import java.util.List;
@@ -15,9 +18,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static org.hamcrest.Matchers.is;
+
 public class AppTest extends Assert {
 
-    Doctor doctor = Doctor.load();
+    Doctor doctor = Doctor.load(DefaultConfigurationFacade.defaultConfigurationFacade()
+            .addSource(new MapConfigurationSource("jaxrs.bind", "localhost:8080")));
 
     static {
         System.setProperty("qualifierInterpolation", "interpolated");
@@ -170,5 +176,17 @@ public class AppTest extends Assert {
         TCInjectedMethodsM instance1 = doctor.getInstance(TCInjectedMethodsM.class);
         assertNotNull(instance1.coffeeMaker);
         assertTrue(instance1.injectedEmpty);
+    }
+
+    @Test
+    public void restRequest() {
+        RestAssured.baseURI = "http://localhost:8080/";
+        RestAssured.given()
+                .accept("application/json")
+                .contentType("application/json")
+                .get("/rest/goodbye")
+                .then()
+                .statusCode(200)
+                .body("message", is("goodbye"));
     }
 }

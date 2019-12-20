@@ -22,6 +22,10 @@ public class Doctor implements BeanProvider, AutoCloseable {
         return new Doctor(DefaultConfigurationFacade.defaultConfigurationFacade(), Arrays.asList(modules));
     }
 
+    public static Doctor load(ConfigurationFacade configurationFacade) {
+        return new Doctor(configurationFacade, Collections.emptyList());
+    }
+
     public static Doctor load(ConfigurationFacade configurationFacade, List<String> modules) {
         return new Doctor(configurationFacade, modules);
     }
