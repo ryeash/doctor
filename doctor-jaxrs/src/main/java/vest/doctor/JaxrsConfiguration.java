@@ -1,16 +1,12 @@
 package vest.doctor;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Singleton
 public class JaxrsConfiguration {
     private final ConfigurationFacade configurationFacade;
 
-    @Inject
     public JaxrsConfiguration(ConfigurationFacade configurationFacade) {
         this.configurationFacade = configurationFacade;
     }

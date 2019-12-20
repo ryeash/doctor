@@ -23,9 +23,7 @@ import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvi
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 
-import javax.inject.Inject;
 import javax.inject.Provider;
-import javax.inject.Singleton;
 import javax.ws.rs.Path;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseFilter;
@@ -41,7 +39,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Singleton
 public class JAXRSServer extends WebSocketServlet implements WebSocketCreator, AutoCloseable {
 
     private static final List<Class<?>> JAX_RS_TYPES = Arrays.asList(
@@ -61,16 +58,11 @@ public class JAXRSServer extends WebSocketServlet implements WebSocketCreator, A
 
     private Server server;
 
-    @Inject
-    public JAXRSServer(ConfigurationFacade configurationFacade, JaxrsConfiguration jaxrsConfiguration) {
-        this.configurationFacade = configurationFacade;
-        this.jaxrsConfiguration = jaxrsConfiguration;
+    public JAXRSServer(BeanProvider beanProvider) {
+        this.configurationFacade = beanProvider.configuration();
+        this.jaxrsConfiguration = new JaxrsConfiguration(beanProvider.configuration());
         this.pathToWebsocket = new HashMap<>();
-    }
-
-    @EventListener
-    public void startupMessage(ApplicationStartedEvent startedEvent) {
-        this.server = startServer(startedEvent.beanProvider());
+        startServer(beanProvider);
     }
 
     @Override
