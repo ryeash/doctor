@@ -38,6 +38,11 @@ public class StructuredConfiguration implements ConfigurationSource {
     }
 
     @Override
+    public Iterable<String> propertyNames() {
+        return properties.keySet();
+    }
+
+    @Override
     public void reload() {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(propertyFile.openStream(), StandardCharsets.UTF_8))) {
             this.properties = parseStructuredPropertiesFile(reader, levelDelimiter);

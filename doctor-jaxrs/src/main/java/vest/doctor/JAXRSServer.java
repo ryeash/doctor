@@ -52,17 +52,15 @@ public class JAXRSServer extends WebSocketServlet implements WebSocketCreator, A
             Provider.class,
             Path.class);
 
-    private final ConfigurationFacade configurationFacade;
     private final JaxrsConfiguration jaxrsConfiguration;
     private final Map<String, Object> pathToWebsocket;
 
     private Server server;
 
     public JAXRSServer(BeanProvider beanProvider) {
-        this.configurationFacade = beanProvider.configuration();
         this.jaxrsConfiguration = new JaxrsConfiguration(beanProvider.configuration());
         this.pathToWebsocket = new HashMap<>();
-        startServer(beanProvider);
+        this.server = startServer(beanProvider);
     }
 
     @Override
@@ -113,9 +111,7 @@ public class JAXRSServer extends WebSocketServlet implements WebSocketCreator, A
         }
 
         ResourceConfig resourceConfig = new ResourceConfig();
-        resourceConfig.addProperties((Map) configurationFacade.toProperties());
-//        resourceConfig.property("jersey.config.server.tracing.type", "ALL");
-//        resourceConfig.property("jersey.config.server.tracing.threshold", "VERBOSE");
+        jaxrsConfiguration.jerseyProperties().forEach(resourceConfig::property);
 
         ObjectMapper mapper = beanProvider.getProviderOpt(ObjectMapper.class)
                 .map(Provider::get)

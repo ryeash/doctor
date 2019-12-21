@@ -27,4 +27,9 @@ public class MapConfigurationSource implements ConfigurationSource {
     public String get(String fullyQualifierPropertyName) {
         return map.get(fullyQualifierPropertyName);
     }
+
+    @Override
+    public Iterable<String> propertyNames() {
+        return map.keySet();
+    }
 }

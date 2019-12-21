@@ -1,7 +1,9 @@
 package vest.doctor;
 
 import java.net.InetSocketAddress;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class JaxrsConfiguration {
@@ -66,6 +68,17 @@ public class JaxrsConfiguration {
     public String websocketRootPath() {
         return configurationFacade.get("jaxrs.websocketRootPath", "/ws");
     }
+
+    public Map<String, String> jerseyProperties() {
+        Map<String, String> map = new LinkedHashMap<>();
+        for (String propertyName : configurationFacade.propertyNames()) {
+            if (propertyName.startsWith("jersey")) {
+                map.put(propertyName, configurationFacade.get(propertyName));
+            }
+        }
+        return map;
+    }
+
 
     public static String squeeze(String s, char c) {
         char[] a = s.toCharArray();

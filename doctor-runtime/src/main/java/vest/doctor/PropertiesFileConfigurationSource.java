@@ -31,4 +31,9 @@ public class PropertiesFileConfigurationSource implements ConfigurationSource {
     public String get(String fullyQualifierPropertyName) {
         return properties.getProperty(fullyQualifierPropertyName);
     }
+
+    @Override
+    public Iterable<String> propertyNames() {
+        return properties.stringPropertyNames();
+    }
 }

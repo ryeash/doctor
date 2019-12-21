@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class DefaultConfigurationFacade implements ConfigurationFacade {
 
@@ -67,6 +68,14 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
             }
         }
         return null;
+    }
+
+    @Override
+    public Iterable<String> propertyNames() {
+        return sources.stream()
+                .map(ConfigurationSource::propertyNames)
+                .flatMap(i -> StreamSupport.stream(i.spliterator(), false))
+                .distinct()::iterator;
     }
 
     @Override

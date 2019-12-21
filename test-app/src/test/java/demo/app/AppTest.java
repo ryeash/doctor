@@ -23,7 +23,10 @@ import static org.hamcrest.Matchers.is;
 public class AppTest extends Assert {
 
     Doctor doctor = Doctor.load(DefaultConfigurationFacade.defaultConfigurationFacade()
-            .addSource(new MapConfigurationSource("jaxrs.bind", "localhost:8080")));
+            .addSource(new MapConfigurationSource(
+                    "jaxrs.bind", "localhost:8080",
+                    "jersey.config.server.tracing.type", "ALL",
+                    "jersey.config.server.tracing.threshold", "VERBOSE")));
 
     static {
         System.setProperty("qualifierInterpolation", "interpolated");
@@ -185,6 +188,7 @@ public class AppTest extends Assert {
                 .accept("application/json")
                 .contentType("application/json")
                 .get("/rest/goodbye")
+                .prettyPeek()
                 .then()
                 .statusCode(200)
                 .body("message", is("goodbye"));

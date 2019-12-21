@@ -5,4 +5,9 @@ public class SystemPropertiesConfigurationSource implements ConfigurationSource 
     public String get(String fullyQualifierPropertyName) {
         return System.getProperty(fullyQualifierPropertyName);
     }
+
+    @Override
+    public Iterable<String> propertyNames() {
+        return System.getProperties().stringPropertyNames();
+    }
 }

@@ -5,4 +5,9 @@ public class EnvironmentVariablesConfigurationSource implements ConfigurationSou
     public String get(String fullyQualifierPropertyName) {
         return System.getenv(fullyQualifierPropertyName);
     }
+
+    @Override
+    public Iterable<String> propertyNames() {
+        return System.getenv().keySet();
+    }
 }
