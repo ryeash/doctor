@@ -1,4 +1,4 @@
-package vest.doctor;
+package vest.doctor.jaxrs;
 
 import javax.annotation.Priority;
 import javax.ws.rs.Priorities;

@@ -1,4 +1,7 @@
-package vest.doctor;
+package vest.doctor.jaxrs;
+
+import vest.doctor.AppLoader;
+import vest.doctor.BeanProvider;
 
 public class JAXRSLoader implements AppLoader {
     private JAXRSServer server;

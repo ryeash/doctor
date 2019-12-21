@@ -191,6 +191,19 @@ public class AppTest extends Assert {
                 .prettyPeek()
                 .then()
                 .statusCode(200)
-                .body("message", is("goodbye"));
+                .body("message", is("goodbye"))
+                .header("X-Before", is("true"))
+                .header("X-After", is("true"));
+
+        RestAssured.given()
+                .accept("application/json")
+                .contentType("application/json")
+                .get("/rest/admin/ok")
+                .prettyPeek()
+                .then()
+                .statusCode(200)
+                .body("message", is("ok"))
+                .header("X-Before", is("true"))
+                .header("X-After", is("true"));
     }
 }

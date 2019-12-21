@@ -30,7 +30,7 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
                         throw new UncheckedIOException("error reading properties file: " + props, e);
                     }
                 })
-                .map(StructuredConfiguration::new)
+                .map(StructuredConfigurationSource::new)
                 .forEach(facade::addSource);
         return facade;
     }

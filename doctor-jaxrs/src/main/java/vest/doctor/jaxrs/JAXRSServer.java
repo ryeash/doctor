@@ -1,4 +1,4 @@
-package vest.doctor;
+package vest.doctor.jaxrs;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -19,9 +19,10 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
+import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
+import vest.doctor.BeanProvider;
 
 import javax.inject.Provider;
 import javax.ws.rs.Path;
@@ -32,7 +33,6 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
-import java.lang.annotation.Annotation;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -49,8 +49,7 @@ public class JAXRSServer extends WebSocketServlet implements WebSocketCreator, A
             MessageBodyReader.class,
             ReaderInterceptor.class,
             WriterInterceptor.class,
-            Provider.class,
-            Path.class);
+            Provider.class);
 
     private final JaxrsConfiguration jaxrsConfiguration;
     private final Map<String, Object> pathToWebsocket;
@@ -124,20 +123,19 @@ public class JAXRSServer extends WebSocketServlet implements WebSocketCreator, A
                         .setDefaultMergeable(true)
                         .registerModules(ObjectMapper.findModules()));
 
-        resourceConfig.register(new JacksonJsonProvider(mapper));
+        resourceConfig.register(new JacksonJaxbJsonProvider(mapper, JacksonJaxbJsonProvider.DEFAULT_ANNOTATIONS));
         resourceConfig.register(new GZipDecoder());
+        resourceConfig.register(new BeanProviderFactory(beanProvider));
 
         JAX_RS_TYPES.stream()
-                .flatMap(type -> {
-                    if (type.isAnnotation()) {
-                        return beanProvider.getProvidersWithAnnotation((Class<? extends Annotation>) type);
-                    } else {
-                        return beanProvider.getProviders(type);
-                    }
-                })
+                .flatMap(beanProvider::getProviders)
                 .map(Provider::get)
                 .distinct()
                 .forEach(resourceConfig::register);
+
+        beanProvider.getProvidersWithAnnotation(Path.class)
+                .map(Provider::get)
+                .forEach(resourceConfig::registerInstances);
 
         beanProvider.getProvidersWithAnnotation(WebSocket.class).forEach(this::addWebsocket);
 

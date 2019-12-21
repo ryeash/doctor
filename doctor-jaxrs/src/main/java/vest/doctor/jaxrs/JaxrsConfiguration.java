@@ -1,4 +1,6 @@
-package vest.doctor;
+package vest.doctor.jaxrs;
+
+import vest.doctor.ConfigurationFacade;
 
 import java.net.InetSocketAddress;
 import java.util.LinkedHashMap;

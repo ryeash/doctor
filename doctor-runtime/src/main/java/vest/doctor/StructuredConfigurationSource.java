@@ -16,17 +16,17 @@ import java.util.Objects;
 import static java.io.StreamTokenizer.TT_EOF;
 import static java.io.StreamTokenizer.TT_EOL;
 
-public class StructuredConfiguration implements ConfigurationSource {
+public class StructuredConfigurationSource implements ConfigurationSource {
 
     private final URL propertyFile;
     private final String levelDelimiter;
     private Map<String, String> properties;
 
-    public StructuredConfiguration(URL url) {
+    public StructuredConfigurationSource(URL url) {
         this(url, ".");
     }
 
-    public StructuredConfiguration(URL url, String levelDelimiter) {
+    public StructuredConfigurationSource(URL url, String levelDelimiter) {
         this.propertyFile = Objects.requireNonNull(url, "the configuration url can not be null");
         this.levelDelimiter = levelDelimiter;
         reload();
