@@ -1,4 +1,9 @@
-package vest.doctor;
+package vest.doctor.processor;
+
+import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.ProviderDefinition;
+import vest.doctor.ScopeWriter;
+import vest.doctor.SingletonScopedProvider;
 
 import javax.inject.Singleton;
 import java.lang.annotation.Annotation;
@@ -11,7 +16,7 @@ public class SingletonScopeWriter implements ScopeWriter {
     }
 
     @Override
-    public String wrap(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String providerRef) {
+    public String wrapScope(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String providerRef) {
         return "new " + SingletonScopedProvider.class.getCanonicalName() + "(" + providerRef + ")";
     }
 }

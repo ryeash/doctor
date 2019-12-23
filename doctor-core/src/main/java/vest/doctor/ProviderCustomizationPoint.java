@@ -1,6 +1,6 @@
 package vest.doctor;
 
-public interface ProviderWrappingWriter extends Prioritized {
+public interface ProviderCustomizationPoint extends CustomizationPoint, Prioritized {
 
     String wrap(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String providerRef);
 }

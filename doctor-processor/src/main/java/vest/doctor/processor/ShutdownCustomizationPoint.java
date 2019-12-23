@@ -1,8 +1,13 @@
-package vest.doctor;
+package vest.doctor.processor;
+
+import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.ProviderCustomizationPoint;
+import vest.doctor.ProviderDefinition;
+import vest.doctor.ShutdownProviderWrapper;
 
 import java.util.Objects;
 
-public class ShutdownWrappingWriter implements ProviderWrappingWriter {
+public class ShutdownCustomizationPoint implements ProviderCustomizationPoint {
     @Override
     public String wrap(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String providerRef) {
         boolean isCloseable = providerDefinition.getAllProvidedTypes()

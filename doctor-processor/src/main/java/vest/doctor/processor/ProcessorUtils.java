@@ -1,4 +1,10 @@
-package vest.doctor;
+package vest.doctor.processor;
+
+import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.BeanProvider;
+import vest.doctor.ClassBuilder;
+import vest.doctor.DoctorProvider;
+import vest.doctor.ProviderDefinition;
 
 import javax.inject.Named;
 import javax.inject.Provider;

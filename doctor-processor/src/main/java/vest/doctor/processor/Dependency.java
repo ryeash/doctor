@@ -1,4 +1,6 @@
-package vest.doctor;
+package vest.doctor.processor;
+
+import vest.doctor.ProviderDependency;
 
 import javax.lang.model.element.TypeElement;
 import java.util.Objects;

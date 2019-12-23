@@ -1,4 +1,9 @@
-package vest.doctor;
+package vest.doctor.processor;
+
+import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.ParameterLookupCustomizer;
+import vest.doctor.Property;
+import vest.doctor.ProviderDependency;
 
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;

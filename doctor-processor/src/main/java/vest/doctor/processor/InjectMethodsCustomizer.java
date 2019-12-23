@@ -1,4 +1,10 @@
-package vest.doctor;
+package vest.doctor.processor;
+
+import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.Async;
+import vest.doctor.MethodBuilder;
+import vest.doctor.NewInstanceCustomizer;
+import vest.doctor.ProviderDefinition;
 
 import javax.inject.Inject;
 import javax.lang.model.element.ExecutableElement;

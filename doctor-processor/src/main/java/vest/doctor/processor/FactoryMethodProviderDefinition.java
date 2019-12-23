@@ -1,71 +1,58 @@
-package vest.doctor;
+package vest.doctor.processor;
 
-import javax.inject.Inject;
+import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.ClassBuilder;
+import vest.doctor.Modules;
+import vest.doctor.NewInstanceCustomizer;
+import vest.doctor.ParameterLookupCustomizer;
+import vest.doctor.ProviderDefinition;
+import vest.doctor.ProviderDependency;
+
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.util.ElementFilter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
-public class ConstructorProviderDefinition implements ProviderDefinition {
+public class FactoryMethodProviderDefinition implements ProviderDefinition {
 
     private final AnnotationProcessorContext context;
-    private final TypeElement providedType;
-    private final String generatedClassName;
-    private final ExecutableElement injectableConstructor;
+    private final TypeElement container;
+    private final ExecutableElement factoryMethod;
+    private final String generatedClass;
     private final String uniqueName;
 
-    public ConstructorProviderDefinition(AnnotationProcessorContext context, TypeElement providedType) {
+    public FactoryMethodProviderDefinition(AnnotationProcessorContext context, TypeElement container, ExecutableElement factoryMethod) {
         this.context = context;
-        this.providedType = providedType;
-        this.generatedClassName = JSR311Processor.GENERATED_PACKAGE + "." + providedType.getSimpleName() + "__constructorProvider" + context.nextId();
-
-        int injectMarked = 0;
-        LinkedList<ExecutableElement> injectable = new LinkedList<>();
-        for (ExecutableElement constructor : ElementFilter.constructorsIn(providedType.getEnclosedElements())) {
-            if (constructor.getAnnotation(Inject.class) != null) {
-                injectMarked++;
-                injectable.addFirst(constructor);
-            } else if (constructor.getParameters().size() == 0) {
-                injectable.add(constructor);
-            }
-        }
-
-        if (injectMarked > 1) {
-            context.errorMessage("only one constructor may be marked with @Inject: " + ProcessorUtils.debugString(providedType));
-        }
-        if (injectable.isEmpty()) {
-            context.errorMessage("no injectable constructor: " + ProcessorUtils.debugString(providedType));
-        }
-        this.injectableConstructor = injectable.get(0);
+        this.container = container;
+        this.factoryMethod = factoryMethod;
+        this.generatedClass = JSR311Processor.GENERATED_PACKAGE + "." + providedType().getSimpleName() + "__factoryProvider" + context.nextId();
         this.uniqueName = "inst" + context.nextId();
     }
 
     @Override
     public TypeElement providedType() {
-        return providedType;
+        return context.toTypeElement(factoryMethod.getReturnType());
     }
 
     @Override
     public String generatedClassName() {
-        return generatedClassName;
+        return generatedClass;
     }
 
     @Override
     public List<TypeElement> getAllProvidedTypes() {
-        return ProcessorUtils.hierarchy(context, providedType);
+        return ProcessorUtils.hierarchy(context, providedType());
     }
 
     @Override
     public Element annotationSource() {
-        return providedType;
+        return factoryMethod;
     }
 
     @Override
@@ -86,23 +73,23 @@ public class ConstructorProviderDefinition implements ProviderDefinition {
     @Override
     public List<String> modules() {
         List<String> modules = new LinkedList<>();
-        Optional.ofNullable(annotationSource().getAnnotation(Modules.class))
+        Optional.ofNullable(factoryMethod.getAnnotation(Modules.class))
                 .map(Modules::value)
                 .map(Arrays::asList)
                 .ifPresent(modules::addAll);
-        if (annotationSource().getKind() == ElementKind.METHOD) {
-            Optional.ofNullable(annotationSource().getEnclosingElement())
-                    .map(e -> e.getAnnotation(Modules.class))
-                    .map(Modules::value)
-                    .map(Arrays::asList)
-                    .ifPresent(modules::addAll);
-        }
+
+        Optional.ofNullable(container)
+                .map(e -> e.getAnnotation(Modules.class))
+                .map(Modules::value)
+                .map(Arrays::asList)
+                .ifPresent(modules::addAll);
+
         return Collections.unmodifiableList(modules);
     }
 
     @Override
     public List<TypeElement> hierarchy() {
-        return ProcessorUtils.hierarchy(context, providedType);
+        return ProcessorUtils.hierarchy(context, providedType());
     }
 
     @Override
@@ -114,12 +101,13 @@ public class ConstructorProviderDefinition implements ProviderDefinition {
     public void writeProvider() {
         ClassBuilder classBuilder = ProcessorUtils.defaultProviderClass(this);
 
-        classBuilder.addMethod("public String toString() { return \"ConstructorProvider("
-                + providedType.getSimpleName()
+        classBuilder.addMethod("public String toString() { return \"FactoryProvider("
+                + factoryMethod.getEnclosingElement().getSimpleName() + "#"
+                + factoryMethod.getSimpleName()
                 + "):\" + hashCode(); }");
 
         classBuilder.addMethod("public void validateDependencies(BeanProvider beanProvider)", b -> {
-            for (VariableElement parameter : injectableConstructor.getParameters()) {
+            for (VariableElement parameter : factoryMethod.getParameters()) {
                 for (ParameterLookupCustomizer parameterLookupCustomizer : context.parameterLookupCustomizers()) {
                     String checkCode = parameterLookupCustomizer.dependencyCheckCode(context, parameter, "beanProvider");
                     if (checkCode == null) {
@@ -133,25 +121,24 @@ public class ConstructorProviderDefinition implements ProviderDefinition {
             }
         });
 
-        classBuilder.addMethod("public " + providedType.getSimpleName() + " get()", b -> {
-            b.line(providedType.getSimpleName() + " instance = " + context.constructorCall(this, injectableConstructor, "beanProvider") + ";");
+        classBuilder.addMethod("public " + providedType().getSimpleName() + " get()", b -> {
+            b.line(container.getQualifiedName() + " container = beanProvider.getProvider(" + container.getQualifiedName() + ".class" + ", " + ProcessorUtils.getQualifier(context, container) + ").get();");
+            b.line(providedType().getSimpleName() + " instance = " + context.methodCall(this, factoryMethod, "container", "beanProvider") + ";");
             for (NewInstanceCustomizer customizer : context.newInstanceCustomizers()) {
                 customizer.customize(context, this, b, "instance", "beanProvider");
             }
             b.line("return instance;");
         });
-
         classBuilder.writeClass(context.filer());
     }
 
     @Override
     public String initializationCode(String doctorRef) {
-        return "new " + generatedClassName + "(" + doctorRef + ")";
+        return "new " + generatedClass + "(" + doctorRef + ")";
     }
 
     @Override
     public String uniqueInstanceName() {
         return uniqueName;
     }
-
 }

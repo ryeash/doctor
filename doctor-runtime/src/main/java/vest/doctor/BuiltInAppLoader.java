@@ -29,7 +29,7 @@ public class BuiltInAppLoader implements AppLoader {
         }
 
         beanProvider.register(new SingletonScopedProvider<>(new ConfigurationDrivenExecutorServiceProvider(beanProvider, DEFAULT_EXECUTOR_NAME, null)));
-        beanProvider.register(new SingletonScopedProvider<>(new ConfigurationDrivenExecutorServiceProvider(beanProvider, DEFAULT_SCHEDULED_EXECUTOR_NAME, "scheduled")));
+        beanProvider.register(new SingletonScopedProvider<>(new ConfigurationDrivenExecutorServiceProvider(beanProvider, DEFAULT_SCHEDULED_EXECUTOR_NAME, ConfigurationDrivenExecutorServiceProvider.ThreadPoolType.scheduled)));
     }
 
     @Override

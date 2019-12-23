@@ -1,4 +1,11 @@
-package vest.doctor;
+package vest.doctor.processor;
+
+import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.MethodBuilder;
+import vest.doctor.NewInstanceCustomizer;
+import vest.doctor.ProviderDefinition;
+import vest.doctor.Scheduled;
+import vest.doctor.ScheduledTaskWrapper;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;

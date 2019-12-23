@@ -1,4 +1,6 @@
-package vest.doctor;
+package vest.doctor.processor;
+
+import vest.doctor.AnnotationProcessorContext;
 
 import javax.inject.Provider;
 import javax.lang.model.element.TypeElement;

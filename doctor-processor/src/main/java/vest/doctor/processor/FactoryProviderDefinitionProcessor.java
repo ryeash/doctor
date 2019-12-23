@@ -1,4 +1,9 @@
-package vest.doctor;
+package vest.doctor.processor;
+
+import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.Factory;
+import vest.doctor.ProviderDefinition;
+import vest.doctor.ProviderDefinitionProcessor;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;

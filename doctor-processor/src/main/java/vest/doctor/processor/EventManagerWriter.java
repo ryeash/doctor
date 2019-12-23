@@ -1,4 +1,16 @@
-package vest.doctor;
+package vest.doctor.processor;
+
+import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.Async;
+import vest.doctor.BeanProvider;
+import vest.doctor.ClassBuilder;
+import vest.doctor.DoctorProvider;
+import vest.doctor.EventListener;
+import vest.doctor.EventManager;
+import vest.doctor.MethodBuilder;
+import vest.doctor.NewInstanceCustomizer;
+import vest.doctor.ProviderDefinition;
+import vest.doctor.ProviderDependency;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;

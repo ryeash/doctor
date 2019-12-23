@@ -1,17 +1,37 @@
-package vest.doctor;
+package vest.doctor.processor;
+
+import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.AppLoader;
+import vest.doctor.BeanProvider;
+import vest.doctor.ClassBuilder;
+import vest.doctor.ConfigurationFacade;
+import vest.doctor.CustomizationPoint;
+import vest.doctor.DoctorProvider;
+import vest.doctor.EventProducer;
+import vest.doctor.MethodBuilder;
+import vest.doctor.NewInstanceCustomizer;
+import vest.doctor.ParameterLookupCustomizer;
+import vest.doctor.PrimaryProviderWrapper;
+import vest.doctor.Prioritized;
+import vest.doctor.ProcessorConfiguration;
+import vest.doctor.ProviderCustomizationPoint;
+import vest.doctor.ProviderDefinition;
+import vest.doctor.ProviderDefinitionProcessor;
+import vest.doctor.ProviderDependency;
+import vest.doctor.ScopeWriter;
+import vest.doctor.ShutdownContainer;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.inject.Inject;
-import javax.inject.Scope;
-import javax.inject.Singleton;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeMirror;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 import java.io.IOException;
@@ -43,13 +63,13 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
 
     private ProcessingEnvironment processingEnv;
 
+    private final List<TypeElement> annotationsToProcess = new LinkedList<>();
     private final List<ProviderDefinitionProcessor> providerDefinitionProcessors = new LinkedList<>();
     private final Map<Class<? extends Annotation>, ScopeWriter> scopeWriters = new HashMap<>();
-    private final List<ProviderWrappingWriter> wrappingWriters = new LinkedList<>();
-    private final List<ProviderDefinition> providerDefinitions = new LinkedList<>();
+    private final List<ProviderCustomizationPoint> providerCustomizationPoints = new LinkedList<>();
     private final List<NewInstanceCustomizer> newInstanceCustomizers = new LinkedList<>();
     private final List<ParameterLookupCustomizer> parameterLookupCustomizers = new LinkedList<>();
-    private final List<TypeElement> scopesToProcess = new LinkedList<>();
+    private final List<ProviderDefinition> providerDefinitions = new LinkedList<>();
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -60,47 +80,37 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 + processingEnv.getOptions().getOrDefault("doctor.generated.packagename", "$" + ProcessorUtils.uniqueHash());
         APP_LOADER_CLASS_NAME = GENERATED_PACKAGE + ".AppLoaderImpl";
 
-        // add default scopes
-        scopesToProcess.add(processingEnv.getElementUtils().getTypeElement(Prototype.class.getCanonicalName()));
-        scopesToProcess.add(processingEnv.getElementUtils().getTypeElement(Singleton.class.getCanonicalName()));
-        scopesToProcess.add(processingEnv.getElementUtils().getTypeElement(ThreadLocal.class.getCanonicalName()));
-        scopesToProcess.add(processingEnv.getElementUtils().getTypeElement(Cached.class.getCanonicalName()));
-
-        providerDefinitionProcessors.add(new ConstructorProviderDefinitionProcessor());
-        providerDefinitionProcessors.add(new FactoryProviderDefinitionProcessor());
-        for (ProviderDefinitionProcessor providerDefinitionProcessor : ServiceLoader.load(ProviderDefinitionProcessor.class)) {
-            providerDefinitionProcessors.add(providerDefinitionProcessor);
+        loadConf(new DefaultProcessorConfiguration());
+        for (ProcessorConfiguration processorConfiguration : ServiceLoader.load(ProcessorConfiguration.class)) {
+            loadConf(processorConfiguration);
         }
         providerDefinitionProcessors.sort(Prioritized.COMPARATOR);
+        providerCustomizationPoints.sort(Prioritized.COMPARATOR);
+        newInstanceCustomizers.sort(Prioritized.COMPARATOR);
+        parameterLookupCustomizers.sort(Prioritized.COMPARATOR);
+    }
 
-        ScopeWriter singleton = new SingletonScopeWriter();
-        ScopeWriter threadLocal = new ThreadLocalScopeWriter();
-        ScopeWriter cached = new CachedScopeWriter();
-        ScopeWriter prototype = new PrototypeScopeWriter();
-        scopeWriters.put(singleton.scope(), singleton);
-        scopeWriters.put(threadLocal.scope(), threadLocal);
-        scopeWriters.put(cached.scope(), cached);
-        scopeWriters.put(prototype.scope(), prototype);
-        for (ScopeWriter scopeWriter : ServiceLoader.load(ScopeWriter.class)) {
-            if (scopeWriters.containsKey(scopeWriter.scope())) {
-                throw new RuntimeException("error: multiple scopes registered for: " + scopeWriter.scope());
-            }
-            scopeWriters.put(scopeWriter.scope(), scopeWriter);
+    private void loadConf(ProcessorConfiguration processorConfiguration) {
+        for (Class<? extends Annotation> supportedAnnotation : processorConfiguration.supportedAnnotations()) {
+            annotationsToProcess.add(processingEnv.getElementUtils().getTypeElement(supportedAnnotation.getCanonicalName()));
         }
 
-        wrappingWriters.add(new ShutdownWrappingWriter());
-        for (ProviderWrappingWriter providerWrappingWriter : ServiceLoader.load(ProviderWrappingWriter.class)) {
-            wrappingWriters.add(providerWrappingWriter);
-        }
-        wrappingWriters.sort(Prioritized.COMPARATOR);
+        providerDefinitionProcessors.addAll(processorConfiguration.providerDefinitionProcessors());
 
-        newInstanceCustomizers.add(new InjectMethodsCustomizer());
-        newInstanceCustomizers.add(new EventManagerWriter());
-        newInstanceCustomizers.add(new ScheduledMethodCustomizer());
-        parameterLookupCustomizers.add(new PropertyParameterCustomizer());
-        parameterLookupCustomizers.add(new ProviderParameterLookupCustomizer());
-        for (CustomizationPoint customizationPoint : ServiceLoader.load(CustomizationPoint.class)) {
+        for (CustomizationPoint customizationPoint : processorConfiguration.customizationPoints()) {
             boolean known = false;
+            if (customizationPoint instanceof ScopeWriter) {
+                ScopeWriter sw = (ScopeWriter) customizationPoint;
+                if (scopeWriters.containsKey(sw.scope())) {
+                    throw new RuntimeException("error: multiple scopes registered for: " + sw.scope());
+                }
+                scopeWriters.put(sw.scope(), sw);
+                known = true;
+            }
+            if (customizationPoint instanceof ProviderCustomizationPoint) {
+                providerCustomizationPoints.add((ProviderCustomizationPoint) customizationPoint);
+                known = true;
+            }
             if (customizationPoint instanceof NewInstanceCustomizer) {
                 newInstanceCustomizers.add((NewInstanceCustomizer) customizationPoint);
                 known = true;
@@ -113,21 +123,13 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 errorMessage("unhandled customization: " + customizationPoint);
             }
         }
-        newInstanceCustomizers.sort(Prioritized.COMPARATOR);
-        parameterLookupCustomizers.sort(Prioritized.COMPARATOR);
     }
 
     private final Set<Element> processedElements = new HashSet<>();
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        for (TypeElement annotation : annotations) {
-            if (annotation.getAnnotation(Scope.class) != null && !scopesToProcess.contains(annotation)) {
-                scopesToProcess.add(annotation);
-            }
-        }
-
-        Stream.of(scopesToProcess, annotations)
+        Stream.of(annotationsToProcess, annotations)
                 .flatMap(Collection::stream)
                 .map(roundEnv::getElementsAnnotatedWith)
                 .flatMap(Collection::stream)
@@ -165,9 +167,13 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
-        return Stream.of(Singleton.class, ThreadLocal.class, Prototype.class, Cached.class, Factory.class)
-                .map(Class::getCanonicalName)
+        return annotationsToProcess.stream()
+                .map(TypeElement::asType)
+                .map(TypeMirror::toString)
                 .collect(Collectors.toSet());
+//        return Stream.of(Singleton.class, ThreadLocal.class, Prototype.class, Cached.class, Factory.class)
+//                .map(Class::getCanonicalName)
+//                .collect(Collectors.toSet());
     }
 
     private void errorChecking(ProviderDefinition providerDefinition) {
@@ -236,7 +242,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
         ClassBuilder cb = new ClassBuilder();
         cb.addField("private final List<DoctorProvider<?>> eagerList = new ArrayList<>()");
 
-        MethodBuilder mb = new MethodBuilder("public void load(BeanProvider beanProvider)");
+        MethodBuilder load = new MethodBuilder("public void load(BeanProvider beanProvider)");
 
         for (ProviderDefinition providerDefinition : providerDefinitions) {
 
@@ -245,8 +251,8 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
 
             String creator = providerDefinition.initializationCode("beanProvider");
 
-            for (ProviderWrappingWriter wrappingWriter : wrappingWriters) {
-                creator = wrappingWriter.wrap(this, providerDefinition, creator);
+            for (ProviderCustomizationPoint providerCustomizationPoint : providerCustomizationPoints) {
+                creator = providerCustomizationPoint.wrap(this, providerDefinition, creator);
             }
 
             boolean hasModules = !providerDefinition.modules().isEmpty();
@@ -256,7 +262,11 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                         .filter(Objects::nonNull)
                         .map(m -> '"' + m + '"')
                         .collect(Collectors.joining(", ", "(", ")"));
-                mb.line("if(isActive(beanProvider, java.util.Arrays.asList" + modules + ")){");
+                if (providerDefinition.modules().size() == 1) {
+                    load.line("if(isActive(beanProvider, java.util.Collections.singletonList" + modules + ")){");
+                } else {
+                    load.line("if(isActive(beanProvider, java.util.Arrays.asList" + modules + ")){");
+                }
             }
 
             if (providerDefinition.scope() != null) {
@@ -265,20 +275,20 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 if (scopeWriter == null) {
                     throw new IllegalArgumentException("unsupported scope type: " + scopeType);
                 }
-                creator = scopeWriter.wrap(this, providerDefinition, creator);
+                creator = scopeWriter.wrapScope(this, providerDefinition, creator);
             }
-            mb.line(providerDefinition.uniqueInstanceName() + " = " + creator + ";");
-            mb.line("beanProvider.register(" + providerDefinition.uniqueInstanceName() + ");");
+            load.line(providerDefinition.uniqueInstanceName() + " = " + creator + ";");
+            load.line("beanProvider.register(" + providerDefinition.uniqueInstanceName() + ");");
             if (providerDefinition.isPrimary()) {
-                mb.line("beanProvider.register(new " + PrimaryProviderWrapper.class.getCanonicalName() + "(" + providerDefinition.uniqueInstanceName() + "));");
+                load.line("beanProvider.register(new " + PrimaryProviderWrapper.class.getCanonicalName() + "(" + providerDefinition.uniqueInstanceName() + "));");
             }
 
             if (providerDefinition.isEager()) {
-                mb.line("eagerList.add(" + providerDefinition.uniqueInstanceName() + ");");
+                load.line("eagerList.add(" + providerDefinition.uniqueInstanceName() + ");");
             }
 
             if (hasModules) {
-                mb.line("}");
+                load.line("}");
             }
         }
 
@@ -291,7 +301,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 .addImportClass(DoctorProvider.class)
                 .addImportClass(ShutdownContainer.class)
                 .addField("private final ShutdownContainer shutdownContainer = new ShutdownContainer()")
-                .addMethod(mb.finish())
+                .addMethod(load.finish())
                 // call eager providers
                 .addMethod("public void postProcess(BeanProvider beanProvider) { eagerList.stream().filter(Objects::nonNull).forEach(DoctorProvider::get); }")
                 .addMethod("public void close() { shutdownContainer.close(); }")
