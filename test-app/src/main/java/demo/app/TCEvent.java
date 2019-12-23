@@ -22,13 +22,9 @@ public class TCEvent {
         this.producer = producer;
     }
 
-    // TODO: figure out how to avoid the infinite instantiation loop when we post-construct a class that depends on
-    // the EventProducer
-    // possibly throw a compile time error when a class has @EventListeners and has a dependency on EventProvider/Manager
     @Inject
     @Async
-    public void message() throws InterruptedException {
-        Thread.sleep(100);
+    public void message() {
         producer.publish("test");
     }
 

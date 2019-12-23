@@ -61,8 +61,7 @@ public class AppTest extends Assert {
     public void event() throws InterruptedException {
         TCEvent event = doctor.getInstance(TCEvent.class);
         assertTrue(event.eventListened);
-        Thread.sleep(200);
-//        event.message();
+        Thread.sleep(5);
         assertEquals(event.messageReceived, "test");
     }
 
