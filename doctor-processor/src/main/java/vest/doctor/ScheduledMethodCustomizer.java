@@ -23,7 +23,7 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
             return;
         }
 
-        method.line("java.util.concurrent.ScheduledExecutorService ses = " + doctorRef + ".getInstance(java.util.concurrent.ScheduledExecutorService.class, \"" + BuiltInAppLoader.DEFAULT_SCHEDULED_EXECUTOR_NAME + "\");");
+        method.line("java.util.concurrent.ScheduledExecutorService ses = " + doctorRef + ".getInstance(java.util.concurrent.ScheduledExecutorService.class, \"defaultScheduled\");");
         for (ExecutableElement scheduledMethod : scheduledMethods) {
             Scheduled scheduled = scheduledMethod.getAnnotation(Scheduled.class);
             String schedulerMethod;

@@ -26,7 +26,7 @@ public class EventManagerWriter implements NewInstanceCustomizer {
             .addField("private " + ExecutorService.class.getSimpleName() + " executor");
 
     private MethodBuilder init = new MethodBuilder("public void initialize(BeanProvider beanProvider)")
-            .line("executor = beanProvider.getInstance(" + ExecutorService.class.getSimpleName() + ".class, \"" + BuiltInAppLoader.DEFAULT_EXECUTOR_NAME + "\");");
+            .line("executor = beanProvider.getInstance(" + ExecutorService.class.getSimpleName() + ".class, \"default\");");
     private MethodBuilder mb = new MethodBuilder("public void publish(Object event)");
 
     private final Map<ProviderDependency, String> depToField = new HashMap<>();

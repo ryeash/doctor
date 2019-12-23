@@ -37,7 +37,7 @@ public class InjectMethodsCustomizer implements NewInstanceCustomizer {
                 if (executableElement.getAnnotation(Async.class) != null) {
                     if (!executorRef) {
                         executorRef = true;
-                        method.line(ExecutorService.class.getCanonicalName() + " executor = " + doctorRef + ".getInstance(" + ExecutorService.class.getCanonicalName() + ".class, \"" + BuiltInAppLoader.DEFAULT_EXECUTOR_NAME + "\");");
+                        method.line(ExecutorService.class.getCanonicalName() + " executor = " + doctorRef + ".getInstance(" + ExecutorService.class.getCanonicalName() + ".class, \"default\");");
                     }
                     method.line("executor.submit(() -> " + call + ");");
                 } else {
