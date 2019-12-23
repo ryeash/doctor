@@ -2,6 +2,7 @@ package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.Async;
+import vest.doctor.InjectionException;
 import vest.doctor.MethodBuilder;
 import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ProviderDefinition;
@@ -40,12 +41,15 @@ public class InjectMethodsCustomizer implements NewInstanceCustomizer {
             if (targetAnnotations.stream().map(executableElement::getAnnotation).anyMatch(Objects::nonNull)) {
 
                 String call = context.methodCall(providerDefinition, executableElement, instanceRef, doctorRef);
+
                 if (executableElement.getAnnotation(Async.class) != null) {
                     if (!executorRef) {
                         executorRef = true;
                         method.line(ExecutorService.class.getCanonicalName() + " executor = " + doctorRef + ".getInstance(" + ExecutorService.class.getCanonicalName() + ".class, \"default\");");
                     }
-                    method.line("executor.submit(() -> " + call + ");");
+                    method.line("executor.submit(() -> {\ntry {\n" + call
+                            + ";\n} catch(Throwable t) { throw new " + InjectionException.class.getCanonicalName() + "(\"error injecting method\", t); }"
+                            + "});");
                 } else {
                     method.line(call + ";");
                 }

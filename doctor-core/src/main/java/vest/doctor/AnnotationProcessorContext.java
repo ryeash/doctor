@@ -71,7 +71,7 @@ public interface AnnotationProcessorContext {
                     errorMessage("no lookups matched? how did this happen?");
                     return null;
                 })
-                .collect(Collectors.joining(",\n", "(\n", "\n)"));
+                .collect(Collectors.joining(",\n", "(", ")"));
         if (executableElement.getKind() == ElementKind.METHOD) {
             return instanceRef + "." + executableElement.getSimpleName() + parameters;
         } else if (executableElement.getKind() == ElementKind.CONSTRUCTOR) {

@@ -2,6 +2,7 @@ package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ClassBuilder;
+import vest.doctor.InjectionException;
 import vest.doctor.Modules;
 import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ParameterLookupCustomizer;
@@ -122,12 +123,14 @@ public class FactoryMethodProviderDefinition implements ProviderDefinition {
         });
 
         classBuilder.addMethod("public " + providedType().getSimpleName() + " get()", b -> {
+            b.line("try {");
             b.line(container.getQualifiedName() + " container = beanProvider.getProvider(" + container.getQualifiedName() + ".class" + ", " + ProcessorUtils.getQualifier(context, container) + ").get();");
             b.line(providedType().getSimpleName() + " instance = " + context.methodCall(this, factoryMethod, "container", "beanProvider") + ";");
             for (NewInstanceCustomizer customizer : context.newInstanceCustomizers()) {
                 customizer.customize(context, this, b, "instance", "beanProvider");
             }
             b.line("return instance;");
+            b.line("} catch(Throwable t) { throw new " + InjectionException.class.getCanonicalName() + "(\"error instantiating provided type\", t); }");
         });
         classBuilder.writeClass(context.filer());
     }

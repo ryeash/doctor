@@ -2,6 +2,7 @@ package demo.app;
 
 import org.testng.Assert;
 import vest.doctor.ApplicationStartedEvent;
+import vest.doctor.Async;
 import vest.doctor.EventListener;
 import vest.doctor.EventProducer;
 
@@ -24,8 +25,10 @@ public class TCEvent {
     // TODO: figure out how to avoid the infinite instantiation loop when we post-construct a class that depends on
     // the EventProducer
     // possibly throw a compile time error when a class has @EventListeners and has a dependency on EventProvider/Manager
-//    @Inject
-    public void message() {
+    @Inject
+    @Async
+    public void message() throws InterruptedException {
+        Thread.sleep(100);
         producer.publish("test");
     }
 

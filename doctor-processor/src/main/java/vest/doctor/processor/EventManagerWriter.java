@@ -7,6 +7,7 @@ import vest.doctor.ClassBuilder;
 import vest.doctor.DoctorProvider;
 import vest.doctor.EventListener;
 import vest.doctor.EventManager;
+import vest.doctor.InjectionException;
 import vest.doctor.MethodBuilder;
 import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ProviderDefinition;
@@ -39,7 +40,7 @@ public class EventManagerWriter implements NewInstanceCustomizer {
 
     private MethodBuilder init = new MethodBuilder("public void initialize(BeanProvider beanProvider)")
             .line("executor = beanProvider.getInstance(" + ExecutorService.class.getSimpleName() + ".class, \"default\");");
-    private MethodBuilder mb = new MethodBuilder("public void publish(Object event)");
+    private MethodBuilder publish = new MethodBuilder("public void publish(Object event)");
 
     private final Map<ProviderDependency, String> depToField = new HashMap<>();
 
@@ -63,20 +64,26 @@ public class EventManagerWriter implements NewInstanceCustomizer {
                 return n;
             });
 
-            mb.line("if(event instanceof " + messageType + ") {");
+            publish.line("if(event instanceof " + messageType + ") {");
             if (listener.getAnnotation(Async.class) != null) {
-                mb.line("executor.submit(() -> " + fieldName + ".get()." + listener.getSimpleName() + "((" + messageType + ") event));");
+                publish.line("executor.submit(() -> " + methodCall(fieldName, listener.getSimpleName().toString(), messageType.toString()));
             } else {
-                mb.line(fieldName + ".get()." + listener.getSimpleName() + "((" + messageType + ") event);");
+                publish.line(methodCall(fieldName, listener.getSimpleName().toString(), messageType.toString()));
             }
-            mb.line("}");
+            publish.line("}");
         }
+
+    }
+
+    private String methodCall(String fieldName, String method, String messageType) {
+        return "try { " + fieldName + ".get()." + method + "((" + messageType + ") event);" + "} " +
+                "catch(Throwable t) { throw new " + InjectionException.class.getCanonicalName() + "(\"error calling event listener\", t); }";
     }
 
     @Override
     public void finish(AnnotationProcessorContext context) {
         cb.addMethod(init.finish());
-        cb.addMethod(mb.finish());
+        cb.addMethod(publish.finish());
         cb.writeClass(context.filer());
 
         try {
