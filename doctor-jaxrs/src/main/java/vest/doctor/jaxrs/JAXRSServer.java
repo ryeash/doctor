@@ -54,7 +54,7 @@ public class JAXRSServer extends WebSocketServlet implements WebSocketCreator, A
     private final JaxrsConfiguration jaxrsConfiguration;
     private final Map<String, Object> pathToWebsocket;
 
-    private Server server;
+    private final Server server;
 
     public JAXRSServer(BeanProvider beanProvider) {
         this.jaxrsConfiguration = new JaxrsConfiguration(beanProvider.configuration());

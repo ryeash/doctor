@@ -11,7 +11,7 @@ public class TCCloseable implements AutoCloseable {
     public static boolean closed = false;
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         closed = true;
     }
 }

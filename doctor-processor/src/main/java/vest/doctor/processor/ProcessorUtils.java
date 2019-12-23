@@ -89,8 +89,6 @@ public class ProcessorUtils {
         context.processingEnvironment().getElementUtils().getElementValuesWithDefaults(annotationMirror)
                 .forEach((method, value) -> methodToValue.computeIfAbsent(method.getSimpleName().toString(), name -> annotationString(context, value)));
 
-
-        Map<? extends ExecutableElement, ? extends AnnotationValue> values = context.processingEnvironment().getElementUtils().getElementValuesWithDefaults(annotationMirror);
         String valuesString = methodToValue.entrySet()
                 .stream()
                 .sorted(Map.Entry.comparingByKey())

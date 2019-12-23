@@ -29,9 +29,9 @@ public class EventManagerWriter implements NewInstanceCustomizer {
 
     private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
-    private ClassBuilder cb;
-    private MethodBuilder init;
-    private MethodBuilder publish;
+    private final ClassBuilder cb;
+    private final MethodBuilder init;
+    private final MethodBuilder publish;
 
     private final Map<ProviderDependency, String> depToField = new HashMap<>();
 

@@ -26,7 +26,7 @@ public class TCProperties {
         Assert.assertTrue(bool);
         Assert.assertTrue(primBool);
         Assert.assertEquals(optionalString.get(), "value");
-        Assert.assertEquals((int) otherThing.orElse(-1), (int) -1);
+        Assert.assertEquals((int) otherThing.orElse(-1), -1);
     }
 
     @Inject
