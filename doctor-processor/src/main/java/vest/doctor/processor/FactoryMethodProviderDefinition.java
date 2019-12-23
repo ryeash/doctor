@@ -32,7 +32,7 @@ public class FactoryMethodProviderDefinition implements ProviderDefinition {
         this.context = context;
         this.container = container;
         this.factoryMethod = factoryMethod;
-        this.generatedClass = JSR311Processor.GENERATED_PACKAGE + "." + providedType().getSimpleName() + "__factoryProvider" + context.nextId();
+        this.generatedClass = context.generatedPackage() + "." + providedType().getSimpleName() + "__factoryProvider" + context.nextId();
         this.uniqueName = "inst" + context.nextId();
     }
 

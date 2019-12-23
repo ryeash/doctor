@@ -23,6 +23,8 @@ public interface AnnotationProcessorContext {
         return processingEnvironment().getMessager();
     }
 
+    String generatedPackage();
+
     default void infoMessage(String message) {
         messager().printMessage(Diagnostic.Kind.NOTE, message);
     }

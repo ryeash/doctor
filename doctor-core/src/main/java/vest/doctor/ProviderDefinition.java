@@ -64,6 +64,5 @@ public interface ProviderDefinition {
 
     String initializationCode(String doctorRef);
 
-    // TODO: try to remove necessity
     String uniqueInstanceName();
 }

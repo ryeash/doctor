@@ -28,21 +28,24 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class EventManagerWriter implements NewInstanceCustomizer {
 
     private static final AtomicInteger COUNTER = new AtomicInteger(0);
-    private static final String EVENT_MANAGER_CLASS_NAME = JSR311Processor.GENERATED_PACKAGE + ".EventManagerImpl";
 
-    private ClassBuilder cb = new ClassBuilder()
-            .setClassName(EVENT_MANAGER_CLASS_NAME)
-            .addImplementsInterface(EventManager.class)
-            .addImportClass(BeanProvider.class)
-            .addImportClass(DoctorProvider.class)
-            .addImportClass(ExecutorService.class)
-            .addField("private " + ExecutorService.class.getSimpleName() + " executor");
-
-    private MethodBuilder init = new MethodBuilder("public void initialize(BeanProvider beanProvider)")
-            .line("executor = beanProvider.getInstance(" + ExecutorService.class.getSimpleName() + ".class, \"default\");");
-    private MethodBuilder publish = new MethodBuilder("public void publish(Object event)");
+    private ClassBuilder cb;
+    private MethodBuilder init;
+    private MethodBuilder publish;
 
     private final Map<ProviderDependency, String> depToField = new HashMap<>();
+
+    public EventManagerWriter() {
+        this.cb = new ClassBuilder()
+                .addImplementsInterface(EventManager.class)
+                .addImportClass(BeanProvider.class)
+                .addImportClass(DoctorProvider.class)
+                .addImportClass(ExecutorService.class)
+                .addField("private " + ExecutorService.class.getSimpleName() + " executor");
+        init = new MethodBuilder("public void initialize(BeanProvider beanProvider)")
+                .line("executor = beanProvider.getInstance(" + ExecutorService.class.getSimpleName() + ".class, \"default\");");
+        publish = new MethodBuilder("public void publish(Object event)");
+    }
 
     @Override
     public void customize(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String doctorRef) {
@@ -82,6 +85,8 @@ public class EventManagerWriter implements NewInstanceCustomizer {
 
     @Override
     public void finish(AnnotationProcessorContext context) {
+        String className = context.generatedPackage() + ".EventManagerImpl";
+        cb.setClassName(className);
         cb.addMethod(init.finish());
         cb.addMethod(publish.finish());
         cb.writeClass(context.filer());
@@ -89,7 +94,7 @@ public class EventManagerWriter implements NewInstanceCustomizer {
         try {
             FileObject sourceFile = context.filer().createResource(StandardLocation.CLASS_OUTPUT, "", "META-INF/services/" + EventManager.class.getCanonicalName());
             try (PrintWriter out = new PrintWriter(sourceFile.openWriter())) {
-                out.println(EVENT_MANAGER_CLASS_NAME);
+                out.println(className);
             }
         } catch (IOException e) {
             context.errorMessage("error writing services resources");

@@ -55,14 +55,10 @@ import java.util.stream.Stream;
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 public class JSR311Processor extends AbstractProcessor implements AnnotationProcessorContext {
 
-    // TODO: move these to instance methods and expose via methods
-    public static String GENERATED_PACKAGE;
-    public static String APP_LOADER_CLASS_NAME;
-
     private static final AtomicInteger idGenerator = new AtomicInteger();
 
     private ProcessingEnvironment processingEnv;
-
+    private String generatedPackage;
     private final List<TypeElement> annotationsToProcess = new LinkedList<>();
     private final List<ProviderDefinitionProcessor> providerDefinitionProcessors = new LinkedList<>();
     private final Map<Class<? extends Annotation>, ScopeWriter> scopeWriters = new HashMap<>();
@@ -76,9 +72,8 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
         super.init(processingEnv);
         this.processingEnv = processingEnv;
 
-        GENERATED_PACKAGE = "vest.doctor.generated."
+        this.generatedPackage = "vest.doctor.generated."
                 + processingEnv.getOptions().getOrDefault("doctor.generated.packagename", "$" + ProcessorUtils.uniqueHash());
-        APP_LOADER_CLASS_NAME = GENERATED_PACKAGE + ".AppLoaderImpl";
 
         loadConf(new DefaultProcessorConfiguration());
         for (ProcessorConfiguration processorConfiguration : ServiceLoader.load(ProcessorConfiguration.class)) {
@@ -171,9 +166,6 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 .map(TypeElement::asType)
                 .map(TypeMirror::toString)
                 .collect(Collectors.toSet());
-//        return Stream.of(Singleton.class, ThreadLocal.class, Prototype.class, Cached.class, Factory.class)
-//                .map(Class::getCanonicalName)
-//                .collect(Collectors.toSet());
     }
 
     private void errorChecking(ProviderDefinition providerDefinition) {
@@ -190,6 +182,11 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     @Override
     public ProcessingEnvironment processingEnvironment() {
         return processingEnv;
+    }
+
+    @Override
+    public String generatedPackage() {
+        return generatedPackage;
     }
 
     @Override
@@ -292,7 +289,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
             }
         }
 
-        cb.setClassName(APP_LOADER_CLASS_NAME)
+        cb.setClassName(generatedPackage + ".AppLoaderImpl")
                 .addImplementsInterface(AppLoader.class)
                 .addImportClass(List.class)
                 .addImportClass(ArrayList.class)
@@ -312,7 +309,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
         try {
             FileObject sourceFile = filer().createResource(StandardLocation.CLASS_OUTPUT, "", "META-INF/services/vest.doctor.AppLoader");
             try (PrintWriter out = new PrintWriter(sourceFile.openWriter())) {
-                out.println(APP_LOADER_CLASS_NAME);
+                out.println(generatedPackage + ".AppLoaderImpl");
             }
         } catch (IOException e) {
             errorMessage("error writing services resources");

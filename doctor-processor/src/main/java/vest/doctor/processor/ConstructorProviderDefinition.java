@@ -34,7 +34,7 @@ public class ConstructorProviderDefinition implements ProviderDefinition {
     public ConstructorProviderDefinition(AnnotationProcessorContext context, TypeElement providedType) {
         this.context = context;
         this.providedType = providedType;
-        this.generatedClassName = JSR311Processor.GENERATED_PACKAGE + "." + providedType.getSimpleName() + "__constructorProvider" + context.nextId();
+        this.generatedClassName = context.generatedPackage() + "." + providedType.getSimpleName() + "__constructorProvider" + context.nextId();
 
         int injectMarked = 0;
         LinkedList<ExecutableElement> injectable = new LinkedList<>();
