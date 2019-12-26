@@ -150,7 +150,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
             for (ProviderDefinitionProcessor providerDefinitionProcessor : providerDefinitionProcessors) {
                 providerDefinitionProcessor.finish(this);
             }
-            Stream.of(newInstanceCustomizers, parameterLookupCustomizers)
+            Stream.of(newInstanceCustomizers, parameterLookupCustomizers, providerCustomizationPoints)
                     .flatMap(Collection::stream)
                     .forEach(c -> c.finish(this));
             compileTimeDependencyCheck();
