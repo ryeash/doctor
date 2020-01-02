@@ -5,6 +5,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import vest.doctor.BeanProvider;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
@@ -24,6 +25,11 @@ public class FileServlet implements Route {
             throw new IllegalArgumentException("not a directory " + baseDir);
         }
         this.pathParam = pathParam;
+    }
+
+    @Override
+    public void init(BeanProvider beanProvider) {
+
     }
 
     @Override

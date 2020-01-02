@@ -25,6 +25,7 @@ public class AppTest extends Assert {
     Doctor doctor = Doctor.load(DefaultConfigurationFacade.defaultConfigurationFacade()
             .addSource(new MapConfigurationSource(
                     "jaxrs.bind", "localhost:8080",
+                    "doctor.netty.bind", "localhost:8081",
                     "jersey.config.server.tracing.type", "ALL",
                     "jersey.config.server.tracing.threshold", "VERBOSE")));
 
@@ -187,7 +188,7 @@ public class AppTest extends Assert {
                 .accept("application/json")
                 .contentType("application/json")
                 .get("/rest/goodbye")
-                .prettyPeek()
+//                .prettyPeek()
                 .then()
                 .statusCode(200)
                 .body("message", is("goodbye"))
@@ -198,11 +199,21 @@ public class AppTest extends Assert {
                 .accept("application/json")
                 .contentType("application/json")
                 .get("/rest/admin/ok")
-                .prettyPeek()
+//                .prettyPeek()
                 .then()
                 .statusCode(200)
                 .body("message", is("ok"))
                 .header("X-Before", is("true"))
                 .header("X-After", is("true"));
+    }
+
+    @Test
+    public void netty() {
+        RestAssured.baseURI = "http://localhost:8081/";
+        RestAssured.given()
+                .accept("application/json")
+                .contentType("application/json")
+                .get("/netty/hello")
+                .prettyPeek();
     }
 }

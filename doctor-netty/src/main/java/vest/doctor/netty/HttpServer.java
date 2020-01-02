@@ -19,7 +19,6 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.concurrent.DefaultThreadFactory;
 
-import javax.xml.ws.spi.http.HttpHandler;
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
@@ -52,6 +51,7 @@ public class HttpServer extends ChannelInitializer<SocketChannel> implements Aut
 
             this.serverChannels = new LinkedList<>();
             for (InetSocketAddress inetSocketAddress : config.getListenAddresses()) {
+                System.out.println("netty binding to " + inetSocketAddress);
                 serverChannels.add(b.bind(inetSocketAddress).channel());
             }
         } catch (Exception e) {
@@ -69,7 +69,7 @@ public class HttpServer extends ChannelInitializer<SocketChannel> implements Aut
             try {
                 serverChannel.close().sync();
             } catch (InterruptedException e) {
-                log.trace("ignored", e);
+//                log.trace("ignored", e);
             }
         }
         workerGroup.shutdownGracefully();
@@ -78,6 +78,10 @@ public class HttpServer extends ChannelInitializer<SocketChannel> implements Aut
 
     @Override
     protected void initChannel(SocketChannel ch) {
+        if (httpHandler == null) {
+            throw new IllegalStateException("no handler has been found");
+        }
+
         ChannelPipeline p = ch.pipeline();
         if (config.getSslContext() != null) {
             p.addLast(config.getSslContext().newHandler(ch.alloc()));

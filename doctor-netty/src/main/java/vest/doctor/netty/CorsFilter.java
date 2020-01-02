@@ -3,6 +3,7 @@ package vest.doctor.netty;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import vest.doctor.BeanProvider;
 
 import java.util.Objects;
 
@@ -27,6 +28,11 @@ public class CorsFilter implements Route {
         this.exposeHeaders = exposeHeaders;
         this.corsMaxAge = corsMaxAge;
         this.allowCookies = allowCookies;
+    }
+
+    @Override
+    public void init(BeanProvider beanProvider) {
+
     }
 
     @Override

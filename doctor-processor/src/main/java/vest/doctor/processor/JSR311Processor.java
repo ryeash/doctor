@@ -24,6 +24,7 @@ import vest.doctor.ShutdownContainer;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
+import javax.annotation.processing.SupportedOptions;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.inject.Inject;
 import javax.lang.model.SourceVersion;
@@ -53,7 +54,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
+@SupportedOptions({JSR311Processor.PACKAGE_NAME_OPTION})
 public class JSR311Processor extends AbstractProcessor implements AnnotationProcessorContext {
+
+    public static final String PACKAGE_NAME_OPTION = "doctor.generated.packagename";
 
     private static final AtomicInteger idGenerator = new AtomicInteger();
 
@@ -73,10 +77,10 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
         this.processingEnv = processingEnv;
 
         this.generatedPackage = "vest.doctor.generated."
-                + processingEnv.getOptions().getOrDefault("doctor.generated.packagename", "$" + ProcessorUtils.uniqueHash());
+                + processingEnv.getOptions().getOrDefault(PACKAGE_NAME_OPTION, "$" + ProcessorUtils.uniqueHash());
 
         loadConf(new DefaultProcessorConfiguration());
-        for (ProcessorConfiguration processorConfiguration : ServiceLoader.load(ProcessorConfiguration.class)) {
+        for (ProcessorConfiguration processorConfiguration : ServiceLoader.load(ProcessorConfiguration.class, JSR311Processor.class.getClassLoader())) {
             loadConf(processorConfiguration);
         }
         providerDefinitionProcessors.sort(Prioritized.COMPARATOR);
@@ -150,12 +154,12 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
             for (ProviderDefinitionProcessor providerDefinitionProcessor : providerDefinitionProcessors) {
                 providerDefinitionProcessor.finish(this);
             }
+            writeAppLoaderImplementation();
             Stream.of(newInstanceCustomizers, parameterLookupCustomizers, providerCustomizationPoints)
                     .flatMap(Collection::stream)
                     .forEach(c -> c.finish(this));
-            compileTimeDependencyCheck();
-            writeAppLoaderImplementation();
             writeServicesResource();
+            compileTimeDependencyCheck();
         }
         return true;
     }
