@@ -13,7 +13,6 @@ public class NettyProcessorConfiguration implements ProcessorConfiguration {
     @Override
     public List<Class<? extends Annotation>> supportedAnnotations() {
         return Collections.emptyList();
-//        return Collections.singletonList(Path.class);
     }
 
     @Override

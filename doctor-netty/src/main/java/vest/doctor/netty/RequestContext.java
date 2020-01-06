@@ -300,17 +300,17 @@ public class RequestContext {
     }
 
     /**
-     * Attach an affix to this RequestContext. An affix is an arbitrary object that can be carried through filters and routes
-     * to share arbitrary state.
+     * Attach an attribute to this RequestContext. An attribute is an arbitrary object that can be carried through filters and routes
+     * to share request state.
      *
-     * @param name  The name of the affix
-     * @param affix The object to affix
+     * @param name      The name of the attribute
+     * @param attribute The object to attach to the request
      */
-    public void attribute(String name, Object affix) {
+    public void attribute(String name, Object attribute) {
         if (attributes == null) {
             attributes = new HashMap<>();
         }
-        attributes.put(name, affix);
+        attributes.put(name, attribute);
     }
 
     /**
@@ -450,7 +450,7 @@ public class RequestContext {
         if (body != null) {
             responseBody(body.getBytes(charset));
         } else {
-            responseBody("");
+            responseBody(Unpooled.EMPTY_BUFFER);
         }
     }
 
@@ -523,7 +523,7 @@ public class RequestContext {
                 "\nResponseHeaders: " + responseHeaders +
                 "\nResponseBody: " + responseBody +
                 "\nHalted: " + halted +
-                "\nAffixes: " + attributes;
+                "\nAttribute: " + attributes;
     }
 
     /**

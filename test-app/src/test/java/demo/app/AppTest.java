@@ -1,5 +1,7 @@
 package demo.app;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -10,6 +12,7 @@ import vest.doctor.Doctor;
 import vest.doctor.MapConfigurationSource;
 
 import javax.inject.Provider;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -208,12 +211,37 @@ public class AppTest extends Assert {
     }
 
     @Test
-    public void netty() {
+    public void netty() throws JsonProcessingException {
         RestAssured.baseURI = "http://localhost:8081/";
         RestAssured.given()
                 .accept("application/json")
                 .contentType("application/json")
+                .queryParam("number", 42)
+                .queryParam("q", "queryparam")
                 .get("/netty/hello")
+                .prettyPeek()
+                .then()
+                .statusCode(200)
+                .body(is("ok queryparam 42 42"));
+
+        RestAssured.given()
+                .accept("application/json")
+                .contentType("application/json")
+                .get("/netty/usingr")
+                .prettyPeek()
+                .then()
+                .statusCode(200)
+                .header("used-r", is("true"))
+                .body(is("R"));
+
+        Person p = new Person();
+        p.setName("herman");
+        p.setAddress("hermitage");
+        RestAssured.given()
+                .accept("application/json")
+                .contentType("application/json")
+                .body(new ObjectMapper().writeValueAsBytes(Collections.singletonList(p)))
+                .post("/netty/pojo")
                 .prettyPeek();
     }
 }

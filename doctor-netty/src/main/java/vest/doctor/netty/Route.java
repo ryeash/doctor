@@ -8,8 +8,4 @@ public interface Route {
 
     void accept(RequestContext requestContext) throws Exception;
 
-    default int priority() {
-        return 1000;
-    }
-
 }

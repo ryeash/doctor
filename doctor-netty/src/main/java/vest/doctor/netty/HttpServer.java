@@ -18,6 +18,8 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.concurrent.DefaultThreadFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
@@ -26,6 +28,7 @@ import java.util.Objects;
 
 @ChannelHandler.Sharable
 public class HttpServer extends ChannelInitializer<SocketChannel> implements AutoCloseable {
+    private static Logger log = LoggerFactory.getLogger(HttpServer.class);
 
     private final NettyConfiguration config;
     private final EventLoopGroup bossGroup;
@@ -51,7 +54,7 @@ public class HttpServer extends ChannelInitializer<SocketChannel> implements Aut
 
             this.serverChannels = new LinkedList<>();
             for (InetSocketAddress inetSocketAddress : config.getListenAddresses()) {
-                System.out.println("netty binding to " + inetSocketAddress);
+                log.info("netty http server binding to {}", inetSocketAddress);
                 serverChannels.add(b.bind(inetSocketAddress).channel());
             }
         } catch (Exception e) {

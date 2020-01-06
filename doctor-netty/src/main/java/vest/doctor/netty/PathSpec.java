@@ -1,5 +1,7 @@
 package vest.doctor.netty;
 
+import io.netty.handler.codec.http.HttpMethod;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -14,11 +16,13 @@ public class PathSpec implements Comparable<PathSpec> {
     private static final Pattern SPLAT_PARAM_PATTERN = Pattern.compile("/\\*");
     private static final String DEFAULT_PARAM_REGEX = "[^/]+?";
 
+    private final HttpMethod method;
     private final String path;
     private final List<String> paramNames;
     private final Pattern pattern;
 
-    public PathSpec(String path) {
+    public PathSpec(String method, String path) {
+        this.method = HttpMethod.valueOf(method);
         if (path.isEmpty()) {
             throw new IllegalArgumentException("the route path may not be empty");
         }
@@ -52,6 +56,10 @@ public class PathSpec implements Comparable<PathSpec> {
         builder.append(temp, i, temp.length());
 
         this.pattern = Pattern.compile(builder.toString());
+    }
+
+    public HttpMethod method() {
+        return method;
     }
 
     public String getPath() {
