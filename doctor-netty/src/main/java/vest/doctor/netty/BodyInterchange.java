@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -47,23 +48,16 @@ public final class BodyInterchange {
                 return reader.read(ctx, type, genericTypes);
             }
         }
-        throw new UnsupportedOperationException("unsupported request body type: " + type);
+        throw new UnsupportedOperationException("unsupported request body type: " + type + " paramaterizedTypes: " + Arrays.toString(genericTypes));
     }
 
     public void write(RequestContext ctx, Object response) {
-        if (response instanceof CompletableFuture) {
-            ((CompletableFuture<?>) response).whenComplete((value, error) -> {
-                if (error != null) {
-                    ctx.complete(error);
-                } else {
-                    write(ctx, value);
-                }
-            });
+        if (response == null) {
+            ctx.responseBody(Unpooled.EMPTY_BUFFER);
+        } else if (response instanceof CompletableFuture) {
+            write(ctx, (CompletableFuture<?>) response);
         } else if (response instanceof R) {
-            R r = (R) response;
-            ctx.responseStatus(r.status());
-            r.headers().forEach(ctx.responseHeaders()::set);
-            write(ctx, r.body());
+            write(ctx, (R) response);
         } else {
             for (BodyWriter writer : writers) {
                 if (writer.handles(ctx, response)) {
@@ -74,6 +68,30 @@ public final class BodyInterchange {
             }
             throw new UnsupportedOperationException("unsupported response type: " + response.getClass());
         }
+    }
+
+    public void write(RequestContext ctx, CompletableFuture<?> response) {
+        if (response == null) {
+            ctx.responseBody(Unpooled.EMPTY_BUFFER);
+            return;
+        }
+        response.whenComplete((value, error) -> {
+            if (error != null) {
+                ctx.complete(error);
+            } else {
+                write(ctx, value);
+            }
+        });
+    }
+
+    public void write(RequestContext ctx, R response) {
+        if (response == null) {
+            ctx.responseBody(Unpooled.EMPTY_BUFFER);
+            return;
+        }
+        ctx.responseStatus(response.status());
+        response.headers().forEach(ctx.responseHeaders()::set);
+        write(ctx, response.body());
     }
 
     private static final class DefaultReader implements BodyReader {

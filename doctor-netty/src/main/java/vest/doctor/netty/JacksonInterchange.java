@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.type.TypeBindings;
+import io.netty.handler.codec.http.HttpHeaderNames;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -55,6 +56,9 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
     public void write(RequestContext ctx, Object response) {
         try {
             ctx.responseBody(objectMapper.writeValueAsBytes(response));
+            if (!ctx.responseHeaders().contains(HttpHeaderNames.CONTENT_TYPE)) {
+                ctx.responseHeaders().set(HttpHeaderNames.CONTENT_TYPE, "application/json;charset=utf-8");
+            }
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }
