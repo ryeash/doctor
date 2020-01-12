@@ -138,6 +138,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                     for (ProviderDefinitionProcessor providerDefinitionProcessor : providerDefinitionProcessors) {
                         ProviderDefinition provDef = providerDefinitionProcessor.process(this, annotatedElement);
                         if (provDef != null) {
+                            provDef.writeProvider();
                             errorChecking(provDef);
                             claimed = true;
                             typesToDependencies.computeIfAbsent(provDef.asDependency(), d -> new HashSet<>());

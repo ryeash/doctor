@@ -18,9 +18,7 @@ public class FactoryProviderDefinitionProcessor implements ProviderDefinitionPro
             if (ProcessorUtils.getScope(context, element.getEnclosingElement()) == null) {
                 context.errorMessage("classes with @Factory methods must have a scope; it is recommended to use @Singleton: " + ProcessorUtils.debugString(element.getEnclosingElement()));
             }
-            FactoryMethodProviderDefinition provDef = new FactoryMethodProviderDefinition(context, (TypeElement) element.getEnclosingElement(), (ExecutableElement) element);
-            provDef.writeProvider();
-            return provDef;
+            return new FactoryMethodProviderDefinition(context, (TypeElement) element.getEnclosingElement(), (ExecutableElement) element);
         }
         return null;
     }

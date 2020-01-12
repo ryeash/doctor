@@ -16,9 +16,7 @@ public class ConstructorProviderDefinitionProcessor implements ProviderDefinitio
             if (!element.getModifiers().contains(Modifier.PUBLIC) || element.getModifiers().contains(Modifier.ABSTRACT)) {
                 context.errorMessage("injectable classes must be public and may not be abstract: " + ProcessorUtils.debugString(element));
             }
-            ConstructorProviderDefinition provDef = new ConstructorProviderDefinition(context, (TypeElement) element);
-            provDef.writeProvider();
-            return provDef;
+            return new ConstructorProviderDefinition(context, (TypeElement) element);
         }
         return null;
     }
