@@ -51,6 +51,12 @@
             <version>4.1.1</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty.websocket</groupId>
+            <artifactId>websocket-client</artifactId>
+            <version>9.4.24.v20191120</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
 </project>

@@ -62,7 +62,7 @@ public class HttpServer extends ChannelInitializer<SocketChannel> implements Aut
         }
     }
 
-    public void setRequestHandler(Route requestHandler) {
+    public void setRequestHandler(Router requestHandler) {
         this.httpHandler = new HttpHandler(config, Objects.requireNonNull(requestHandler, "request handler may not be null"));
     }
 

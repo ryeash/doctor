@@ -3,6 +3,14 @@ package demo.app;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
@@ -12,12 +20,16 @@ import vest.doctor.Doctor;
 import vest.doctor.MapConfigurationSource;
 
 import javax.inject.Provider;
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -243,5 +255,66 @@ public class AppTest extends Assert {
                 .body(new ObjectMapper().writeValueAsBytes(Collections.singletonList(p)))
                 .post("/netty/pojo")
                 .prettyPeek();
+    }
+
+
+    @Test
+    public void ws() throws Exception {
+        String destUri = "ws://localhost:8081/grumpy";
+        WebSocketClient client = new WebSocketClient();
+        try {
+            client.start();
+
+            URI echoUri = new URI(destUri);
+            SimpleEchoSocket socket = new SimpleEchoSocket();
+            ClientUpgradeRequest request = new ClientUpgradeRequest();
+            client.connect(socket, echoUri, request);
+            System.out.println("Connecting to : " + echoUri);
+            assertTrue(socket.awaitClose(5, TimeUnit.SECONDS));
+        } finally {
+            client.stop();
+        }
+    }
+
+    @WebSocket(maxTextMessageSize = 64 * 1024)
+    public class SimpleEchoSocket {
+        private final CountDownLatch closeLatch;
+        @SuppressWarnings("unused")
+        private Session session;
+
+        public SimpleEchoSocket() {
+            this.closeLatch = new CountDownLatch(1);
+        }
+
+        public boolean awaitClose(int duration, TimeUnit unit) throws InterruptedException {
+            System.out.println("in await " + closeLatch.getCount());
+            return this.closeLatch.await(duration, unit);
+        }
+
+        @OnWebSocketClose
+        public void onClose(int statusCode, String reason) {
+            this.session = null;
+            this.closeLatch.countDown();
+            System.out.println("Connection closed: " + statusCode + " - " + reason);
+        }
+
+        @OnWebSocketConnect
+        public void onConnect(Session session) throws InterruptedException, ExecutionException, TimeoutException {
+            System.out.println("Got connect: " + session);
+            this.session = session;
+            Future<Void> fut = session.getRemote().sendStringByFuture("I'm a test");
+            fut.get(2, TimeUnit.SECONDS);
+            System.out.println("send complete");
+        }
+
+        @OnWebSocketMessage
+        public void onMessage(String msg) {
+            System.out.println("Got msg: " + msg);
+        }
+
+        @OnWebSocketError
+        public void onError(Throwable t) {
+            t.printStackTrace();
+        }
     }
 }

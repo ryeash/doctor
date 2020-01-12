@@ -19,6 +19,7 @@ import javax.tools.StandardLocation;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
 public class RouterWriter implements ProviderCustomizationPoint {
 
     private final ClassBuilder routerBuilder = new ClassBuilder()
-            .addImplementsInterface(Route.class)
+            .addImplementsInterface(Router.class)
             .addImportClass(BeanProvider.class)
             .addImportClass(PathSpec.class)
             .addImportClass(Map.class)
@@ -40,7 +41,10 @@ public class RouterWriter implements ProviderCustomizationPoint {
             .addImportClass(BodyInterchange.class)
             .addImportClass(FilterStage.class)
             .addImportClass(HttpException.class)
-            .addImportClass(RequestContext.class);
+            .addImportClass(RequestContext.class)
+            .addImportClass(Websocket.class)
+            .addImportClass(HashMap.class);
+
     private final MethodBuilder init = new MethodBuilder("public void init(BeanProvider beanProvider)");
     private final MethodBuilder accept = new MethodBuilder("public void accept(RequestContext ctx) throws Exception");
     private final MethodBuilder filter = new MethodBuilder("public void filter(FilterStage filterStage, RequestContext ctx)");
@@ -90,6 +94,13 @@ public class RouterWriter implements ProviderCustomizationPoint {
                             }
                         }
                     });
+
+            if (providerDefinition.isCompatibleWith(Websocket.class)) {
+                for (String path : roots) {
+                    ProviderDependency providerDependency = providerDefinition.asDependency();
+                    init.line("websockets.put(\"" + Utils.squeeze("/" + path, '/') + "\", beanProvider.getProvider(" + providerDependency.type().getQualifiedName() + ".class, " + providerDependency.qualifier() + ").get());");
+                }
+            }
         }
         // unchanged
         return providerRef;
@@ -182,11 +193,15 @@ public class RouterWriter implements ProviderCustomizationPoint {
         routerBuilder.addMethod(init.finish());
         routerBuilder.addMethod(accept.finish());
         routerBuilder.addMethod(filter.finish());
+        routerBuilder.addField("private final Map<String, Websocket> websockets = new HashMap<>()")
+                .addMethod("public Websocket getWebsocket(String uri)", mb -> {
+                    mb.line("return websockets.get(uri);");
+                });
         routerBuilder.setClassName(context.generatedPackage() + ".RouterImpl");
         routerBuilder.writeClass(context.filer());
 
         try {
-            FileObject sourceFile = context.filer().createResource(StandardLocation.CLASS_OUTPUT, "", "META-INF/services/vest.doctor.netty.Route");
+            FileObject sourceFile = context.filer().createResource(StandardLocation.CLASS_OUTPUT, "", "META-INF/services/vest.doctor.netty.Router");
             try (PrintWriter out = new PrintWriter(sourceFile.openWriter())) {
                 out.println(context.generatedPackage() + ".RouterImpl");
             }

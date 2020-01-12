@@ -12,9 +12,9 @@ public class NettyLoader implements AppLoader {
     @Override
     public void postProcess(BeanProvider beanProvider) {
         this.server = new HttpServer(new NettyConfiguration(beanProvider.configuration()));
-        for (Route route : ServiceLoader.load(Route.class, NettyLoader.class.getClassLoader())) {
-            route.init(beanProvider);
-            server.setRequestHandler(route);
+        for (Router router : ServiceLoader.load(Router.class, NettyLoader.class.getClassLoader())) {
+            router.init(beanProvider);
+            server.setRequestHandler(router);
             break;
         }
     }

@@ -17,7 +17,7 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<WebSocketFrame
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, WebSocketFrame frame) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, WebSocketFrame frame) {
         if (websocket == null) {
             ctx.close();
         }

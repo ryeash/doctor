@@ -65,4 +65,14 @@ public interface ProviderDefinition {
     String initializationCode(String doctorRef);
 
     String uniqueInstanceName();
+
+    default boolean isCompatibleWith(Class<?> type) {
+        String str = type.getCanonicalName();
+        for (TypeElement typeElement : hierarchy()) {
+            if (typeElement.asType().toString().equals(str)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

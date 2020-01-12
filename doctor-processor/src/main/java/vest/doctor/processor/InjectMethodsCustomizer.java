@@ -34,7 +34,7 @@ public class InjectMethodsCustomizer implements NewInstanceCustomizer {
         if (providerDefinition.isSkipInjection()) {
             return;
         }
-        TypeElement typeElement = context.processingEnvironment().getElementUtils().getTypeElement(providerDefinition.providedType().getQualifiedName());
+        TypeElement typeElement = providerDefinition.providedType();
 
         boolean executorRef = false;
         for (ExecutableElement executableElement : ElementFilter.methodsIn(context.processingEnvironment().getElementUtils().getAllMembers(typeElement))) {

@@ -21,12 +21,12 @@ import static io.netty.channel.ChannelHandler.Sharable;
 public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private final static Logger log = LoggerFactory.getLogger(HttpHandler.class);
     private final NettyConfiguration config;
-    private final Route requestHandler;
+    private final Router router;
 
-    public HttpHandler(NettyConfiguration config, Route requestHandler) {
+    public HttpHandler(NettyConfiguration config, Router router) {
         super();
         this.config = config;
-        this.requestHandler = requestHandler;
+        this.router = router;
     }
 
     @Override
@@ -51,17 +51,16 @@ public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
         if (upgradeHeader != null) {
             if (HttpHeaderValues.WEBSOCKET.contentEqualsIgnoreCase(upgradeHeader)) {
                 handleWebsocketUpgrade(ctx, request, requestContext);
-                return;
             } else {
                 // if a request wants to upgrade to something other than 'websocket', return an error
                 requestContext.complete(new HttpException(HttpResponseStatus.BAD_REQUEST, "upgrading connection to '" + upgradeHeader + "' is not supported"));
-                return;
             }
+            return;
         }
 
         // handle as a normal HTTP request
         try {
-            requestHandler.accept(requestContext);
+            router.accept(requestContext);
         } catch (Throwable throwable) {
             handleError(requestContext, throwable);
             requestContext.complete();
@@ -112,7 +111,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     }
 
     private void handleWebsocketUpgrade(ChannelHandlerContext ctx, FullHttpRequest request, RequestContext requestContext) {
-        Websocket ws =null;// TODO = config.getWebsocketHandler(request.uri());
+        Websocket ws = router.getWebsocket(request.uri());
         if (ws == null) {
             requestContext.response(HttpResponseStatus.BAD_REQUEST, "no websocket handler has been registered for path " + request.uri());
             requestContext.complete();
