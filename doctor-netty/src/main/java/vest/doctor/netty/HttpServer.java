@@ -4,7 +4,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.AdaptiveRecvByteBufAllocator;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
@@ -26,7 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
-@ChannelHandler.Sharable
+@Sharable
 public class HttpServer extends ChannelInitializer<SocketChannel> implements AutoCloseable {
     private static Logger log = LoggerFactory.getLogger(HttpServer.class);
 
@@ -72,7 +72,7 @@ public class HttpServer extends ChannelInitializer<SocketChannel> implements Aut
             try {
                 serverChannel.close().sync();
             } catch (InterruptedException e) {
-//                log.trace("ignored", e);
+                log.trace("ignored", e);
             }
         }
         workerGroup.shutdownGracefully();

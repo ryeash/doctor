@@ -36,8 +36,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
-        // verify we got a compliant http request
+    protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) {
         if (request.decoderResult().isFailure()) {
             log.error("error reading HTTP request: {}", request.decoderResult());
             ctx.close();
@@ -46,15 +45,8 @@ public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
         RequestContext requestContext = new RequestContext(ctx, request);
 
-        // check for websocket upgrade request
-        String upgradeHeader = request.headers().get(HttpHeaderNames.UPGRADE);
-        if (upgradeHeader != null) {
-            if (HttpHeaderValues.WEBSOCKET.contentEqualsIgnoreCase(upgradeHeader)) {
-                handleWebsocketUpgrade(ctx, request, requestContext);
-            } else {
-                // if a request wants to upgrade to something other than 'websocket', return an error
-                requestContext.complete(new HttpException(HttpResponseStatus.BAD_REQUEST, "upgrading connection to '" + upgradeHeader + "' is not supported"));
-            }
+        boolean wsUpgraded = handleWebsocketUpgrade(ctx, request, requestContext);
+        if (wsUpgraded) {
             return;
         }
 
@@ -110,15 +102,25 @@ public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
         }
     }
 
-    private void handleWebsocketUpgrade(ChannelHandlerContext ctx, FullHttpRequest request, RequestContext requestContext) {
-        Websocket ws = router.getWebsocket(request.uri());
-        if (ws == null) {
-            requestContext.response(HttpResponseStatus.BAD_REQUEST, "no websocket handler has been registered for path " + request.uri());
-            requestContext.complete();
-        } else {
-            // add the websocket handler to the pipeline
-            ctx.pipeline().addLast(new WebsocketHandler(ws));
-            ws.handshake(ctx, request, requestContext);
+    private boolean handleWebsocketUpgrade(ChannelHandlerContext ctx, FullHttpRequest request, RequestContext requestContext) {
+        String upgradeHeader = request.headers().get(HttpHeaderNames.UPGRADE);
+        if (upgradeHeader == null) {
+            return false;
         }
+        if (HttpHeaderValues.WEBSOCKET.contentEqualsIgnoreCase(upgradeHeader)) {
+            Websocket ws = router.getWebsocket(request.uri());
+            if (ws != null) {
+                // add the websocket handler to the pipeline
+                ctx.pipeline().addLast(new WebsocketHandler(ws));
+                ws.handshake(ctx, request, requestContext);
+            } else {
+                requestContext.response(HttpResponseStatus.BAD_REQUEST, "no websocket handler has been registered for path " + request.uri());
+                requestContext.complete();
+            }
+        } else {
+            // if a request wants to upgrade to something other than 'websocket', return an error
+            requestContext.complete(new HttpException(HttpResponseStatus.BAD_REQUEST, "upgrading connection to '" + upgradeHeader + "' is not supported"));
+        }
+        return true;
     }
 }

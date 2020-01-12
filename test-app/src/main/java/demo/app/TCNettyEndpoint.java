@@ -9,6 +9,7 @@ import vest.doctor.netty.Attribute;
 import vest.doctor.netty.Body;
 import vest.doctor.netty.Filter;
 import vest.doctor.netty.GET;
+import vest.doctor.netty.HeaderParam;
 import vest.doctor.netty.POST;
 import vest.doctor.netty.Path;
 import vest.doctor.netty.QueryParam;
@@ -68,5 +69,11 @@ public class TCNettyEndpoint {
     @Path("/pojo")
     public String pojo(@Body List<Person> person) throws JsonProcessingException {
         return new ObjectMapper().writeValueAsString(person);
+    }
+
+    @GET
+    @Path("/headerparam")
+    public R headerParam(@HeaderParam("x-param") String param) {
+        return R.ok(param);
     }
 }

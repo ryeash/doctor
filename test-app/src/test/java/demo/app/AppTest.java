@@ -203,7 +203,6 @@ public class AppTest extends Assert {
                 .accept("application/json")
                 .contentType("application/json")
                 .get("/rest/goodbye")
-//                .prettyPeek()
                 .then()
                 .statusCode(200)
                 .body("message", is("goodbye"))
@@ -214,7 +213,6 @@ public class AppTest extends Assert {
                 .accept("application/json")
                 .contentType("application/json")
                 .get("/rest/admin/ok")
-//                .prettyPeek()
                 .then()
                 .statusCode(200)
                 .body("message", is("ok"))
@@ -231,7 +229,6 @@ public class AppTest extends Assert {
                 .queryParam("number", 42)
                 .queryParam("q", "queryparam")
                 .get("/netty/hello")
-                .prettyPeek()
                 .then()
                 .statusCode(200)
                 .body(is("ok queryparam 42 42"));
@@ -240,7 +237,6 @@ public class AppTest extends Assert {
                 .accept("application/json")
                 .contentType("application/json")
                 .get("/netty/usingr")
-                .prettyPeek()
                 .then()
                 .statusCode(200)
                 .header("used-r", is("true"))
@@ -254,7 +250,17 @@ public class AppTest extends Assert {
                 .contentType("application/json")
                 .body(new ObjectMapper().writeValueAsBytes(Collections.singletonList(p)))
                 .post("/netty/pojo")
-                .prettyPeek();
+                .then()
+                .statusCode(200)
+                .body(is("[{\"name\":\"herman\",\"address\":\"hermitage\"}]"));
+
+        RestAssured.given()
+                .header("x-param", "toast")
+                .get("/netty/headerparam")
+                .prettyPeek()
+                .then()
+                .statusCode(200)
+                .body(is("toast"));
     }
 
 
