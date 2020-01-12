@@ -34,6 +34,7 @@ public class TCEvent {
     }
 
     @EventListener
+    @Async
     public void onStartup(ApplicationStartedEvent startup) {
         eventListened = true;
         Assert.assertNotNull(startup);

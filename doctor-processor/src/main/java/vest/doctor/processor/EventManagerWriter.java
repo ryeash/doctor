@@ -44,7 +44,8 @@ public class EventManagerWriter implements NewInstanceCustomizer {
                 .addField("private " + ExecutorService.class.getSimpleName() + " executor");
         init = new MethodBuilder("public void initialize(BeanProvider beanProvider)")
                 .line("executor = beanProvider.getInstance(" + ExecutorService.class.getSimpleName() + ".class, \"default\");");
-        publish = new MethodBuilder("public void publish(Object event)");
+        publish = new MethodBuilder("public void publish(Object event)")
+                .line("try{");
     }
 
     @Override
@@ -52,6 +53,9 @@ public class EventManagerWriter implements NewInstanceCustomizer {
         for (ExecutableElement listener : providerDefinition.methods(EventListener.class)) {
             if (listener.getParameters().size() != 1) {
                 context.errorMessage("@EventListener methods must have only one parameter: " + ProcessorUtils.debugString(listener));
+            }
+            if (!listener.getThrownTypes().isEmpty()) {
+                context.errorMessage("@EventListener methods may not throw checked exceptions: " + ProcessorUtils.debugString(listener));
             }
 
             VariableElement message = listener.getParameters().get(0);
@@ -69,9 +73,9 @@ public class EventManagerWriter implements NewInstanceCustomizer {
 
             publish.line("if(event instanceof " + messageType + ") {");
             if (listener.getAnnotation(Async.class) != null) {
-                publish.line("executor.submit(() -> " + methodCall(fieldName, listener.getSimpleName().toString(), messageType.toString()));
+                publish.line("executor.submit(() -> " + methodCall(fieldName, listener.getSimpleName().toString(), messageType.toString()) + ");");
             } else {
-                publish.line(methodCall(fieldName, listener.getSimpleName().toString(), messageType.toString()));
+                publish.line(methodCall(fieldName, listener.getSimpleName().toString(), messageType.toString()) + ";");
             }
             publish.line("}");
         }
@@ -79,13 +83,14 @@ public class EventManagerWriter implements NewInstanceCustomizer {
     }
 
     private String methodCall(String fieldName, String method, String messageType) {
-        return "try { " + fieldName + ".get()." + method + "((" + messageType + ") event);" + "} " +
-                "catch(Throwable t) { throw new " + InjectionException.class.getCanonicalName() + "(\"error calling event listener\", t); }";
+        return fieldName + ".get()." + method + "((" + messageType + ") event)";
     }
 
     @Override
     public void finish(AnnotationProcessorContext context) {
         String className = context.generatedPackage() + ".EventManagerImpl";
+
+        publish.line("} catch(Throwable t) { throw new " + InjectionException.class.getCanonicalName() + "(\"error calling event listeners\", t); }");
         cb.setClassName(className);
         cb.addMethod(init.finish());
         cb.addMethod(publish.finish());
