@@ -27,12 +27,18 @@ public class FactoryMethodProviderDefinition implements ProviderDefinition {
     private final ExecutableElement factoryMethod;
     private final String generatedClass;
     private final String uniqueName;
+    private final TypeElement providedType;
 
     public FactoryMethodProviderDefinition(AnnotationProcessorContext context, TypeElement container, ExecutableElement factoryMethod) {
         this.context = context;
         this.container = container;
         this.factoryMethod = factoryMethod;
-        this.generatedClass = context.generatedPackage() + "." + providedType().getSimpleName() + "__factoryProvider" + context.nextId();
+        this.providedType = context.toTypeElement(factoryMethod.getReturnType());
+        if (providedType.getTypeParameters().size() != 0) {
+            context.errorMessage("factory methods may not return parameterized types: " + ProcessorUtils.debugString(factoryMethod));
+        }
+        this.generatedClass = providedType().getSimpleName() + "__factoryProvider" + context.nextId();
+//        this.generatedClass = context.generatedPackage() + "." + providedType().getSimpleName() + "__factoryProvider" + context.nextId();
         this.uniqueName = "inst" + context.nextId();
     }
 
@@ -99,7 +105,7 @@ public class FactoryMethodProviderDefinition implements ProviderDefinition {
     }
 
     @Override
-    public void writeProvider() {
+    public ClassBuilder getClassBuilder() {
         ClassBuilder classBuilder = ProcessorUtils.defaultProviderClass(this);
 
         classBuilder.addMethod("public String toString() { return \"FactoryProvider("
@@ -132,12 +138,7 @@ public class FactoryMethodProviderDefinition implements ProviderDefinition {
             b.line("return instance;");
             b.line("} catch(Throwable t) { throw new " + InjectionException.class.getCanonicalName() + "(\"error instantiating provided type\", t); }");
         });
-        classBuilder.writeClass(context.filer());
-    }
-
-    @Override
-    public String initializationCode(String doctorRef) {
-        return "new " + generatedClass + "(" + doctorRef + ")";
+        return classBuilder;
     }
 
     @Override

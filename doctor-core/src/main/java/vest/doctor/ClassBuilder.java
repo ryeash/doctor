@@ -22,6 +22,7 @@ public class ClassBuilder {
     private List<String> fields;
     private String constructor;
     private List<String> methods;
+    private List<ClassBuilder> nestedClasses;
 
     public ClassBuilder setClassName(String fullyQualifiedClassName) {
         this.fullyQualifiedClassName = fullyQualifiedClassName;
@@ -110,6 +111,17 @@ public class ClassBuilder {
         return this;
     }
 
+    public ClassBuilder addNestedClass(ClassBuilder nested) {
+        if (nestedClasses == null) {
+            nestedClasses = new LinkedList<>();
+        }
+        for (String importClass : nested.importClasses) {
+            addImportClass(importClass);
+        }
+        nestedClasses.add(nested);
+        return this;
+    }
+
     public void writeClass(Filer filer) {
         try {
             JavaFileObject builderFile = filer.createSourceFile(fullyQualifiedClassName);
@@ -137,29 +149,53 @@ public class ClassBuilder {
                     out.print(" implements " + interfaces);
                 }
                 out.println("{");
-
-                if (fields != null && !fields.isEmpty()) {
-                    for (String field : fields) {
-                        out.println(field + ';');
-                    }
-                }
-
-                if (constructor != null) {
-                    out.println(constructor);
-                    out.println();
-                }
-
-                if (methods != null && !methods.isEmpty()) {
-                    for (String method : methods) {
-                        out.println(method);
-                        out.println();
-                    }
-                }
-
+                writeClassBody(this, out);
                 out.println("}");
             }
         } catch (IOException e) {
             throw new UncheckedIOException("error writing class " + className, e);
+        }
+    }
+
+    private static void writeNestedClass(ClassBuilder nested, PrintWriter out) {
+        out.print("public static final class ");
+        out.print(nested.className);
+        if (nested.extendsClass != null && !nested.extendsClass.isEmpty()) {
+            out.print(" extends " + nested.extendsClass);
+        }
+
+        if (nested.implementsInterfaces != null && !nested.implementsInterfaces.isEmpty()) {
+            String interfaces = String.join(", ", nested.implementsInterfaces);
+            out.print(" implements " + interfaces);
+        }
+        out.println("{");
+        writeClassBody(nested, out);
+        out.println("}");
+    }
+
+    private static void writeClassBody(ClassBuilder builder, PrintWriter out) {
+        if (builder.fields != null && !builder.fields.isEmpty()) {
+            for (String field : builder.fields) {
+                out.println(field + ';');
+            }
+        }
+
+        if (builder.constructor != null) {
+            out.println(builder.constructor);
+            out.println();
+        }
+
+        if (builder.methods != null && !builder.methods.isEmpty()) {
+            for (String method : builder.methods) {
+                out.println(method);
+                out.println();
+            }
+        }
+
+        if (builder.nestedClasses != null) {
+            for (ClassBuilder nestedClass : builder.nestedClasses) {
+                writeNestedClass(nestedClass, out);
+            }
         }
     }
 }

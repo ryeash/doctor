@@ -5,7 +5,6 @@ import vest.doctor.AnnotationProcessorContext;
 import javax.inject.Provider;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import java.util.List;
 import java.util.Optional;
 
 final class VariableElementMetadata {
@@ -33,12 +32,10 @@ final class VariableElementMetadata {
     }
 
     private static boolean isOptional(AnnotationProcessorContext context, TypeElement element) {
-        List<TypeElement> hierarchy = ProcessorUtils.hierarchy(context, element);
-        return hierarchy.contains(context.processingEnvironment().getElementUtils().getTypeElement(Optional.class.getCanonicalName()));
+        return ProcessorUtils.isCompatibleWith(context, element, Optional.class);
     }
 
     private static boolean isProvider(AnnotationProcessorContext context, TypeElement element) {
-        List<TypeElement> hierarchy = ProcessorUtils.hierarchy(context, element);
-        return hierarchy.contains(context.processingEnvironment().getElementUtils().getTypeElement(Provider.class.getCanonicalName()));
+        return ProcessorUtils.isCompatibleWith(context, element, Provider.class);
     }
 }

@@ -138,7 +138,6 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                     for (ProviderDefinitionProcessor providerDefinitionProcessor : providerDefinitionProcessors) {
                         ProviderDefinition provDef = providerDefinitionProcessor.process(this, annotatedElement);
                         if (provDef != null) {
-                            provDef.writeProvider();
                             errorChecking(provDef);
                             claimed = true;
                             typesToDependencies.computeIfAbsent(provDef.asDependency(), d -> new HashSet<>());
@@ -247,11 +246,12 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
         MethodBuilder load = new MethodBuilder("public void load(BeanProvider beanProvider)");
 
         for (ProviderDefinition providerDefinition : providerDefinitions) {
+            cb.addNestedClass(providerDefinition.getClassBuilder());
 
             cb.addImportClass(providerDefinition.providedType().asType().toString());
             cb.addField("private DoctorProvider<" + providerDefinition.providedType().getSimpleName() + "> " + providerDefinition.uniqueInstanceName());
 
-            String creator = providerDefinition.initializationCode("beanProvider");
+            String creator = "new " + providerDefinition.generatedClassName() + "(beanProvider)";
 
             for (ProviderCustomizationPoint providerCustomizationPoint : providerCustomizationPoints) {
                 creator = providerCustomizationPoint.wrap(this, providerDefinition, creator);
@@ -345,7 +345,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                     continue;
                 }
                 if (dependency != null && dependency.required() && !isProvided(dependency)) {
-                    errorMessage("missing provider dependency for target:" + target + "-> dependency" + dependency + " -- " +
+                    errorMessage("missing provider dependency for\ntarget:" + target + "\ndependency:" + dependency + "\nknown types:\n" +
                             providerDefinitions.stream().map(ProviderDefinition::asDependency).map(String::valueOf).collect(Collectors.joining("\n")));
                 }
             }

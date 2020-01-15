@@ -34,7 +34,8 @@ public class ConstructorProviderDefinition implements ProviderDefinition {
     public ConstructorProviderDefinition(AnnotationProcessorContext context, TypeElement providedType) {
         this.context = context;
         this.providedType = providedType;
-        this.generatedClassName = context.generatedPackage() + "." + providedType.getSimpleName() + "__constructorProvider" + context.nextId();
+        this.generatedClassName = providedType.getSimpleName() + "__constructorProvider" + context.nextId();
+//        this.generatedClassName = context.generatedPackage() + "." + providedType.getSimpleName() + "__constructorProvider" + context.nextId();
 
         int injectMarked = 0;
         LinkedList<ExecutableElement> injectable = new LinkedList<>();
@@ -120,7 +121,7 @@ public class ConstructorProviderDefinition implements ProviderDefinition {
     }
 
     @Override
-    public void writeProvider() {
+    public ClassBuilder getClassBuilder() {
         ClassBuilder classBuilder = ProcessorUtils.defaultProviderClass(this);
 
         classBuilder.addMethod("public String toString() { return \"ConstructorProvider("
@@ -151,13 +152,7 @@ public class ConstructorProviderDefinition implements ProviderDefinition {
             b.line("return instance;");
             b.line("} catch(Throwable t) { throw new " + InjectionException.class.getCanonicalName() + "(\"error instantiating provided type\", t); }");
         });
-
-        classBuilder.writeClass(context.filer());
-    }
-
-    @Override
-    public String initializationCode(String doctorRef) {
-        return "new " + generatedClassName + "(" + doctorRef + ")";
+        return classBuilder;
     }
 
     @Override

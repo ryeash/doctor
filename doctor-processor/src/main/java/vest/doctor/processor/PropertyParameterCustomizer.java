@@ -99,16 +99,14 @@ public class PropertyParameterCustomizer implements ParameterLookupCustomizer {
         }
         String type = metadata.type.getQualifiedName().toString();
 
-        List<TypeElement> hierarchy = ProcessorUtils.hierarchy(context, metadata.type);
-
         boolean isCollection = true;
         String confMethod;
 
-        if (hierarchy.contains(context.processingEnvironment().getElementUtils().getTypeElement(Set.class.getCanonicalName()))) {
+        if (ProcessorUtils.isCompatibleWith(context, metadata.type, Set.class)) {
             confMethod = "getSet";
-        } else if (hierarchy.contains(context.processingEnvironment().getElementUtils().getTypeElement(List.class.getCanonicalName()))) {
+        } else if (ProcessorUtils.isCompatibleWith(context, metadata.type, List.class)) {
             confMethod = "getList";
-        } else if (hierarchy.contains(context.processingEnvironment().getElementUtils().getTypeElement(Collection.class.getCanonicalName()))) {
+        } else if (ProcessorUtils.isCompatibleWith(context, metadata.type, Collection.class)) {
             confMethod = "getCollection";
         } else {
             confMethod = "get";

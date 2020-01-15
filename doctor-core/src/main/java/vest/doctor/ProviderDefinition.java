@@ -60,9 +60,7 @@ public interface ProviderDefinition {
 
     ProviderDependency asDependency();
 
-    void writeProvider();
-
-    String initializationCode(String doctorRef);
+    ClassBuilder getClassBuilder();
 
     String uniqueInstanceName();
 

@@ -108,16 +108,24 @@ public class ProcessorUtils {
     }
 
     public static List<TypeElement> hierarchy(AnnotationProcessorContext context, TypeElement type) {
-        TypeElement typeElement = context.processingEnvironment().getElementUtils().getTypeElement(Object.class.getCanonicalName());
         List<TypeElement> allProvidedTypes = new LinkedList<>();
         allProvidedTypes.add(type);
         context.processingEnvironment().getTypeUtils().directSupertypes(type.asType())
                 .stream()
                 .map(context::toTypeElement)
-                .filter(t -> !typeElement.equals(t))
+                .filter(t -> !t.toString().equals(Object.class.getCanonicalName()))
                 .forEach(allProvidedTypes::add);
         Collections.reverse(allProvidedTypes);
         return allProvidedTypes;
+    }
+
+    public static boolean isCompatibleWith(AnnotationProcessorContext context, TypeElement type, Class<?> checkType) {
+        for (TypeElement typeElement : hierarchy(context, type)) {
+            if (typeElement.toString().equals(checkType.getCanonicalName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static Optional<TypeElement> getParameterizedType(AnnotationProcessorContext context, Element element) {
