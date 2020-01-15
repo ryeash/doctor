@@ -23,7 +23,6 @@ public final class ProcessingUtils {
         } else if (parameter.asType().toString().equals(URI.class.getCanonicalName())) {
             return contextRef + ".requestUri()";
         } else if (parameter.getAnnotation(Body.class) != null) {
-            // TODO parameterized types
             GenericInfo gi = new GenericInfo(parameter.asType());
             String rawType = typeWithoutParameters(gi.type());
             String parameterizedTypes = gi.parameterTypes()

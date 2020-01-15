@@ -47,7 +47,7 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
 
             String wrapperRef = "wrapper" + count.incrementAndGet();
             method.line(ScheduledTaskWrapper.class.getCanonicalName() + "<" + providerDefinition.providedType().getSimpleName() + "> " + wrapperRef
-                    + " = new " + ScheduledTaskWrapper.class.getCanonicalName() + "<" + providerDefinition.providedType().getSimpleName() + ">(" + doctorRef + "," + instanceRef + ") {");
+                    + " = new " + ScheduledTaskWrapper.class.getCanonicalName() + "<" + providerDefinition.providedType().getSimpleName() + ">(" + doctorRef + "," + instanceRef + "," + scheduled.executionLimit() + ") {");
             method.line("protected void internalRun(BeanProvider beanProvider, " + providerDefinition.providedType().getSimpleName() + " val) {");
             method.line(context.methodCall(providerDefinition, scheduledMethod, "val", "beanProvider") + ";");
             method.line("}");

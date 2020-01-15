@@ -7,7 +7,7 @@ public abstract class ScopedProvider<T> extends DoctorProviderWrapper<T> {
     }
 
     @Override
-    public T get() {
+    public final T get() {
         return createOrGet();
     }
 

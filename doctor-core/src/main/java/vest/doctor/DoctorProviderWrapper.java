@@ -53,7 +53,6 @@ public abstract class DoctorProviderWrapper<T> implements DoctorProvider<T> {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName()
-                + '(' + delegate + ')';
+        return getClass().getSimpleName() + '(' + delegate + ')';
     }
 }

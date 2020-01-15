@@ -21,4 +21,6 @@ public @interface Scheduled {
     TimeUnit unit() default TimeUnit.MILLISECONDS;
 
     Type type() default Type.FIXED_RATE;
+
+    int executionLimit() default -1;
 }

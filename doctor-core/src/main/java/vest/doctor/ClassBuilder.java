@@ -13,7 +13,7 @@ import java.util.function.Consumer;
 
 public class ClassBuilder {
 
-    private String packageName;
+    private String packageName = "";
     private String className;
     private String fullyQualifiedClassName;
     private String extendsClass;
@@ -24,11 +24,15 @@ public class ClassBuilder {
     private List<String> methods;
     private List<ClassBuilder> nestedClasses;
 
+    public ClassBuilder setPackage(String packageName) {
+        this.packageName = packageName;
+        return this;
+    }
+
     public ClassBuilder setClassName(String fullyQualifiedClassName) {
         this.fullyQualifiedClassName = fullyQualifiedClassName;
         int i = fullyQualifiedClassName.lastIndexOf(".");
         if (i < 0) {
-            this.packageName = "";
             this.className = fullyQualifiedClassName;
         } else {
             this.packageName = fullyQualifiedClassName.substring(0, i);
