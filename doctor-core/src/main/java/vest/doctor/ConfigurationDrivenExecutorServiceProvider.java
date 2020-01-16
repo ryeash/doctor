@@ -4,21 +4,26 @@ import javax.inject.Provider;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvider<ExecutorService> {
 
+    public static final int DEFAULT_MIN_THREADS = 1;
+    public static final int DEFAULT_MAX_THREADS = Math.max(8, Runtime.getRuntime().availableProcessors() * 2);
+    public static final int DEFAULT_KEEP_ALIVE = 600;
+
     public enum ThreadPoolType {
-        threadpool, scheduled, forkjoin
+        cached, fixed, scheduled, forkjoin
     }
 
     public enum RejectedExecutionType {
@@ -34,12 +39,16 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
         }
     }
 
+    private final int minThreads;
+    private final int maxThreads;
+    private final int keepAliveSeconds;
     private final ConfigurationFacade configurationFacade;
     private final String propertyPrefix;
     private final ThreadPoolType type;
     private final String qualifier;
     private final List<Class<?>> providedTypes;
-    private final ExecutorBuilder builder;
+    private final CustomThreadFactory threadFactory;
+    private final RejectedExecutionHandler rejectedExecutionHandler;
 
     public ConfigurationDrivenExecutorServiceProvider(BeanProvider beanProvider, String name, ThreadPoolType forceType) {
         this.configurationFacade = beanProvider.configuration();
@@ -48,10 +57,11 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
         if (forceType != null) {
             this.type = forceType;
         } else {
-            this.type = configurationFacade.get(propertyPrefix + ".type", ThreadPoolType.threadpool, ThreadPoolType::valueOf);
+            this.type = configurationFacade.get(propertyPrefix + ".type", ThreadPoolType.fixed, ThreadPoolType::valueOf);
         }
         switch (type) {
-            case threadpool:
+            case cached:
+            case fixed:
                 this.providedTypes = Arrays.asList(Executor.class, ExecutorService.class);
                 break;
             case scheduled:
@@ -64,18 +74,24 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
                 throw new IllegalArgumentException("unknown executor service type: " + type);
         }
 
-        this.builder = ExecutorBuilder.newExecutor()
-                .setDaemonize(configurationFacade.get(propertyPrefix + ".daemonize", true, Boolean::valueOf))
-                .setThreadNamePrefix(configurationFacade.get(propertyPrefix + ".threadPrefix", propertyPrefix));
+        minThreads = configurationFacade.get(propertyPrefix + ".minThreads", DEFAULT_MIN_THREADS, Integer::valueOf);
+        maxThreads = configurationFacade.get(propertyPrefix + ".maxThreads", DEFAULT_MAX_THREADS, Integer::valueOf);
+        keepAliveSeconds = configurationFacade.get(propertyPrefix + ".keepAliveSeconds", DEFAULT_KEEP_ALIVE, Integer::valueOf);
 
         String uncaughtExceptionHandlerQualifier = configurationFacade.get(propertyPrefix + ".uncaughtExceptionHandler");
-        beanProvider.getProviderOpt(Thread.UncaughtExceptionHandler.class, uncaughtExceptionHandlerQualifier)
+        Thread.UncaughtExceptionHandler uncaughtExceptionHandler = beanProvider.getProviderOpt(Thread.UncaughtExceptionHandler.class, uncaughtExceptionHandlerQualifier)
                 .map(Provider::get)
-                .ifPresent(builder::setUncaughtExceptionHandler);
+                .orElse(Thread.getDefaultUncaughtExceptionHandler());
+
+        threadFactory = new CustomThreadFactory(
+                configurationFacade.get(propertyPrefix + ".daemonize", true, Boolean::valueOf),
+                configurationFacade.get(propertyPrefix + ".threadPrefix", propertyPrefix),
+                uncaughtExceptionHandler,
+                null);
 
         String rejectedExecutionHandlerQualifier = configurationFacade.get(propertyPrefix + ".rejectedExecutionHandler", "!!noValue!!");
 
-        RejectedExecutionHandler rejectedExecutionHandler = beanProvider.getProviderOpt(RejectedExecutionHandler.class, rejectedExecutionHandlerQualifier)
+        this.rejectedExecutionHandler = beanProvider.getProviderOpt(RejectedExecutionHandler.class, rejectedExecutionHandlerQualifier)
                 .map(DoctorProvider::get)
                 .orElseGet(() -> {
                     switch (RejectedExecutionType.valueOrDefault(rejectedExecutionHandlerQualifier)) {
@@ -90,7 +106,6 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
                             return new ThreadPoolExecutor.AbortPolicy();
                     }
                 });
-        builder.setRejectedExecutionHandler(rejectedExecutionHandler);
     }
 
     @Override
@@ -120,29 +135,52 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
     @Override
     public ExecutorService get() {
         switch (type) {
-            case threadpool:
-                int maxQueueSize = configurationFacade.get(propertyPrefix + ".maxQueueSize", -1, Integer::valueOf);
-                BlockingQueue<Runnable> workQueue;
-                if (maxQueueSize < 0) {
-                    workQueue = new LinkedBlockingQueue<>();
-                } else if (maxQueueSize == 0) {
-                    workQueue = new SynchronousQueue<>();
-                } else {
-                    workQueue = new ArrayBlockingQueue<>(maxQueueSize);
-                }
-                return builder.threadPoolExecutor(
-                        configurationFacade.get(propertyPrefix + ".minThreads", 1, Integer::valueOf),
-                        configurationFacade.get(propertyPrefix + ".maxThreads", Runtime.getRuntime().availableProcessors() * 2, Integer::valueOf),
-                        configurationFacade.get(propertyPrefix + ".keepAliveSeconds", 600, Integer::valueOf),
-                        workQueue);
+            case fixed:
+                ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
+                        minThreads,
+                        maxThreads,
+                        Integer.MAX_VALUE,
+                        TimeUnit.DAYS,
+                        new LinkedBlockingQueue<>(),
+                        threadFactory,
+                        rejectedExecutionHandler);
+                threadPoolExecutor.allowCoreThreadTimeOut(false);
+                threadPoolExecutor.prestartAllCoreThreads();
+                return Executors.unconfigurableExecutorService(threadPoolExecutor);
+
+            case cached:
+                ThreadPoolExecutor cached = new ThreadPoolExecutor(
+                        minThreads,
+                        maxThreads,
+                        keepAliveSeconds,
+                        TimeUnit.SECONDS,
+                        new SynchronousQueue<>(),
+                        threadFactory,
+                        rejectedExecutionHandler);
+                cached.allowCoreThreadTimeOut(true);
+                cached.prestartCoreThread();
+                return Executors.unconfigurableExecutorService(cached);
+
             case scheduled:
-                return builder.scheduledExecutor(
-                        configurationFacade.get(propertyPrefix + ".minThreads", 1, Integer::valueOf),
-                        configurationFacade.get(propertyPrefix + ".maxThreads", Runtime.getRuntime().availableProcessors() * 2, Integer::valueOf),
-                        configurationFacade.get(propertyPrefix + ".keepAliveSeconds", 600, Integer::valueOf));
+                ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(
+                        minThreads,
+                        threadFactory,
+                        rejectedExecutionHandler);
+                scheduledThreadPoolExecutor.setMaximumPoolSize(maxThreads);
+                scheduledThreadPoolExecutor.setKeepAliveTime(keepAliveSeconds, TimeUnit.SECONDS);
+                scheduledThreadPoolExecutor.allowCoreThreadTimeOut(true);
+                scheduledThreadPoolExecutor.prestartAllCoreThreads();
+                scheduledThreadPoolExecutor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
+                scheduledThreadPoolExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+                scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
+                return Executors.unconfigurableScheduledExecutorService(scheduledThreadPoolExecutor);
+
             case forkjoin:
-                return builder.forkJoinPool(
-                        configurationFacade.get(propertyPrefix + ".parallelism", 1, Integer::valueOf));
+                return new ForkJoinPool(
+                        maxThreads,
+                        threadFactory,
+                        threadFactory.getUncaughtExceptionHandler(),
+                        true);
             default:
                 throw new IllegalArgumentException("unknown executor service type: " + type);
         }

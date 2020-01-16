@@ -1,12 +1,13 @@
 package vest.doctor.netty;
 
 import vest.doctor.BeanProvider;
+import vest.doctor.Prioritized;
 
-public interface Router {
+public interface Router extends Prioritized {
 
     void init(BeanProvider beanProvider);
 
-    void accept(RequestContext requestContext) throws Exception;
+    boolean accept(RequestContext requestContext) throws Exception;
 
     Websocket getWebsocket(String uri);
 }

@@ -46,7 +46,7 @@ public class RouterWriter implements ProviderCustomizationPoint {
             .addImportClass(HashMap.class);
 
     private final MethodBuilder init = new MethodBuilder("public void init(BeanProvider beanProvider)");
-    private final MethodBuilder accept = new MethodBuilder("public void accept(RequestContext ctx) throws Exception");
+    private final MethodBuilder accept = new MethodBuilder("public boolean accept(RequestContext ctx) throws Exception");
     private final MethodBuilder filter = new MethodBuilder("public void filter(FilterStage filterStage, RequestContext ctx)");
 
     private final Set<ExecutableElement> processedMethods = new HashSet<>();
@@ -112,7 +112,7 @@ public class RouterWriter implements ProviderCustomizationPoint {
 
         accept.line("Map<String, String> pathParams = null;");
         accept.line("filter(FilterStage." + FilterStage.BEFORE_MATCH + ", ctx);");
-        accept.line("if(ctx.isHalted()) { return; }");
+        accept.line("if(ctx.isHalted()) { return true; }");
         int i = 0;
 
         Set<String> usedProviders = new HashSet<>();
@@ -154,14 +154,13 @@ public class RouterWriter implements ProviderCustomizationPoint {
                 } else {
                     accept.line("ctx.complete();");
                 }
-                accept.line("return;")
+                accept.line("return true;")
                         .line("}");
             }
             accept.line("}");
         }
 
-        accept.line("ctx.response(404, \"\");")
-                .line("ctx.complete();");
+        accept.line("return false;");
 
         filter.line("try {");
         filter.line("Map<String, String> pathParams = null;");

@@ -3,6 +3,8 @@ package vest.doctor.netty;
 import vest.doctor.AppLoader;
 import vest.doctor.BeanProvider;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.ServiceLoader;
 
 public class NettyLoader implements AppLoader {
@@ -12,11 +14,13 @@ public class NettyLoader implements AppLoader {
     @Override
     public void postProcess(BeanProvider beanProvider) {
         this.server = new HttpServer(new NettyConfiguration(beanProvider.configuration()));
+        List<Router> routerList = new LinkedList<>();
         for (Router router : ServiceLoader.load(Router.class, NettyLoader.class.getClassLoader())) {
-            router.init(beanProvider);
-            server.setRequestHandler(router);
-            break;
+            routerList.add(router);
         }
+        Routers routers = new Routers(routerList);
+        routers.init(beanProvider);
+        server.setRequestHandler(routers);
     }
 
     @Override

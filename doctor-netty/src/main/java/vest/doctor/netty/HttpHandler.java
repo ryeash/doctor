@@ -52,7 +52,11 @@ public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
         // handle as a normal HTTP request
         try {
-            router.accept(requestContext);
+            boolean handled = router.accept(requestContext);
+            if (!handled) {
+                requestContext.response(404, "");
+                requestContext.complete();
+            }
         } catch (Throwable throwable) {
             handleError(requestContext, throwable);
             requestContext.complete();
