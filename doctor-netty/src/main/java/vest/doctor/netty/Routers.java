@@ -1,7 +1,6 @@
 package vest.doctor.netty;
 
 import vest.doctor.BeanProvider;
-import vest.doctor.Prioritized;
 
 import java.util.List;
 
@@ -11,7 +10,6 @@ public final class Routers implements Router {
 
     public Routers(List<Router> routers) {
         this.routers = routers;
-        this.routers.sort(Prioritized.COMPARATOR);
     }
 
     @Override

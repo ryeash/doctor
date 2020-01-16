@@ -21,7 +21,6 @@ import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -245,14 +244,17 @@ public class RequestContext {
     }
 
     /**
-     * Halts this RequestContext with the give status and set the Location header to the given value.
+     * Halts this RequestContext with the give status and sets the Location header to the given value.
      *
-     * @param status   The status to use for the redirect, should be one of the 300 series status codes (like 307 or 308)
+     * @param status   The status to use for the redirect, must be one of the 3xx series status codes (like 307 or 308)
      * @param location The location to redirect to
      */
     public void redirect(HttpResponseStatus status, String location) {
-        halt(status, Unpooled.EMPTY_BUFFER);
+        if (status.code() < 300 || status.code() > 399) {
+            throw new IllegalArgumentException("redirect status codes must be in the range [300, 399]");
+        }
         responseHeader(HttpHeaderNames.LOCATION, location);
+        halt(status, Unpooled.EMPTY_BUFFER);
     }
 
     /**
@@ -447,7 +449,7 @@ public class RequestContext {
      * @param charset The charset to use to encode the string to a byte array
      */
     public void responseBody(String body, Charset charset) {
-        if (body != null) {
+        if (body != null && !body.isEmpty()) {
             responseBody(body.getBytes(charset));
         } else {
             responseBody(Unpooled.EMPTY_BUFFER);
@@ -461,13 +463,13 @@ public class RequestContext {
      */
     public void responseBody(InputStream body) {
         try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream(4096);
+            ByteBuf byteBuf = Unpooled.buffer(4096);
             byte[] buf = new byte[4096];
             int read;
             while ((read = body.read(buf)) != -1) {
-                baos.write(buf, 0, read);
+                byteBuf.writeBytes(buf, 0, read);
             }
-            responseBody(baos.toByteArray());
+            responseBody(byteBuf);
         } catch (IOException e) {
             throw new UncheckedIOException("error sinking input stream to ByteBuf", e);
         } finally {

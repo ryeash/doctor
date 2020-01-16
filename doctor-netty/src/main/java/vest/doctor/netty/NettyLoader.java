@@ -2,6 +2,7 @@ package vest.doctor.netty;
 
 import vest.doctor.AppLoader;
 import vest.doctor.BeanProvider;
+import vest.doctor.Prioritized;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -18,6 +19,7 @@ public class NettyLoader implements AppLoader {
         for (Router router : ServiceLoader.load(Router.class, NettyLoader.class.getClassLoader())) {
             routerList.add(router);
         }
+        routerList.sort(Prioritized.COMPARATOR);
         Routers routers = new Routers(routerList);
         routers.init(beanProvider);
         server.setRequestHandler(routers);
