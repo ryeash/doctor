@@ -119,9 +119,6 @@ public class ClassBuilder {
         if (nestedClasses == null) {
             nestedClasses = new LinkedList<>();
         }
-        for (String importClass : nested.importClasses) {
-            addImportClass(importClass);
-        }
         nestedClasses.add(nested);
         return this;
     }
@@ -136,6 +133,13 @@ public class ClassBuilder {
                 out.println(";");
                 out.println();
 
+                if (nestedClasses != null) {
+                    for (ClassBuilder nestedClass : nestedClasses) {
+                        for (String importClass : nestedClass.importClasses) {
+                            addImportClass(importClass);
+                        }
+                    }
+                }
                 if (importClasses != null) {
                     for (String importClass : importClasses) {
                         out.println("import " + importClass + ";");
