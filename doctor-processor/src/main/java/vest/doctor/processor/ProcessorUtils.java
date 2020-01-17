@@ -1,14 +1,9 @@
 package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.BeanProvider;
-import vest.doctor.ClassBuilder;
-import vest.doctor.DoctorProvider;
 import vest.doctor.GenericTypeVisitor;
-import vest.doctor.ProviderDefinition;
 
 import javax.inject.Named;
-import javax.inject.Provider;
 import javax.inject.Qualifier;
 import javax.inject.Scope;
 import javax.lang.model.element.AnnotationMirror;
@@ -17,7 +12,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeMirror;
 import java.lang.annotation.Annotation;
 import java.nio.ByteBuffer;
 import java.util.Base64;
@@ -26,11 +21,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 public class ProcessorUtils {
@@ -129,7 +122,11 @@ public class ProcessorUtils {
     }
 
     public static Optional<TypeElement> getParameterizedType(AnnotationProcessorContext context, Element element) {
-        return Optional.of(element.asType())
+        return getParameterizedType(context, element.asType());
+    }
+
+    public static Optional<TypeElement> getParameterizedType(AnnotationProcessorContext context, TypeMirror type) {
+        return Optional.of(type)
                 .map(t -> t.accept(new GenericTypeVisitor(), null))
                 .map(context.processingEnvironment().getTypeUtils()::asElement)
                 .map(TypeElement.class::cast);
@@ -168,75 +165,5 @@ public class ProcessorUtils {
         } catch (ClassNotFoundException e) {
             // ignored
         }
-    }
-
-    private static final Collector<CharSequence, ?, String> AS_LIST = Collectors.joining(", ", "Collections.unmodifiableList(java.util.Arrays.asList(", "))");
-
-    public static ClassBuilder defaultProviderClass(ProviderDefinition def) {
-        // handles everything but the .get()
-        ClassBuilder classBuilder = new ClassBuilder();
-        classBuilder.setClassName(def.generatedClassName())
-                .addImportClass(Annotation.class)
-                .addImportClass(BeanProvider.class)
-                .addImportClass(Provider.class)
-                .addImportClass(List.class)
-                .addImportClass(Collections.class)
-                .addImportClass(def.providedType().getQualifiedName().toString())
-                .addImportClass(DoctorProvider.class)
-                .addImplementsInterface("DoctorProvider<" + def.providedType().getSimpleName() + ">")
-                .addField("private final BeanProvider beanProvider")
-
-                .setConstructor("public " + def.generatedClassName().substring(def.generatedClassName().lastIndexOf('.') + 1) + "(BeanProvider beanProvider) { this.beanProvider = beanProvider; }")
-
-                .addMethod("public Class<" + def.providedType().getSimpleName() + "> type() { " +
-                        "return " + def.providedType().getSimpleName() + ".class; }")
-
-                .addMethod("public String qualifier() { return " +
-                        Optional.ofNullable(def.qualifier()).map(q -> "beanProvider.resolvePlaceholders(" + q + ")").orElse(null) + "; }")
-
-                .addMethod("public Class<? extends Annotation> scope()", b -> {
-                    String scopeString = Optional.ofNullable(def.scope())
-                            .map(AnnotationMirror::getAnnotationType)
-                            .map(c -> c.asElement().toString() + ".class")
-                            .orElse("null");
-                    b.line("return " + scopeString + ";");
-                });
-
-        List<TypeElement> allProvidedTypes = def.getAllProvidedTypes();
-        if (!allProvidedTypes.isEmpty()) {
-            classBuilder.addField("private final List<Class<?>> allTypes = " + allProvidedTypes.stream()
-                    .map(TypeElement::getQualifiedName)
-                    .map(n -> n + ".class")
-                    .collect(AS_LIST))
-                    .addMethod("public List<Class<?>> allProvidedTypes() { return allTypes; }");
-        } else {
-            def.context().errorMessage("all providers must provide at least one type: " + def);
-        }
-
-        List<? extends AnnotationMirror> annotationMirrors = def.annotationSource().getAnnotationMirrors();
-        if (!annotationMirrors.isEmpty()) {
-            classBuilder
-                    .addField("private final List<Class<? extends Annotation>> allAnnotations = " + annotationMirrors.stream()
-                            .map(AnnotationMirror::getAnnotationType)
-                            .map(DeclaredType::toString)
-                            .map(n -> n + ".class")
-                            .collect(AS_LIST))
-                    .addMethod("public List<Class<? extends Annotation>> allAnnotationTypes() { return allAnnotations; }");
-        }
-
-        List<String> modules = def.modules();
-        if (!modules.isEmpty()) {
-            classBuilder.addField("private final List<String> modules = " + modules.stream()
-                    .filter(Objects::nonNull)
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .distinct()
-                    .map(m -> '"' + m + '"')
-                    .collect(AS_LIST))
-                    .addMethod("public List<String> modules() { return modules; }");
-        }
-
-        // must define the .get() method
-        return classBuilder;
     }
 }

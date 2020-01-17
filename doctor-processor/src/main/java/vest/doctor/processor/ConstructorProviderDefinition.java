@@ -3,37 +3,24 @@ package vest.doctor.processor;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ClassBuilder;
 import vest.doctor.InjectionException;
-import vest.doctor.Modules;
 import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ParameterLookupCustomizer;
-import vest.doctor.ProviderDefinition;
-import vest.doctor.ProviderDependency;
 
 import javax.inject.Inject;
-import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.ElementFilter;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
 
-public class ConstructorProviderDefinition implements ProviderDefinition {
+public class ConstructorProviderDefinition extends AbstractProviderDefinition {
 
-    private final AnnotationProcessorContext context;
-    private final TypeElement providedType;
     private final String generatedClassName;
     private final ExecutableElement injectableConstructor;
     private final String uniqueName;
 
     public ConstructorProviderDefinition(AnnotationProcessorContext context, TypeElement providedType) {
-        this.context = context;
-        this.providedType = providedType;
+        super(context, providedType, providedType);
         this.generatedClassName = providedType.getSimpleName() + "__constructorProvider" + context.nextId();
 //        this.generatedClassName = context.generatedPackage() + "." + providedType.getSimpleName() + "__constructorProvider" + context.nextId();
 
@@ -59,70 +46,13 @@ public class ConstructorProviderDefinition implements ProviderDefinition {
     }
 
     @Override
-    public TypeElement providedType() {
-        return providedType;
-    }
-
-    @Override
     public String generatedClassName() {
         return generatedClassName;
     }
 
     @Override
-    public List<TypeElement> getAllProvidedTypes() {
-        return ProcessorUtils.hierarchy(context, providedType);
-    }
-
-    @Override
-    public Element annotationSource() {
-        return providedType;
-    }
-
-    @Override
-    public AnnotationMirror scope() {
-        return ProcessorUtils.getScope(context, annotationSource());
-    }
-
-    @Override
-    public String qualifier() {
-        return ProcessorUtils.getQualifier(context, annotationSource());
-    }
-
-    @Override
-    public AnnotationProcessorContext context() {
-        return context;
-    }
-
-    @Override
-    public List<String> modules() {
-        List<String> modules = new LinkedList<>();
-        Optional.ofNullable(annotationSource().getAnnotation(Modules.class))
-                .map(Modules::value)
-                .map(Arrays::asList)
-                .ifPresent(modules::addAll);
-        if (annotationSource().getKind() == ElementKind.METHOD) {
-            Optional.ofNullable(annotationSource().getEnclosingElement())
-                    .map(e -> e.getAnnotation(Modules.class))
-                    .map(Modules::value)
-                    .map(Arrays::asList)
-                    .ifPresent(modules::addAll);
-        }
-        return Collections.unmodifiableList(modules);
-    }
-
-    @Override
-    public List<TypeElement> hierarchy() {
-        return ProcessorUtils.hierarchy(context, providedType);
-    }
-
-    @Override
-    public ProviderDependency asDependency() {
-        return new Dependency(providedType(), qualifier());
-    }
-
-    @Override
     public ClassBuilder getClassBuilder() {
-        ClassBuilder classBuilder = ProcessorUtils.defaultProviderClass(this);
+        ClassBuilder classBuilder = super.getClassBuilder();
 
         classBuilder.addMethod("public String toString() { return \"ConstructorProvider("
                 + providedType.getSimpleName()

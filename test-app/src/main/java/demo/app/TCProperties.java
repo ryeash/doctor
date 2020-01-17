@@ -44,4 +44,14 @@ public class TCProperties {
         Assert.assertNotNull(coffeeMaker);
         Assert.assertEquals(bigint, new BigInteger("42"));
     }
+
+    @Inject
+    public void propertiesInterfaceImplementation(TCPropertiesIntfc props) {
+        Assert.assertEquals(props.stringProp(), "value");
+        Assert.assertEquals(props.stringPropOpt().orElse(null), "value");
+        Assert.assertFalse(props.otherThing().isPresent());
+        Assert.assertEquals(props.number().intValue(), 42);
+        Assert.assertEquals(props.stringList(), Arrays.asList("42", "12", "97"));
+        Assert.assertEquals(props.numberList(), Arrays.asList(42, 12, 97));
+    }
 }
