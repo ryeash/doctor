@@ -135,7 +135,9 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
 
         int prev = 0;
         int i;
+        boolean changed = false;
         while ((i = value.indexOf(MACRO_OPEN, prev)) >= 0) {
+            changed = true;
             sb.append(value, prev, i);
             i += MACRO_OPEN.length();
             prev = i;
@@ -148,6 +150,9 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
             sb.append(subValue);
             i += MACRO_CLOSE.length();
             prev = i;
+        }
+        if (!changed) {
+            return value;
         }
         sb.append(value, prev, value.length());
         return sb.toString();

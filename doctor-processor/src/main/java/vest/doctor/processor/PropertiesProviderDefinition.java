@@ -42,8 +42,13 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
                     }
                     impl.addMethod("public " + method.getReturnType() + " " + method.getSimpleName() + "()", mb -> {
                         TypeMirror returnType = method.getReturnType();
-                        String code = propertyCodeGen.getPropertyCode(context, method.getAnnotation(Property.class), returnType, "beanProvider");
-                        mb.line("return " + code + ";");
+                        try {
+                            String code = propertyCodeGen.getPropertyCode(context, method.getAnnotation(Property.class), returnType, "beanProvider");
+                            mb.line("return " + code + ";");
+                        } catch (IllegalArgumentException e) {
+                            e.printStackTrace();
+                            context.errorMessage(e.getMessage() + ": " + ProcessorUtils.debugString(method));
+                        }
                     });
                 } else {
                     context.errorMessage("all methods defined in a @Properties interface must have a @Property annotation");
@@ -68,7 +73,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
                 for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements())) {
                     if (!ProcessorUtils.isCompatibleWith(context, context.toTypeElement(method.getReturnType()), Optional.class)) {
                         Property property = method.getAnnotation(Property.class);
-                        b.line(Objects.class.getCanonicalName() + ".requireNonNull(beanProvider.configuration().get(\"" + property.value() + "\"), \"missing required property '" + property.value() + "'\");");
+                        b.line(Objects.class.getCanonicalName() + ".requireNonNull(beanProvider.configuration().get(beanProvider.resolvePlaceholders(\"" + property.value() + "\")), \"missing required property '" + property.value() + "'\");");
                     }
                 }
             }

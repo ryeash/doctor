@@ -58,7 +58,7 @@ public class PropertyCodeGen {
         if (converterMethod == null) {
             throw new IllegalArgumentException("unable to convert collection values for property parameter: " + typeMirror);
         }
-        return beanProviderRef + ".configuration().get(\"" + property.value() + "\", " + converterMethod + ")";
+        return buildPropCode(beanProviderRef, "get", property.value(), converterMethod);
     }
 
     private String getObjectPropertyCode(AnnotationProcessorContext context, Property property, TypeMirror typeMirror, String beanProviderRef) {
@@ -100,7 +100,8 @@ public class PropertyCodeGen {
         if (converterMethod == null) {
             throw new IllegalArgumentException("unable to convert collection values for property parameter: " + ProcessorUtils.debugString(typeElement));
         }
-        String code = beanProviderRef + ".configuration()." + confMethod + "(\"" + property.value() + "\", " + converterMethod + ")";
+        // TODO: resolve placeholders
+        String code = buildPropCode(beanProviderRef, confMethod, property.value(), converterMethod);
         if (isOptional) {
             return "java.util.Optional.ofNullable(" + code + ")";
         } else {
@@ -110,5 +111,9 @@ public class PropertyCodeGen {
 
     private static String valueOfCode(Class<?> c) {
         return c.getCanonicalName() + "::valueOf";
+    }
+
+    private static String buildPropCode(String beanProviderRef, String confMethod, String propertyName, String converterMethod) {
+        return beanProviderRef + ".configuration()." + confMethod + "(" + beanProviderRef + ".resolvePlaceholders(\"" + propertyName + "\"), " + converterMethod + ")";
     }
 }
