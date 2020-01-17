@@ -48,6 +48,7 @@ public class TCProperties {
     @Inject
     public void propertiesInterfaceImplementation(TCPropertiesIntfc props) {
         Assert.assertEquals(props.stringProp(), "value");
+        Assert.assertEquals(props.alias(), "value");
         Assert.assertEquals(props.stringPropOpt().orElse(null), "value");
         Assert.assertFalse(props.otherThing().isPresent());
         Assert.assertEquals(props.number().intValue(), 42);

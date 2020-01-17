@@ -50,8 +50,8 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
                             context.errorMessage(e.getMessage() + ": " + ProcessorUtils.debugString(method));
                         }
                     });
-                } else {
-                    context.errorMessage("all methods defined in a @Properties interface must have a @Property annotation");
+                } else if (!method.isDefault()) {
+                    context.errorMessage("all non-default methods defined in a @Properties interface must have a @Property annotation");
                 }
             }
         }
@@ -73,7 +73,9 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
                 for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements())) {
                     if (!ProcessorUtils.isCompatibleWith(context, context.toTypeElement(method.getReturnType()), Optional.class)) {
                         Property property = method.getAnnotation(Property.class);
-                        b.line(Objects.class.getCanonicalName() + ".requireNonNull(beanProvider.configuration().get(beanProvider.resolvePlaceholders(\"" + property.value() + "\")), \"missing required property '" + property.value() + "'\");");
+                        if (property != null) {
+                            b.line(Objects.class.getCanonicalName() + ".requireNonNull(beanProvider.configuration().get(beanProvider.resolvePlaceholders(\"" + property.value() + "\")), \"missing required property '" + property.value() + "'\");");
+                        }
                     }
                 }
             }

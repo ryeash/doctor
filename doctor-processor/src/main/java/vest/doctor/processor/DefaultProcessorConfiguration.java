@@ -4,7 +4,6 @@ import vest.doctor.Cached;
 import vest.doctor.CustomizationPoint;
 import vest.doctor.Factory;
 import vest.doctor.ProcessorConfiguration;
-import vest.doctor.Properties;
 import vest.doctor.Prototype;
 import vest.doctor.ProviderDefinitionProcessor;
 import vest.doctor.ThreadLocal;
@@ -18,7 +17,7 @@ public class DefaultProcessorConfiguration implements ProcessorConfiguration {
 
     @Override
     public List<Class<? extends Annotation>> supportedAnnotations() {
-        return Arrays.asList(Singleton.class, ThreadLocal.class, Prototype.class, Cached.class, Factory.class, Properties.class);
+        return Arrays.asList(Singleton.class, ThreadLocal.class, Prototype.class, Cached.class, Factory.class);
     }
 
     @Override

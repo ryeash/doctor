@@ -11,4 +11,8 @@ public interface TCPropertiesIntfcParent {
 
     @Property("string")
     Optional<String> stringPropOpt();
+
+    default String alias() {
+        return stringProp();
+    }
 }
