@@ -53,6 +53,8 @@ public interface AnnotationProcessorContext {
 
     ProviderDependency buildDependency(TypeElement type, String qualifier, boolean required);
 
+    <T extends CustomizationPoint> List<T> customizations(Class<T> type);
+
     default String constructorCall(ProviderDefinition providerDefinition, ExecutableElement executableElement, String doctorRef) {
         return methodCall(providerDefinition, executableElement, null, doctorRef);
     }

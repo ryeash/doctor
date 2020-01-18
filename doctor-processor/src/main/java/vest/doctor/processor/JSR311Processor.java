@@ -14,6 +14,7 @@ import vest.doctor.ParameterLookupCustomizer;
 import vest.doctor.PrimaryProviderWrapper;
 import vest.doctor.Prioritized;
 import vest.doctor.ProcessorConfiguration;
+import vest.doctor.PropertyStringConverter;
 import vest.doctor.ProviderCustomizationPoint;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionProcessor;
@@ -69,6 +70,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     private final List<ProviderCustomizationPoint> providerCustomizationPoints = new LinkedList<>();
     private final List<NewInstanceCustomizer> newInstanceCustomizers = new LinkedList<>();
     private final List<ParameterLookupCustomizer> parameterLookupCustomizers = new LinkedList<>();
+    private final List<PropertyStringConverter> propertyStringConverters = new LinkedList<>();
     private final List<ProviderDefinition> providerDefinitions = new LinkedList<>();
 
     @Override
@@ -87,6 +89,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
         providerCustomizationPoints.sort(Prioritized.COMPARATOR);
         newInstanceCustomizers.sort(Prioritized.COMPARATOR);
         parameterLookupCustomizers.sort(Prioritized.COMPARATOR);
+        propertyStringConverters.sort(Prioritized.COMPARATOR);
     }
 
     private void loadConf(ProcessorConfiguration processorConfiguration) {
@@ -116,6 +119,10 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
             }
             if (customizationPoint instanceof ParameterLookupCustomizer) {
                 parameterLookupCustomizers.add((ParameterLookupCustomizer) customizationPoint);
+                known = true;
+            }
+            if (customizationPoint instanceof PropertyStringConverter) {
+                propertyStringConverters.add((PropertyStringConverter) customizationPoint);
                 known = true;
             }
             if (!known) {
@@ -237,6 +244,20 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     @Override
     public ProviderDependency buildDependency(TypeElement type, String qualifier, boolean required) {
         return new Dependency(type, qualifier, required);
+    }
+
+    @Override
+    public <T extends CustomizationPoint> List<T> customizations(Class<T> type) {
+        return Stream.of(providerDefinitionProcessors,
+                providerCustomizationPoints,
+                newInstanceCustomizers,
+                parameterLookupCustomizers,
+                propertyStringConverters)
+                .flatMap(Collection::stream)
+                .filter(type::isInstance)
+                .distinct()
+                .map(type::cast)
+                .collect(Collectors.toList());
     }
 
     private void writeAppLoaderImplementation() {
