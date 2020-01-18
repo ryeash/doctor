@@ -23,7 +23,7 @@ public class PropertyCodeGen {
     }
 
     private String getPrimitivePropertyCode(AnnotationProcessorContext context, Property property, TypeMirror typeMirror, String beanProviderRef) {
-        String converterMethod = getConverterMethod(context, property, typeMirror);
+        String converterMethod = getConverterMethod(context, typeMirror);
         return buildPropCode(beanProviderRef, "get", property.value(), converterMethod);
     }
 
@@ -61,7 +61,7 @@ public class PropertyCodeGen {
             convertType = parameterizedType.asType();
         }
 
-        String converterMethod = getConverterMethod(context, property, convertType);
+        String converterMethod = getConverterMethod(context, convertType);
         String code = buildPropCode(beanProviderRef, confMethod, property.value(), converterMethod);
         if (isOptional) {
             return "java.util.Optional.ofNullable(" + code + ")";
@@ -70,11 +70,11 @@ public class PropertyCodeGen {
         }
     }
 
-    private String getConverterMethod(AnnotationProcessorContext context, Property property, TypeMirror typeMirror) {
+    private String getConverterMethod(AnnotationProcessorContext context, TypeMirror typeMirror) {
         for (PropertyStringConverter customization : context.customizations(PropertyStringConverter.class)) {
-            String s = customization.converterFunction(context, typeMirror);
-            if (s != null) {
-                return s;
+            String converterFunction = customization.converterFunction(context, typeMirror);
+            if (converterFunction != null) {
+                return converterFunction;
             }
         }
         throw new IllegalArgumentException("unable to convert collection values for property parameter: " + typeMirror);
