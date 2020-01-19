@@ -3,7 +3,10 @@ package vest.doctor.processor;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.StringConversionGenerator;
 
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.ElementFilter;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -40,6 +43,9 @@ public class StandardConversionGenerator implements StringConversionGenerator {
     @Override
     public String converterFunction(AnnotationProcessorContext context, TypeMirror targetType) {
         String converterMethod = CLASS_TO_CONVERTER.get(targetType.toString());
+        if (converterMethod == null && hasStringConstructor(context, targetType)) {
+            return targetType.toString() + "::new";
+        }
         if (converterMethod == null) {
             throw new IllegalArgumentException("unable to convert collection values for property parameter: " + targetType);
         }
@@ -53,5 +59,15 @@ public class StandardConversionGenerator implements StringConversionGenerator {
 
     private static String valueOfCode(Class<?> c) {
         return c.getCanonicalName() + "::valueOf";
+    }
+
+    private static boolean hasStringConstructor(AnnotationProcessorContext context, TypeMirror targetType) {
+        TypeElement typeElement = context.toTypeElement(targetType);
+        for (ExecutableElement constructor : ElementFilter.constructorsIn(typeElement.getEnclosedElements())) {
+            if (constructor.getParameters().size() == 1 && ProcessorUtils.isCompatibleWith(context, context.toTypeElement(constructor.getParameters().get(0).asType()), String.class)) {
+                return true;
+            }
+        }
+        return true;
     }
 }
