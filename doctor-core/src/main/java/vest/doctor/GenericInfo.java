@@ -15,9 +15,19 @@ import javax.lang.model.type.UnionType;
 import javax.lang.model.type.WildcardType;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class GenericInfo {
+
+    public static Optional<TypeMirror> firstParameterizedType(TypeMirror type) {
+        GenericInfo info = new GenericInfo(type);
+        if (info.parameterTypes() != null && !info.parameterTypes().isEmpty()) {
+            return Optional.of(info.parameterTypes().get(0).type());
+        }
+        return Optional.empty();
+    }
+
     private TypeMirror type;
     private List<GenericInfo> generics;
 
@@ -34,7 +44,7 @@ public class GenericInfo {
         return generics;
     }
 
-    private static class GenericInfoVisitor implements TypeVisitor<List<GenericInfo>, Void> {
+    private static final class GenericInfoVisitor implements TypeVisitor<List<GenericInfo>, Void> {
 
         @Override
         public List<GenericInfo> visit(TypeMirror t, Void aVoid) {

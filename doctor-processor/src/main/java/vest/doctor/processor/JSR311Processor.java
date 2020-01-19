@@ -14,13 +14,13 @@ import vest.doctor.ParameterLookupCustomizer;
 import vest.doctor.PrimaryProviderWrapper;
 import vest.doctor.Prioritized;
 import vest.doctor.ProcessorConfiguration;
-import vest.doctor.PropertyStringConverter;
 import vest.doctor.ProviderCustomizationPoint;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionProcessor;
 import vest.doctor.ProviderDependency;
 import vest.doctor.ScopeWriter;
 import vest.doctor.ShutdownContainer;
+import vest.doctor.StringConversionGenerator;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -70,7 +70,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     private final List<ProviderCustomizationPoint> providerCustomizationPoints = new LinkedList<>();
     private final List<NewInstanceCustomizer> newInstanceCustomizers = new LinkedList<>();
     private final List<ParameterLookupCustomizer> parameterLookupCustomizers = new LinkedList<>();
-    private final List<PropertyStringConverter> propertyStringConverters = new LinkedList<>();
+    private final List<StringConversionGenerator> stringConversionGenerators = new LinkedList<>();
     private final List<ProviderDefinition> providerDefinitions = new LinkedList<>();
 
     @Override
@@ -89,7 +89,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
         providerCustomizationPoints.sort(Prioritized.COMPARATOR);
         newInstanceCustomizers.sort(Prioritized.COMPARATOR);
         parameterLookupCustomizers.sort(Prioritized.COMPARATOR);
-        propertyStringConverters.sort(Prioritized.COMPARATOR);
+        stringConversionGenerators.sort(Prioritized.COMPARATOR);
     }
 
     private void loadConf(ProcessorConfiguration processorConfiguration) {
@@ -121,8 +121,8 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 parameterLookupCustomizers.add((ParameterLookupCustomizer) customizationPoint);
                 known = true;
             }
-            if (customizationPoint instanceof PropertyStringConverter) {
-                propertyStringConverters.add((PropertyStringConverter) customizationPoint);
+            if (customizationPoint instanceof StringConversionGenerator) {
+                stringConversionGenerators.add((StringConversionGenerator) customizationPoint);
                 known = true;
             }
             if (!known) {
@@ -252,7 +252,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 providerCustomizationPoints,
                 newInstanceCustomizers,
                 parameterLookupCustomizers,
-                propertyStringConverters)
+                stringConversionGenerators)
                 .flatMap(Collection::stream)
                 .filter(type::isInstance)
                 .distinct()

@@ -1,7 +1,7 @@
 package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.PropertyStringConverter;
+import vest.doctor.StringConversionGenerator;
 
 import javax.lang.model.type.TypeMirror;
 import java.math.BigDecimal;
@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
-public class StandardPropertyConverter implements PropertyStringConverter {
+public class StandardConversionGenerator implements StringConversionGenerator {
 
     private static final Map<String, String> CLASS_TO_CONVERTER;
 

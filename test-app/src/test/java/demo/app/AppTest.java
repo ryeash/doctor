@@ -261,6 +261,13 @@ public class AppTest extends Assert {
                 .then()
                 .statusCode(200)
                 .body(is("toast"));
+
+        RestAssured.given()
+                .accept("application/json")
+                .contentType("application/json")
+                .get("/netty/nothingfound")
+                .then()
+                .statusCode(404);
     }
 
 

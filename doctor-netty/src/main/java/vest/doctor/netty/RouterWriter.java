@@ -244,7 +244,7 @@ public class RouterWriter implements ProviderCustomizationPoint {
 
         public String buildMethodCall(AnnotationProcessorContext context, String providerRef, String requestContextRef) {
             String parameters = method.getParameters().stream()
-                    .map(p -> ProcessingUtils.parameterWriting(context, p, requestContextRef))
+                    .map(p -> ParameterSupport.parameterWriting(context, p, requestContextRef))
                     .collect(Collectors.joining(", "));
             StringBuilder sb = new StringBuilder(providerRef + ".get()." + method.getSimpleName() + "(" + parameters + ")");
             if (method.getReturnType().getKind() != TypeKind.VOID) {

@@ -2,7 +2,7 @@ package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.Property;
-import vest.doctor.PropertyStringConverter;
+import vest.doctor.StringConversionGenerator;
 
 import javax.inject.Provider;
 import javax.lang.model.element.TypeElement;
@@ -71,7 +71,7 @@ public class PropertyCodeGen {
     }
 
     private String getConverterMethod(AnnotationProcessorContext context, TypeMirror typeMirror) {
-        for (PropertyStringConverter customization : context.customizations(PropertyStringConverter.class)) {
+        for (StringConversionGenerator customization : context.customizations(StringConversionGenerator.class)) {
             String converterFunction = customization.converterFunction(context, typeMirror);
             if (converterFunction != null) {
                 return converterFunction;

@@ -2,19 +2,17 @@ package vest.doctor.netty;
 
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.GenericInfo;
-import vest.doctor.GenericTypeVisitor;
+import vest.doctor.StringConversionGenerator;
 
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.net.URI;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public final class ProcessingUtils {
+public final class ParameterSupport {
 
-    private ProcessingUtils() {
+    private ParameterSupport() {
     }
 
     public static String parameterWriting(AnnotationProcessorContext context, VariableElement parameter, String contextRef) {
@@ -28,7 +26,7 @@ public final class ProcessingUtils {
             String parameterizedTypes = gi.parameterTypes()
                     .stream()
                     .map(GenericInfo::type)
-                    .map(ProcessingUtils::typeWithoutParameters)
+                    .map(ParameterSupport::typeWithoutParameters)
                     .map(s -> s + ".class")
                     .collect(Collectors.joining(","));
             if (parameterizedTypes.isEmpty()) {
@@ -45,7 +43,7 @@ public final class ProcessingUtils {
         boolean isOptional = target.toString().startsWith(Optional.class.getCanonicalName());
 
         if (isOptional) {
-            target = target.accept(new GenericTypeVisitor(), null);
+            target = GenericInfo.firstParameterizedType(target).orElse(null);
         }
 
         StringBuilder sb = new StringBuilder();
@@ -69,65 +67,14 @@ public final class ProcessingUtils {
         }
         sb.append(")");
 
-        sb.append(stringConversion(target));
+        sb.append(".map(");
+        sb.append(getStringConversion(context, target));
+        sb.append(")");
 
         if (!isOptional) {
             sb.append(".orElse(null)");
         }
         return sb.toString();
-    }
-
-    private static String stringConversion(TypeMirror target) {
-        if (target.getKind().isPrimitive()) {
-            switch (target.toString()) {
-                case "byte":
-                    return ".map(Byte::valueOf)";
-                case "short":
-                    return ".map(Short::valueOf)";
-                case "int":
-                    return ".map(Integer::valueOf)";
-                case "long":
-                    return ".map(Long::valueOf)";
-                case "float":
-                    return ".map(Float::valueOf)";
-                case "double":
-                    return ".map(Double::valueOf)";
-                case "boolean":
-                    return ".map(Boolean::valueOf)";
-                default:
-                    throw new UnsupportedOperationException("unknown primitive type: " + target.getKind());
-            }
-        } else {
-            if (typeMatch(target, String.class) || typeMatch(target, CharSequence.class)) {
-                return "";
-            } else if (typeMatch(target, StringBuilder.class)) {
-                return ".map(StringBuilder::new)";
-            } else if (typeMatch(target, Byte.class)) {
-                return ".map(Byte::valueOf)";
-            } else if (typeMatch(target, Short.class)) {
-                return ".map(Short::valueOf)";
-            } else if (typeMatch(target, Integer.class)) {
-                return ".map(Integer::valueOf)";
-            } else if (typeMatch(target, Long.class)) {
-                return ".map(Long::valueOf)";
-            } else if (typeMatch(target, Float.class)) {
-                return ".map(Float::valueOf)";
-            } else if (typeMatch(target, Double.class)) {
-                return ".map(Double::valueOf)";
-            } else if (typeMatch(target, Boolean.class)) {
-                return ".map(Boolean::valueOf)";
-            } else if (typeMatch(target, BigDecimal.class)) {
-                return ".map(java.math.BigDecimal::new)";
-            } else if (typeMatch(target, BigInteger.class)) {
-                return ".map(java.math.BigInteger::new)";
-            } else {
-                throw new UnsupportedOperationException("" + target);
-            }
-        }
-    }
-
-    private static boolean typeMatch(TypeMirror typeMirror, Class<?> type) {
-        return typeMirror.toString().equals(type.getCanonicalName());
     }
 
     private static String typeWithoutParameters(TypeMirror type) {
@@ -136,5 +83,16 @@ public final class ProcessingUtils {
         return i >= 0
                 ? s.substring(0, i)
                 : s;
+    }
+
+    private static String getStringConversion(AnnotationProcessorContext context, TypeMirror target) {
+        for (StringConversionGenerator customization : context.customizations(StringConversionGenerator.class)) {
+            String function = customization.converterFunction(context, target);
+            if (function != null) {
+                return function;
+            }
+        }
+        context.errorMessage("no string conversion available for: " + target);
+        return null;
     }
 }

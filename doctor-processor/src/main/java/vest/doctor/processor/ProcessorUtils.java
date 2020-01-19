@@ -1,7 +1,7 @@
 package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.GenericTypeVisitor;
+import vest.doctor.GenericInfo;
 
 import javax.inject.Named;
 import javax.inject.Qualifier;
@@ -127,7 +127,7 @@ public class ProcessorUtils {
 
     public static Optional<TypeElement> getParameterizedType(AnnotationProcessorContext context, TypeMirror type) {
         return Optional.of(type)
-                .map(t -> t.accept(new GenericTypeVisitor(), null))
+                .flatMap(GenericInfo::firstParameterizedType)
                 .map(context.processingEnvironment().getTypeUtils()::asElement)
                 .map(TypeElement.class::cast);
     }

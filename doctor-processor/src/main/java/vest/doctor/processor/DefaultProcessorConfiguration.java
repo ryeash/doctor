@@ -37,7 +37,7 @@ public class DefaultProcessorConfiguration implements ProcessorConfiguration {
                 new PropertyParameterCustomizer(),
                 new ProviderParameterLookupCustomizer(),
                 new ShutdownCustomizationPoint(),
-                new StandardPropertyConverter(),
+                new StandardConversionGenerator(),
 
                 new SingletonScopeWriter(),
                 new ThreadLocalScopeWriter(),
