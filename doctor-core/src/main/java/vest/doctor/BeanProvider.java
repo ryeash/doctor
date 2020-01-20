@@ -26,6 +26,8 @@ public interface BeanProvider {
 
     <T> Stream<DoctorProvider<T>> getProviders(Class<T> type);
 
+    <T> Stream<DoctorProvider<T>> getProviders(Class<T> type, String qualifier);
+
     Stream<DoctorProvider<?>> getProvidersWithAnnotation(Class<? extends Annotation> annotationType);
 
     boolean hasProvider(Class<?> type);

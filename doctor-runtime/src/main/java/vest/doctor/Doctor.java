@@ -61,58 +61,79 @@ public class Doctor implements BeanProvider, AutoCloseable {
         getInstance(EventProducer.class).publish(new ApplicationStartedEvent(this));
     }
 
+    @Override
     public List<String> getActiveModules() {
         return activeModules;
     }
 
+    @Override
     public void register(DoctorProvider<?> provider) {
         providerIndex.setProvider(provider);
     }
 
+    @Override
     public <T> T getInstance(Class<T> type) {
         return getProvider(type).get();
     }
 
+    @Override
     public <T> T getInstance(Class<T> type, String qualifier) {
         return getProvider(type, qualifier).get();
     }
 
+    @Override
     public <T> DoctorProvider<T> getProvider(Class<T> type) {
         return getProvider(type, null);
     }
 
+    @Override
     public <T> DoctorProvider<T> getProvider(Class<T> type, String qualifier) {
         return getProviderOpt(type, qualifier)
                 .orElseThrow(() -> new IllegalArgumentException("no provider registered for " + qualifier + "/" + type.getCanonicalName()));
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public <T> Optional<DoctorProvider<T>> getProviderOpt(Class<T> type, String qualifier) {
         DoctorProvider<T> provider = (DoctorProvider<T>) providerIndex.getProvider(type, qualifier);
         return Optional.ofNullable(provider);
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public <T> Stream<DoctorProvider<T>> getProviders(Class<T> type) {
         return providerIndex.getProviders(type).map(c -> (DoctorProvider<T>) c);
     }
 
+    @Override
+    public <T> Stream<DoctorProvider<T>> getProviders(Class<T> type, String qualifier) {
+        if (qualifier == null) {
+            return getProviders(type);
+        }
+        return getProviders(type).filter(p -> p.qualifier().equals(qualifier));
+    }
+
+    @Override
     public Stream<DoctorProvider<?>> getProvidersWithAnnotation(Class<? extends Annotation> annotationType) {
         return providerIndex.getProvidersWithAnnotation(annotationType);
     }
 
+    @Override
     public boolean hasProvider(Class<?> type) {
         return hasProvider(type, null);
     }
 
+    @Override
     public boolean hasProvider(Class<?> type, String qualifier) {
         return providerIndex.getProvider(type, qualifier) != null;
     }
 
+    @Override
     public ConfigurationFacade configuration() {
         return configurationFacade;
     }
 
+    @Override
     public String resolvePlaceholders(String string) {
         return configurationFacade.resolvePlaceholders(string);
     }

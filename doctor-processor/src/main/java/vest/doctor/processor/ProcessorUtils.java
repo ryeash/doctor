@@ -18,10 +18,12 @@ import java.nio.ByteBuffer;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -101,15 +103,26 @@ public class ProcessorUtils {
     }
 
     public static List<TypeElement> hierarchy(AnnotationProcessorContext context, TypeElement type) {
-        List<TypeElement> allProvidedTypes = new LinkedList<>();
+        Set<TypeElement> allProvidedTypes = new LinkedHashSet<>();
+        List<TypeElement> allInterfaces = new LinkedList<>();
         allProvidedTypes.add(type);
-        context.processingEnvironment().getTypeUtils().directSupertypes(type.asType())
+        context.processingEnvironment()
+                .getTypeUtils()
+                .directSupertypes(
+                        type.asType())
                 .stream()
                 .map(context::toTypeElement)
                 .filter(t -> !t.toString().equals(Object.class.getCanonicalName()))
                 .forEach(allProvidedTypes::add);
-        Collections.reverse(allProvidedTypes);
-        return allProvidedTypes;
+        for (TypeElement t : allProvidedTypes) {
+            for (TypeMirror intfc : t.getInterfaces()) {
+                allInterfaces.add(context.toTypeElement(intfc));
+            }
+        }
+        allProvidedTypes.addAll(allInterfaces);
+        List<TypeElement> list = new LinkedList<>(allProvidedTypes);
+        Collections.reverse(list);
+        return list;
     }
 
     public static boolean isCompatibleWith(AnnotationProcessorContext context, TypeElement type, Class<?> checkType) {

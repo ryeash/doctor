@@ -6,6 +6,8 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import java.util.List;
@@ -44,7 +46,11 @@ public interface AnnotationProcessorContext {
     List<ParameterLookupCustomizer> parameterLookupCustomizers();
 
     default TypeElement toTypeElement(TypeMirror mirror) {
-        return (TypeElement) processingEnvironment().getTypeUtils().asElement(mirror);
+        if (mirror.getKind() == TypeKind.ARRAY) {
+            return (TypeElement) processingEnvironment().getTypeUtils().asElement(((ArrayType) mirror).getComponentType());
+        } else {
+            return (TypeElement) processingEnvironment().getTypeUtils().asElement(mirror);
+        }
     }
 
     Number nextId();
