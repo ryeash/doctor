@@ -1,8 +1,11 @@
 package demo.app;
 
 import org.testng.Assert;
+import vest.doctor.BeanProvider;
+import vest.doctor.ConfigurationFacade;
 import vest.doctor.DoctorProvider;
 
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
@@ -23,5 +26,14 @@ public class TCProviderInject {
         Assert.assertEquals(coffeeMakerNurseProvider.get().brew(), "french pressing");
         Assert.assertEquals(pourOverProvider.get().brew(), "pouring over");
         Assert.assertEquals(pourOverNurseProvider.get().brew(), "pouring over");
+        Assert.assertEquals(coffeeMakers.size(), 2);
+        Assert.assertEquals(coffeeMakersArr.length, 2);
+    }
+
+    @PostConstruct
+    public void postConstruct(BeanProvider beanProvider,
+                              ConfigurationFacade configurationFacade) {
+        Assert.assertNotNull(beanProvider);
+        Assert.assertNotNull(configurationFacade);
     }
 }

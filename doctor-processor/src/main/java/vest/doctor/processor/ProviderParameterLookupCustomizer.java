@@ -21,67 +21,63 @@ public class ProviderParameterLookupCustomizer implements ParameterLookupCustomi
 
     @Override
     public String lookupCode(AnnotationProcessorContext context, VariableElement variableElement, String doctorRef) {
-        TypeElement typeElement = context.toTypeElement(variableElement.asType());
-        String qualifier = ProcessorUtils.getQualifier(context, variableElement);
+        try {
+            TypeElement typeElement = context.toTypeElement(variableElement.asType());
+            String qualifier = ProcessorUtils.getQualifier(context, variableElement);
 
-        if (variableElement.asType().getKind().isPrimitive()) {
-            context.errorMessage("provider injection is impossible for primitive type: " + ProcessorUtils.debugString(variableElement));
-        }
-
-        if (ProcessorUtils.isCompatibleWith(context, typeElement, Optional.class)) {
-            TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
-            return doctorRef + ".getProviderOpt(" + typeMirror + ".class, " + qualifier + ").map(" + Provider.class.getCanonicalName() + "::get)";
-        }
-
-        if (ProcessorUtils.isCompatibleWith(context, typeElement, Provider.class)) {
-            TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
-            return doctorRef + ".getProvider(" + typeMirror + ".class, " + qualifier + ")";
-        }
-
-        if (ProcessorUtils.isCompatibleWith(context, typeElement, Iterable.class)) {
-            TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
-            String preamble = doctorRef + ".getProviders(" + typeMirror + ".class, " + qualifier + ")"
-                    + ".map(" + Provider.class.getCanonicalName() + "::get)"
-                    + ".collect(" + Collectors.class.getCanonicalName();
-
-            if (ProcessorUtils.isCompatibleWith(context, typeElement, Set.class)) {
-                return preamble + ".toSet())";
-            } else if (ProcessorUtils.isCompatibleWith(context, typeElement, List.class)) {
-                return preamble + ".toList())";
-            } else if (ProcessorUtils.isCompatibleWith(context, typeElement, Collection.class)) {
-                return preamble + ".toList())";
-            } else {
-                context.errorMessage("unable to inject iterable type: " + typeElement);
-                return null;
+            if (variableElement.asType().getKind().isPrimitive()) {
+                context.errorMessage("provider injection is impossible for primitive type: " + ProcessorUtils.debugString(variableElement));
             }
-        }
 
-        if (ProcessorUtils.isCompatibleWith(context, typeElement, Stream.class)) {
-            TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
-            return doctorRef + ".getProviders(" + typeMirror + ".class, " + qualifier + ")";
-        }
+            if (ProcessorUtils.isCompatibleWith(context, typeElement, Optional.class)) {
+                TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
+                return doctorRef + ".getProviderOpt(" + typeMirror + ".class, " + qualifier + ").map(" + Provider.class.getCanonicalName() + "::get)";
+            }
 
-        if (variableElement.asType().getKind() == TypeKind.ARRAY) {
-            String type = typeElement.getQualifiedName().toString();
-            return doctorRef + ".getProviders(" + type + ".class, " + qualifier + ").map(" + Provider.class.getCanonicalName() + "::get)" + ".toArray(" + type + "[]::new)";
-        }
+            if (ProcessorUtils.isCompatibleWith(context, typeElement, Provider.class)) {
+                TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
+                return doctorRef + ".getProvider(" + typeMirror + ".class, " + qualifier + ")";
+            }
 
-        return doctorRef + ".getInstance(" + variableElement.asType() + ".class, " + qualifier + ")";
+            if (ProcessorUtils.isCompatibleWith(context, typeElement, Iterable.class)) {
+                TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
+                String preamble = doctorRef + ".getProviders(" + typeMirror + ".class, " + qualifier + ")"
+                        + ".map(" + Provider.class.getCanonicalName() + "::get)"
+                        + ".collect(" + Collectors.class.getCanonicalName();
+
+                if (ProcessorUtils.isCompatibleWith(context, typeElement, Set.class)) {
+                    return preamble + ".toSet())";
+                } else if (ProcessorUtils.isCompatibleWith(context, typeElement, List.class)) {
+                    return preamble + ".toList())";
+                } else if (ProcessorUtils.isCompatibleWith(context, typeElement, Collection.class)) {
+                    return preamble + ".toList())";
+                } else {
+                    context.errorMessage("unable to inject iterable type: " + typeElement);
+                    return null;
+                }
+            }
+
+            if (ProcessorUtils.isCompatibleWith(context, typeElement, Stream.class)) {
+                TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
+                return doctorRef + ".getProviders(" + typeMirror + ".class, " + qualifier + ")";
+            }
+
+            if (variableElement.asType().getKind() == TypeKind.ARRAY) {
+                String type = typeElement.getQualifiedName().toString();
+                return doctorRef + ".getProviders(" + type + ".class, " + qualifier + ").map(" + Provider.class.getCanonicalName() + "::get)" + ".toArray(" + type + "[]::new)";
+            }
+
+            return doctorRef + ".getInstance(" + variableElement.asType() + ".class, " + qualifier + ")";
+        } catch (IllegalArgumentException e) {
+            context.errorMessage("error wiring parameter: " + e.getMessage() + ": " + ProcessorUtils.debugString(variableElement));
+            throw e;
+        }
     }
 
     @Override
     public String dependencyCheckCode(AnnotationProcessorContext context, VariableElement variableElement, String doctorRef) {
         TypeElement typeElement = context.toTypeElement(variableElement.asType());
-        if (typeElement == null) {
-            context.errorMessage("null type from " + ProcessorUtils.debugString(variableElement));
-            throw new IllegalArgumentException("null type from " + ProcessorUtils.debugString(variableElement));
-        }
         String qualifier = ProcessorUtils.getQualifier(context, variableElement);
-
-        if (variableElement.asType().getKind().isPrimitive()) {
-            context.errorMessage("provider injection is impossible for primitive type: " + ProcessorUtils.debugString(variableElement));
-        }
-
         if (ProcessorUtils.isCompatibleWith(context, typeElement, Optional.class)) {
             return "";
         }

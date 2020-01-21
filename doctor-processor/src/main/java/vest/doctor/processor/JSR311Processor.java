@@ -7,6 +7,7 @@ import vest.doctor.ClassBuilder;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.CustomizationPoint;
 import vest.doctor.DoctorProvider;
+import vest.doctor.EventManager;
 import vest.doctor.EventProducer;
 import vest.doctor.MethodBuilder;
 import vest.doctor.NewInstanceCustomizer;
@@ -179,17 +180,6 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 .collect(Collectors.toSet());
     }
 
-    private void errorChecking(ProviderDefinition providerDefinition) {
-        for (VariableElement field : providerDefinition.fields(Inject.class)) {
-            errorMessage("field injection is not supported: " + ProcessorUtils.debugString(field));
-        }
-        ProcessorUtils.<Annotation>ifClassExists("javax.annotation.PreDestroy", preDestroy -> {
-            for (ExecutableElement method : providerDefinition.methods(preDestroy)) {
-                errorMessage("@PreDestroy is not supported (use the AutoCloseable interface instead): " + ProcessorUtils.debugString(method));
-            }
-        });
-    }
-
     @Override
     public ProcessingEnvironment processingEnvironment() {
         return processingEnv;
@@ -258,6 +248,17 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 .distinct()
                 .map(type::cast)
                 .collect(Collectors.toList());
+    }
+
+    private void errorChecking(ProviderDefinition providerDefinition) {
+        for (VariableElement field : providerDefinition.fields(Inject.class)) {
+            errorMessage("field injection is not supported: " + ProcessorUtils.debugString(field));
+        }
+        ProcessorUtils.<Annotation>ifClassExists("javax.annotation.PreDestroy", preDestroy -> {
+            for (ExecutableElement method : providerDefinition.methods(preDestroy)) {
+                errorMessage("@PreDestroy is not supported (use the AutoCloseable interface instead): " + ProcessorUtils.debugString(method));
+            }
+        });
     }
 
     private void writeAppLoaderImplementation() {
@@ -353,16 +354,12 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     }
 
     private void compileTimeDependencyCheck() {
-        TypeElement typeElement = processingEnv.getElementUtils().getTypeElement(EventProducer.class.getCanonicalName());
-        ProviderDependency eventProducerDependency = buildDependency(typeElement, null, false);
-        TypeElement cfType = processingEnv.getElementUtils().getTypeElement(ConfigurationFacade.class.getCanonicalName());
-        ProviderDependency cfDependency = buildDependency(cfType, null, false);
+        List<ProviderDependency> builtins = ignoredBuiltins(BeanProvider.class, ConfigurationFacade.class, EventProducer.class, EventManager.class);
 
         for (Map.Entry<ProviderDependency, Set<ProviderDependency>> entry : typesToDependencies.entrySet()) {
             ProviderDependency target = entry.getKey();
             for (ProviderDependency dependency : entry.getValue()) {
-                if (Objects.equals(eventProducerDependency, dependency)
-                        || Objects.equals(cfDependency, dependency)) {
+                if (builtins.contains(dependency)) {
                     continue;
                 }
                 if (dependency != null && dependency.required() && !isProvided(dependency)) {
@@ -371,5 +368,20 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 }
             }
         }
+    }
+
+    private List<ProviderDependency> ignoredBuiltins(Class<?>... types) {
+        return Stream.of(types)
+                .map(Class::getCanonicalName)
+                .map(processingEnv.getElementUtils()::getTypeElement)
+                .map(t -> buildDependency(t, null, false))
+                .collect(Collectors.toList());
+//        TypeElement typeElement = processingEnv.getElementUtils().getTypeElement(EventProducer.class.getCanonicalName());
+//        TypeElement cfType = processingEnv.getElementUtils().getTypeElement(ConfigurationFacade.class.getCanonicalName());
+//        TypeElement bpType = processingEnv.getElementUtils().getTypeElement(BeanProvider.class.getCanonicalName());
+//        return Arrays.asList(
+//                buildDependency(typeElement, null, false),
+//                buildDependency(cfType, null, false),
+//                buildDependency(bpType, null, false));
     }
 }
