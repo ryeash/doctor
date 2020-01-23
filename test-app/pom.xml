@@ -19,6 +19,11 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <artifactId>doctor-aop</artifactId>
+            <groupId>${project.groupId}</groupId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <artifactId>doctor-runtime</artifactId>
             <groupId>${project.groupId}</groupId>
             <version>${project.version}</version>

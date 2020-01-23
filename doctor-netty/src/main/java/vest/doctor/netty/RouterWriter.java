@@ -54,7 +54,7 @@ public class RouterWriter implements ProviderCustomizationPoint {
     private final List<Meta> filterMetadata = new LinkedList<>();
 
     @Override
-    public String wrap(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String providerRef) {
+    public String wrap(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String providerRef, String beanProviderRef) {
         if (providerDefinition.annotationSource().getAnnotation(Path.class) != null) {
             String[] roots = Optional.ofNullable(providerDefinition.annotationSource().getAnnotation(Path.class))
                     .map(Path::value)

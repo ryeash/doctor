@@ -276,7 +276,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
             String creator = "new " + providerDefinition.generatedClassName() + "(beanProvider)";
 
             for (ProviderCustomizationPoint providerCustomizationPoint : providerCustomizationPoints) {
-                creator = providerCustomizationPoint.wrap(this, providerDefinition, creator);
+                creator = providerCustomizationPoint.wrap(this, providerDefinition, creator, "beanProvider");
             }
 
             boolean hasModules = !providerDefinition.modules().isEmpty();

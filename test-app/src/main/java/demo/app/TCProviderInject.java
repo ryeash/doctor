@@ -26,8 +26,8 @@ public class TCProviderInject {
         Assert.assertEquals(coffeeMakerNurseProvider.get().brew(), "french pressing");
         Assert.assertEquals(pourOverProvider.get().brew(), "pouring over");
         Assert.assertEquals(pourOverNurseProvider.get().brew(), "pouring over");
-        Assert.assertEquals(coffeeMakers.size(), 2);
-        Assert.assertEquals(coffeeMakersArr.length, 2);
+        Assert.assertEquals(coffeeMakers.size(), 3);
+        Assert.assertEquals(coffeeMakersArr.length, 3);
     }
 
     @PostConstruct

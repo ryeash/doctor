@@ -21,6 +21,7 @@ import vest.doctor.MapConfigurationSource;
 
 import javax.inject.Provider;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -270,6 +271,15 @@ public class AppTest extends Assert {
                 .statusCode(404);
     }
 
+    @Test
+    public void aspects() {
+        TCAspects instance = doctor.getInstance(TCAspects.class);
+        instance.execute("name", Arrays.asList("a", "b"));
+        assertEquals(instance.parrot("hi"), "hi altered");
+
+        CoffeeMaker aspect = doctor.getInstance(CoffeeMaker.class, "coffee-aspect");
+        assertEquals(aspect.brew(), "french pressing altered");
+    }
 
     @Test
     public void ws() throws Exception {

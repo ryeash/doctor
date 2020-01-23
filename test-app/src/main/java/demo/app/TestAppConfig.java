@@ -7,6 +7,7 @@ import vest.doctor.Primary;
 import vest.doctor.Prototype;
 import vest.doctor.SkipInjection;
 import vest.doctor.ThreadLocal;
+import vest.doctor.aop.Aspects;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -105,5 +106,13 @@ public class TestAppConfig {
     @CustomQualifier(name = "defaultColor")
     public TCCustomQualifier customQualifier3() {
         return new TCCustomQualifier("defaultColor");
+    }
+
+    @Factory
+    @Singleton
+    @Named("coffee-aspect")
+    @Aspects({TimingAspect.class, LoggingAspect.class, StringModificationAspect.class})
+    public CoffeeMaker coffeeMakerAspect() {
+        return new FrenchPress();
     }
 }
