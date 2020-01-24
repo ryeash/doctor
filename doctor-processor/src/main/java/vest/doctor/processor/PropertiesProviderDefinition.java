@@ -38,9 +38,9 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
             for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements())) {
                 if (method.getAnnotation(Property.class) != null) {
                     if (method.getParameters().size() > 0) {
-                        context.errorMessage("methods in @Properties definition interfaces must not have parameters: " + ProcessorUtils.debugString(method));
+                        context.errorMessage("@Property methods in @Properties definition interfaces must not have parameters: " + ProcessorUtils.debugString(method));
                     }
-                    impl.addMethod("public " + method.getReturnType() + " " + method.getSimpleName() + "()", mb -> {
+                    impl.addMethod("@Override public " + method.getReturnType() + " " + method.getSimpleName() + "()", mb -> {
                         TypeMirror returnType = method.getReturnType();
                         try {
                             String code = propertyCodeGen.getPropertyCode(context, method.getAnnotation(Property.class), returnType, "beanProvider");

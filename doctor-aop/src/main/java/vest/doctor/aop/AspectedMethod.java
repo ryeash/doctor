@@ -12,6 +12,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -22,9 +23,11 @@ import java.util.stream.Stream;
 
 final class AspectedMethod {
     private static final AtomicInteger i = new AtomicInteger(0);
+    private static final Map<String, String> initializedAspectsMap = new HashMap<>();
 
     private final ExecutableElement method;
     private final List<TypeElement> aspectClasses;
+    private final String aspectClassUniqueKey;
 
     private final String uniqueFieldPrefix;
 
@@ -38,6 +41,8 @@ final class AspectedMethod {
                 .map(context.processingEnvironment().getElementUtils()::getTypeElement)
                 .collect(Collectors.toList());
         this.uniqueFieldPrefix = "asp" + i.incrementAndGet();
+
+        this.aspectClassUniqueKey = aspectClasses.stream().map(String::valueOf).collect(Collectors.joining("|"));
     }
 
     private String metadataName() {
@@ -45,6 +50,9 @@ final class AspectedMethod {
     }
 
     private String aspectName() {
+        if (initializedAspectsMap.containsKey(aspectClassUniqueKey)) {
+            return initializedAspectsMap.get(aspectClassUniqueKey);
+        }
         return uniqueFieldPrefix + "Aspect";
     }
 
@@ -57,6 +65,7 @@ final class AspectedMethod {
     }
 
     public void init(ClassBuilder classBuilder, MethodBuilder constructor) {
+
         classBuilder.addField("private final MethodMetadata " + metadataName());
 
         String paramTypes;
@@ -75,14 +84,19 @@ final class AspectedMethod {
         }
         constructor.line("this." + metadataName() + " =  new MethodMetadata(delegate, \"" + method.getSimpleName() + "\", " + paramTypes + ", " + returnType + ");");
 
-        classBuilder.addImportClass(Aspect.class);
-        classBuilder.addImportClass(AspectList.class);
-        classBuilder.addField("private final " + AspectList.class.getSimpleName() + " " + aspectName());
 
-        String params = aspectClasses.stream()
-                .map(c -> "beanProvider.getInstance(" + c + ".class, null)")
-                .collect(Collectors.joining(", "));
-        constructor.line("this." + aspectName() + " = new AspectList(" + params + ");");
+        initializedAspectsMap.computeIfAbsent(aspectClassUniqueKey, s -> {
+            String aspectName = uniqueFieldPrefix + "Aspect";
+            classBuilder.addImportClass(Aspect.class);
+            classBuilder.addImportClass(AspectCoordinator.class);
+            classBuilder.addField("private final " + AspectCoordinator.class.getSimpleName() + " " + aspectName);
+
+            String params = aspectClasses.stream()
+                    .map(c -> "beanProvider.getInstance(" + c + ".class, null)")
+                    .collect(Collectors.joining(", "));
+            constructor.line("this." + aspectName + " = new " + AspectCoordinator.class.getSimpleName() + "(" + params + ");");
+            return aspectName;
+        });
     }
 
     public String buildAspectedMethodBody() {

@@ -9,6 +9,5 @@ import java.lang.annotation.Target;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.PARAMETER, ElementType.FIELD})
-public @interface HeaderParam {
-    String value();
+public @interface BeanParam {
 }

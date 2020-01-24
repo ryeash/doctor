@@ -4,16 +4,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class AspectList implements AroundAdvice, BeforeAdvice, AfterAdvice {
+public class AspectCoordinator implements AroundAdvice, BeforeAdvice, AfterAdvice {
     private final List<BeforeAdvice> befores = new ArrayList<>(3);
     private final List<AroundAdvice> arounds = new ArrayList<>(3);
     private final List<AfterAdvice> afters = new ArrayList<>(3);
 
-    public AspectList(Aspect... delegates) {
+    public AspectCoordinator(Aspect... delegates) {
         this(Arrays.asList(delegates));
     }
 
-    public AspectList(List<Aspect> delegates) {
+    public AspectCoordinator(List<Aspect> delegates) {
         for (Aspect delegate : delegates) {
             if (delegate instanceof BeforeAdvice) {
                 befores.add((BeforeAdvice) delegate);

@@ -15,6 +15,7 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import java.util.Arrays;
 import java.util.Collections;
@@ -62,7 +63,7 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
                 .addImportClass(List.class)
                 .addImportClass(Callable.class)
                 .addImportClass(AspectException.class)
-                .addImportClass(AspectList.class)
+                .addImportClass(AspectCoordinator.class)
                 .addImportClass(typeElement.getQualifiedName().toString());
 
         boolean isInterface = typeElement.getKind() == ElementKind.INTERFACE;
@@ -102,9 +103,7 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
                     } else {
                         methodBody = standardMethodDelegation(method);
                     }
-                    classBuilder.addMethod(buildMethodDeclaration(method), mb -> {
-                        mb.line(methodBody);
-                    });
+                    classBuilder.addMethod(buildMethodDeclaration(method), mb -> mb.line(methodBody));
                 });
         classBuilder.setConstructor(constructor.finish());
         classBuilder.writeClass(context.filer());
@@ -113,7 +112,7 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
     }
 
     private String buildMethodDeclaration(ExecutableElement method) {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder("@Override ");
         Set<Modifier> modifiers = method.getModifiers();
         if (modifiers.contains(Modifier.PUBLIC)) {
             sb.append("public ");
@@ -121,7 +120,15 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
             sb.append("protected ");
         }
         if (!method.getTypeParameters().isEmpty()) {
-            String typeParams = method.getTypeParameters().stream().map(Element::getSimpleName)
+            String typeParams = method.getTypeParameters().stream()
+                    .map(tp -> {
+                        if (tp.getBounds().isEmpty()) {
+                            return tp.getSimpleName().toString();
+                        } else {
+                            return tp.getSimpleName() + " extends " +
+                                    tp.getBounds().stream().map(TypeMirror::toString).collect(Collectors.joining(" & "));
+                        }
+                    })
                     .collect(Collectors.joining(", ", "<", ">"));
             sb.append(typeParams).append(" ");
         }

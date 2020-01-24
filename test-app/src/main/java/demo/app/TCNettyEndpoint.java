@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import vest.doctor.netty.Attribute;
+import vest.doctor.netty.BeanParam;
 import vest.doctor.netty.Body;
 import vest.doctor.netty.Filter;
 import vest.doctor.netty.GET;
@@ -38,7 +39,8 @@ public class TCNettyEndpoint {
     public String basic(@QueryParam("q") Optional<String> q,
                         @QueryParam("number") int num,
                         @QueryParam("number") Optional<Integer> optNum,
-                        @Attribute("list") List<InputStream> streams) {
+                        @Attribute("list") List<InputStream> streams,
+                        @BeanParam NettyBeanParam beanParam) {
         Assert.assertNull(streams);
         return "ok " + q.orElse(null) + " " + num + " " + optNum.orElse(-1);
     }

@@ -3,6 +3,7 @@ package demo.app;
 import vest.doctor.aop.Aspects;
 
 import javax.inject.Singleton;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
 
@@ -20,7 +21,21 @@ public class TCAspects {
         return name;
     }
 
-    public <T> List<T> parametric(Class<T> type) {
+    @Aspects(StringModificationAspect.class)
+    public String parrot2(String name) {
+        return name;
+    }
+
+    @Aspects(StringModificationAspect.class)
+    public String parrot3(String name) {
+        return name;
+    }
+
+    public <T extends String & CharSequence, R extends InputStream> List<T> parametric(Class<T> type) {
         return Collections.emptyList();
+    }
+
+    private void privateMethodShouldntBeAProblem() {
+        System.out.println("private method");
     }
 }
