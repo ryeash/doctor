@@ -376,12 +376,5 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 .map(processingEnv.getElementUtils()::getTypeElement)
                 .map(t -> buildDependency(t, null, false))
                 .collect(Collectors.toList());
-//        TypeElement typeElement = processingEnv.getElementUtils().getTypeElement(EventProducer.class.getCanonicalName());
-//        TypeElement cfType = processingEnv.getElementUtils().getTypeElement(ConfigurationFacade.class.getCanonicalName());
-//        TypeElement bpType = processingEnv.getElementUtils().getTypeElement(BeanProvider.class.getCanonicalName());
-//        return Arrays.asList(
-//                buildDependency(typeElement, null, false),
-//                buildDependency(cfType, null, false),
-//                buildDependency(bpType, null, false));
     }
 }

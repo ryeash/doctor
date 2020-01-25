@@ -1,6 +1,8 @@
 package demo.app;
 
+import org.testng.Assert;
 import vest.doctor.netty.QueryParam;
+import vest.doctor.netty.RequestContext;
 
 import javax.inject.Inject;
 import java.util.Optional;
@@ -12,8 +14,10 @@ public class NettyBeanParam<T> {
     private int num;
 
     @Inject
-    public NettyBeanParam(@QueryParam("number") int num) {
+    public NettyBeanParam(@QueryParam("number") int num,
+                          RequestContext requestContext) {
         this.num = num;
+        Assert.assertNotNull(requestContext);
     }
 
     public Optional<String> getQ() {

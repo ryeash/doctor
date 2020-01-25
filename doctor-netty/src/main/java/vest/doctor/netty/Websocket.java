@@ -16,12 +16,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Interface defining a websocket endpoint for use with the {@link HttpServerBuilder#setWebsocketHandler(String, Websocket)} method.
+ * Abstract class defining a websocket endpoint.
  */
 public abstract class Websocket {
 
-    public static final AttributeKey<WebSocketServerHandshaker> WS_HANDSHAKER = AttributeKey.valueOf("vst.websocket.handshaker");
-    public static final AttributeKey<String> WS_PATH = AttributeKey.valueOf("vst.websocket.path");
+    public static final AttributeKey<WebSocketServerHandshaker> WS_HANDSHAKER = AttributeKey.valueOf("vest.websocket.handshaker");
+    public static final AttributeKey<String> WS_PATH = AttributeKey.valueOf("vest.websocket.path");
     public static final WebSocketServerHandshakerFactory handshakerFactory = new WebSocketServerHandshakerFactory("/*", null, false);
 
     /**

@@ -1,6 +1,6 @@
 package vest.doctor;
 
-public class PrimaryProviderWrapper<T> extends DoctorProviderWrapper<T> {
+public final class PrimaryProviderWrapper<T> extends DoctorProviderWrapper<T> {
 
     public PrimaryProviderWrapper(DoctorProvider<T> delegate) {
         super(delegate);

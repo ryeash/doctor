@@ -49,7 +49,7 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
     private String createDelegationClass(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
         TypeElement typeElement = providerDefinition.providedType();
 
-        String delegateClassName = providerDefinition.providedType().getSimpleName() + "__aspects" + context.nextId();
+        String delegateClassName = providerDefinition.providedType().getSimpleName() + "__aop" + context.nextId();
         String delegateQualifiedClassName = context.generatedPackage() + "." + delegateClassName;
         ClassBuilder classBuilder = new ClassBuilder()
                 .setClassName(delegateQualifiedClassName)

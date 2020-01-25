@@ -6,14 +6,13 @@ import vest.doctor.netty.Path;
 import vest.doctor.netty.Websocket;
 
 import javax.inject.Singleton;
-import java.nio.charset.StandardCharsets;
 
 @Singleton
 @Path("/grumpy")
 public class TCNettyWebsocket extends Websocket {
     @Override
     public void onMessage(ChannelHandlerContext ctx, WebSocketFrame frame) {
-        sendText(ctx, "go away " + frame.content().toString(StandardCharsets.UTF_8))
+        sendText(ctx, "go away " + getText(frame))
                 .thenRun(() -> close(ctx));
     }
 }

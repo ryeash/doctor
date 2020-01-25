@@ -65,7 +65,6 @@ final class AspectedMethod {
     }
 
     public void init(ClassBuilder classBuilder, MethodBuilder constructor) {
-
         classBuilder.addField("private final MethodMetadata " + metadataName());
 
         String paramTypes;
@@ -83,7 +82,6 @@ final class AspectedMethod {
             returnType = stripParams(method.getReturnType()) + ".class";
         }
         constructor.line("this." + metadataName() + " =  new MethodMetadata(delegate, \"" + method.getSimpleName() + "\", " + paramTypes + ", " + returnType + ");");
-
 
         initializedAspectsMap.computeIfAbsent(aspectClassUniqueKey, s -> {
             String aspectName = uniqueFieldPrefix + "Aspect";

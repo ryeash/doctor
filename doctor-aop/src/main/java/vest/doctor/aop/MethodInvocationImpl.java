@@ -1,5 +1,6 @@
 package vest.doctor.aop;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -13,7 +14,7 @@ public class MethodInvocationImpl implements MethodInvocation {
 
     public MethodInvocationImpl(MethodMetadata methodMetadata, List<MutableMethodArgument> argumentList, Callable<?> methodInvoker) {
         this.methodMetadata = methodMetadata;
-        this.argumentList = argumentList;
+        this.argumentList = Collections.unmodifiableList(argumentList);
         this.methodInvoker = methodInvoker;
     }
 
