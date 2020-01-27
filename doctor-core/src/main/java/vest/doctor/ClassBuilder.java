@@ -21,6 +21,7 @@ public class ClassBuilder {
     private String extendsClass;
     private Set<String> implementsInterfaces;
     private Set<String> importClasses;
+    private Set<String> classAnnotations;
     private List<String> fields;
     private String constructor;
     private List<String> methods;
@@ -79,6 +80,14 @@ public class ClassBuilder {
             importClasses = new LinkedHashSet<>();
         }
         importClasses.add(className);
+        return this;
+    }
+
+    public ClassBuilder addClassAnnotation(String annotation) {
+        if (classAnnotations == null) {
+            this.classAnnotations = new LinkedHashSet<>();
+        }
+        this.classAnnotations.add(annotation);
         return this;
     }
 
@@ -146,6 +155,12 @@ public class ClassBuilder {
                 if (importClasses != null) {
                     for (String importClass : importClasses) {
                         out.println("import " + importClass + ";");
+                    }
+                }
+
+                if (classAnnotations != null) {
+                    for (String classAnnotation : classAnnotations) {
+                        out.println(classAnnotation);
                     }
                 }
 

@@ -5,8 +5,8 @@ import vest.doctor.BeanProvider;
 import vest.doctor.ClassBuilder;
 import vest.doctor.DoctorProvider;
 import vest.doctor.MethodBuilder;
-import vest.doctor.ProviderCustomizationPoint;
 import vest.doctor.ProviderDefinition;
+import vest.doctor.ProviderDefinitionListener;
 import vest.doctor.ProviderDependency;
 
 import javax.lang.model.element.AnnotationMirror;
@@ -29,7 +29,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class RouterWriter implements ProviderCustomizationPoint {
+public class RouterWriter implements ProviderDefinitionListener {
 
     private final ClassBuilder routerBuilder = new ClassBuilder()
             .addImplementsInterface(Router.class)
@@ -54,7 +54,7 @@ public class RouterWriter implements ProviderCustomizationPoint {
     private final List<Meta> filterMetadata = new LinkedList<>();
 
     @Override
-    public String wrap(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String providerRef, String beanProviderRef) {
+    public void process(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
         if (providerDefinition.annotationSource().getAnnotation(Path.class) != null) {
             String[] roots = Optional.ofNullable(providerDefinition.annotationSource().getAnnotation(Path.class))
                     .map(Path::value)
@@ -102,8 +102,6 @@ public class RouterWriter implements ProviderCustomizationPoint {
                 }
             }
         }
-        // unchanged
-        return providerRef;
     }
 
     @Override

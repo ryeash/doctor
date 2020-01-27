@@ -16,6 +16,7 @@
         <module>doctor-netty</module>
         <module>doctor-jaxrs</module>
         <module>doctor-aop</module>
+        <module>doctor-jpa</module>
     </modules>
 
     <properties>

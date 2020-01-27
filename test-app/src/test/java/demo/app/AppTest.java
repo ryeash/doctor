@@ -2,6 +2,8 @@ package demo.app;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import demo.app.dao.DAO;
+import demo.app.dao.User;
 import io.restassured.RestAssured;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -279,6 +281,18 @@ public class AppTest extends Assert {
 
         CoffeeMaker aspect = doctor.getInstance(CoffeeMaker.class, "coffee-aspect");
         assertEquals(aspect.brew(), "french pressing altered");
+    }
+
+    @Test
+    public void dao() {
+        DAO dao = doctor.getInstance(DAO.class);
+        User user = new User();
+        user.setId(1L);
+        user.setFirstName("doug");
+        user.setLastName("fernwaller");
+        dao.store(user);
+
+        User user1 = dao.findUser(1L);
     }
 
     @Test

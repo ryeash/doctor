@@ -17,6 +17,7 @@ import vest.doctor.Prioritized;
 import vest.doctor.ProcessorConfiguration;
 import vest.doctor.ProviderCustomizationPoint;
 import vest.doctor.ProviderDefinition;
+import vest.doctor.ProviderDefinitionListener;
 import vest.doctor.ProviderDefinitionProcessor;
 import vest.doctor.ProviderDependency;
 import vest.doctor.ScopeWriter;
@@ -73,6 +74,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     private final List<ParameterLookupCustomizer> parameterLookupCustomizers = new LinkedList<>();
     private final List<StringConversionGenerator> stringConversionGenerators = new LinkedList<>();
     private final List<ProviderDefinition> providerDefinitions = new LinkedList<>();
+    private final List<ProviderDefinitionListener> providerDefinitionListeners = new LinkedList<>();
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -126,6 +128,10 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 stringConversionGenerators.add((StringConversionGenerator) customizationPoint);
                 known = true;
             }
+            if (customizationPoint instanceof ProviderDefinitionListener) {
+                providerDefinitionListeners.add((ProviderDefinitionListener) customizationPoint);
+                known = true;
+            }
             if (!known) {
                 errorMessage("unhandled customization: " + customizationPoint);
             }
@@ -150,6 +156,9 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                             claimed = true;
                             typesToDependencies.computeIfAbsent(provDef.asDependency(), d -> new HashSet<>());
                             providerDefinitions.add(provDef);
+                            for (ProviderDefinitionListener providerDefinitionListener : providerDefinitionListeners) {
+                                providerDefinitionListener.process(this, provDef);
+                            }
                             break;
                         }
                     }
@@ -163,7 +172,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 providerDefinitionProcessor.finish(this);
             }
             writeAppLoaderImplementation();
-            Stream.of(newInstanceCustomizers, parameterLookupCustomizers, providerCustomizationPoints)
+            Stream.of(newInstanceCustomizers, parameterLookupCustomizers, providerCustomizationPoints, providerDefinitionListeners)
                     .flatMap(Collection::stream)
                     .forEach(c -> c.finish(this));
             writeServicesResource();
@@ -242,7 +251,8 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 providerCustomizationPoints,
                 newInstanceCustomizers,
                 parameterLookupCustomizers,
-                stringConversionGenerators)
+                stringConversionGenerators,
+                providerDefinitionListeners)
                 .flatMap(Collection::stream)
                 .filter(type::isInstance)
                 .distinct()
