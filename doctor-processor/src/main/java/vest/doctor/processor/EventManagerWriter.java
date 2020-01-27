@@ -9,8 +9,8 @@ import vest.doctor.EventListener;
 import vest.doctor.EventManager;
 import vest.doctor.InjectionException;
 import vest.doctor.MethodBuilder;
-import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ProviderDefinition;
+import vest.doctor.ProviderDefinitionListener;
 import vest.doctor.ProviderDependency;
 
 import javax.lang.model.element.ExecutableElement;
@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class EventManagerWriter implements NewInstanceCustomizer {
+public class EventManagerWriter implements ProviderDefinitionListener {
 
     private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
@@ -49,7 +49,7 @@ public class EventManagerWriter implements NewInstanceCustomizer {
     }
 
     @Override
-    public void customize(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String doctorRef) {
+    public void process(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
         for (ExecutableElement listener : providerDefinition.methods(EventListener.class)) {
             if (listener.getParameters().size() != 1) {
                 context.errorMessage("@EventListener methods must have only one parameter: " + ProcessorUtils.debugString(listener));
