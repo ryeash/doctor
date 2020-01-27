@@ -8,12 +8,13 @@
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
         <properties>
             <property name="javax.persistence.jdbc.driver" value="org.apache.derby.jdbc.EmbeddedDriver"/>
-            <property name="javax.persistence.jdbc.url" value="jdbc:derby:memory:db;create=true"/>
+            <!-- Commented properties moved to the @PersistenceContext annotation -->
+            <!-- <property name="javax.persistence.jdbc.url" value="jdbc:derby:memory:db;create=true"/>-->
             <property name="javax.persistence.jdbc.user" value=""/>
             <property name="javax.persistence.jdbc.password" value=""/>
 
             <property name="hibernate.show_sql" value="false"/>
-            <property name="hibernate.hbm2ddl.auto" value="create"/>
+            <!-- <property name="hibernate.hbm2ddl.auto" value="create"/>-->
             <property name="hibernate.hikari.connectionTimeout" value="20000"/>
             <property name="hibernate.hikari.minimumIdle" value="1"/>
             <property name="hibernate.hikari.maximumPoolSize" value="10"/>

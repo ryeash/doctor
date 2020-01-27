@@ -9,13 +9,16 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
 import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceProperty;
+import javax.persistence.SynchronizationType;
 
 @Singleton
 @Eager
 @PersistenceContext(name = "default",
         properties = {
-                @PersistenceProperty(name = "demo", value = "nothingImportant")
-        })
+                @PersistenceProperty(name = "javax.persistence.jdbc.url", value = "${db.url}"),
+                @PersistenceProperty(name = "hibernate.hbm2ddl.auto", value = "create")
+        },
+        synchronization = SynchronizationType.UNSYNCHRONIZED)
 public class DAO {
 
     private final EntityManager entityManager;

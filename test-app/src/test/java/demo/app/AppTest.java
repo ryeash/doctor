@@ -293,6 +293,8 @@ public class AppTest extends Assert {
         dao.store(user);
 
         User user1 = dao.findUser(1L);
+        assertEquals(user1.getFirstName(), "doug");
+        assertEquals(user1.getLastName(), "fernwaller");
     }
 
     @Test

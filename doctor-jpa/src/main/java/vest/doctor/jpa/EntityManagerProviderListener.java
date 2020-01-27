@@ -3,7 +3,6 @@ package vest.doctor.jpa;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.BeanProvider;
 import vest.doctor.ClassBuilder;
-import vest.doctor.Eager;
 import vest.doctor.Factory;
 import vest.doctor.MethodBuilder;
 import vest.doctor.ProviderDefinition;
@@ -46,22 +45,24 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
         }
         processedPersistenceUnits.add(pcName);
 
+        String generatedClassName = context.generatedPackage() + ".JPAObjectFactory__jpa" + context.nextId();
         ClassBuilder entityManagerFactory = new ClassBuilder()
-                .setClassName(context.generatedPackage() + ".JPAObjectFactory__jpa" + context.nextId())
-//                .setPackage(context.generatedPackage())
+                .setClassName(generatedClassName)
                 .addClassAnnotation("@Singleton")
                 .addImportClass(Singleton.class)
                 .addImportClass(Named.class)
                 .addImportClass(Factory.class)
-                .addImportClass(Eager.class)
                 .addImportClass(EntityManager.class)
                 .addImportClass(EntityManagerFactory.class)
                 .addImportClass(Persistence.class)
                 .addImportClass(SynchronizationType.class)
                 .addImportClass(BeanProvider.class)
                 .addImportClass(Map.class)
-                .addImportClass(LinkedHashMap.class);
+                .addImportClass(LinkedHashMap.class)
+                .addImportClass("org.slf4j.Logger")
+                .addImportClass("org.slf4j.LoggerFactory");
 
+        entityManagerFactory.addField("private final static Logger log = LoggerFactory.getLogger(" + generatedClassName + ".class)");
 
         MethodBuilder mb = new MethodBuilder("@Singleton @Factory @Named(\"" + pcName + "\") " +
                 "public " + EntityManager.class.getSimpleName() + " entityManagerFactory" + context.nextId() + "(BeanProvider beanProvider)");
@@ -70,8 +71,13 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
             mb.line("properties.put(beanProvider.resolvePlaceholders(\"" + property.name() + "\"), beanProvider.resolvePlaceholders(\"" + property.value() + "\"));");
         }
         mb.line("EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory(beanProvider.resolvePlaceholders(\"" + pcName + "\"), properties);");
+        mb.line("try{");
+        mb.line("return entityManagerFactory.createEntityManager(SynchronizationType." + persistenceContext.synchronization() + ", properties);");
+        mb.line("} catch (" + IllegalStateException.class.getSimpleName() + " e) {");
+        mb.line("log.warn(\"could not create entity manager with explicit synchronization type, falling back; error message: {}\", e.getMessage());");
+        mb.line("log.debug(\"full error stack\", e);");
         mb.line("return entityManagerFactory.createEntityManager(properties);");
-//        mb.line("return entityManagerFactory.createEntityManager(SynchronizationType." + persistenceContext.synchronization() + ", properties);");
+        mb.line("}");
         entityManagerFactory.addMethod(mb.finish());
         entityManagerFactory.writeClass(context.filer());
     }
