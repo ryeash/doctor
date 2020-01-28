@@ -40,7 +40,7 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
         String pcName = Objects.requireNonNull(persistenceContext.name(), "@PersistenceContext annotations must have a name defined (matches the persistence unit name in the xml)");
 
         if (processedPersistenceUnits.contains(pcName)) {
-            context.warnMessage("multiple @PersistenceContext annotations with the same name: " + pcName);
+            context.errorMessage("multiple @PersistenceContext annotations with the same name: " + pcName);
             return;
         }
         processedPersistenceUnits.add(pcName);
