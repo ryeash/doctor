@@ -41,21 +41,23 @@ final class ProviderIndex {
         }
     }
 
-    DoctorProvider<?> getProvider(Class<?> type, String qualifier) {
+    @SuppressWarnings("unchecked")
+    <T> Optional<DoctorProvider<T>> getProvider(Class<T> type, String qualifier) {
         return Optional.ofNullable(inverse.get(type))
                 .orElse(Collections.emptyList())
                 .stream()
-                .map(n -> n.getProvider(qualifier))
+                .map(n -> (DoctorProvider<T>) n.getProvider(qualifier))
                 .filter(Objects::nonNull)
-                .findFirst()
-                .orElse(null);
+                .findFirst();
     }
 
-    Stream<DoctorProvider<?>> getProviders(Class<?> type) {
+    @SuppressWarnings("unchecked")
+    <T> Stream<DoctorProvider<T>> getProviders(Class<T> type) {
         return Optional.ofNullable(inverse.get(type))
                 .orElse(Collections.emptyList())
                 .stream()
                 .flatMap(Node::getProviders)
+                .map(p -> (DoctorProvider<T>) p)
                 .distinct();
     }
 

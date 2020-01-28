@@ -103,8 +103,7 @@ public class Doctor implements BeanProvider, AutoCloseable {
     @Override
     @SuppressWarnings("unchecked")
     public <T> Optional<DoctorProvider<T>> getProviderOpt(Class<T> type, String qualifier) {
-        DoctorProvider<T> provider = (DoctorProvider<T>) providerIndex.getProvider(type, qualifier);
-        return Optional.ofNullable(provider);
+        return providerIndex.getProvider(type, qualifier);
     }
 
     @Override
@@ -133,7 +132,7 @@ public class Doctor implements BeanProvider, AutoCloseable {
 
     @Override
     public boolean hasProvider(Class<?> type, String qualifier) {
-        return providerIndex.getProvider(type, qualifier) != null;
+        return providerIndex.getProvider(type, qualifier).isPresent();
     }
 
     @Override

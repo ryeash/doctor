@@ -3,6 +3,7 @@ package vest.doctor;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Properties;
 import java.util.ServiceLoader;
 
 public class BuiltInAppLoader implements AppLoader {
@@ -14,6 +15,7 @@ public class BuiltInAppLoader implements AppLoader {
     public void preProcess(BeanProvider beanProvider) {
         beanProvider.register(new AdHocProvider<>(BeanProvider.class, beanProvider, null));
         beanProvider.register(new AdHocProvider<>(ConfigurationFacade.class, beanProvider.configuration(), null));
+        beanProvider.register(new AdHocProvider<>(Properties.class, beanProvider.configuration().toProperties(), null));
 
         Boolean loadBuiltIns = beanProvider.configuration().get("doctor.load.builtins", true, Boolean::valueOf);
         if (!loadBuiltIns) {
