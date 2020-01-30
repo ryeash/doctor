@@ -24,6 +24,9 @@ import java.util.Optional;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
+import static vest.doctor.Line.line;
+import static vest.doctor.processor.Constants.BEAN_PROVIDER_NAME;
+
 public abstract class AbstractProviderDefinition implements ProviderDefinition {
 
     private static final Collector<CharSequence, ?, String> AS_LIST = Collectors.joining(", ", "Collections.unmodifiableList(java.util.Arrays.asList(", "))");
@@ -116,16 +119,17 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                 .addImportClass(Collections.class)
                 .addImportClass(providedType().getQualifiedName().toString())
                 .addImportClass(DoctorProvider.class)
-                .addImplementsInterface("DoctorProvider<" + providedType().getSimpleName() + ">")
-                .addField("private final BeanProvider beanProvider")
+                .addImplementsInterface(DoctorProvider.class.getSimpleName() + "<" + providedType().getSimpleName() + ">")
+                .addField("private final " + BeanProvider.class.getSimpleName() + " " + BEAN_PROVIDER_NAME)
 
-                .setConstructor("public " + generatedClassName().substring(generatedClassName().lastIndexOf('.') + 1) + "(BeanProvider beanProvider) { this.beanProvider = beanProvider; }")
+                .setConstructor(line("public {}({} {}) { this.{} = {}; }",
+                        generatedClassName().substring(generatedClassName().lastIndexOf('.') + 1), BeanProvider.class, BEAN_PROVIDER_NAME, BEAN_PROVIDER_NAME, BEAN_PROVIDER_NAME))
 
                 .addMethod("public Class<" + providedType().getSimpleName() + "> type() { " +
                         "return " + providedType().getSimpleName() + ".class; }")
 
                 .addMethod("public String qualifier() { return " +
-                        Optional.ofNullable(qualifier()).map(q -> "beanProvider.resolvePlaceholders(" + q + ")").orElse(null) + "; }")
+                        Optional.ofNullable(qualifier()).map(q -> BEAN_PROVIDER_NAME + ".resolvePlaceholders(" + q + ")").orElse(null) + "; }")
 
                 .addMethod("public Class<? extends Annotation> scope()", b -> {
                     String scopeString = Optional.ofNullable(scope())

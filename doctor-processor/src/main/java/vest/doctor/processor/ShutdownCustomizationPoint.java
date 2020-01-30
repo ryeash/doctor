@@ -14,7 +14,7 @@ public class ShutdownCustomizationPoint implements ProviderCustomizationPoint {
                 .stream()
                 .anyMatch(c -> Objects.equals(c.getQualifiedName().toString(), AutoCloseable.class.getCanonicalName()));
         if (isCloseable) {
-            return "new " + ShutdownProviderWrapper.class.getCanonicalName() + "<>(" + providerRef + ", shutdownContainer)";
+            return "new " + ShutdownProviderWrapper.class.getCanonicalName() + "<>(" + providerRef + ", " + Constants.SHUTDOWN_CONTAINER_NAME + ")";
         } else {
             return providerRef;
         }

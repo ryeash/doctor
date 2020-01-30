@@ -19,7 +19,7 @@ public class PropertyParameterCustomizer implements ParameterLookupCustomizer {
         Property property = variableElement.getAnnotation(Property.class);
         if (property != null) {
             try {
-                return propertyCodeGen.getPropertyCode(context, property, variableElement.asType(), doctorRef);
+                return propertyCodeGen.getPropertyCode(context, property.value(), variableElement.asType(), doctorRef);
             } catch (IllegalArgumentException e) {
                 e.printStackTrace();
                 context.errorMessage(e.getMessage() + ": " + ProcessorUtils.debugString(variableElement));

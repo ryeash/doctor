@@ -1,5 +1,6 @@
 package demo.app;
 
+import demo.app.dao.DBProps;
 import org.testng.Assert;
 import vest.doctor.Property;
 import vest.doctor.Prototype;
@@ -54,5 +55,11 @@ public class TCProperties {
         Assert.assertEquals(props.number().intValue(), 42);
         Assert.assertEquals(props.stringList(), Arrays.asList("42", "12", "97"));
         Assert.assertEquals(props.numberList(), Arrays.asList(42, 12, 97));
+    }
+
+    @Inject
+    public void propertiesWithPrefix(DBProps dbProps) {
+        Assert.assertEquals(dbProps.username(), "unused");
+        Assert.assertEquals(dbProps.password(), "nothing");
     }
 }

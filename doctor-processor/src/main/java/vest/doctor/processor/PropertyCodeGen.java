@@ -1,7 +1,6 @@
 package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.Property;
 import vest.doctor.StringConversionGenerator;
 
 import javax.inject.Provider;
@@ -14,20 +13,20 @@ import java.util.Set;
 
 public class PropertyCodeGen {
 
-    public String getPropertyCode(AnnotationProcessorContext context, Property property, TypeMirror typeMirror, String beanProviderRef) {
+    public String getPropertyCode(AnnotationProcessorContext context, String propertyName, TypeMirror typeMirror, String beanProviderRef) {
         if (typeMirror.getKind().isPrimitive()) {
-            return getPrimitivePropertyCode(context, property, typeMirror, beanProviderRef);
+            return getPrimitivePropertyCode(context, propertyName, typeMirror, beanProviderRef);
         } else {
-            return getObjectPropertyCode(context, property, typeMirror, beanProviderRef);
+            return getObjectPropertyCode(context, propertyName, typeMirror, beanProviderRef);
         }
     }
 
-    private String getPrimitivePropertyCode(AnnotationProcessorContext context, Property property, TypeMirror typeMirror, String beanProviderRef) {
+    private String getPrimitivePropertyCode(AnnotationProcessorContext context, String propertyName, TypeMirror typeMirror, String beanProviderRef) {
         String converterMethod = getConverterMethod(context, typeMirror);
-        return buildPropCode(beanProviderRef, "get", property.value(), converterMethod);
+        return buildPropCode(beanProviderRef, "get", propertyName, converterMethod);
     }
 
-    private String getObjectPropertyCode(AnnotationProcessorContext context, Property property, TypeMirror typeMirror, String beanProviderRef) {
+    private String getObjectPropertyCode(AnnotationProcessorContext context, String propertyName, TypeMirror typeMirror, String beanProviderRef) {
         TypeElement typeElement = context.toTypeElement(typeMirror);
         if (ProcessorUtils.isCompatibleWith(context, typeElement, Provider.class)) {
             throw new IllegalArgumentException("@Properties can not be Provider types: " + ProcessorUtils.debugString(typeElement));
@@ -62,11 +61,11 @@ public class PropertyCodeGen {
         }
 
         String converterMethod = getConverterMethod(context, convertType);
-        String code = buildPropCode(beanProviderRef, confMethod, property.value(), converterMethod);
+        String code = buildPropCode(beanProviderRef, confMethod, propertyName, converterMethod);
         if (isOptional) {
             return "java.util.Optional.ofNullable(" + code + ")";
         } else {
-            return "java.util.Objects.requireNonNull(" + code + ", \"missing required property: " + property.value() + "\")";
+            return "java.util.Objects.requireNonNull(" + code + ", \"missing required property: " + propertyName + "\")";
         }
     }
 

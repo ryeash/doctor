@@ -21,6 +21,11 @@ public class MethodBuilder {
         return this;
     }
 
+    public MethodBuilder line(String line, Object... args) {
+        sb.append(Line.line(line, args)).append("\n");
+        return this;
+    }
+
     public String finish() {
         sb.append("}");
         String s = sb.toString();

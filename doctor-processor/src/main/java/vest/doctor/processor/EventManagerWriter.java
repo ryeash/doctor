@@ -8,6 +8,7 @@ import vest.doctor.DoctorProvider;
 import vest.doctor.EventListener;
 import vest.doctor.EventManager;
 import vest.doctor.InjectionException;
+import vest.doctor.Line;
 import vest.doctor.MethodBuilder;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionListener;
@@ -42,8 +43,8 @@ public class EventManagerWriter implements ProviderDefinitionListener {
                 .addImportClass(DoctorProvider.class)
                 .addImportClass(ExecutorService.class)
                 .addField("private " + ExecutorService.class.getSimpleName() + " executor");
-        init = new MethodBuilder("public void initialize(BeanProvider beanProvider)")
-                .line("executor = beanProvider.getInstance(" + ExecutorService.class.getSimpleName() + ".class, \"default\");");
+        init = new MethodBuilder(Line.line("public void initialize({} {})", BeanProvider.class, Constants.BEAN_PROVIDER_NAME))
+                .line("executor = {}.getInstance({}.class, \"default\");", Constants.BEAN_PROVIDER_NAME, ExecutorService.class);
         publish = new MethodBuilder("public void publish(Object event)")
                 .line("try{");
     }
@@ -67,7 +68,7 @@ public class EventManagerWriter implements ProviderDefinitionListener {
             String fieldName = depToField.computeIfAbsent(dependency, dep -> {
                 String n = "listener" + COUNTER.incrementAndGet();
                 cb.addField("private " + DoctorProvider.class.getCanonicalName() + "<" + providerDefinition.providedType().asType() + "> " + n);
-                init.line(n + " = beanProvider.getProvider(" + providerDefinition.providedType().asType() + ".class, " + providerDefinition.qualifier() + ");");
+                init.line("{} = {}.getProvider({}.class, {});", n, Constants.BEAN_PROVIDER_NAME, providerDefinition.providedType().asType(), providerDefinition.qualifier());
                 return n;
             });
 

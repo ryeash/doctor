@@ -35,7 +35,7 @@ public interface ProviderDefinition {
     }
 
     default List<ExecutableElement> methods() {
-        return ElementFilter.methodsIn(hierarchy().stream().flatMap(t -> t.getEnclosedElements().stream()).collect(Collectors.toList()));
+        return ElementFilter.methodsIn(hierarchy().stream().flatMap(t -> t.getEnclosedElements().stream()).distinct().collect(Collectors.toList()));
     }
 
     default List<VariableElement> fields(Class<? extends Annotation> withAnnotation) {

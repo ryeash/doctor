@@ -14,7 +14,6 @@ public class FactoryProviderDefinitionProcessor implements ProviderDefinitionPro
     @Override
     public ProviderDefinition process(AnnotationProcessorContext context, Element element) {
         if (element.getKind() == ElementKind.METHOD && element.getAnnotation(Factory.class) != null) {
-
             if (ProcessorUtils.getScope(context, element.getEnclosingElement()) == null) {
                 context.errorMessage("classes with @Factory methods must have a scope; it is recommended to use @Singleton: " + ProcessorUtils.debugString(element.getEnclosingElement()));
             }

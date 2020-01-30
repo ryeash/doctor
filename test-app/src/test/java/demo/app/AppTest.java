@@ -49,7 +49,7 @@ public class AppTest extends Assert {
 
     static {
         System.setProperty("qualifierInterpolation", "interpolated");
-        System.setProperty("properties", "test-override.properties,test.properties");
+        System.setProperty("doctor.app.properties", "test-override.properties,test.properties");
     }
 
     @AfterClass(alwaysRun = true)

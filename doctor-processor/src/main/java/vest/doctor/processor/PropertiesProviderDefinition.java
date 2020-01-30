@@ -3,6 +3,9 @@ package vest.doctor.processor;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.BeanProvider;
 import vest.doctor.ClassBuilder;
+import vest.doctor.Line;
+import vest.doctor.MethodBuilder;
+import vest.doctor.Properties;
 import vest.doctor.Property;
 
 import javax.lang.model.element.ExecutableElement;
@@ -12,6 +15,8 @@ import javax.lang.model.util.ElementFilter;
 import java.util.Objects;
 import java.util.Optional;
 
+import static vest.doctor.processor.Constants.BEAN_PROVIDER_NAME;
+
 public class PropertiesProviderDefinition extends AbstractProviderDefinition {
 
     private static final PropertyCodeGen propertyCodeGen = new PropertyCodeGen();
@@ -19,6 +24,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
     private final String uniqueName;
 
     private final String implClass;
+    private final String propertyPrefix;
 
     public PropertiesProviderDefinition(AnnotationProcessorContext context, TypeElement type) {
         super(context, type, type);
@@ -30,26 +36,33 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
                 .setClassName(context.generatedPackage() + "." + implClass)
                 .addImplementsInterface(type.toString());
 
+        this.propertyPrefix = Optional.ofNullable(type.getAnnotation(Properties.class))
+                .map(Properties::value)
+                .orElse("");
+
         impl.addImportClass(BeanProvider.class);
-        impl.addField("private final " + BeanProvider.class.getSimpleName() + " beanProvider");
-        impl.setConstructor("public " + implClass + "(" + BeanProvider.class.getSimpleName() + " beanProvider){ this.beanProvider = beanProvider; }");
+        impl.addField("private final " + BeanProvider.class.getSimpleName() + " " + BEAN_PROVIDER_NAME);
+        impl.setConstructor(Line.line("public {}({} {}){ this.{} = {}; }",
+                implClass, BeanProvider.class, BEAN_PROVIDER_NAME, BEAN_PROVIDER_NAME, BEAN_PROVIDER_NAME));
 
         for (TypeElement typeElement : hierarchy) {
+            // TODO: ensure each method is only processed once
             for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements())) {
                 if (method.getAnnotation(Property.class) != null) {
                     if (method.getParameters().size() > 0) {
                         context.errorMessage("@Property methods in @Properties definition interfaces must not have parameters: " + ProcessorUtils.debugString(method));
                     }
-                    impl.addMethod("@Override public " + method.getReturnType() + " " + method.getSimpleName() + "()", mb -> {
-                        TypeMirror returnType = method.getReturnType();
-                        try {
-                            String code = propertyCodeGen.getPropertyCode(context, method.getAnnotation(Property.class), returnType, "beanProvider");
-                            mb.line("return " + code + ";");
-                        } catch (IllegalArgumentException e) {
-                            e.printStackTrace();
-                            context.errorMessage(e.getMessage() + ": " + ProcessorUtils.debugString(method));
-                        }
-                    });
+                    MethodBuilder mb = new MethodBuilder("@Override public " + method.getReturnType() + " " + method.getSimpleName() + "()");
+                    TypeMirror returnType = method.getReturnType();
+                    try {
+                        String propertyName = propertyPrefix + method.getAnnotation(Property.class).value();
+                        String code = propertyCodeGen.getPropertyCode(context, propertyName, returnType, BEAN_PROVIDER_NAME);
+                        mb.line("return " + code + ";");
+                    } catch (IllegalArgumentException e) {
+                        e.printStackTrace();
+                        context.errorMessage(e.getMessage() + ": " + ProcessorUtils.debugString(method));
+                    }
+                    impl.addMethod(mb.finish());
                 } else if (!method.isDefault()) {
                     context.errorMessage("all non-default methods defined in a @Properties interface must have a @Property annotation");
                 }
@@ -66,15 +79,18 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
 
     @Override
     public ClassBuilder getClassBuilder() {
-        ClassBuilder classBuilder = super.getClassBuilder();
+        ClassBuilder classBuilder = super.getClassBuilder()
+                .addImportClass(Objects.class);
 
-        classBuilder.addMethod("public void validateDependencies(BeanProvider beanProvider)", b -> {
+        classBuilder.addMethod(Line.line("public void validateDependencies({} {})", BeanProvider.class, BEAN_PROVIDER_NAME), b -> {
             for (TypeElement typeElement : hierarchy) {
                 for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements())) {
                     if (!ProcessorUtils.isCompatibleWith(context, context.toTypeElement(method.getReturnType()), Optional.class)) {
                         Property property = method.getAnnotation(Property.class);
                         if (property != null) {
-                            b.line(Objects.class.getCanonicalName() + ".requireNonNull(beanProvider.configuration().get(beanProvider.resolvePlaceholders(\"" + property.value() + "\")), \"missing required property '" + property.value() + "'\");");
+                            String propertyName = propertyPrefix + property.value();
+                            b.line("{}.requireNonNull({}.configuration().get({}.resolvePlaceholders(\"{}\")), \"missing required property '{}'\");",
+                                    Objects.class, BEAN_PROVIDER_NAME, BEAN_PROVIDER_NAME, propertyName, propertyName);
                         }
                     }
                 }
@@ -82,7 +98,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
         });
 
         classBuilder.addMethod("public " + providedType().getSimpleName() + " get()", b -> {
-            b.line("return new " + implClass + "(beanProvider);");
+            b.line("return new {}({});", implClass, BEAN_PROVIDER_NAME);
         });
         return classBuilder;
     }

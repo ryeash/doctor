@@ -15,6 +15,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
 @Singleton
+@Named("duck")
 public class TestAppConfig {
 
     @Factory

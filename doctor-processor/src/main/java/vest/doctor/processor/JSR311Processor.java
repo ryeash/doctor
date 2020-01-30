@@ -30,6 +30,7 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedOptions;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
@@ -55,6 +56,9 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static vest.doctor.Line.line;
+import static vest.doctor.processor.Constants.BEAN_PROVIDER_NAME;
 
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 @SupportedOptions({JSR311Processor.PACKAGE_NAME_OPTION})
@@ -272,21 +276,34 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     }
 
     private void writeAppLoaderImplementation() {
-        ClassBuilder cb = new ClassBuilder();
-        cb.addField("private final List<DoctorProvider<?>> eagerList = new ArrayList<>()");
+        ClassBuilder cb = new ClassBuilder()
+                .setClassName(generatedPackage + ".AppLoaderImpl")
+                .addImplementsInterface(AppLoader.class)
+                .addImportClass(List.class)
+                .addImportClass(ArrayList.class)
+                .addImportClass(Objects.class)
+                .addImportClass(BeanProvider.class)
+                .addImportClass(Provider.class)
+                .addImportClass(DoctorProvider.class)
+                .addImportClass(ShutdownContainer.class)
+                .addField(line("private final {} {} = new {}()", ShutdownContainer.class, Constants.SHUTDOWN_CONTAINER_NAME, ShutdownContainer.class))
+                // call eager providers
+                .addMethod(line("public void postProcess({} {}) { eagerList.stream().filter(Objects::nonNull).forEach({}::get); }", BeanProvider.class, BEAN_PROVIDER_NAME, DoctorProvider.class))
+                .addMethod(line("public void close() { {}.close(); }", Constants.SHUTDOWN_CONTAINER_NAME));
 
-        MethodBuilder load = new MethodBuilder("public void load(BeanProvider beanProvider)");
+        cb.addField(line("private final List<{}<?>> eagerList = new ArrayList<>()", DoctorProvider.class));
+
+        MethodBuilder load = new MethodBuilder(line("public void load({} {})", BeanProvider.class, BEAN_PROVIDER_NAME));
 
         for (ProviderDefinition providerDefinition : providerDefinitions) {
             cb.addNestedClass(providerDefinition.getClassBuilder());
 
             cb.addImportClass(providerDefinition.providedType().asType().toString());
-            cb.addField("private DoctorProvider<" + providerDefinition.providedType().getSimpleName() + "> " + providerDefinition.uniqueInstanceName());
 
-            String creator = "new " + providerDefinition.generatedClassName() + "(beanProvider)";
+            String creator = line("new {}({})", providerDefinition.generatedClassName(), BEAN_PROVIDER_NAME);
 
             for (ProviderCustomizationPoint providerCustomizationPoint : providerCustomizationPoints) {
-                creator = providerCustomizationPoint.wrap(this, providerDefinition, creator, "beanProvider");
+                creator = providerCustomizationPoint.wrap(this, providerDefinition, creator, BEAN_PROVIDER_NAME);
             }
 
             boolean hasModules = !providerDefinition.modules().isEmpty();
@@ -295,11 +312,11 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                         .stream()
                         .filter(Objects::nonNull)
                         .map(m -> '"' + m + '"')
-                        .collect(Collectors.joining(", ", "(", ")"));
+                        .collect(Collectors.joining(", "));
                 if (providerDefinition.modules().size() == 1) {
-                    load.line("if(isActive(beanProvider, java.util.Collections.singletonList" + modules + ")){");
+                    load.line("if(isActive({}, java.util.Collections.singletonList({}))){", BEAN_PROVIDER_NAME, modules);
                 } else {
-                    load.line("if(isActive(beanProvider, java.util.Arrays.asList" + modules + ")){");
+                    load.line("if(isActive({}, java.util.Arrays.asList({}))){", BEAN_PROVIDER_NAME, modules);
                 }
             }
 
@@ -311,14 +328,14 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 }
                 creator = scopeWriter.wrapScope(this, providerDefinition, creator);
             }
-            load.line(providerDefinition.uniqueInstanceName() + " = " + creator + ";");
-            load.line("beanProvider.register(" + providerDefinition.uniqueInstanceName() + ");");
+            load.line("{}<{}> {} = {};", DoctorProvider.class, providerDefinition.providedType().getSimpleName(), providerDefinition.uniqueInstanceName(), creator);
+            load.line("{}.register({});", BEAN_PROVIDER_NAME, providerDefinition.uniqueInstanceName());
             if (providerDefinition.isPrimary()) {
-                load.line("beanProvider.register(new " + PrimaryProviderWrapper.class.getCanonicalName() + "(" + providerDefinition.uniqueInstanceName() + "));");
+                load.line("{}.register(new {}({}));", BEAN_PROVIDER_NAME, PrimaryProviderWrapper.class, providerDefinition.uniqueInstanceName());
             }
 
             if (providerDefinition.isEager()) {
-                load.line("eagerList.add(" + providerDefinition.uniqueInstanceName() + ");");
+                load.line("eagerList.add({});", providerDefinition.uniqueInstanceName());
             }
 
             if (hasModules) {
@@ -326,19 +343,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
             }
         }
 
-        cb.setClassName(generatedPackage + ".AppLoaderImpl")
-                .addImplementsInterface(AppLoader.class)
-                .addImportClass(List.class)
-                .addImportClass(ArrayList.class)
-                .addImportClass(Objects.class)
-                .addImportClass(BeanProvider.class)
-                .addImportClass(DoctorProvider.class)
-                .addImportClass(ShutdownContainer.class)
-                .addField("private final ShutdownContainer shutdownContainer = new ShutdownContainer()")
-                .addMethod(load.finish())
-                // call eager providers
-                .addMethod("public void postProcess(BeanProvider beanProvider) { eagerList.stream().filter(Objects::nonNull).forEach(DoctorProvider::get); }")
-                .addMethod("public void close() { shutdownContainer.close(); }")
+        cb.addMethod(load.finish())
                 .writeClass(filer());
     }
 

@@ -1,6 +1,7 @@
 package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.BeanProvider;
 import vest.doctor.MethodBuilder;
 import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ProviderDefinition;
@@ -48,8 +49,9 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
             String wrapperRef = "wrapper" + count.incrementAndGet();
             method.line(ScheduledTaskWrapper.class.getCanonicalName() + "<" + providerDefinition.providedType().getSimpleName() + "> " + wrapperRef
                     + " = new " + ScheduledTaskWrapper.class.getCanonicalName() + "<" + providerDefinition.providedType().getSimpleName() + ">(" + doctorRef + "," + instanceRef + "," + scheduled.executionLimit() + ") {");
-            method.line("protected void internalRun(BeanProvider beanProvider, " + providerDefinition.providedType().getSimpleName() + " val) {");
-            method.line(context.methodCall(providerDefinition, scheduledMethod, "val", "beanProvider") + ";");
+            method.line("protected void internalRun({} {}, {} val) {",
+                    BeanProvider.class, Constants.BEAN_PROVIDER_NAME, providerDefinition.providedType().getSimpleName());
+            method.line(context.methodCall(providerDefinition, scheduledMethod, "val", Constants.BEAN_PROVIDER_NAME) + ";");
             method.line("}");
             method.line("};");
             method.line(wrapperRef + ".setFuture(ses." + schedulerMethod + "(" + wrapperRef + ", " + scheduled.period() + ", " + scheduled.period() + ", java.util.concurrent.TimeUnit." + scheduled.unit() + "));");

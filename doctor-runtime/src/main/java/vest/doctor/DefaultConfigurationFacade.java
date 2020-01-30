@@ -35,7 +35,7 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
         return facade;
     }
 
-    public static final String PROPERTIES = "properties";
+    public static final String PROPERTIES = "doctor.app.properties";
     private static final String MACRO_OPEN = "${";
     private static final String MACRO_CLOSE = "}";
     private static final char LIST_DELIMITER = ',';
@@ -142,6 +142,9 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
             i += MACRO_OPEN.length();
             prev = i;
             i = value.indexOf(MACRO_CLOSE, i);
+            if (i < 0) {
+                throw new IllegalArgumentException("unclosed macro statement in " + value);
+            }
             String subName = value.substring(prev, i);
             String subValue = get(subName);
             if (subValue == null) {
