@@ -13,8 +13,6 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 
 public class FactoryMethodProviderDefinition extends AbstractProviderDefinition {
-
-
     private final TypeElement container;
     private final ExecutableElement factoryMethod;
     private final String generatedClass;
