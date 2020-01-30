@@ -1,12 +1,12 @@
 package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.BeanProvider;
 import vest.doctor.ClassBuilder;
 import vest.doctor.Line;
 import vest.doctor.MethodBuilder;
 import vest.doctor.Properties;
 import vest.doctor.Property;
+import vest.doctor.ProviderRegistry;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
@@ -15,7 +15,7 @@ import javax.lang.model.util.ElementFilter;
 import java.util.Objects;
 import java.util.Optional;
 
-import static vest.doctor.processor.Constants.BEAN_PROVIDER_NAME;
+import static vest.doctor.Constants.PROVIDER_REGISTRY;
 
 public class PropertiesProviderDefinition extends AbstractProviderDefinition {
 
@@ -40,10 +40,10 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
                 .map(Properties::value)
                 .orElse("");
 
-        impl.addImportClass(BeanProvider.class);
-        impl.addField("private final " + BeanProvider.class.getSimpleName() + " " + BEAN_PROVIDER_NAME);
+        impl.addImportClass(ProviderRegistry.class);
+        impl.addField("private final " + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY);
         impl.setConstructor(Line.line("public {}({} {}){ this.{} = {}; }",
-                implClass, BeanProvider.class, BEAN_PROVIDER_NAME, BEAN_PROVIDER_NAME, BEAN_PROVIDER_NAME));
+                implClass, ProviderRegistry.class, PROVIDER_REGISTRY, PROVIDER_REGISTRY, PROVIDER_REGISTRY));
 
         for (TypeElement typeElement : hierarchy) {
             // TODO: ensure each method is only processed once
@@ -56,7 +56,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
                     TypeMirror returnType = method.getReturnType();
                     try {
                         String propertyName = propertyPrefix + method.getAnnotation(Property.class).value();
-                        String code = propertyCodeGen.getPropertyCode(context, propertyName, returnType, BEAN_PROVIDER_NAME);
+                        String code = propertyCodeGen.getPropertyCode(context, propertyName, returnType, PROVIDER_REGISTRY);
                         mb.line("return " + code + ";");
                     } catch (IllegalArgumentException e) {
                         e.printStackTrace();
@@ -82,7 +82,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
         ClassBuilder classBuilder = super.getClassBuilder()
                 .addImportClass(Objects.class);
 
-        classBuilder.addMethod(Line.line("public void validateDependencies({} {})", BeanProvider.class, BEAN_PROVIDER_NAME), b -> {
+        classBuilder.addMethod(Line.line("public void validateDependencies({} {})", ProviderRegistry.class, PROVIDER_REGISTRY), b -> {
             for (TypeElement typeElement : hierarchy) {
                 for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements())) {
                     if (!ProcessorUtils.isCompatibleWith(context, context.toTypeElement(method.getReturnType()), Optional.class)) {
@@ -90,7 +90,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
                         if (property != null) {
                             String propertyName = propertyPrefix + property.value();
                             b.line("{}.requireNonNull({}.configuration().get({}.resolvePlaceholders(\"{}\")), \"missing required property '{}'\");",
-                                    Objects.class, BEAN_PROVIDER_NAME, BEAN_PROVIDER_NAME, propertyName, propertyName);
+                                    Objects.class, PROVIDER_REGISTRY, PROVIDER_REGISTRY, propertyName, propertyName);
                         }
                     }
                 }
@@ -98,7 +98,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
         });
 
         classBuilder.addMethod("public " + providedType().getSimpleName() + " get()", b -> {
-            b.line("return new {}({});", implClass, BEAN_PROVIDER_NAME);
+            b.line("return new {}({});", implClass, PROVIDER_REGISTRY);
         });
         return classBuilder;
     }

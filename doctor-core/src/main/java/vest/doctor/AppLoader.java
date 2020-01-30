@@ -4,23 +4,23 @@ import java.util.List;
 
 public interface AppLoader extends Prioritized, AutoCloseable {
 
-    default void preProcess(BeanProvider beanProvider) {
+    default void preProcess(ProviderRegistry providerRegistry) {
         // no-op
     }
 
-    default void load(BeanProvider beanProvider) {
+    default void load(ProviderRegistry providerRegistry) {
         // no-op
     }
 
-    default void postProcess(BeanProvider beanProvider) {
+    default void postProcess(ProviderRegistry providerRegistry) {
         // no-op
     }
 
-    default boolean isActive(BeanProvider beanProvider, List<String> modules) {
+    default boolean isActive(ProviderRegistry providerRegistry, List<String> modules) {
         if (modules == null || modules.isEmpty()) {
             return true;
         }
-        for (String activeModule : beanProvider.getActiveModules()) {
+        for (String activeModule : providerRegistry.getActiveModules()) {
             if (modules.contains(activeModule)) {
                 return true;
             }

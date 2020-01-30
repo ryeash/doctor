@@ -1,13 +1,13 @@
 package vest.doctor.netty;
 
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.BeanProvider;
 import vest.doctor.ClassBuilder;
 import vest.doctor.DoctorProvider;
 import vest.doctor.MethodBuilder;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionListener;
 import vest.doctor.ProviderDependency;
+import vest.doctor.ProviderRegistry;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
@@ -29,11 +29,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static vest.doctor.Constants.PROVIDER_REGISTRY;
+
 public class RouterWriter implements ProviderDefinitionListener {
 
     private final ClassBuilder routerBuilder = new ClassBuilder()
             .addImplementsInterface(Router.class)
-            .addImportClass(BeanProvider.class)
+            .addImportClass(ProviderRegistry.class)
             .addImportClass(PathSpec.class)
             .addImportClass(Map.class)
             .addImportClass(DoctorProvider.class)
@@ -45,7 +47,7 @@ public class RouterWriter implements ProviderDefinitionListener {
             .addImportClass(Websocket.class)
             .addImportClass(HashMap.class);
 
-    private final MethodBuilder init = new MethodBuilder("public void init(BeanProvider beanProvider)");
+    private final MethodBuilder init = new MethodBuilder("public void init(" + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY + ")");
     private final MethodBuilder accept = new MethodBuilder("public boolean accept(RequestContext ctx) throws Exception");
     private final MethodBuilder filter = new MethodBuilder("public void filter(FilterStage filterStage, RequestContext ctx)");
 
@@ -98,7 +100,8 @@ public class RouterWriter implements ProviderDefinitionListener {
             if (providerDefinition.isCompatibleWith(Websocket.class)) {
                 for (String path : roots) {
                     ProviderDependency providerDependency = providerDefinition.asDependency();
-                    init.line("websockets.put(\"" + Utils.squeeze("/" + path, '/') + "\", beanProvider.getProvider(" + providerDependency.type().getQualifiedName() + ".class, " + providerDependency.qualifier() + ").get());");
+                    init.line("websockets.put(\"{}\", {}.getProvider({}.class, {}).get());",
+                            Utils.squeeze("/" + path, '/'), PROVIDER_REGISTRY, providerDependency.type().getQualifiedName(), providerDependency.qualifier());
                 }
             }
         }
@@ -109,7 +112,7 @@ public class RouterWriter implements ProviderDefinitionListener {
         routeMetadata.sort(Comparator.comparing(m -> m.path));
 
         accept.line("Map<String, String> pathParams = null;");
-        accept.line("filter(FilterStage." + FilterStage.BEFORE_MATCH + ", ctx);");
+        accept.line("filter(FilterStage.{}, ctx);", FilterStage.BEFORE_MATCH);
         accept.line("if(ctx.isHalted()) { return true; }");
         int i = 0;
 
@@ -117,7 +120,7 @@ public class RouterWriter implements ProviderDefinitionListener {
 
         routerBuilder.addField("private static final HttpMethod HEAD = HttpMethod.HEAD");
         routerBuilder.addField("private BodyInterchange bodyInterchange");
-        init.line("bodyInterchange = new BodyInterchange(beanProvider);");
+        init.line("bodyInterchange = new BodyInterchange({});", PROVIDER_REGISTRY);
 
         Map<String, List<Meta>> methodToMetadata = routeMetadata.stream().collect(Collectors.groupingBy(m -> m.httpMethod, LinkedHashMap::new, Collectors.toList()));
         for (Map.Entry<String, List<Meta>> entry : methodToMetadata.entrySet()) {
@@ -139,7 +142,8 @@ public class RouterWriter implements ProviderDefinitionListener {
                 if (usedProviders.add(metadatum.providerDefinition.uniqueInstanceName())) {
                     routerBuilder.addField("private DoctorProvider<" + metadatum.providerDefinition.providedType().getQualifiedName() + "> " + metadatum.providerDefinition.uniqueInstanceName());
                     ProviderDependency providerDependency = metadatum.providerDefinition.asDependency();
-                    init.line(metadatum.providerDefinition.uniqueInstanceName() + " = beanProvider.getProvider(" + providerDependency.type().getQualifiedName() + ".class, " + providerDependency.qualifier() + ");");
+                    init.line("{} = {}.getProvider({}.class, {});",
+                            metadatum.providerDefinition.uniqueInstanceName(), PROVIDER_REGISTRY, providerDependency.type(), providerDependency.qualifier());
                 }
 
                 accept.line("pathParams = " + specField + ".matchAndCollect(ctx.requestUri().getRawPath());");
@@ -164,7 +168,7 @@ public class RouterWriter implements ProviderDefinitionListener {
         filter.line("Map<String, String> pathParams = null;");
         Map<FilterStage, List<Meta>> filterStageToMetadata = filterMetadata.stream().collect(Collectors.groupingBy(m -> m.method.getAnnotation(Filter.class).value()));
         for (Map.Entry<FilterStage, List<Meta>> entry : filterStageToMetadata.entrySet()) {
-            filter.line("if(filterStage == FilterStage." + entry.getKey() + ") {");
+            filter.line("if(filterStage == FilterStage.{}) {", entry.getKey());
             for (Meta metadatum : entry.getValue()) {
                 String specField = "filterSpec" + (i++);
                 routerBuilder.addField("private final PathSpec " + specField + " = new PathSpec(\"" + metadatum.path.method().name() + "\", \"" + metadatum.path.getPath() + "\")");
@@ -172,7 +176,8 @@ public class RouterWriter implements ProviderDefinitionListener {
                 if (usedProviders.add(metadatum.providerDefinition.uniqueInstanceName())) {
                     routerBuilder.addField("private DoctorProvider<" + metadatum.providerDefinition.providedType().getQualifiedName() + "> " + metadatum.providerDefinition.uniqueInstanceName());
                     ProviderDependency providerDependency = metadatum.providerDefinition.asDependency();
-                    init.line(metadatum.providerDefinition.uniqueInstanceName() + " = beanProvider.getProvider(" + providerDependency.type().getQualifiedName() + ".class, " + providerDependency.qualifier() + ");");
+                    init.line("{} = {}.getProvider({}.class, {});",
+                            metadatum.providerDefinition.uniqueInstanceName(), PROVIDER_REGISTRY, providerDependency.type(), providerDependency.qualifier());
                 }
 
                 filter.line("if(ctx.isHalted()) { return; }")

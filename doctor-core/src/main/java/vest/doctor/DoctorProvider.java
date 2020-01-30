@@ -44,7 +44,7 @@ public interface DoctorProvider<T> extends Provider<T> {
     /**
      * Check all dependencies are met by the current state of the providers.
      *
-     * @param beanProvider
+     * @param providerRegistry
      */
-    void validateDependencies(BeanProvider beanProvider);
+    void validateDependencies(ProviderRegistry providerRegistry);
 }

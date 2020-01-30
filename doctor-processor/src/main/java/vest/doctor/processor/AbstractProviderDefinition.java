@@ -1,12 +1,12 @@
 package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.BeanProvider;
 import vest.doctor.ClassBuilder;
 import vest.doctor.DoctorProvider;
 import vest.doctor.Modules;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDependency;
+import vest.doctor.ProviderRegistry;
 
 import javax.inject.Provider;
 import javax.lang.model.element.AnnotationMirror;
@@ -24,8 +24,8 @@ import java.util.Optional;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
+import static vest.doctor.Constants.PROVIDER_REGISTRY;
 import static vest.doctor.Line.line;
-import static vest.doctor.processor.Constants.BEAN_PROVIDER_NAME;
 
 public abstract class AbstractProviderDefinition implements ProviderDefinition {
 
@@ -113,23 +113,23 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
         ClassBuilder classBuilder = new ClassBuilder();
         classBuilder.setClassName(generatedClassName())
                 .addImportClass(Annotation.class)
-                .addImportClass(BeanProvider.class)
+                .addImportClass(ProviderRegistry.class)
                 .addImportClass(Provider.class)
                 .addImportClass(List.class)
                 .addImportClass(Collections.class)
                 .addImportClass(providedType().getQualifiedName().toString())
                 .addImportClass(DoctorProvider.class)
                 .addImplementsInterface(DoctorProvider.class.getSimpleName() + "<" + providedType().getSimpleName() + ">")
-                .addField("private final " + BeanProvider.class.getSimpleName() + " " + BEAN_PROVIDER_NAME)
+                .addField("private final " + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY)
 
                 .setConstructor(line("public {}({} {}) { this.{} = {}; }",
-                        generatedClassName().substring(generatedClassName().lastIndexOf('.') + 1), BeanProvider.class, BEAN_PROVIDER_NAME, BEAN_PROVIDER_NAME, BEAN_PROVIDER_NAME))
+                        generatedClassName().substring(generatedClassName().lastIndexOf('.') + 1), ProviderRegistry.class, PROVIDER_REGISTRY, PROVIDER_REGISTRY, PROVIDER_REGISTRY))
 
                 .addMethod("public Class<" + providedType().getSimpleName() + "> type() { " +
                         "return " + providedType().getSimpleName() + ".class; }")
 
                 .addMethod("public String qualifier() { return " +
-                        Optional.ofNullable(qualifier()).map(q -> BEAN_PROVIDER_NAME + ".resolvePlaceholders(" + q + ")").orElse(null) + "; }")
+                        Optional.ofNullable(qualifier()).map(q -> PROVIDER_REGISTRY + ".resolvePlaceholders(" + q + ")").orElse(null) + "; }")
 
                 .addMethod("public Class<? extends Annotation> scope()", b -> {
                     String scopeString = Optional.ofNullable(scope())

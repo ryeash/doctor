@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public interface BeanProvider {
+public interface ProviderRegistry {
     List<String> getActiveModules();
 
     void register(DoctorProvider<?> provider);

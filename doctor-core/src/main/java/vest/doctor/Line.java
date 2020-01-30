@@ -1,5 +1,6 @@
 package vest.doctor;
 
+import javax.lang.model.element.TypeElement;
 import java.util.Arrays;
 import java.util.Iterator;
 
@@ -28,6 +29,8 @@ public final class Line {
     private static String toString(Object o) {
         if (o instanceof Class) {
             return ((Class<?>) o).getCanonicalName();
+        } else if (o instanceof TypeElement) {
+            return ((TypeElement) o).getQualifiedName().toString();
         } else {
             return String.valueOf(o);
         }

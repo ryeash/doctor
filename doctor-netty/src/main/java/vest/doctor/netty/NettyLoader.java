@@ -1,8 +1,8 @@
 package vest.doctor.netty;
 
 import vest.doctor.AppLoader;
-import vest.doctor.BeanProvider;
 import vest.doctor.Prioritized;
+import vest.doctor.ProviderRegistry;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -13,15 +13,15 @@ public class NettyLoader implements AppLoader {
     private HttpServer server;
 
     @Override
-    public void postProcess(BeanProvider beanProvider) {
-        this.server = new HttpServer(new NettyConfiguration(beanProvider.configuration()));
+    public void postProcess(ProviderRegistry providerRegistry) {
+        this.server = new HttpServer(new NettyConfiguration(providerRegistry.configuration()));
         List<Router> routerList = new LinkedList<>();
         for (Router router : ServiceLoader.load(Router.class, NettyLoader.class.getClassLoader())) {
             routerList.add(router);
         }
         routerList.sort(Prioritized.COMPARATOR);
         Routers routers = new Routers(routerList);
-        routers.init(beanProvider);
+        routers.init(providerRegistry);
         server.setRequestHandler(routers);
     }
 

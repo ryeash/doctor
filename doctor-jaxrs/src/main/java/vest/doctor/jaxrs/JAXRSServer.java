@@ -22,7 +22,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
-import vest.doctor.BeanProvider;
+import vest.doctor.ProviderRegistry;
 
 import javax.inject.Provider;
 import javax.ws.rs.Path;
@@ -56,10 +56,10 @@ public class JAXRSServer extends WebSocketServlet implements WebSocketCreator, A
 
     private final Server server;
 
-    public JAXRSServer(BeanProvider beanProvider) {
-        this.jaxrsConfiguration = new JaxrsConfiguration(beanProvider.configuration());
+    public JAXRSServer(ProviderRegistry providerRegistry) {
+        this.jaxrsConfiguration = new JaxrsConfiguration(providerRegistry.configuration());
         this.pathToWebsocket = new HashMap<>();
-        this.server = startServer(beanProvider);
+        this.server = startServer(providerRegistry);
     }
 
     @Override
@@ -69,7 +69,7 @@ public class JAXRSServer extends WebSocketServlet implements WebSocketCreator, A
         }
     }
 
-    private Server startServer(BeanProvider beanProvider) {
+    private Server startServer(ProviderRegistry providerRegistry) {
         List<InetSocketAddress> bindAddresses = jaxrsConfiguration.bindAddresses();
         if (bindAddresses.isEmpty()) {
             return null;
@@ -112,7 +112,7 @@ public class JAXRSServer extends WebSocketServlet implements WebSocketCreator, A
         ResourceConfig resourceConfig = new ResourceConfig();
         jaxrsConfiguration.jerseyProperties().forEach(resourceConfig::property);
 
-        ObjectMapper mapper = beanProvider.getProviderOpt(ObjectMapper.class)
+        ObjectMapper mapper = providerRegistry.getProviderOpt(ObjectMapper.class)
                 .map(Provider::get)
                 .orElseGet(() -> new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
                         .configure(JsonGenerator.Feature.IGNORE_UNKNOWN, true)
@@ -125,19 +125,19 @@ public class JAXRSServer extends WebSocketServlet implements WebSocketCreator, A
 
         resourceConfig.register(new JacksonJaxbJsonProvider(mapper, JacksonJaxbJsonProvider.DEFAULT_ANNOTATIONS));
         resourceConfig.register(new GZipDecoder());
-        resourceConfig.register(new BeanProviderFactory(beanProvider));
+        resourceConfig.register(new BeanProviderFactory(providerRegistry));
 
         JAX_RS_TYPES.stream()
-                .flatMap(beanProvider::getProviders)
+                .flatMap(providerRegistry::getProviders)
                 .map(Provider::get)
                 .distinct()
                 .forEach(resourceConfig::register);
 
-        beanProvider.getProvidersWithAnnotation(Path.class)
+        providerRegistry.getProvidersWithAnnotation(Path.class)
                 .map(Provider::get)
                 .forEach(resourceConfig::registerInstances);
 
-        beanProvider.getProvidersWithAnnotation(WebSocket.class).forEach(this::addWebsocket);
+        providerRegistry.getProvidersWithAnnotation(WebSocket.class).forEach(this::addWebsocket);
 
         ServletHolder jerseyServlet = new ServletHolder(new ServletContainer(resourceConfig));
         context.addServlet(jerseyServlet, "/*");

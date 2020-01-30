@@ -50,8 +50,8 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
     private final CustomThreadFactory threadFactory;
     private final RejectedExecutionHandler rejectedExecutionHandler;
 
-    public ConfigurationDrivenExecutorServiceProvider(BeanProvider beanProvider, String name, ThreadPoolType forceType) {
-        this.configurationFacade = beanProvider.configuration();
+    public ConfigurationDrivenExecutorServiceProvider(ProviderRegistry providerRegistry, String name, ThreadPoolType forceType) {
+        this.configurationFacade = providerRegistry.configuration();
         this.propertyPrefix = "executors." + name + ".";
         this.qualifier = name;
         if (forceType != null) {
@@ -79,7 +79,7 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
         keepAliveSeconds = configurationFacade.get(propertyPrefix + ".keepAliveSeconds", DEFAULT_KEEP_ALIVE, Integer::valueOf);
 
         String uncaughtExceptionHandlerQualifier = configurationFacade.get(propertyPrefix + ".uncaughtExceptionHandler");
-        Thread.UncaughtExceptionHandler uncaughtExceptionHandler = beanProvider.getProviderOpt(Thread.UncaughtExceptionHandler.class, uncaughtExceptionHandlerQualifier)
+        Thread.UncaughtExceptionHandler uncaughtExceptionHandler = providerRegistry.getProviderOpt(Thread.UncaughtExceptionHandler.class, uncaughtExceptionHandlerQualifier)
                 .map(Provider::get)
                 .orElse(Thread.getDefaultUncaughtExceptionHandler());
 
@@ -91,7 +91,7 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
 
         String rejectedExecutionHandlerQualifier = configurationFacade.get(propertyPrefix + ".rejectedExecutionHandler", "!!noValue!!");
 
-        this.rejectedExecutionHandler = beanProvider.getProviderOpt(RejectedExecutionHandler.class, rejectedExecutionHandlerQualifier)
+        this.rejectedExecutionHandler = providerRegistry.getProviderOpt(RejectedExecutionHandler.class, rejectedExecutionHandlerQualifier)
                 .map(DoctorProvider::get)
                 .orElseGet(() -> {
                     switch (RejectedExecutionType.valueOrDefault(rejectedExecutionHandlerQualifier)) {
@@ -129,7 +129,7 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
     }
 
     @Override
-    public void validateDependencies(BeanProvider beanProvider) {
+    public void validateDependencies(ProviderRegistry providerRegistry) {
     }
 
     @Override

@@ -1,12 +1,12 @@
 package vest.doctor.jpa;
 
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.BeanProvider;
 import vest.doctor.ClassBuilder;
 import vest.doctor.Factory;
 import vest.doctor.MethodBuilder;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionListener;
+import vest.doctor.ProviderRegistry;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -21,6 +21,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
+import static vest.doctor.Constants.PROVIDER_REGISTRY;
 
 public class EntityManagerProviderListener implements ProviderDefinitionListener {
 
@@ -56,7 +58,7 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
                 .addImportClass(EntityManagerFactory.class)
                 .addImportClass(Persistence.class)
                 .addImportClass(SynchronizationType.class)
-                .addImportClass(BeanProvider.class)
+                .addImportClass(ProviderRegistry.class)
                 .addImportClass(Map.class)
                 .addImportClass(LinkedHashMap.class)
                 .addImportClass("org.slf4j.Logger")
@@ -65,12 +67,14 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
         entityManagerFactory.addField("private final static Logger log = LoggerFactory.getLogger(" + generatedClassName + ".class)");
 
         MethodBuilder mb = new MethodBuilder("@Singleton @Factory @Named(\"" + pcName + "\") " +
-                "public " + EntityManager.class.getSimpleName() + " entityManagerFactory" + context.nextId() + "(BeanProvider beanProvider)");
+                "public " + EntityManager.class.getSimpleName() + " entityManagerFactory" + context.nextId() + "(" + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY + ")");
         mb.line("Map<String, String> properties = new LinkedHashMap<>();");
         for (PersistenceProperty property : persistenceContext.properties()) {
-            mb.line("properties.put(beanProvider.resolvePlaceholders(\"" + property.name() + "\"), beanProvider.resolvePlaceholders(\"" + property.value() + "\"));");
+            mb.line("properties.put({}.resolvePlaceholders(\"{}\"), {}.resolvePlaceholders(\"{}\"));",
+                    PROVIDER_REGISTRY, property.name(), PROVIDER_REGISTRY, property.value());
         }
-        mb.line("EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory(beanProvider.resolvePlaceholders(\"" + pcName + "\"), properties);");
+        mb.line("EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory({}.resolvePlaceholders(\"{}\"), properties);",
+                PROVIDER_REGISTRY, pcName);
         mb.line("try{");
         mb.line("return entityManagerFactory.createEntityManager(SynchronizationType." + persistenceContext.synchronization() + ", properties);");
         mb.line("} catch (" + IllegalStateException.class.getSimpleName() + " e) {");

@@ -2,8 +2,8 @@ package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.Async;
-import vest.doctor.BeanProvider;
 import vest.doctor.ClassBuilder;
+import vest.doctor.Constants;
 import vest.doctor.DoctorProvider;
 import vest.doctor.EventListener;
 import vest.doctor.EventManager;
@@ -13,6 +13,7 @@ import vest.doctor.MethodBuilder;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionListener;
 import vest.doctor.ProviderDependency;
+import vest.doctor.ProviderRegistry;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
@@ -39,12 +40,12 @@ public class EventManagerWriter implements ProviderDefinitionListener {
     public EventManagerWriter() {
         this.cb = new ClassBuilder()
                 .addImplementsInterface(EventManager.class)
-                .addImportClass(BeanProvider.class)
+                .addImportClass(ProviderRegistry.class)
                 .addImportClass(DoctorProvider.class)
                 .addImportClass(ExecutorService.class)
                 .addField("private " + ExecutorService.class.getSimpleName() + " executor");
-        init = new MethodBuilder(Line.line("public void initialize({} {})", BeanProvider.class, Constants.BEAN_PROVIDER_NAME))
-                .line("executor = {}.getInstance({}.class, \"default\");", Constants.BEAN_PROVIDER_NAME, ExecutorService.class);
+        init = new MethodBuilder(Line.line("public void initialize({} {})", ProviderRegistry.class, Constants.PROVIDER_REGISTRY))
+                .line("executor = {}.getInstance({}.class, \"default\");", Constants.PROVIDER_REGISTRY, ExecutorService.class);
         publish = new MethodBuilder("public void publish(Object event)")
                 .line("try{");
     }
@@ -68,7 +69,7 @@ public class EventManagerWriter implements ProviderDefinitionListener {
             String fieldName = depToField.computeIfAbsent(dependency, dep -> {
                 String n = "listener" + COUNTER.incrementAndGet();
                 cb.addField("private " + DoctorProvider.class.getCanonicalName() + "<" + providerDefinition.providedType().asType() + "> " + n);
-                init.line("{} = {}.getProvider({}.class, {});", n, Constants.BEAN_PROVIDER_NAME, providerDefinition.providedType().asType(), providerDefinition.qualifier());
+                init.line("{} = {}.getProvider({}.class, {});", n, Constants.PROVIDER_REGISTRY, providerDefinition.providedType().asType(), providerDefinition.qualifier());
                 return n;
             });
 

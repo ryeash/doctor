@@ -1,12 +1,12 @@
 package vest.doctor.aop;
 
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.BeanProvider;
 import vest.doctor.ClassBuilder;
 import vest.doctor.Factory;
 import vest.doctor.MethodBuilder;
 import vest.doctor.ProviderCustomizationPoint;
 import vest.doctor.ProviderDefinition;
+import vest.doctor.ProviderRegistry;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -53,7 +53,7 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
         String delegateQualifiedClassName = context.generatedPackage() + "." + delegateClassName;
         ClassBuilder classBuilder = new ClassBuilder()
                 .setClassName(delegateQualifiedClassName)
-                .addImportClass(BeanProvider.class)
+                .addImportClass(ProviderRegistry.class)
                 .addImportClass(MethodMetadata.class)
                 .addImportClass(MutableMethodArgument.class)
                 .addImportClass(MethodInvocation.class)
@@ -73,9 +73,9 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
             classBuilder.setExtendsClass(typeElement.getQualifiedName().toString());
         }
         classBuilder.addField("private final " + typeElement.getSimpleName() + " delegate");
-        classBuilder.addField("private final " + BeanProvider.class.getSimpleName() + " beanProvider");
+        classBuilder.addField("private final " + ProviderRegistry.class.getSimpleName() + " beanProvider");
 
-        MethodBuilder constructor = new MethodBuilder("public " + delegateClassName + "(" + typeElement.getSimpleName() + " delegate, " + BeanProvider.class.getSimpleName() + " beanProvider)");
+        MethodBuilder constructor = new MethodBuilder("public " + delegateClassName + "(" + typeElement.getSimpleName() + " delegate, " + ProviderRegistry.class.getSimpleName() + " beanProvider)");
         constructor.line("this.delegate = delegate;");
         constructor.line("this.beanProvider = beanProvider;");
 

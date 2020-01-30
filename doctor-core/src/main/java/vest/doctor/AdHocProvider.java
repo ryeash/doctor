@@ -59,7 +59,7 @@ public class AdHocProvider<T> implements DoctorProvider<T> {
     }
 
     @Override
-    public void validateDependencies(BeanProvider beanProvider) {
+    public void validateDependencies(ProviderRegistry providerRegistry) {
         // no-op
     }
 

@@ -2,13 +2,13 @@ package vest.doctor;
 
 public class ApplicationStartedEvent {
 
-    private final BeanProvider beanProvider;
+    private final ProviderRegistry providerRegistry;
 
-    public ApplicationStartedEvent(BeanProvider beanProvider) {
-        this.beanProvider = beanProvider;
+    public ApplicationStartedEvent(ProviderRegistry providerRegistry) {
+        this.providerRegistry = providerRegistry;
     }
 
-    public BeanProvider beanProvider() {
-        return beanProvider;
+    public ProviderRegistry beanProvider() {
+        return providerRegistry;
     }
 }

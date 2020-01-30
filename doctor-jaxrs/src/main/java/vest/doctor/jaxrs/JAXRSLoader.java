@@ -1,7 +1,7 @@
 package vest.doctor.jaxrs;
 
 import vest.doctor.AppLoader;
-import vest.doctor.BeanProvider;
+import vest.doctor.ProviderRegistry;
 
 public class JAXRSLoader implements AppLoader {
     private JAXRSServer server;
@@ -14,12 +14,12 @@ public class JAXRSLoader implements AppLoader {
     }
 
     @Override
-    public void load(BeanProvider beanProvider) {
+    public void load(ProviderRegistry providerRegistry) {
     }
 
     @Override
-    public void postProcess(BeanProvider beanProvider) {
-        server = new JAXRSServer(beanProvider);
+    public void postProcess(ProviderRegistry providerRegistry) {
+        server = new JAXRSServer(providerRegistry);
     }
 
     @Override

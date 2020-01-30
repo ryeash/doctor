@@ -42,8 +42,8 @@ public abstract class DoctorProviderWrapper<T> implements DoctorProvider<T> {
     }
 
     @Override
-    public void validateDependencies(BeanProvider beanProvider) {
-        delegate.validateDependencies(beanProvider);
+    public void validateDependencies(ProviderRegistry providerRegistry) {
+        delegate.validateDependencies(providerRegistry);
     }
 
     @Override

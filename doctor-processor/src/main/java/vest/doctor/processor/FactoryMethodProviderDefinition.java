@@ -1,12 +1,13 @@
 package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.BeanProvider;
 import vest.doctor.ClassBuilder;
+import vest.doctor.Constants;
 import vest.doctor.InjectionException;
 import vest.doctor.Line;
 import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ParameterLookupCustomizer;
+import vest.doctor.ProviderRegistry;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
@@ -44,10 +45,10 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
                 + factoryMethod.getSimpleName()
                 + "):\" + hashCode(); }");
 
-        classBuilder.addMethod(Line.line("public void validateDependencies({} {})", BeanProvider.class, Constants.BEAN_PROVIDER_NAME), b -> {
+        classBuilder.addMethod(Line.line("public void validateDependencies({} {})", ProviderRegistry.class, Constants.PROVIDER_REGISTRY), b -> {
             for (VariableElement parameter : factoryMethod.getParameters()) {
                 for (ParameterLookupCustomizer parameterLookupCustomizer : context.parameterLookupCustomizers()) {
-                    String checkCode = parameterLookupCustomizer.dependencyCheckCode(context, parameter, Constants.BEAN_PROVIDER_NAME);
+                    String checkCode = parameterLookupCustomizer.dependencyCheckCode(context, parameter, Constants.PROVIDER_REGISTRY);
                     if (checkCode == null) {
                         continue;
                     }
@@ -61,10 +62,10 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
 
         classBuilder.addMethod("public " + providedType().getSimpleName() + " get()", b -> {
             b.line("try {");
-            b.line(container.getQualifiedName() + " container = " + Constants.BEAN_PROVIDER_NAME + ".getProvider(" + container.getQualifiedName() + ".class" + ", " + ProcessorUtils.getQualifier(context, container) + ").get();");
-            b.line(providedType().getSimpleName() + " instance = " + context.methodCall(this, factoryMethod, "container", Constants.BEAN_PROVIDER_NAME) + ";");
+            b.line(container.getQualifiedName() + " container = " + Constants.PROVIDER_REGISTRY + ".getProvider(" + container.getQualifiedName() + ".class" + ", " + ProcessorUtils.getQualifier(context, container) + ").get();");
+            b.line(providedType().getSimpleName() + " instance = " + context.methodCall(this, factoryMethod, "container", Constants.PROVIDER_REGISTRY) + ";");
             for (NewInstanceCustomizer customizer : context.newInstanceCustomizers()) {
-                customizer.customize(context, this, b, "instance", Constants.BEAN_PROVIDER_NAME);
+                customizer.customize(context, this, b, "instance", Constants.PROVIDER_REGISTRY);
             }
             b.line("return instance;");
             b.line("} catch(Throwable t) { throw new " + InjectionException.class.getCanonicalName() + "(\"error instantiating provided type\", t); }");

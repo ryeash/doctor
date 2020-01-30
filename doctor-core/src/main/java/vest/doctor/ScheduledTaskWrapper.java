@@ -5,13 +5,13 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class ScheduledTaskWrapper<T> implements Runnable {
-    private final BeanProvider beanProvider;
+    private final ProviderRegistry providerRegistry;
     private final WeakReference<T> ref;
     private final AtomicInteger executionLimit;
     private ScheduledFuture<?> future;
 
-    public ScheduledTaskWrapper(BeanProvider beanProvider, T val, int executionLimit) {
-        this.beanProvider = beanProvider;
+    public ScheduledTaskWrapper(ProviderRegistry providerRegistry, T val, int executionLimit) {
+        this.providerRegistry = providerRegistry;
         this.ref = new WeakReference<>(val);
         if (executionLimit > 0) {
             this.executionLimit = new AtomicInteger(executionLimit);
@@ -28,7 +28,7 @@ public abstract class ScheduledTaskWrapper<T> implements Runnable {
     public void run() {
         T t = ref.get();
         if (t != null) {
-            internalRun(beanProvider, t);
+            internalRun(providerRegistry, t);
             if (executionLimit != null && executionLimit.decrementAndGet() == 0) {
                 ref.clear();
             }
@@ -39,5 +39,5 @@ public abstract class ScheduledTaskWrapper<T> implements Runnable {
         }
     }
 
-    protected abstract void internalRun(BeanProvider beanProvider, T val);
+    protected abstract void internalRun(ProviderRegistry providerRegistry, T val);
 }

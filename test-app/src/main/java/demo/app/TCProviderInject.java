@@ -1,9 +1,9 @@
 package demo.app;
 
 import org.testng.Assert;
-import vest.doctor.BeanProvider;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.DoctorProvider;
+import vest.doctor.ProviderRegistry;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -31,9 +31,9 @@ public class TCProviderInject {
     }
 
     @PostConstruct
-    public void postConstruct(BeanProvider beanProvider,
+    public void postConstruct(ProviderRegistry providerRegistry,
                               ConfigurationFacade configurationFacade) {
-        Assert.assertNotNull(beanProvider);
+        Assert.assertNotNull(providerRegistry);
         Assert.assertNotNull(configurationFacade);
     }
 }

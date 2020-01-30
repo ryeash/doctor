@@ -12,7 +12,7 @@ import java.util.ServiceLoader;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
-public class Doctor implements BeanProvider, AutoCloseable {
+public class Doctor implements ProviderRegistry, AutoCloseable {
 
     public static Doctor load() {
         return new Doctor(DefaultConfigurationFacade.defaultConfigurationFacade(), Collections.emptyList());

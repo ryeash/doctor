@@ -12,12 +12,12 @@ public class BuiltInAppLoader implements AppLoader {
     public static final String DEFAULT_SCHEDULED_EXECUTOR_NAME = "defaultScheduled";
 
     @Override
-    public void preProcess(BeanProvider beanProvider) {
-        beanProvider.register(new AdHocProvider<>(BeanProvider.class, beanProvider, null));
-        beanProvider.register(new AdHocProvider<>(ConfigurationFacade.class, beanProvider.configuration(), null));
-        beanProvider.register(new AdHocProvider<>(Properties.class, beanProvider.configuration().toProperties(), null));
+    public void preProcess(ProviderRegistry providerRegistry) {
+        providerRegistry.register(new AdHocProvider<>(ProviderRegistry.class, providerRegistry, null));
+        providerRegistry.register(new AdHocProvider<>(ConfigurationFacade.class, providerRegistry.configuration(), null));
+        providerRegistry.register(new AdHocProvider<>(Properties.class, providerRegistry.configuration().toProperties(), null));
 
-        Boolean loadBuiltIns = beanProvider.configuration().get("doctor.load.builtins", true, Boolean::valueOf);
+        Boolean loadBuiltIns = providerRegistry.configuration().get("doctor.load.builtins", true, Boolean::valueOf);
         if (!loadBuiltIns) {
             return;
         }
@@ -27,22 +27,22 @@ public class BuiltInAppLoader implements AppLoader {
         if (!managers.isEmpty()) {
             EventManagerFacade facade = new EventManagerFacade(managers);
             AdHocProvider<EventManager> eventManagerAdHocProvider = new AdHocProvider<>(EventManager.class, facade, null, Arrays.asList(EventProducer.class, EventManager.class));
-            beanProvider.register(eventManagerAdHocProvider);
+            providerRegistry.register(eventManagerAdHocProvider);
         }
 
-        beanProvider.register(new SingletonScopedProvider<>(new ConfigurationDrivenExecutorServiceProvider(beanProvider, DEFAULT_EXECUTOR_NAME, null)));
-        beanProvider.register(new SingletonScopedProvider<>(new ConfigurationDrivenExecutorServiceProvider(beanProvider, DEFAULT_SCHEDULED_EXECUTOR_NAME, ConfigurationDrivenExecutorServiceProvider.ThreadPoolType.scheduled)));
+        providerRegistry.register(new SingletonScopedProvider<>(new ConfigurationDrivenExecutorServiceProvider(providerRegistry, DEFAULT_EXECUTOR_NAME, null)));
+        providerRegistry.register(new SingletonScopedProvider<>(new ConfigurationDrivenExecutorServiceProvider(providerRegistry, DEFAULT_SCHEDULED_EXECUTOR_NAME, ConfigurationDrivenExecutorServiceProvider.ThreadPoolType.scheduled)));
     }
 
     @Override
-    public void load(BeanProvider beanProvider) {
+    public void load(ProviderRegistry providerRegistry) {
 
     }
 
     @Override
-    public void postProcess(BeanProvider beanProvider) {
-        EventManager instance = beanProvider.getInstance(EventManager.class);
-        instance.initialize(beanProvider);
+    public void postProcess(ProviderRegistry providerRegistry) {
+        EventManager instance = providerRegistry.getInstance(EventManager.class);
+        instance.initialize(providerRegistry);
     }
 
     @Override
@@ -63,9 +63,9 @@ public class BuiltInAppLoader implements AppLoader {
         }
 
         @Override
-        public void initialize(BeanProvider beanProvider) {
+        public void initialize(ProviderRegistry providerRegistry) {
             for (EventManager manager : managers) {
-                manager.initialize(beanProvider);
+                manager.initialize(providerRegistry);
             }
         }
 

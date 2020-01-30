@@ -1,6 +1,6 @@
 package vest.doctor.netty;
 
-import vest.doctor.BeanProvider;
+import vest.doctor.ProviderRegistry;
 
 import java.util.List;
 
@@ -13,9 +13,9 @@ public final class Routers implements Router {
     }
 
     @Override
-    public void init(BeanProvider beanProvider) {
+    public void init(ProviderRegistry providerRegistry) {
         for (Router router : routers) {
-            router.init(beanProvider);
+            router.init(providerRegistry);
         }
     }
 

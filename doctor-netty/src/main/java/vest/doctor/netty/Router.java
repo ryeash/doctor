@@ -1,11 +1,11 @@
 package vest.doctor.netty;
 
-import vest.doctor.BeanProvider;
 import vest.doctor.Prioritized;
+import vest.doctor.ProviderRegistry;
 
 public interface Router extends Prioritized {
 
-    void init(BeanProvider beanProvider);
+    void init(ProviderRegistry providerRegistry);
 
     boolean accept(RequestContext requestContext) throws Exception;
 

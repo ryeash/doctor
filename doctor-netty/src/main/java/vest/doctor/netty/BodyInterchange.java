@@ -3,8 +3,8 @@ package vest.doctor.netty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import vest.doctor.BeanProvider;
 import vest.doctor.Prioritized;
+import vest.doctor.ProviderRegistry;
 
 import javax.inject.Provider;
 import java.io.InputStream;
@@ -19,8 +19,8 @@ public final class BodyInterchange {
     private final List<BodyReader> readers;
     private final List<BodyWriter> writers;
 
-    public BodyInterchange(BeanProvider beanProvider) {
-        JacksonInterchange jacksonInterchange = beanProvider.getProviderOpt(ObjectMapper.class)
+    public BodyInterchange(ProviderRegistry providerRegistry) {
+        JacksonInterchange jacksonInterchange = providerRegistry.getProviderOpt(ObjectMapper.class)
                 .map(Provider::get)
                 .map(JacksonInterchange::new)
                 .orElseGet(() -> new JacksonInterchange(JacksonInterchange.defaultConfig()));
@@ -28,7 +28,7 @@ public final class BodyInterchange {
         this.readers = new ArrayList<>();
         readers.add(new DefaultReader());
         readers.add(jacksonInterchange);
-        beanProvider.getProviders(BodyReader.class)
+        providerRegistry.getProviders(BodyReader.class)
                 .map(Provider::get)
                 .forEach(readers::add);
         readers.sort(Prioritized.COMPARATOR);
@@ -36,7 +36,7 @@ public final class BodyInterchange {
         this.writers = new ArrayList<>();
         writers.add(new DefaultWriter());
         writers.add(jacksonInterchange);
-        beanProvider.getProviders(BodyWriter.class)
+        providerRegistry.getProviders(BodyWriter.class)
                 .map(Provider::get)
                 .forEach(writers::add);
         writers.sort(Prioritized.COMPARATOR);
