@@ -4,7 +4,7 @@ import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ClassBuilder;
 import vest.doctor.Constants;
 import vest.doctor.InjectionException;
-import vest.doctor.Line;
+import vest.doctor.CodeLine;
 import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ParameterLookupCustomizer;
 import vest.doctor.ProviderRegistry;
@@ -61,7 +61,7 @@ public class ConstructorProviderDefinition extends AbstractProviderDefinition {
                 + providedType.getSimpleName()
                 + "):\" + hashCode(); }");
 
-        classBuilder.addMethod(Line.line("public void validateDependencies({} {})", ProviderRegistry.class, Constants.PROVIDER_REGISTRY), b -> {
+        classBuilder.addMethod(CodeLine.line("public void validateDependencies({} {})", ProviderRegistry.class, Constants.PROVIDER_REGISTRY), b -> {
             for (VariableElement parameter : injectableConstructor.getParameters()) {
                 for (ParameterLookupCustomizer parameterLookupCustomizer : context.parameterLookupCustomizers()) {
                     String checkCode = parameterLookupCustomizer.dependencyCheckCode(context, parameter, Constants.PROVIDER_REGISTRY);

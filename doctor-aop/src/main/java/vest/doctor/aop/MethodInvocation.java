@@ -1,5 +1,7 @@
 package vest.doctor.aop;
 
+import java.lang.reflect.Method;
+
 public interface MethodInvocation {
 
     MethodMetadata getMetadata();
@@ -19,4 +21,6 @@ public interface MethodInvocation {
     <T> T getResult();
 
     void setResult(Object result);
+
+    Method getMethod() throws NoSuchMethodException;
 }

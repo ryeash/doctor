@@ -25,7 +25,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static vest.doctor.Constants.PROVIDER_REGISTRY;
-import static vest.doctor.Line.line;
+import static vest.doctor.CodeLine.line;
 
 public abstract class AbstractProviderDefinition implements ProviderDefinition {
 

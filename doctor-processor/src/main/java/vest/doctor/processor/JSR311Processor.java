@@ -59,7 +59,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static vest.doctor.Constants.PROVIDER_REGISTRY;
-import static vest.doctor.Line.line;
+import static vest.doctor.CodeLine.line;
 
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 @SupportedOptions({JSR311Processor.PACKAGE_NAME_OPTION})

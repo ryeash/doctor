@@ -2,7 +2,7 @@ package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ClassBuilder;
-import vest.doctor.Line;
+import vest.doctor.CodeLine;
 import vest.doctor.MethodBuilder;
 import vest.doctor.Properties;
 import vest.doctor.Property;
@@ -42,7 +42,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
 
         impl.addImportClass(ProviderRegistry.class);
         impl.addField("private final " + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY);
-        impl.setConstructor(Line.line("public {}({} {}){ this.{} = {}; }",
+        impl.setConstructor(CodeLine.line("public {}({} {}){ this.{} = {}; }",
                 implClass, ProviderRegistry.class, PROVIDER_REGISTRY, PROVIDER_REGISTRY, PROVIDER_REGISTRY));
 
         for (TypeElement typeElement : hierarchy) {
@@ -82,7 +82,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
         ClassBuilder classBuilder = super.getClassBuilder()
                 .addImportClass(Objects.class);
 
-        classBuilder.addMethod(Line.line("public void validateDependencies({} {})", ProviderRegistry.class, PROVIDER_REGISTRY), b -> {
+        classBuilder.addMethod(CodeLine.line("public void validateDependencies({} {})", ProviderRegistry.class, PROVIDER_REGISTRY), b -> {
             for (TypeElement typeElement : hierarchy) {
                 for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements())) {
                     if (!ProcessorUtils.isCompatibleWith(context, context.toTypeElement(method.getReturnType()), Optional.class)) {

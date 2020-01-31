@@ -1,5 +1,6 @@
 package vest.doctor.aop;
 
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -65,5 +66,11 @@ public class MethodInvocationImpl implements MethodInvocation {
     @Override
     public void setResult(Object result) {
         this.result = result;
+    }
+
+    @Override
+    public Method getMethod() throws NoSuchMethodException {
+        return methodMetadata.getContainingInstance().getClass().getMethod(methodMetadata.getMethodName(),
+                methodMetadata.getMethodParameters().stream().map(t -> (Class<?>) t).toArray(Class<?>[]::new));
     }
 }

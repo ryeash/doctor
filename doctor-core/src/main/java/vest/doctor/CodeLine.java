@@ -4,8 +4,8 @@ import javax.lang.model.element.TypeElement;
 import java.util.Arrays;
 import java.util.Iterator;
 
-public final class Line {
-    private Line() {
+public final class CodeLine {
+    private CodeLine() {
     }
 
     public static String line(String template, Object... vals) {

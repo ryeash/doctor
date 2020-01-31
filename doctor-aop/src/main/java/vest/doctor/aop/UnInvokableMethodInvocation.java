@@ -1,5 +1,7 @@
 package vest.doctor.aop;
 
+import java.lang.reflect.Method;
+
 public class UnInvokableMethodInvocation implements MethodInvocation {
     private final MethodInvocation delegate;
 
@@ -50,5 +52,10 @@ public class UnInvokableMethodInvocation implements MethodInvocation {
     @Override
     public void setResult(Object result) {
         delegate.setResult(result);
+    }
+
+    @Override
+    public Method getMethod() throws NoSuchMethodException {
+        return delegate.getMethod();
     }
 }

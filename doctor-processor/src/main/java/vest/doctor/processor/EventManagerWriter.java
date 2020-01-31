@@ -8,7 +8,7 @@ import vest.doctor.DoctorProvider;
 import vest.doctor.EventListener;
 import vest.doctor.EventManager;
 import vest.doctor.InjectionException;
-import vest.doctor.Line;
+import vest.doctor.CodeLine;
 import vest.doctor.MethodBuilder;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionListener;
@@ -44,7 +44,7 @@ public class EventManagerWriter implements ProviderDefinitionListener {
                 .addImportClass(DoctorProvider.class)
                 .addImportClass(ExecutorService.class)
                 .addField("private " + ExecutorService.class.getSimpleName() + " executor");
-        init = new MethodBuilder(Line.line("public void initialize({} {})", ProviderRegistry.class, Constants.PROVIDER_REGISTRY))
+        init = new MethodBuilder(CodeLine.line("public void initialize({} {})", ProviderRegistry.class, Constants.PROVIDER_REGISTRY))
                 .line("executor = {}.getInstance({}.class, \"default\");", Constants.PROVIDER_REGISTRY, ExecutorService.class);
         publish = new MethodBuilder("public void publish(Object event)")
                 .line("try{");

@@ -134,10 +134,6 @@ public class ProcessorUtils {
         return false;
     }
 
-    public static Optional<TypeElement> getParameterizedType(AnnotationProcessorContext context, Element element) {
-        return getParameterizedType(context, element.asType());
-    }
-
     public static Optional<TypeElement> getParameterizedType(AnnotationProcessorContext context, TypeMirror type) {
         return Optional.of(type)
                 .flatMap(GenericInfo::firstParameterizedType)
@@ -170,10 +166,10 @@ public class ProcessorUtils {
                 .replaceAll("[^a-z0-9]", "");
     }
 
-    public static <T> void ifClassExists(String fullyQualifierClassName, Consumer<Class<? extends T>> action) {
+    public static <T> void ifClassExists(String fullyQualifiedClassName, Consumer<Class<? extends T>> action) {
         try {
             @SuppressWarnings("unchecked")
-            Class<? extends T> c = (Class<? extends T>) Class.forName(fullyQualifierClassName);
+            Class<? extends T> c = (Class<? extends T>) Class.forName(fullyQualifiedClassName);
             action.accept(c);
         } catch (ClassNotFoundException e) {
             // ignored

@@ -1,12 +1,10 @@
 package vest.doctor;
 
-import javax.annotation.Generated;
 import javax.annotation.processing.Filer;
 import javax.tools.JavaFileObject;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
-import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -134,7 +132,6 @@ public class ClassBuilder {
         return this;
     }
 
-    @Generated(value = "", date = "")
     public void writeClass(Filer filer) {
         try {
             JavaFileObject builderFile = filer.createSourceFile(fullyQualifiedClassName);
@@ -164,7 +161,8 @@ public class ClassBuilder {
                     }
                 }
 
-                out.print("@" + Generated.class.getCanonicalName() + "(value = \"vest.doctor\", date = \"" + new Date() + "\")\n");
+                // @Generated was removed from standard java as part of jigsaw
+//                out.print("@" + Generated.class.getCanonicalName() + "(value = \"vest.doctor\", date = \"" + new Date() + "\")\n");
                 out.print("public class ");
                 out.print(className);
                 if (extendsClass != null && !extendsClass.isEmpty()) {

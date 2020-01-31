@@ -109,6 +109,10 @@ public class RouterWriter implements ProviderDefinitionListener {
 
     @Override
     public void finish(AnnotationProcessorContext context) {
+        if (routeMetadata.isEmpty()) {
+            return;
+        }
+
         routeMetadata.sort(Comparator.comparing(m -> m.path));
 
         accept.line("Map<String, String> pathParams = null;");

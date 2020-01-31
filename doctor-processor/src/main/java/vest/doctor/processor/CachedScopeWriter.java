@@ -18,7 +18,7 @@ public class CachedScopeWriter implements ScopeWriter {
     @Override
     public String wrapScope(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String providerRef) {
         Cached cached = providerDefinition.annotationSource().getAnnotation(Cached.class);
-        long ttl = TimeUnit.MILLISECONDS.convert(cached.ttl(), cached.unit());
+        long ttl = TimeUnit.NANOSECONDS.convert(cached.ttl(), cached.unit());
         return "new " + CachedScopeProvider.class.getCanonicalName() + "(" + providerRef + ", " + ttl + ")";
     }
 }

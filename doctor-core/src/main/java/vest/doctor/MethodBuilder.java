@@ -22,7 +22,7 @@ public class MethodBuilder {
     }
 
     public MethodBuilder line(String line, Object... args) {
-        sb.append(Line.line(line, args)).append("\n");
+        sb.append(CodeLine.line(line, args)).append("\n");
         return this;
     }
 
