@@ -28,8 +28,8 @@ public class GenericInfo {
         return Optional.empty();
     }
 
-    private TypeMirror type;
-    private List<GenericInfo> generics;
+    private final TypeMirror type;
+    private final List<GenericInfo> generics;
 
     public GenericInfo(TypeMirror type) {
         this.type = type;

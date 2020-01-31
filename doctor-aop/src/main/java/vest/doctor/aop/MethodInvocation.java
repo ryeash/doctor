@@ -12,12 +12,10 @@ public interface MethodInvocation {
 
     void setArgumentValue(int i, Object o);
 
-    @SuppressWarnings("unchecked")
     <T> T invoke() throws Exception;
 
     boolean invoked();
 
-    @SuppressWarnings("unchecked")
     <T> T getResult();
 
     void setResult(Object result);

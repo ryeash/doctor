@@ -101,15 +101,13 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T> Optional<DoctorProvider<T>> getProviderOpt(Class<T> type, String qualifier) {
         return providerIndex.getProvider(type, qualifier);
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T> Stream<DoctorProvider<T>> getProviders(Class<T> type) {
-        return providerIndex.getProviders(type).map(c -> (DoctorProvider<T>) c);
+        return providerIndex.getProviders(type);
     }
 
     @Override

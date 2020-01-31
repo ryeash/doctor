@@ -68,6 +68,6 @@ public class StandardConversionGenerator implements StringConversionGenerator {
                 return true;
             }
         }
-        return true;
+        return false;
     }
 }

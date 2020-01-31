@@ -107,7 +107,7 @@ final class AspectedMethod {
                     .map(p -> "new MutableMethodArgument(" + p.getSimpleName() + ")")
                     .collect(Collectors.joining(", ", "Arrays.asList(", ")"));
         }
-        sb.append("List<MutableMethodArgument> arguments = " + arguments + ";\n");
+        sb.append("List<MutableMethodArgument> arguments = ").append(arguments).append(";\n");
 
         StringBuilder invoker = new StringBuilder();
         if (method.getReturnType().getKind() != TypeKind.VOID) {
@@ -128,7 +128,7 @@ final class AspectedMethod {
         }
 
         sb.append(invoker.toString());
-        sb.append("MethodInvocation invocation = new MethodInvocationImpl(" + metadataName() + ", arguments, invoker);\n");
+        sb.append("MethodInvocation invocation = new MethodInvocationImpl(").append(metadataName()).append(", arguments, invoker);\n");
         sb.append(aspectName()).append(".before(invocation);\n");
         sb.append(aspectName()).append(".execute(invocation);\n");
         sb.append(aspectName()).append(".after(invocation);\n");

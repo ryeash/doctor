@@ -40,7 +40,7 @@ public class TCNettyEndpoint {
                         @QueryParam("number") int num,
                         @QueryParam("number") Optional<Integer> optNum,
                         @Attribute("list") List<InputStream> streams,
-                        @BeanParam NettyBeanParam beanParam) {
+                        @BeanParam NettyBeanParam<?> beanParam) {
         Assert.assertNull(streams);
         return "ok " + q.orElse(null) + " " + num + " " + optNum.orElse(-1);
     }

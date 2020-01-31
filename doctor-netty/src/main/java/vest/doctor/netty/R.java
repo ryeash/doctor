@@ -25,7 +25,7 @@ public class R {
     }
 
     private HttpResponseStatus status;
-    private Map<CharSequence, Object> headers;
+    private final Map<CharSequence, Object> headers;
     private Object body;
 
     private R(HttpResponseStatus status) {

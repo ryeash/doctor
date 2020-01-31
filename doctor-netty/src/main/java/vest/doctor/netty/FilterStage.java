@@ -7,7 +7,7 @@ public enum FilterStage {
     BEFORE_ROUTE,
     AFTER_ROUTE;
 
-    private HttpMethod methodAlias;
+    private final HttpMethod methodAlias;
 
     FilterStage() {
         this.methodAlias = new HttpMethod(this.name());

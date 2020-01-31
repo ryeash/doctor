@@ -28,7 +28,7 @@ public final class Line {
 
     private static String toString(Object o) {
         if (o instanceof Class) {
-            return ((Class<?>) o).getCanonicalName();
+            return ((Class<?>) o).getSimpleName();
         } else if (o instanceof TypeElement) {
             return ((TypeElement) o).getQualifiedName().toString();
         } else {

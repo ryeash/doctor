@@ -286,6 +286,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 .addImportClass(ProviderRegistry.class)
                 .addImportClass(Provider.class)
                 .addImportClass(DoctorProvider.class)
+                .addImportClass(PrimaryProviderWrapper.class)
                 .addImportClass(ShutdownContainer.class)
                 .addField(line("private final {} {} = new {}()", ShutdownContainer.class, Constants.SHUTDOWN_CONTAINER_NAME, ShutdownContainer.class))
                 // call eager providers
@@ -371,7 +372,6 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
 
     private void compileTimeDependencyCheck() {
         List<ProviderDependency> builtins = ignoredBuiltins(ProviderRegistry.class, ConfigurationFacade.class, EventProducer.class, EventManager.class);
-
         for (Map.Entry<ProviderDependency, Set<ProviderDependency>> entry : typesToDependencies.entrySet()) {
             ProviderDependency target = entry.getKey();
             for (ProviderDependency dependency : entry.getValue()) {

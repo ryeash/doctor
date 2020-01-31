@@ -97,9 +97,8 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
             }
         });
 
-        classBuilder.addMethod("public " + providedType().getSimpleName() + " get()", b -> {
-            b.line("return new {}({});", implClass, PROVIDER_REGISTRY);
-        });
+        classBuilder.addMethod("public " + providedType().getSimpleName() + " get()",
+                b -> b.line("return new {}({});", implClass, PROVIDER_REGISTRY));
         return classBuilder;
     }
 

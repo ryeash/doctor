@@ -42,8 +42,6 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
     private final int minThreads;
     private final int maxThreads;
     private final int keepAliveSeconds;
-    private final ConfigurationFacade configurationFacade;
-    private final String propertyPrefix;
     private final ThreadPoolType type;
     private final String qualifier;
     private final List<Class<?>> providedTypes;
@@ -51,8 +49,8 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
     private final RejectedExecutionHandler rejectedExecutionHandler;
 
     public ConfigurationDrivenExecutorServiceProvider(ProviderRegistry providerRegistry, String name, ThreadPoolType forceType) {
-        this.configurationFacade = providerRegistry.configuration();
-        this.propertyPrefix = "executors." + name + ".";
+        ConfigurationFacade configurationFacade = providerRegistry.configuration();
+        String propertyPrefix = "executors." + name + ".";
         this.qualifier = name;
         if (forceType != null) {
             this.type = forceType;

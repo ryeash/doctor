@@ -8,8 +8,8 @@ public class MethodInvocationImpl implements MethodInvocation {
 
     private final MethodMetadata methodMetadata;
     private final List<MutableMethodArgument> argumentList;
+    private final Callable<?> methodInvoker;
     private Object result;
-    private Callable<?> methodInvoker;
     private boolean invoked = false;
 
     public MethodInvocationImpl(MethodMetadata methodMetadata, List<MutableMethodArgument> argumentList, Callable<?> methodInvoker) {

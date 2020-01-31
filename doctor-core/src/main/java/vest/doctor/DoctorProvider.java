@@ -42,9 +42,7 @@ public interface DoctorProvider<T> extends Provider<T> {
     }
 
     /**
-     * Check all dependencies are met by the current state of the providers.
-     *
-     * @param providerRegistry
+     * Check all dependencies are met by the current state of the {@link ProviderRegistry}.
      */
     void validateDependencies(ProviderRegistry providerRegistry);
 }

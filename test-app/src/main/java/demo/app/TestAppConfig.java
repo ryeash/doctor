@@ -28,12 +28,7 @@ public class TestAppConfig {
     @Factory
     @Singleton
     public CoffeeMaker testCoffeeMaker() {
-        return new CoffeeMaker() {
-            @Override
-            public String brew() {
-                return "test";
-            }
-        };
+        return () -> "test";
     }
 
     @Modules("dev")
@@ -41,12 +36,7 @@ public class TestAppConfig {
     @Factory
     @Singleton
     public CoffeeMaker devCoffeeMaker() {
-        return new CoffeeMaker() {
-            @Override
-            public String brew() {
-                return "dev";
-            }
-        };
+        return () -> "dev";
     }
 
     @Factory

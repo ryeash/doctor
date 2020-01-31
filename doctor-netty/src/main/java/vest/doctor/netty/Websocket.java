@@ -101,9 +101,7 @@ public abstract class Websocket {
      */
     protected CompletableFuture<Void> send(ChannelHandlerContext ctx, WebSocketFrame frame) {
         CompletableFuture<Void> future = new CompletableFuture<>();
-        ctx.channel().eventLoop().execute(() -> {
-            ctx.writeAndFlush(frame).addListener(f -> future.complete(null));
-        });
+        ctx.channel().eventLoop().execute(() -> ctx.writeAndFlush(frame).addListener(f -> future.complete(null)));
         return future;
     }
 

@@ -316,7 +316,7 @@ public class AppTest extends Assert {
     }
 
     @WebSocket(maxTextMessageSize = 64 * 1024)
-    public class SimpleEchoSocket {
+    public static class SimpleEchoSocket {
         private final CountDownLatch closeLatch;
         @SuppressWarnings("unused")
         private Session session;

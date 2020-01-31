@@ -44,7 +44,7 @@ public class PathSpec implements Comparable<PathSpec> {
             String section = matcher.group().trim();
             String name = section.substring(1, section.length() - 1);
             String paramRegex = DEFAULT_PARAM_REGEX;
-            int index = name.indexOf(':', 0);
+            int index = name.indexOf(':');
             if (index >= 0) {
                 paramRegex = name.substring(index + 1);
                 name = name.substring(0, index);

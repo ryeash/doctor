@@ -109,10 +109,6 @@ public class ProviderParameterLookupCustomizer implements ParameterLookupCustomi
             TypeElement type = context.toTypeElement(unwrapJustOne(variableElement.asType()));
             return context.buildDependency(type, qualifier, false);
         }
-
-        if (variableElement.asType().getKind() == TypeKind.ARRAY) {
-            return context.buildDependency(typeElement, qualifier, true);
-        }
         return context.buildDependency(typeElement, qualifier, true);
     }
 

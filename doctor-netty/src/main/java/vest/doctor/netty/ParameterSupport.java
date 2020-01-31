@@ -109,12 +109,12 @@ public final class ParameterSupport {
                 .map(p -> parameterWriting(context, p, contextRef))
                 .collect(Collectors.joining(", ", "(", ")"));
 
-        StringBuilder sb = new StringBuilder("new " + POJOHelper.class.getCanonicalName() + "<>(new " + typeMirror + diamond + constructorParams + ")");
+        StringBuilder sb = new StringBuilder("new " + POJOHelper.class.getCanonicalName() + "<>(new " + typeWithoutParameters(typeMirror) + diamond + constructorParams + ")");
         for (VariableElement field : ElementFilter.fieldsIn(beanType.getEnclosedElements())) {
             if (supportedParam(field)) {
                 ExecutableElement setter = findCorrespondingSetter(field, beanType);
                 VariableElement setterParameter = setter.getParameters().get(0);
-                sb.append(".with(" + beanType + "::" + setter.getSimpleName() + ", " + parameterWriting(context, setterParameter, field, contextRef) + ")");
+                sb.append(".with(").append(beanType).append("::").append(setter.getSimpleName()).append(", ").append(parameterWriting(context, setterParameter, field, contextRef)).append(")");
             }
         }
         sb.append(".get()");

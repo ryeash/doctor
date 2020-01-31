@@ -45,26 +45,26 @@ import static io.netty.handler.codec.http.cookie.ServerCookieEncoder.STRICT;
  */
 public class RequestContext {
 
-    private static Logger log = LoggerFactory.getLogger(RequestContext.class);
+    private static final Logger log = LoggerFactory.getLogger(RequestContext.class);
 
-    private ChannelHandlerContext ctx;
+    private final ChannelHandlerContext ctx;
     // request
-    private FullHttpRequest request;
+    private final FullHttpRequest request;
     private Map<String, Cookie> cookies;
-    private URI requestUri;
-    private QueryStringDecoder queryStringDecoder;
+    private final URI requestUri;
+    private final QueryStringDecoder queryStringDecoder;
     private Map<String, String> pathParams;
     private String requestPath;
 
     // response
     private HttpResponseStatus status;
-    private HttpHeaders responseHeaders;
+    private final HttpHeaders responseHeaders;
     private ByteBuf responseBody;
 
     private boolean halted = false;
     private Map<String, Object> attributes;
 
-    private CompletableFuture<Void> future;
+    private final CompletableFuture<Void> future;
 
     RequestContext(ChannelHandlerContext ctx, FullHttpRequest request) {
         this.ctx = ctx;

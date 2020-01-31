@@ -8,8 +8,8 @@ import org.slf4j.LoggerFactory;
 
 public class WebsocketHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
 
-    private static Logger log = LoggerFactory.getLogger(WebsocketHandler.class);
-    private Websocket websocket;
+    private static final Logger log = LoggerFactory.getLogger(WebsocketHandler.class);
+    private final Websocket websocket;
 
     public WebsocketHandler(Websocket websocket) {
         super();
@@ -20,6 +20,7 @@ public class WebsocketHandler extends SimpleChannelInboundHandler<WebSocketFrame
     protected void channelRead0(ChannelHandlerContext ctx, WebSocketFrame frame) {
         if (websocket == null) {
             ctx.close();
+            return;
         }
         try {
             websocket.onMessage(ctx, frame);

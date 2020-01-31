@@ -196,9 +196,7 @@ public class RouterWriter implements ProviderDefinitionListener {
         routerBuilder.addMethod(accept.finish());
         routerBuilder.addMethod(filter.finish());
         routerBuilder.addField("private final Map<String, Websocket> websockets = new HashMap<>()")
-                .addMethod("public Websocket getWebsocket(String uri)", mb -> {
-                    mb.line("return websockets.get(uri);");
-                });
+                .addMethod("public Websocket getWebsocket(String uri)", mb -> mb.line("return websockets.get(uri);"));
         routerBuilder.setClassName(context.generatedPackage() + ".RouterImpl");
         routerBuilder.writeClass(context.filer());
 

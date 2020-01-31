@@ -28,7 +28,7 @@ import java.util.Objects;
 
 @Sharable
 public class HttpServer extends ChannelInitializer<SocketChannel> implements AutoCloseable {
-    private static Logger log = LoggerFactory.getLogger(HttpServer.class);
+    private static final Logger log = LoggerFactory.getLogger(HttpServer.class);
 
     private final NettyConfiguration config;
     private final EventLoopGroup bossGroup;
@@ -63,7 +63,7 @@ public class HttpServer extends ChannelInitializer<SocketChannel> implements Aut
     }
 
     public void setRequestHandler(Router requestHandler) {
-        this.httpHandler = new HttpHandler(config, Objects.requireNonNull(requestHandler, "request handler may not be null"));
+        this.httpHandler = new HttpHandler(Objects.requireNonNull(requestHandler, "request handler may not be null"));
     }
 
     @Override

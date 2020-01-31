@@ -20,12 +20,10 @@ import static io.netty.channel.ChannelHandler.Sharable;
 @Sharable
 public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private final static Logger log = LoggerFactory.getLogger(HttpHandler.class);
-    private final NettyConfiguration config;
     private final Router router;
 
-    public HttpHandler(NettyConfiguration config, Router router) {
+    public HttpHandler(Router router) {
         super();
-        this.config = config;
         this.router = router;
     }
 
