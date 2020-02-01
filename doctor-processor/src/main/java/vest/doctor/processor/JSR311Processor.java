@@ -45,7 +45,6 @@ import java.io.PrintWriter;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -58,8 +57,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static vest.doctor.Constants.PROVIDER_REGISTRY;
 import static vest.doctor.CodeLine.line;
+import static vest.doctor.Constants.PROVIDER_REGISTRY;
 
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 @SupportedOptions({JSR311Processor.PACKAGE_NAME_OPTION})
@@ -215,16 +214,6 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
             }
         }
         return false;
-    }
-
-    @Override
-    public List<NewInstanceCustomizer> newInstanceCustomizers() {
-        return Collections.unmodifiableList(newInstanceCustomizers);
-    }
-
-    @Override
-    public List<ParameterLookupCustomizer> parameterLookupCustomizers() {
-        return Collections.unmodifiableList(parameterLookupCustomizers);
     }
 
     @Override

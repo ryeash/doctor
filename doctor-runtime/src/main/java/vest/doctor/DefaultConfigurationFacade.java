@@ -79,21 +79,21 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
     }
 
     @Override
-    public String get(String fullyQualfiedPropertyName, String defaultValue) {
-        return Optional.ofNullable(get(fullyQualfiedPropertyName))
+    public String get(String fullyQualifiedPropertyName, String defaultValue) {
+        return Optional.ofNullable(get(fullyQualifiedPropertyName))
                 .orElse(defaultValue);
     }
 
     @Override
-    public <T> T get(String fullyQualfiedPropertyName, Function<String, T> converter) {
-        return Optional.ofNullable(get(fullyQualfiedPropertyName))
+    public <T> T get(String fullyQualifiedPropertyName, Function<String, T> converter) {
+        return Optional.ofNullable(get(fullyQualifiedPropertyName))
                 .map(converter)
                 .orElse(null);
     }
 
     @Override
-    public <T> T get(String fullyQualfiedPropertyName, T defaultValue, Function<String, T> converter) {
-        return Optional.ofNullable(get(fullyQualfiedPropertyName))
+    public <T> T get(String fullyQualifiedPropertyName, T defaultValue, Function<String, T> converter) {
+        return Optional.ofNullable(get(fullyQualifiedPropertyName))
                 .map(converter)
                 .orElse(defaultValue);
     }

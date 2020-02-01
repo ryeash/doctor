@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
+/**
+ * Helper class used internally to create generated classes.
+ */
 public class ClassBuilder {
 
     private String packageName = "";

@@ -16,6 +16,9 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Provider implementation that provides instances of {@link ExecutorService}s based on configuration properties.
+ */
 public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvider<ExecutorService> {
 
     public static final int DEFAULT_MIN_THREADS = 1;

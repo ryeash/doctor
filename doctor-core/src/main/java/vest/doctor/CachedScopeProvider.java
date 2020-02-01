@@ -1,5 +1,8 @@
 package vest.doctor;
 
+/**
+ * ScopeProvider supporting the {@link Cached} annotation.
+ */
 public class CachedScopeProvider<T> extends ScopedProvider<T> {
 
     private final long ttlNanos;

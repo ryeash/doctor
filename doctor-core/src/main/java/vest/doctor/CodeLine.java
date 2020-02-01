@@ -4,6 +4,9 @@ import javax.lang.model.element.TypeElement;
 import java.util.Arrays;
 import java.util.Iterator;
 
+/**
+ * Helper class used internally for creating lines of code.
+ */
 public final class CodeLine {
     private CodeLine() {
     }

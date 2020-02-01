@@ -2,9 +2,9 @@ package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ClassBuilder;
+import vest.doctor.CodeLine;
 import vest.doctor.Constants;
 import vest.doctor.InjectionException;
-import vest.doctor.CodeLine;
 import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ParameterLookupCustomizer;
 import vest.doctor.ProviderRegistry;
@@ -63,7 +63,7 @@ public class ConstructorProviderDefinition extends AbstractProviderDefinition {
 
         classBuilder.addMethod(CodeLine.line("public void validateDependencies({} {})", ProviderRegistry.class, Constants.PROVIDER_REGISTRY), b -> {
             for (VariableElement parameter : injectableConstructor.getParameters()) {
-                for (ParameterLookupCustomizer parameterLookupCustomizer : context.parameterLookupCustomizers()) {
+                for (ParameterLookupCustomizer parameterLookupCustomizer : context.customizations(ParameterLookupCustomizer.class)) {
                     String checkCode = parameterLookupCustomizer.dependencyCheckCode(context, parameter, Constants.PROVIDER_REGISTRY);
                     if (checkCode == null) {
                         continue;
@@ -79,7 +79,7 @@ public class ConstructorProviderDefinition extends AbstractProviderDefinition {
         classBuilder.addMethod("public " + providedType.getSimpleName() + " get()", b -> {
             b.line("try {");
             b.line(providedType.getSimpleName() + " instance = " + context.constructorCall(this, injectableConstructor, Constants.PROVIDER_REGISTRY) + ";");
-            for (NewInstanceCustomizer customizer : context.newInstanceCustomizers()) {
+            for (NewInstanceCustomizer customizer : context.customizations(NewInstanceCustomizer.class)) {
                 customizer.customize(context, this, b, "instance", Constants.PROVIDER_REGISTRY);
             }
             b.line("return instance;");
