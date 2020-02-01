@@ -4,6 +4,9 @@ import java.lang.ref.WeakReference;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Used internally to support running scheduled methods.
+ */
 public abstract class ScheduledTaskWrapper<T> implements Runnable {
     private final ProviderRegistry providerRegistry;
     private final WeakReference<T> ref;

@@ -1,5 +1,8 @@
 package vest.doctor;
 
+/**
+ * Used internally to bridge {@link DoctorProvider}s and the {@link ShutdownContainer}.
+ */
 public class ShutdownProviderWrapper<T extends AutoCloseable> extends DoctorProviderWrapper<T> {
 
     private final ShutdownContainer shutdownContainer;

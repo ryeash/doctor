@@ -1,6 +1,9 @@
 package vest.doctor;
 
-public class SingletonScopedProvider<T> extends ScopedProvider<T> {
+/**
+ * Provider wrapper that supports the {@link javax.inject.Singleton} scope.
+ */
+public class SingletonScopedProvider<T> extends DoctorProviderWrapper<T> {
 
     private volatile boolean instantiated = false;
     private T instance;
@@ -10,7 +13,7 @@ public class SingletonScopedProvider<T> extends ScopedProvider<T> {
     }
 
     @Override
-    protected T createOrGet() {
+    public T get() {
         if (!instantiated) {
             synchronized (this) {
                 if (!instantiated) {

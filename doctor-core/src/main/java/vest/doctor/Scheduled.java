@@ -17,7 +17,14 @@ import java.util.concurrent.TimeUnit;
 public @interface Scheduled {
 
     enum Type {
-        FIXED_DELAY, FIXED_RATE
+        /**
+         * corresponds to {@link java.util.concurrent.ScheduledExecutorService#scheduleWithFixedDelay(Runnable, long, long, TimeUnit)}
+         */
+        FIXED_DELAY,
+        /**
+         * corresponds to {@link java.util.concurrent.ScheduledExecutorService#scheduleAtFixedRate(Runnable, long, long, TimeUnit)}
+         */
+        FIXED_RATE
     }
 
     /**
@@ -31,9 +38,7 @@ public @interface Scheduled {
     TimeUnit unit() default TimeUnit.MILLISECONDS;
 
     /**
-     * The schedule type:
-     * {@link Type#FIXED_RATE} corresponds to {@link java.util.concurrent.ScheduledExecutorService#scheduleAtFixedRate(Runnable, long, long, TimeUnit)}
-     * and {@link Type#FIXED_DELAY} corresponds {@link java.util.concurrent.ScheduledExecutorService#scheduleWithFixedDelay(Runnable, long, long, TimeUnit)}.
+     * The schedule type.
      */
     Type type() default Type.FIXED_RATE;
 

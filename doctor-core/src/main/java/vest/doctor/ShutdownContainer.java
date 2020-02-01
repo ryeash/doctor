@@ -5,6 +5,9 @@ import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * Used internally to support auto-closing of provided isntances.
+ */
 public class ShutdownContainer implements AutoCloseable {
 
     private final AtomicBoolean closed = new AtomicBoolean(false);

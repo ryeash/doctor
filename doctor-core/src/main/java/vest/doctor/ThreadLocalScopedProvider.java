@@ -1,6 +1,9 @@
 package vest.doctor;
 
-public class ThreadLocalScopedProvider<T> extends ScopedProvider<T> {
+/**
+ * Provider wrapper that supports the {@link ThreadLocal} scope.
+ */
+public class ThreadLocalScopedProvider<T> extends DoctorProviderWrapper<T> {
 
     private final java.lang.ThreadLocal<T> tfInstance;
 
@@ -10,7 +13,7 @@ public class ThreadLocalScopedProvider<T> extends ScopedProvider<T> {
     }
 
     @Override
-    protected T createOrGet() {
+    public T get() {
         return tfInstance.get();
     }
 }

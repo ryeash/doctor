@@ -1,9 +1,9 @@
 package vest.doctor;
 
 /**
- * ScopeProvider supporting the {@link Cached} annotation.
+ * Provider wrapper that supports the {@link Cached} scope.
  */
-public class CachedScopeProvider<T> extends ScopedProvider<T> {
+public class CachedScopeProvider<T> extends DoctorProviderWrapper<T> {
 
     private final long ttlNanos;
     private volatile long expires = 0;
@@ -18,7 +18,7 @@ public class CachedScopeProvider<T> extends ScopedProvider<T> {
     }
 
     @Override
-    protected T createOrGet() {
+    public T get() {
         long temp = expires;
         if (expires == 0 || System.nanoTime() > expires) {
             synchronized (this) {
