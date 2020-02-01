@@ -15,11 +15,11 @@ public class PropertyParameterCustomizer implements ParameterLookupCustomizer {
     private static final PropertyCodeGen propertyCodeGen = new PropertyCodeGen();
 
     @Override
-    public String lookupCode(AnnotationProcessorContext context, VariableElement variableElement, String doctorRef) {
+    public String lookupCode(AnnotationProcessorContext context, VariableElement variableElement, String providerRegistryRef) {
         Property property = variableElement.getAnnotation(Property.class);
         if (property != null) {
             try {
-                return propertyCodeGen.getPropertyCode(context, property.value(), variableElement.asType(), doctorRef);
+                return propertyCodeGen.getPropertyCode(context, property.value(), variableElement.asType(), providerRegistryRef);
             } catch (IllegalArgumentException e) {
                 e.printStackTrace();
                 context.errorMessage(e.getMessage() + ": " + ProcessorUtils.debugString(variableElement));
@@ -29,14 +29,14 @@ public class PropertyParameterCustomizer implements ParameterLookupCustomizer {
     }
 
     @Override
-    public String dependencyCheckCode(AnnotationProcessorContext context, VariableElement variableElement, String doctorRef) {
+    public String dependencyCheckCode(AnnotationProcessorContext context, VariableElement variableElement, String providerRegistryRef) {
         Property property = variableElement.getAnnotation(Property.class);
         if (property != null) {
             TypeMirror element = variableElement.asType();
             if (Optional.class.getCanonicalName().equals(element.toString())) {
                 return "";
             } else {
-                return Objects.class.getCanonicalName() + ".requireNonNull(" + doctorRef + ".configuration().get(\"" + property.value() + "\", \"missing required property '" + property.value() + "'\"));";
+                return Objects.class.getCanonicalName() + ".requireNonNull(" + providerRegistryRef + ".configuration().get(\"" + property.value() + "\", \"missing required property '" + property.value() + "'\"));";
             }
         }
         return null;

@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 public class ProviderParameterLookupCustomizer implements ParameterLookupCustomizer {
 
     @Override
-    public String lookupCode(AnnotationProcessorContext context, VariableElement variableElement, String doctorRef) {
+    public String lookupCode(AnnotationProcessorContext context, VariableElement variableElement, String providerRegistryRef) {
         try {
             TypeElement typeElement = context.toTypeElement(variableElement.asType());
             String qualifier = ProcessorUtils.getQualifier(context, variableElement);
@@ -31,17 +31,17 @@ public class ProviderParameterLookupCustomizer implements ParameterLookupCustomi
 
             if (ProcessorUtils.isCompatibleWith(context, typeElement, Optional.class)) {
                 TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
-                return doctorRef + ".getProviderOpt(" + typeMirror + ".class, " + qualifier + ").map(" + Provider.class.getCanonicalName() + "::get)";
+                return providerRegistryRef + ".getProviderOpt(" + typeMirror + ".class, " + qualifier + ").map(" + Provider.class.getCanonicalName() + "::get)";
             }
 
             if (ProcessorUtils.isCompatibleWith(context, typeElement, Provider.class)) {
                 TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
-                return doctorRef + ".getProvider(" + typeMirror + ".class, " + qualifier + ")";
+                return providerRegistryRef + ".getProvider(" + typeMirror + ".class, " + qualifier + ")";
             }
 
             if (ProcessorUtils.isCompatibleWith(context, typeElement, Iterable.class)) {
                 TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
-                String preamble = doctorRef + ".getProviders(" + typeMirror + ".class, " + qualifier + ")"
+                String preamble = providerRegistryRef + ".getProviders(" + typeMirror + ".class, " + qualifier + ")"
                         + ".map(" + Provider.class.getCanonicalName() + "::get)"
                         + ".collect(" + Collectors.class.getCanonicalName();
 
@@ -59,15 +59,15 @@ public class ProviderParameterLookupCustomizer implements ParameterLookupCustomi
 
             if (ProcessorUtils.isCompatibleWith(context, typeElement, Stream.class)) {
                 TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
-                return doctorRef + ".getProviders(" + typeMirror + ".class, " + qualifier + ")";
+                return providerRegistryRef + ".getProviders(" + typeMirror + ".class, " + qualifier + ")";
             }
 
             if (variableElement.asType().getKind() == TypeKind.ARRAY) {
                 String type = typeElement.getQualifiedName().toString();
-                return doctorRef + ".getProviders(" + type + ".class, " + qualifier + ").map(" + Provider.class.getCanonicalName() + "::get)" + ".toArray(" + type + "[]::new)";
+                return providerRegistryRef + ".getProviders(" + type + ".class, " + qualifier + ").map(" + Provider.class.getCanonicalName() + "::get)" + ".toArray(" + type + "[]::new)";
             }
 
-            return doctorRef + ".getInstance(" + variableElement.asType() + ".class, " + qualifier + ")";
+            return providerRegistryRef + ".getInstance(" + variableElement.asType() + ".class, " + qualifier + ")";
         } catch (IllegalArgumentException e) {
             context.errorMessage("error wiring parameter: " + e.getMessage() + ": " + ProcessorUtils.debugString(variableElement));
             throw e;
@@ -75,7 +75,7 @@ public class ProviderParameterLookupCustomizer implements ParameterLookupCustomi
     }
 
     @Override
-    public String dependencyCheckCode(AnnotationProcessorContext context, VariableElement variableElement, String doctorRef) {
+    public String dependencyCheckCode(AnnotationProcessorContext context, VariableElement variableElement, String providerRegistryRef) {
         TypeElement typeElement = context.toTypeElement(variableElement.asType());
         String qualifier = ProcessorUtils.getQualifier(context, variableElement);
         if (ProcessorUtils.isCompatibleWith(context, typeElement, Optional.class)) {
@@ -87,14 +87,14 @@ public class ProviderParameterLookupCustomizer implements ParameterLookupCustomi
                 || ProcessorUtils.isCompatibleWith(context, typeElement, Stream.class)
         ) {
             TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
-            return doctorRef + ".getProvider(" + typeMirror + ".class, " + qualifier + ");";
+            return providerRegistryRef + ".getProvider(" + typeMirror + ".class, " + qualifier + ");";
         }
 
         if (variableElement.asType().getKind() == TypeKind.ARRAY) {
             String type = typeElement.getQualifiedName().toString();
-            return doctorRef + ".getProvider(" + type + ".class, " + qualifier + ");";
+            return providerRegistryRef + ".getProvider(" + type + ".class, " + qualifier + ");";
         }
-        return doctorRef + ".getProvider(" + variableElement.asType() + ".class, " + qualifier + ");";
+        return providerRegistryRef + ".getProvider(" + variableElement.asType() + ".class, " + qualifier + ");";
     }
 
     @Override

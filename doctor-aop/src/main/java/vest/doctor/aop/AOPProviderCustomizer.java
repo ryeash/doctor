@@ -27,10 +27,10 @@ import java.util.stream.Collectors;
 
 public class AOPProviderCustomizer implements ProviderCustomizationPoint {
     @Override
-    public String wrap(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String providerRef, String beanProviderRef) {
+    public String wrap(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String providerRef, String providerRegistryRef) {
         if (hasAspects(providerDefinition)) {
             String delegationClass = createDelegationClass(context, providerDefinition);
-            return "new " + AspectWrappingProvider.class.getCanonicalName() + "<>(" + providerRef + ", " + beanProviderRef + ", " + delegationClass + "::new)";
+            return "new " + AspectWrappingProvider.class.getCanonicalName() + "<>(" + providerRef + ", " + providerRegistryRef + ", " + delegationClass + "::new)";
         } else {
             return providerRef;
         }

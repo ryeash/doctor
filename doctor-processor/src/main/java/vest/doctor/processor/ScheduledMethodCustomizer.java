@@ -21,7 +21,10 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
     private static final AtomicInteger count = new AtomicInteger(0);
 
     @Override
-    public void customize(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String doctorRef) {
+    public void customize(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef) {
+        if (providerDefinition.isSkipInjection()) {
+            return;
+        }
         TypeElement typeElement = providerDefinition.providedType();
         List<ExecutableElement> scheduledMethods = ElementFilter.methodsIn(context.processingEnvironment().getElementUtils().getAllMembers(typeElement))
                 .stream()
@@ -32,7 +35,7 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
             return;
         }
 
-        method.line("java.util.concurrent.ScheduledExecutorService ses = " + doctorRef + ".getInstance(java.util.concurrent.ScheduledExecutorService.class, \"defaultScheduled\");");
+        method.line("java.util.concurrent.ScheduledExecutorService ses = " + providerRegistryRef + ".getInstance(java.util.concurrent.ScheduledExecutorService.class, \"defaultScheduled\");");
         for (ExecutableElement scheduledMethod : scheduledMethods) {
             Scheduled scheduled = scheduledMethod.getAnnotation(Scheduled.class);
             String schedulerMethod;
@@ -49,7 +52,7 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
 
             String wrapperRef = "wrapper" + count.incrementAndGet();
             method.line(ScheduledTaskWrapper.class.getCanonicalName() + "<" + providerDefinition.providedType().getSimpleName() + "> " + wrapperRef
-                    + " = new " + ScheduledTaskWrapper.class.getCanonicalName() + "<" + providerDefinition.providedType().getSimpleName() + ">(" + doctorRef + "," + instanceRef + "," + scheduled.executionLimit() + ") {");
+                    + " = new " + ScheduledTaskWrapper.class.getCanonicalName() + "<" + providerDefinition.providedType().getSimpleName() + ">(" + providerRegistryRef + "," + instanceRef + "," + scheduled.executionLimit() + ") {");
             method.line("protected void internalRun({} {}, {} val) {",
                     ProviderRegistry.class, Constants.PROVIDER_REGISTRY, providerDefinition.providedType().getSimpleName());
             method.line(context.methodCall(providerDefinition, scheduledMethod, "val", Constants.PROVIDER_REGISTRY) + ";");

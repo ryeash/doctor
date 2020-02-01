@@ -10,7 +10,7 @@ import java.util.Objects;
 
 public class ShutdownCustomizationPoint implements ProviderCustomizationPoint {
     @Override
-    public String wrap(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String providerRef, String beanProviderRef) {
+    public String wrap(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String providerRef, String providerRegistryRef) {
         boolean isCloseable = providerDefinition.getAllProvidedTypes()
                 .stream()
                 .anyMatch(c -> Objects.equals(c.getQualifiedName().toString(), AutoCloseable.class.getCanonicalName()));

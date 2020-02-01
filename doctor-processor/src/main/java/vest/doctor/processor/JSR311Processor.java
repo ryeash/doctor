@@ -211,6 +211,12 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 if (Objects.equals(dependency, provided)) {
                     return true;
                 }
+                if (providerDefinition.isPrimary()) {
+                    Dependency primary = new Dependency(type, null);
+                    if (Objects.equals(dependency, primary)) {
+                        return true;
+                    }
+                }
             }
         }
         return false;
@@ -321,7 +327,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
             }
             load.line("{}<{}> {} = {};", DoctorProvider.class, providerDefinition.providedType().getSimpleName(), providerDefinition.uniqueInstanceName(), creator);
             load.line("{}.register({});", PROVIDER_REGISTRY, providerDefinition.uniqueInstanceName());
-            if (providerDefinition.isPrimary()) {
+            if (providerDefinition.isPrimary() && providerDefinition.qualifier() != null) {
                 load.line("{}.register(new {}({}));", PROVIDER_REGISTRY, PrimaryProviderWrapper.class, providerDefinition.uniqueInstanceName());
             }
 

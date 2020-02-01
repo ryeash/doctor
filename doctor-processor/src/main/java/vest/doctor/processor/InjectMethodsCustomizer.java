@@ -30,7 +30,7 @@ public class InjectMethodsCustomizer implements NewInstanceCustomizer {
     }
 
     @Override
-    public void customize(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String doctorRef) {
+    public void customize(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef) {
         if (providerDefinition.isSkipInjection()) {
             return;
         }
@@ -40,12 +40,12 @@ public class InjectMethodsCustomizer implements NewInstanceCustomizer {
         for (ExecutableElement executableElement : ElementFilter.methodsIn(context.processingEnvironment().getElementUtils().getAllMembers(typeElement))) {
             if (targetAnnotations.stream().map(executableElement::getAnnotation).anyMatch(Objects::nonNull)) {
 
-                String call = context.methodCall(providerDefinition, executableElement, instanceRef, doctorRef);
+                String call = context.methodCall(providerDefinition, executableElement, instanceRef, providerRegistryRef);
 
                 if (executableElement.getAnnotation(Async.class) != null) {
                     if (!executorRef) {
                         executorRef = true;
-                        method.line(ExecutorService.class.getCanonicalName() + " executor = " + doctorRef + ".getInstance(" + ExecutorService.class.getCanonicalName() + ".class, \"default\");");
+                        method.line(ExecutorService.class.getCanonicalName() + " executor = " + providerRegistryRef + ".getInstance(" + ExecutorService.class.getCanonicalName() + ".class, \"default\");");
                     }
                     method.line("executor.submit(() -> {\ntry {\n" + call
                             + ";\n} catch(Throwable t) { throw new " + InjectionException.class.getCanonicalName() + "(\"error injecting method\", t); }"

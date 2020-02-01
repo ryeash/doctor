@@ -3,6 +3,9 @@ package vest.doctor;
 import java.lang.annotation.Annotation;
 import java.util.List;
 
+/**
+ * Used internally for wrapping and altering the behaviors of a {@link DoctorProvider}.
+ */
 public abstract class DoctorProviderWrapper<T> implements DoctorProvider<T> {
 
     protected final DoctorProvider<T> delegate;

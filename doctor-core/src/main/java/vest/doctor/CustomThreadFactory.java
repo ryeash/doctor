@@ -6,6 +6,10 @@ import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Implements {@link ThreadFactory} and {@link java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory} and allows
+ * for customizing the generated {@link Thread}s.
+ */
 public final class CustomThreadFactory implements ThreadFactory, ForkJoinPool.ForkJoinWorkerThreadFactory {
 
     private final ThreadFactory defaultThreadFactory = Executors.defaultThreadFactory();
@@ -15,6 +19,15 @@ public final class CustomThreadFactory implements ThreadFactory, ForkJoinPool.Fo
     private final Thread.UncaughtExceptionHandler uncaughtExceptionHandler;
     private final ClassLoader classLoader;
 
+    /**
+     * Create a new thread factory.
+     *
+     * @param daemonize                whether the created threads will be deamons
+     * @param threadPrefix             the prefix name to use for the threads, thread names will be set to the thread
+     *                                 prefix appended with a unique thread id number
+     * @param uncaughtExceptionHandler the {@link java.lang.Thread.UncaughtExceptionHandler} to use for the threads
+     * @param classLoader              the {@link ClassLoader} to use for the threads
+     */
     public CustomThreadFactory(boolean daemonize, String threadPrefix, Thread.UncaughtExceptionHandler uncaughtExceptionHandler, ClassLoader classLoader) {
         this.daemonize = daemonize;
         this.threadPrefix = threadPrefix;

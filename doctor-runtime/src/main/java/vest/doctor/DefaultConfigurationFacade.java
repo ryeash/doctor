@@ -99,23 +99,23 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
     }
 
     @Override
-    public <T> Collection<T> getCollection(String fullyQualfiedPropertyName, Function<String, T> converter) {
-        return getList(fullyQualfiedPropertyName, converter);
+    public <T> Collection<T> getCollection(String fullyQualifiedPropertyName, Function<String, T> converter) {
+        return getList(fullyQualifiedPropertyName, converter);
     }
 
     @Override
-    public <T> List<T> getList(String fullyQualfiedPropertyName, Function<String, T> converter) {
-        return getSplit(fullyQualfiedPropertyName, converter).collect(Collectors.toList());
+    public <T> List<T> getList(String fullyQualifiedPropertyName, Function<String, T> converter) {
+        return getSplit(fullyQualifiedPropertyName, converter).collect(Collectors.toList());
     }
 
     @Override
-    public <T> Set<T> getSet(String fullyQualfiedPropertyName, Function<String, T> converter) {
-        return getSplit(fullyQualfiedPropertyName, converter).collect(Collectors.toCollection(LinkedHashSet::new));
+    public <T> Set<T> getSet(String fullyQualifiedPropertyName, Function<String, T> converter) {
+        return getSplit(fullyQualifiedPropertyName, converter).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     @Override
-    public <T> Stream<T> getSplit(String fullyQualfiedPropertyName, Function<String, T> converter) {
-        String value = get(fullyQualfiedPropertyName);
+    public <T> Stream<T> getSplit(String fullyQualifiedPropertyName, Function<String, T> converter) {
+        String value = get(fullyQualifiedPropertyName);
         if (value == null) {
             return Stream.empty();
         }

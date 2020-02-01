@@ -18,6 +18,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Utility class used during annotation processing.
+ */
 public class GenericInfo {
 
     public static Optional<TypeMirror> firstParameterizedType(TypeMirror type) {

@@ -5,6 +5,9 @@ import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Extension of the {@link Provider} interface to add more metadata.
+ */
 public interface DoctorProvider<T> extends Provider<T> {
 
     /**

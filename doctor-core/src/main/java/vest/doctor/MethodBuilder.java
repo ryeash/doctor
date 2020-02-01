@@ -2,6 +2,9 @@ package vest.doctor;
 
 import java.util.function.Consumer;
 
+/**
+ * Helper class used internally to create generated methods.
+ */
 public class MethodBuilder {
 
     private final StringBuilder sb = new StringBuilder();

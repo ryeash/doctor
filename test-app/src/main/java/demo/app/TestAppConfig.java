@@ -13,12 +13,14 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 @Singleton
 @Named("duck")
 public class TestAppConfig {
 
     @Factory
+    @Primary // this should equate to a no-op since there is no qualifier on the factory
     public InputStream io() {
         return new ByteArrayInputStream(new byte[0]);
     }
@@ -45,6 +47,17 @@ public class TestAppConfig {
     @Named("primary")
     public TCPrimary primaryOne() {
         return new TCPrimary();
+    }
+
+    @Factory
+    @Singleton
+    @Named("using-primary-test")
+    public OutputStream usingPrimary(TCPrimary primary, @Named("primary") TCPrimary qualifiedPrimary) {
+        return new OutputStream() {
+            @Override
+            public void write(int b) {
+            }
+        };
     }
 
     @Factory
