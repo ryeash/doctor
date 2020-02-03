@@ -31,6 +31,9 @@ import java.util.stream.Collectors;
 
 import static vest.doctor.Constants.PROVIDER_REGISTRY;
 
+/**
+ * Code generator for the {@link Router} implementation.
+ */
 public class RouterWriter implements ProviderDefinitionListener {
 
     private final ClassBuilder routerBuilder = new ClassBuilder()

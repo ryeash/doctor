@@ -83,6 +83,13 @@ public class R {
         return this;
     }
 
+    /**
+     * Set a response header's value(s).
+     *
+     * @param name   the header to set
+     * @param values the values to set
+     * @return this object
+     */
     public R header(CharSequence name, Iterable<?> values) {
         if (values == null) {
             headers.remove(name);
@@ -92,6 +99,13 @@ public class R {
         return this;
     }
 
+    /**
+     * Set a response header.
+     *
+     * @param name  the header name
+     * @param value the header value
+     * @return this object
+     */
     public R header(CharSequence name, Object value) {
         if (value == null) {
             headers.remove(name);
@@ -101,6 +115,12 @@ public class R {
         return this;
     }
 
+    /**
+     * Set the response body.
+     *
+     * @param body the body
+     * @return this object
+     */
     public R body(Object body) {
         if (body == this) {
             throw new IllegalArgumentException("may not set the body of the response to this instance");
@@ -109,14 +129,29 @@ public class R {
         return this;
     }
 
+    /**
+     * Get the current status of the response
+     *
+     * @return the status
+     */
     public HttpResponseStatus status() {
         return status;
     }
 
+    /**
+     * Get the headers of the response.
+     *
+     * @return the headers
+     */
     public Map<CharSequence, Object> headers() {
         return headers;
     }
 
+    /**
+     * Get the body of the response.
+     *
+     * @return the body
+     */
     public Object body() {
         return body;
     }

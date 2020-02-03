@@ -4,6 +4,9 @@ import vest.doctor.ProviderRegistry;
 
 import java.util.List;
 
+/**
+ * Internally used to join multiple routers together as a single router.
+ */
 public final class Routers implements Router {
 
     private final List<Router> routers;

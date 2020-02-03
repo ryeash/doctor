@@ -6,6 +6,9 @@ import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Internally used to manage the reception of websocket frames.
+ */
 public class WebsocketHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
 
     private static final Logger log = LoggerFactory.getLogger(WebsocketHandler.class);

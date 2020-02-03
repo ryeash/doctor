@@ -136,6 +136,11 @@ public class RequestContext {
         return cookies().get(name);
     }
 
+    /**
+     * Get a map of all cookies values from the request.
+     *
+     * @return a map of cookies
+     */
     public Map<String, Cookie> cookies() {
         if (cookies == null) {
             cookies = new HashMap<>();
@@ -157,6 +162,11 @@ public class RequestContext {
         return request.content();
     }
 
+    /**
+     * Get the request body as an InputStream
+     *
+     * @return the body input stream
+     */
     public InputStream requestBodyStream() {
         return requestBodyStream(true);
     }
@@ -504,10 +514,20 @@ public class RequestContext {
         return future;
     }
 
+    /**
+     * Completes the current request, triggering the response to be sent to the client. This should not be called
+     * by application code, the router will handle calling this method when necessary.
+     */
     public void complete() {
         future.complete(null);
     }
 
+    /**
+     * Complete the current request exceptionally, triggering the response to be sent to the client. This should not
+     * be called byt application code, the router will handle calling this method when necessary.
+     *
+     * @param t the exception to serialize to the client
+     */
     public void complete(Throwable t) {
         Objects.requireNonNull(t, "may not complete with a null throwable");
         future.completeExceptionally(t);

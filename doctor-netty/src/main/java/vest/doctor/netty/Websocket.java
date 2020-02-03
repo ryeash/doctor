@@ -42,10 +42,22 @@ public abstract class Websocket {
      */
     public abstract void onMessage(ChannelHandlerContext ctx, WebSocketFrame frame) throws Exception;
 
+    /**
+     * Get the text data from the websocket frame.
+     *
+     * @param frame the frame to get the data from
+     * @return a string
+     */
     protected String getText(WebSocketFrame frame) {
         return frame.content().toString(StandardCharsets.UTF_8);
     }
 
+    /**
+     * Get the binary data from the websocket frame.
+     *
+     * @param frame the frame to get the data from
+     * @return a byte array
+     */
     protected byte[] getBinary(WebSocketFrame frame) {
         ByteBuf content = frame.content();
         byte[] arr = new byte[content.readableBytes()];
