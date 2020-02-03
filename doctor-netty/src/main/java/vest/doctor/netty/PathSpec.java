@@ -11,6 +11,9 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Used internally by the generated router implementation.
+ */
 public class PathSpec implements Comparable<PathSpec> {
     private static final Pattern PATH_PARAM_PATTERN = Pattern.compile("\\{.*?}");
     private static final Pattern SPLAT_PARAM_PATTERN = Pattern.compile("/\\*");

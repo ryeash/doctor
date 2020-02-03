@@ -25,17 +25,17 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
     }
 
     @Override
-    public boolean handles(RequestContext ctx, Class<?> rawType, Class<?>... genericTypes) {
+    public boolean handles(RequestContext ctx, Class<?> rawType, Class<?>... parameterTypes) {
         return true;
     }
 
     @Override
-    public <T> T read(RequestContext ctx, Class<T> rawType, Class<?>... genericTypes) {
+    public <T> T read(RequestContext ctx, Class<T> rawType, Class<?>... parameterTypes) {
         try {
-            if (genericTypes == null || genericTypes.length == 0) {
+            if (parameterTypes == null || parameterTypes.length == 0) {
                 return objectMapper.readValue(ctx.requestBodyStream(), rawType);
             } else {
-                List<JavaType> typeParams = Stream.of(genericTypes)
+                List<JavaType> typeParams = Stream.of(parameterTypes)
                         .map(objectMapper::constructType)
                         .collect(Collectors.toList());
                 TypeBindings typeBindings = TypeBindings.create(rawType, typeParams);

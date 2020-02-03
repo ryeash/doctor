@@ -18,7 +18,7 @@ import java.lang.reflect.InvocationTargetException;
 import static io.netty.channel.ChannelHandler.Sharable;
 
 @Sharable
-public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
+class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private final static Logger log = LoggerFactory.getLogger(HttpHandler.class);
     private final Router router;
 

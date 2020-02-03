@@ -97,7 +97,7 @@ public final class BodyInterchange {
     private static final class DefaultReader implements BodyReader {
 
         @Override
-        public boolean handles(RequestContext ctx, Class<?> rawType, Class<?>... genericTypes) {
+        public boolean handles(RequestContext ctx, Class<?> rawType, Class<?>... parameterTypes) {
             return ByteBuf.class.isAssignableFrom(rawType)
                     || InputStream.class.isAssignableFrom(rawType)
                     || byte[].class.isAssignableFrom(rawType)
@@ -107,7 +107,7 @@ public final class BodyInterchange {
 
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T read(RequestContext ctx, Class<T> rawType, Class<?>... genericTypes) {
+        public <T> T read(RequestContext ctx, Class<T> rawType, Class<?>... parameterTypes) {
             if (ByteBuf.class.isAssignableFrom(rawType)) {
                 return (T) ctx.requestBody();
             } else if (InputStream.class.isAssignableFrom(rawType)) {

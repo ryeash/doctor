@@ -1,19 +1,22 @@
 package vest.doctor.netty;
 
-import io.netty.handler.codec.http.HttpMethod;
-
+/**
+ * Enumerates the different stages of filtering, used in {@link Filter} annotations.
+ */
 public enum FilterStage {
+    /**
+     * Indicates the filter should be invoked before a route has been matched.
+     */
     BEFORE_MATCH,
+
+    /**
+     * Indicates the filter should be invoked before a matched route is invoked.
+     */
     BEFORE_ROUTE,
+
+    /**
+     * Indicates the filter should be invoked after a matched route is invoked.
+     */
     AFTER_ROUTE;
 
-    private final HttpMethod methodAlias;
-
-    FilterStage() {
-        this.methodAlias = new HttpMethod(this.name());
-    }
-
-    public HttpMethod methodAlias() {
-        return methodAlias;
-    }
 }

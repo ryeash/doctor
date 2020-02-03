@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public final class ParameterSupport {
+final class ParameterSupport {
 
     private static final List<Class<? extends Annotation>> SUPPORTED_PARAMS = Arrays.asList(Body.class, Attribute.class, PathParam.class, QueryParam.class, HeaderParam.class, CookieParam.class, BeanParam.class);
     private static final List<Class<?>> SUPPORTED_CLASSES = Arrays.asList(RequestContext.class, URI.class);
