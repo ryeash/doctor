@@ -114,7 +114,7 @@ final class AspectedMethod {
             invoker.append("Callable<?> invoker = () -> ");
             invoker.append("delegate.").append(method.getSimpleName());
             String invokerParams = IntStream.range(0, method.getParameters().size())
-                    .mapToObj(i -> "arguments.get(0).getValue()")
+                    .mapToObj(i -> "arguments.get(" + i + ").getValue()")
                     .collect(Collectors.joining(", ", "(", ")"));
             invoker.append(invokerParams).append(";\n");
         } else {

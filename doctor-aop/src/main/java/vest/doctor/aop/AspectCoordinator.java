@@ -32,16 +32,17 @@ public class AspectCoordinator implements AroundAdvice, BeforeAdvice, AfterAdvic
 
     @Override
     public void before(MethodInvocation invocation) {
-        UnInvokableMethodInvocation unInvocation = new UnInvokableMethodInvocation(invocation);
+        ((MethodInvocationImpl) invocation).setInvokable(false);
         if (!befores.isEmpty()) {
             for (BeforeAdvice before : befores) {
-                before.before(unInvocation);
+                before.before(invocation);
             }
         }
     }
 
     @Override
     public void execute(MethodInvocation invocation) {
+        ((MethodInvocationImpl) invocation).setInvokable(true);
         try {
             if (!arounds.isEmpty()) {
                 for (AroundAdvice around : arounds) {
@@ -57,10 +58,10 @@ public class AspectCoordinator implements AroundAdvice, BeforeAdvice, AfterAdvic
 
     @Override
     public void after(MethodInvocation invocation) {
-        UnInvokableMethodInvocation unInvocation = new UnInvokableMethodInvocation(invocation);
+        ((MethodInvocationImpl) invocation).setInvokable(false);
         if (!afters.isEmpty()) {
             for (AfterAdvice after : afters) {
-                after.after(unInvocation);
+                after.after(invocation);
             }
         }
     }

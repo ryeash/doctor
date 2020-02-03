@@ -13,6 +13,7 @@ public class MethodInvocationImpl implements MethodInvocation {
     private final Callable<?> methodInvoker;
     private Object result;
     private boolean invoked = false;
+    private boolean invokable = true;
 
     public MethodInvocationImpl(MethodMetadata methodMetadata, List<MutableMethodArgument> argumentList, Callable<?> methodInvoker) {
         this.methodMetadata = methodMetadata;
@@ -45,7 +46,6 @@ public class MethodInvocationImpl implements MethodInvocation {
         return argumentList.size();
     }
 
-    @Override
     public MutableMethodArgument getArgument(int i) {
         return argumentList.get(i);
     }
@@ -63,6 +63,9 @@ public class MethodInvocationImpl implements MethodInvocation {
     @Override
     @SuppressWarnings("unchecked")
     public <T> T invoke() throws Exception {
+        if (!invokable) {
+            throw new UnsupportedOperationException("method may not be invoked from this context");
+        }
         invoked = true;
         result = methodInvoker.call();
         return (T) result;
@@ -88,5 +91,9 @@ public class MethodInvocationImpl implements MethodInvocation {
     public Method getMethod() throws NoSuchMethodException {
         return methodMetadata.getContainingInstance().getClass().getMethod(methodMetadata.getMethodName(),
                 methodMetadata.getMethodParameters().stream().map(t -> (Class<?>) t).toArray(Class<?>[]::new));
+    }
+
+    public void setInvokable(boolean invokable) {
+        this.invokable = invokable;
     }
 }

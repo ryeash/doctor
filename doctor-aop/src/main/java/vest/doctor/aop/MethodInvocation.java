@@ -46,14 +46,6 @@ public interface MethodInvocation {
     int argumentSize();
 
     /**
-     * Get an argument from a specific position.
-     *
-     * @param i the position of the argument to get
-     * @return the argument
-     */
-    MutableMethodArgument getArgument(int i);
-
-    /**
      * Get the value of an argument from a specific position.
      *
      * @param i the position of the argument to get
