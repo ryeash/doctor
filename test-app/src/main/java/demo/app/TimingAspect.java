@@ -22,8 +22,8 @@ public class TimingAspect implements AroundAdvice {
         }
         long duration = System.nanoTime() - start;
         log.info("invoking {}.{} took {}ns",
-                methodInvocation.getMetadata().getContainingInstance().getClass().getSimpleName(),
-                methodInvocation.getMetadata().getMethodName(),
+                methodInvocation.getContainingInstance().getClass().getSimpleName(),
+                methodInvocation.getMethodName(),
                 duration);
     }
 }

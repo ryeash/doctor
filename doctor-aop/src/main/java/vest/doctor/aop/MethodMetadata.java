@@ -4,6 +4,9 @@ import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Metadata about an invoked method.
+ */
 public class MethodMetadata {
 
     private final Object containingInstance;

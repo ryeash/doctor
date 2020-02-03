@@ -23,14 +23,14 @@ public class LoggingAspect implements BeforeAdvice, AfterAdvice {
             e.printStackTrace();
         }
         log.info("entering {}.{}",
-                methodInvocation.getMetadata().getContainingInstance().getClass().getSimpleName(),
-                methodInvocation.getMetadata().getMethodName());
+                methodInvocation.getContainingInstance().getClass().getSimpleName(),
+                methodInvocation.getMethodName());
     }
 
     @Override
     public void after(MethodInvocation methodInvocation) {
         log.info("leaving {}.{}",
-                methodInvocation.getMetadata().getContainingInstance().getClass().getSimpleName(),
-                methodInvocation.getMetadata().getMethodName());
+                methodInvocation.getContainingInstance().getClass().getSimpleName(),
+                methodInvocation.getMethodName());
     }
 }

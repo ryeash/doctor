@@ -1,6 +1,7 @@
 package vest.doctor.aop;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -20,8 +21,23 @@ public class MethodInvocationImpl implements MethodInvocation {
     }
 
     @Override
-    public MethodMetadata getMetadata() {
-        return methodMetadata;
+    public Object getContainingInstance() {
+        return methodMetadata.getContainingInstance();
+    }
+
+    @Override
+    public String getMethodName() {
+        return methodMetadata.getMethodName();
+    }
+
+    @Override
+    public List<Type> getMethodParameters() {
+        return methodMetadata.getMethodParameters();
+    }
+
+    @Override
+    public Type getReturnType() {
+        return methodMetadata.getReturnType();
     }
 
     @Override

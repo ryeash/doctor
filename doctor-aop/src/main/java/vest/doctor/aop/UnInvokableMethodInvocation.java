@@ -1,8 +1,10 @@
 package vest.doctor.aop;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+import java.util.List;
 
-public class UnInvokableMethodInvocation implements MethodInvocation {
+class UnInvokableMethodInvocation implements MethodInvocation {
     private final MethodInvocation delegate;
 
     public UnInvokableMethodInvocation(MethodInvocation copy) {
@@ -10,8 +12,23 @@ public class UnInvokableMethodInvocation implements MethodInvocation {
     }
 
     @Override
-    public MethodMetadata getMetadata() {
-        return delegate.getMetadata();
+    public Object getContainingInstance() {
+        return delegate.getContainingInstance();
+    }
+
+    @Override
+    public String getMethodName() {
+        return delegate.getMethodName();
+    }
+
+    @Override
+    public List<Type> getMethodParameters() {
+        return delegate.getMethodParameters();
+    }
+
+    @Override
+    public Type getReturnType() {
+        return delegate.getReturnType();
     }
 
     @Override

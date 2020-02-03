@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Internally used to coordinate aspects and method invocations.
+ */
 public class AspectCoordinator implements AroundAdvice, BeforeAdvice, AfterAdvice {
     private final List<BeforeAdvice> befores = new ArrayList<>(3);
     private final List<AroundAdvice> arounds = new ArrayList<>(3);

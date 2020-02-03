@@ -25,6 +25,9 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
+/**
+ * Customization that handles the aspected class generation and wrapping.
+ */
 public class AOPProviderCustomizer implements ProviderCustomizationPoint {
     @Override
     public String wrap(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String providerRef, String providerRegistryRef) {
