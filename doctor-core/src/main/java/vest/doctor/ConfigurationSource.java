@@ -8,10 +8,10 @@ public interface ConfigurationSource {
     /**
      * Get a property value.
      *
-     * @param fullyQualifierPropertyName the full name of the property
+     * @param fullyQualifiedPropertyName the full name of the property
      * @return the property value, or null if no property is found
      */
-    String get(String fullyQualifierPropertyName);
+    String get(String fullyQualifiedPropertyName);
 
     /**
      * Get an iterable over all property names contained within this source.

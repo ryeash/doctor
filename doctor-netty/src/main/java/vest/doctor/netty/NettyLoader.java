@@ -14,7 +14,12 @@ public class NettyLoader implements AppLoader {
 
     @Override
     public void postProcess(ProviderRegistry providerRegistry) {
-        this.server = new HttpServer(new NettyConfiguration(providerRegistry.configuration()));
+        NettyConfiguration nettyConfiguration = new NettyConfiguration(providerRegistry.configuration());
+        if (nettyConfiguration.getListenAddresses().isEmpty()) {
+            // don't start the server if no addresses are listed
+            return;
+        }
+        this.server = new HttpServer(nettyConfiguration);
         List<Router> routerList = new LinkedList<>();
         for (Router router : ServiceLoader.load(Router.class, NettyLoader.class.getClassLoader())) {
             routerList.add(router);

@@ -6,6 +6,9 @@ import java.net.URI;
 import java.util.Objects;
 import java.util.Properties;
 
+/**
+ * Configuration source that reads properties from a file.
+ */
 public class PropertiesFileConfigurationSource implements ConfigurationSource {
 
     private final String propertiesFileLocation;
@@ -28,8 +31,8 @@ public class PropertiesFileConfigurationSource implements ConfigurationSource {
     }
 
     @Override
-    public String get(String fullyQualifierPropertyName) {
-        return properties.getProperty(fullyQualifierPropertyName);
+    public String get(String fullyQualifiedPropertyName) {
+        return properties.getProperty(fullyQualifiedPropertyName);
     }
 
     @Override

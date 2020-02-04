@@ -12,38 +12,86 @@ import java.util.ServiceLoader;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
+/**
+ * Initializes (and serves as) the {@link ProviderRegistry} for an app.
+ */
 public class Doctor implements ProviderRegistry, AutoCloseable {
 
+    /**
+     * Initialize the application with default configuration and no active modules.
+     *
+     * @return a new Doctor instance
+     */
     public static Doctor load() {
         return new Doctor(DefaultConfigurationFacade.defaultConfigurationFacade(), Collections.emptyList());
     }
 
+    /**
+     * Initialize the application with default configuration and the given active modules.
+     *
+     * @param modules the active modules
+     * @return a new Doctor instance
+     */
     public static Doctor load(List<String> modules) {
         return new Doctor(DefaultConfigurationFacade.defaultConfigurationFacade(), modules);
     }
 
+    /**
+     * Initialize the application with default configuration and the given active modules.
+     *
+     * @param modules the active modules
+     * @return a new Doctor instance
+     */
     public static Doctor load(String... modules) {
         return new Doctor(DefaultConfigurationFacade.defaultConfigurationFacade(), Arrays.asList(modules));
     }
 
+    /**
+     * Initialize the application with the given configuration.
+     *
+     * @param configurationFacade the configuration for the application
+     * @return a new Doctor instance
+     */
     public static Doctor load(ConfigurationFacade configurationFacade) {
         return new Doctor(configurationFacade, Collections.emptyList());
     }
 
+    /**
+     * Initialize the application with the given configuration and active modules.
+     *
+     * @param configurationFacade the configuration for the application
+     * @param modules             the active modules
+     * @return a new Doctor instance
+     */
     public static Doctor load(ConfigurationFacade configurationFacade, String... modules) {
         return new Doctor(configurationFacade, Arrays.asList(modules));
     }
 
+    /**
+     * Initialize the application with the given configuration and active modules.
+     *
+     * @param configurationFacade the configuration for the application
+     * @param modules             the active modules
+     * @return a new Doctor instance
+     */
     public static Doctor load(ConfigurationFacade configurationFacade, List<String> modules) {
         return new Doctor(configurationFacade, modules);
     }
 
     private final List<String> activeModules;
     private final List<AppLoader> loaders;
-    private final ProviderIndex providerIndex = new ProviderIndex();
+    private final ProviderIndex providerIndex;
     private final ConfigurationFacade configurationFacade;
 
+    /**
+     * Create a new Doctor instance. Loading all available generated services automatically.
+     *
+     * @param configurationFacade the configuration for the application
+     * @param activeModules       the active modules
+     */
     public Doctor(ConfigurationFacade configurationFacade, List<String> activeModules) {
+        this.providerIndex = new ProviderIndex();
+        providerIndex.setProvider(new AdHocProvider<>(Doctor.class, this, null, Arrays.asList(Doctor.class, ProviderRegistry.class)));
         this.activeModules = activeModules;
         this.configurationFacade = configurationFacade;
 
@@ -63,10 +111,14 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
             loader.postProcess(this);
         }
 
-        if (!configurationFacade.get("nurse.skip.validation", false, Boolean::valueOf)) {
+        if (!configurationFacade.get("doctor.skip.validation", false, Boolean::valueOf)) {
             providerIndex.allProviders().forEach(np -> np.validateDependencies(this));
         }
         getInstance(EventProducer.class).publish(new ApplicationStartedEvent(this));
+
+        if (configurationFacade.get("doctor.autoShutdown", true, Boolean::valueOf)) {
+            Runtime.getRuntime().addShutdownHook(new Thread(this::close, "doctor-shutdown-" + this.hashCode()));
+        }
     }
 
     @Override
@@ -144,9 +196,13 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         for (AppLoader loader : loaders) {
-            loader.close();
+            try {
+                loader.close();
+            } catch (Exception e) {
+                // ignored
+            }
         }
     }
 

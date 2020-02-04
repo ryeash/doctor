@@ -16,6 +16,35 @@ import java.util.Objects;
 import static java.io.StreamTokenizer.TT_EOF;
 import static java.io.StreamTokenizer.TT_EOL;
 
+/**
+ * A configuration source that reads a structured properties file and builds a map of properties.
+ * <p>
+ * Structured properties files allow for organizing/name-spacing properties in a less dense, easier to read manner.
+ * <p>
+ * Definition:
+ * Nesting is defined by '{' and '}':
+ * <code>
+ * <pre>
+ * root {
+ *  child {
+ *      propertyName = propertyValue
+ *      ... more properties defined ...
+ *  }
+ * }
+ * </pre>
+ * </code>
+ * This will be parsed as <code>root.child.propertyName = propertyValue</code>.
+ * <p>
+ * Reserved characters:
+ * '{' : used to nest a level deeper in the structure
+ * '}' : used to close a nested structure
+ * '=' & ':' : sets the value of a property, e.g. name = value OR name: value
+ * ';' : can be used to signify the end of a line
+ * <p>
+ * Quoted strings using either ' or " can be used to escape reserved characters
+ * e.g. name = "value contains { } = : and ;"
+ * Quotes are necessary when interpolating values, i.e. values like: http://${referenced.property}/
+ */
 public class StructuredConfigurationSource implements ConfigurationSource {
 
     private final URL propertyFile;
@@ -33,8 +62,8 @@ public class StructuredConfigurationSource implements ConfigurationSource {
     }
 
     @Override
-    public String get(String propertyName) {
-        return properties.get(propertyName);
+    public String get(String fullyQualifiedPropertyName) {
+        return properties.get(fullyQualifiedPropertyName);
     }
 
     @Override

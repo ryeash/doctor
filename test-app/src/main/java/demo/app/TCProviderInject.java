@@ -17,15 +17,15 @@ public class TCProviderInject {
 
     @Inject
     public TCProviderInject(Provider<CoffeeMaker> coffeeMakerProvider,
-                            DoctorProvider<CoffeeMaker> coffeeMakerNurseProvider,
+                            DoctorProvider<CoffeeMaker> coffeeMakerDoctorProvider,
                             @Named("pourOver") Provider<CoffeeMaker> pourOverProvider,
-                            @Named("pourOver") DoctorProvider<CoffeeMaker> pourOverNurseProvider,
+                            @Named("pourOver") DoctorProvider<CoffeeMaker> pourOverDoctorProvider,
                             List<CoffeeMaker> coffeeMakers,
                             CoffeeMaker[] coffeeMakersArr) {
         Assert.assertEquals(coffeeMakerProvider.get().brew(), "french pressing");
-        Assert.assertEquals(coffeeMakerNurseProvider.get().brew(), "french pressing");
+        Assert.assertEquals(coffeeMakerDoctorProvider.get().brew(), "french pressing");
         Assert.assertEquals(pourOverProvider.get().brew(), "pouring over");
-        Assert.assertEquals(pourOverNurseProvider.get().brew(), "pouring over");
+        Assert.assertEquals(pourOverDoctorProvider.get().brew(), "pouring over");
         Assert.assertEquals(coffeeMakers.size(), 3);
         Assert.assertEquals(coffeeMakersArr.length, 3);
     }

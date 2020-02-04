@@ -4,10 +4,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.StreamSupport;
 
 /**
  * Used internally by {@link ConfigurationFacade#toProperties()} to create a {@link Properties} compatible object
- * out of a configuration facade.
+ * out of a configuration facade. The resulting {@link Properties} object will be read only.
  */
 public class FacadeToProperties extends Properties {
 
@@ -49,7 +50,7 @@ public class FacadeToProperties extends Properties {
 
     @Override
     public boolean containsKey(Object key) {
-        throw new UnsupportedOperationException();
+        return StreamSupport.stream(facade.propertyNames().spliterator(), false).anyMatch(key::equals);
     }
 
     @Override

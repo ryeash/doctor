@@ -13,7 +13,6 @@ public class BuiltInAppLoader implements AppLoader {
 
     @Override
     public void preProcess(ProviderRegistry providerRegistry) {
-        providerRegistry.register(new AdHocProvider<>(ProviderRegistry.class, providerRegistry, null));
         providerRegistry.register(new AdHocProvider<>(ConfigurationFacade.class, providerRegistry.configuration(), null));
         providerRegistry.register(new AdHocProvider<>(Properties.class, providerRegistry.configuration().toProperties(), null));
 

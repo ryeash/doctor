@@ -1,9 +1,12 @@
 package vest.doctor;
 
+/**
+ * Configuration source that gets properties from {@link System#getenv(String)}.
+ */
 public class EnvironmentVariablesConfigurationSource implements ConfigurationSource {
     @Override
-    public String get(String fullyQualifierPropertyName) {
-        return System.getenv(fullyQualifierPropertyName);
+    public String get(String fullyQualifiedPropertyName) {
+        return System.getenv(fullyQualifiedPropertyName);
     }
 
     @Override

@@ -72,6 +72,7 @@ public class JAXRSServer extends WebSocketServlet implements WebSocketCreator, A
     private Server startServer(ProviderRegistry providerRegistry) {
         List<InetSocketAddress> bindAddresses = jaxrsConfiguration.bindAddresses();
         if (bindAddresses.isEmpty()) {
+            // don't start the server is no addresses are listed
             return null;
         }
 

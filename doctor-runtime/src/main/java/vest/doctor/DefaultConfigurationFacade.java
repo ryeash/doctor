@@ -15,8 +15,19 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+/**
+ * Default implementation of the {@link ConfigurationFacade}.
+ */
 public class DefaultConfigurationFacade implements ConfigurationFacade {
 
+    /**
+     * Creates a new configuration facade and automatically adds configuration sources:
+     * - environment (via {@link System#getenv(String)})
+     * - system properties (via {@link System#getProperty(String)}
+     * - external properties files based on the value of 'doctor.app.properties' (using {@link StructuredConfigurationSource})
+     *
+     * @return a new configuration facade
+     */
     public static ConfigurationFacade defaultConfigurationFacade() {
         ConfigurationFacade facade = new DefaultConfigurationFacade()
                 .addSource(new EnvironmentVariablesConfigurationSource())
@@ -56,14 +67,14 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
     }
 
     @Override
-    public String get(String fullyQualfiedPropertyName) {
+    public String get(String fullyQualifiedPropertyName) {
         for (ConfigurationSource source : sources) {
-            String s = source.get(fullyQualfiedPropertyName);
+            String s = source.get(fullyQualifiedPropertyName);
             if (s != null) {
                 try {
                     return resolvePlaceholders(s);
                 } catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("failed to interpolate property: " + fullyQualfiedPropertyName, e);
+                    throw new IllegalArgumentException("failed to interpolate property: " + fullyQualifiedPropertyName, e);
                 }
             }
         }

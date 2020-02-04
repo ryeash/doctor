@@ -3,6 +3,9 @@ package vest.doctor;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Configuration source that gets properties from a {@link Map}.
+ */
 public class MapConfigurationSource implements ConfigurationSource {
 
     private final Map<String, String> map;
@@ -24,8 +27,8 @@ public class MapConfigurationSource implements ConfigurationSource {
     }
 
     @Override
-    public String get(String fullyQualifierPropertyName) {
-        return map.get(fullyQualifierPropertyName);
+    public String get(String fullyQualifiedPropertyName) {
+        return map.get(fullyQualifiedPropertyName);
     }
 
     @Override
