@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -18,6 +19,8 @@ final class ProviderIndex {
     private final Map<ClassKey, Collection<DoctorProvider<?>>> annotationTypeToProvider = new HashMap<>(128);
 
     void setProvider(DoctorProvider<?> provider) {
+        Objects.requireNonNull(provider);
+        Objects.requireNonNull(provider.type());
         synchronized (this) {
             // primary
             Map<String, DoctorProvider<?>> qualifierToProvider = primary.computeIfAbsent(new ClassKey(provider.type()), t -> new HashMap<>());

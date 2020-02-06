@@ -21,7 +21,7 @@ import java.util.stream.StreamSupport;
 public class DefaultConfigurationFacade implements ConfigurationFacade {
 
     /**
-     * Creates a new configuration facade and automatically adds configuration sources:
+     * Creates a new configuration facade and automatically adds configuration sources (in query order):
      * - environment (via {@link System#getenv(String)})
      * - system properties (via {@link System#getProperty(String)}
      * - external properties files based on the value of 'doctor.app.properties' (using {@link StructuredConfigurationSource})
