@@ -13,15 +13,14 @@ import java.util.stream.Stream;
 
 final class ProviderIndex {
 
-    private final Map<Class<?>, Map<String, DoctorProvider<?>>> primary = new HashMap<>();
-    private final Map<Class<?>, Map<String, List<DoctorProvider<?>>>> secondary = new HashMap<>();
-    private final Map<Class<? extends Annotation>, Collection<DoctorProvider<?>>> annotationTypeToProvider = new HashMap<>(128);
-    private int size = 0;
+    private final Map<ClassKey, Map<String, DoctorProvider<?>>> primary = new HashMap<>();
+    private final Map<ClassKey, Map<String, List<DoctorProvider<?>>>> secondary = new HashMap<>();
+    private final Map<ClassKey, Collection<DoctorProvider<?>>> annotationTypeToProvider = new HashMap<>(128);
 
     void setProvider(DoctorProvider<?> provider) {
         synchronized (this) {
             // primary
-            Map<String, DoctorProvider<?>> qualifierToProvider = primary.computeIfAbsent(provider.type(), t -> new HashMap<>());
+            Map<String, DoctorProvider<?>> qualifierToProvider = primary.computeIfAbsent(new ClassKey(provider.type()), t -> new HashMap<>());
             if (qualifierToProvider.containsKey(provider.qualifier())) {
                 throw new IllegalArgumentException("there is already a provider registered under: " + provider.qualifier() + ":" + provider.type());
             }
@@ -29,27 +28,27 @@ final class ProviderIndex {
 
             // secondary
             for (Class<?> type : provider.allProvidedTypes()) {
-                Map<String, List<DoctorProvider<?>>> sub = secondary.computeIfAbsent(type, t -> new HashMap<>());
+                Map<String, List<DoctorProvider<?>>> sub = secondary.computeIfAbsent(new ClassKey(type), t -> new HashMap<>());
                 sub.computeIfAbsent(provider.qualifier(), q -> new ArrayList<>()).add(provider);
             }
 
             for (Class<? extends Annotation> annotation : provider.allAnnotationTypes()) {
-                annotationTypeToProvider.computeIfAbsent(annotation, a -> new HashSet<>(16)).add(provider);
+                annotationTypeToProvider.computeIfAbsent(new ClassKey(annotation), a -> new HashSet<>(16)).add(provider);
             }
-            size++;
         }
     }
 
     @SuppressWarnings("unchecked")
     <T> Optional<DoctorProvider<T>> getProvider(Class<T> type, String qualifier) {
+        ClassKey key = new ClassKey(type);
         // check primary
-        DoctorProvider<?> doctorProvider = primary.getOrDefault(type, Collections.emptyMap()).get(qualifier);
+        DoctorProvider<?> doctorProvider = primary.getOrDefault(key, Collections.emptyMap()).get(qualifier);
         if (doctorProvider != null) {
             return Optional.of((DoctorProvider<T>) doctorProvider);
         }
 
         // fallback to secondary
-        return secondary.getOrDefault(type, Collections.emptyMap())
+        return secondary.getOrDefault(key, Collections.emptyMap())
                 .getOrDefault(qualifier, Collections.emptyList())
                 .stream()
                 .map(p -> (DoctorProvider<T>) p)
@@ -58,7 +57,7 @@ final class ProviderIndex {
 
     @SuppressWarnings("unchecked")
     <T> Stream<DoctorProvider<T>> getProviders(Class<T> type) {
-        return Optional.ofNullable(secondary.get(type))
+        return Optional.ofNullable(secondary.get(new ClassKey(type)))
                 .map(Map::values)
                 .map(Collection::stream)
                 .orElse(Stream.empty())
@@ -67,7 +66,7 @@ final class ProviderIndex {
     }
 
     Stream<DoctorProvider<?>> getProvidersWithAnnotation(Class<? extends Annotation> type) {
-        return annotationTypeToProvider.getOrDefault(type, Collections.emptyList()).stream();
+        return annotationTypeToProvider.getOrDefault(new ClassKey(type), Collections.emptyList()).stream();
     }
 
     Stream<DoctorProvider<?>> allProviders() {
@@ -77,6 +76,9 @@ final class ProviderIndex {
     }
 
     int size() {
-        return size;
+        return (int) primary.values()
+                .stream()
+                .mapToInt(Map::size)
+                .count();
     }
 }

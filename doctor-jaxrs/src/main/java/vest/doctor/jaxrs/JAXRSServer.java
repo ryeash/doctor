@@ -39,7 +39,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class JAXRSServer extends WebSocketServlet implements WebSocketCreator, AutoCloseable {
+class JAXRSServer extends WebSocketServlet implements WebSocketCreator, AutoCloseable {
 
     private static final List<Class<?>> JAX_RS_TYPES = Arrays.asList(
             ContainerRequestFilter.class,
@@ -67,6 +67,16 @@ public class JAXRSServer extends WebSocketServlet implements WebSocketCreator, A
         if (server != null) {
             server.stop();
         }
+    }
+
+    @Override
+    public void configure(WebSocketServletFactory factory) {
+        factory.setCreator(this);
+    }
+
+    @Override
+    public Object createWebSocket(ServletUpgradeRequest servletUpgradeRequest, ServletUpgradeResponse servletUpgradeResponse) {
+        return pathToWebsocket.get(servletUpgradeRequest.getRequestPath());
     }
 
     private Server startServer(ProviderRegistry providerRegistry) {
@@ -126,7 +136,7 @@ public class JAXRSServer extends WebSocketServlet implements WebSocketCreator, A
 
         resourceConfig.register(new JacksonJaxbJsonProvider(mapper, JacksonJaxbJsonProvider.DEFAULT_ANNOTATIONS));
         resourceConfig.register(new GZipDecoder());
-        resourceConfig.register(new BeanProviderFactory(providerRegistry));
+        resourceConfig.register(new ProviderRegistryFactory(providerRegistry));
 
         JAX_RS_TYPES.stream()
                 .flatMap(providerRegistry::getProviders)
@@ -168,15 +178,5 @@ public class JAXRSServer extends WebSocketServlet implements WebSocketCreator, A
         spec.append(path.value());
         String pathSpec = JaxrsConfiguration.squeeze(spec.toString(), '/');
         pathToWebsocket.put(pathSpec, ws);
-    }
-
-    @Override
-    public void configure(WebSocketServletFactory factory) {
-        factory.setCreator(this);
-    }
-
-    @Override
-    public Object createWebSocket(ServletUpgradeRequest servletUpgradeRequest, ServletUpgradeResponse servletUpgradeResponse) {
-        return pathToWebsocket.get(servletUpgradeRequest.getRequestPath());
     }
 }
