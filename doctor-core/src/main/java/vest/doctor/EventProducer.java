@@ -5,5 +5,10 @@ package vest.doctor;
  */
 public interface EventProducer {
 
+    /**
+     * Public an event. Events will be consumed by compatible {@link EventConsumer}s.
+     *
+     * @param event the event to publish
+     */
     void publish(Object event);
 }

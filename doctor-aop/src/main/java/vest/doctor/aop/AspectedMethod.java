@@ -1,5 +1,6 @@
 package vest.doctor.aop;
 
+import doctor.processor.ClassValueVisitor;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ClassBuilder;
 import vest.doctor.MethodBuilder;

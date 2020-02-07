@@ -5,7 +5,7 @@ import vest.doctor.ProviderDependency;
 import javax.lang.model.element.TypeElement;
 import java.util.Objects;
 
-public class Dependency implements ProviderDependency {
+class Dependency implements ProviderDependency {
     private final TypeElement type;
     private final String qualifier;
     private final boolean required;

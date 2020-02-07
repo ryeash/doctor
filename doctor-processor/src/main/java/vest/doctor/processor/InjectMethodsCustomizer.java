@@ -1,5 +1,6 @@
 package vest.doctor.processor;
 
+import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.Async;
 import vest.doctor.InjectionException;

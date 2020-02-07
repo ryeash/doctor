@@ -1,4 +1,4 @@
-package vest.doctor;
+package doctor.processor;
 
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;

@@ -1,7 +1,7 @@
 package vest.doctor.netty;
 
+import doctor.processor.GenericInfo;
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.GenericInfo;
 import vest.doctor.StringConversionGenerator;
 
 import javax.inject.Inject;

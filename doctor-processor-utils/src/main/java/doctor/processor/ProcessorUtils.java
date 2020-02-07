@@ -1,7 +1,6 @@
-package vest.doctor.processor;
+package doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.GenericInfo;
 
 import javax.inject.Named;
 import javax.inject.Qualifier;

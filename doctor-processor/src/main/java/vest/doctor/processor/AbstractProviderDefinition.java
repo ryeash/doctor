@@ -1,5 +1,6 @@
 package vest.doctor.processor;
 
+import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ClassBuilder;
 import vest.doctor.DoctorProvider;
@@ -24,8 +25,8 @@ import java.util.Optional;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-import static vest.doctor.Constants.PROVIDER_REGISTRY;
 import static vest.doctor.CodeLine.line;
+import static vest.doctor.Constants.PROVIDER_REGISTRY;
 
 public abstract class AbstractProviderDefinition implements ProviderDefinition {
 

@@ -1,5 +1,6 @@
 package vest.doctor.processor;
 
+import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionProcessor;

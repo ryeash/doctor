@@ -1,5 +1,6 @@
 package vest.doctor.processor;
 
+import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ClassBuilder;
 import vest.doctor.CodeLine;

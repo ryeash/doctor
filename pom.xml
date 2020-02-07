@@ -17,6 +17,7 @@
         <module>doctor-jaxrs</module>
         <module>doctor-aop</module>
         <module>doctor-jpa</module>
+        <module>doctor-processor-utils</module>
     </modules>
 
     <properties>

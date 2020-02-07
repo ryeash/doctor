@@ -1,10 +1,7 @@
 package vest.doctor;
 
 import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Properties;
-import java.util.ServiceLoader;
 
 public class BuiltInAppLoader implements AppLoader {
 
@@ -21,14 +18,7 @@ public class BuiltInAppLoader implements AppLoader {
             return;
         }
 
-        List<EventManager> managers = new LinkedList<>();
-        ServiceLoader.load(EventManager.class).forEach(managers::add);
-        if (!managers.isEmpty()) {
-            EventManagerFacade facade = new EventManagerFacade(managers);
-            AdHocProvider<EventManager> eventManagerAdHocProvider = new AdHocProvider<>(EventManager.class, facade, null, Arrays.asList(EventProducer.class, EventManager.class));
-            providerRegistry.register(eventManagerAdHocProvider);
-        }
-
+        providerRegistry.register(new AdHocProvider<>(EventManager.class, new EventManagerImpl(), null, Arrays.asList(EventProducer.class, EventManager.class)));
         providerRegistry.register(new SingletonScopedProvider<>(new ConfigurationDrivenExecutorServiceProvider(providerRegistry, DEFAULT_EXECUTOR_NAME, null)));
         providerRegistry.register(new SingletonScopedProvider<>(new ConfigurationDrivenExecutorServiceProvider(providerRegistry, DEFAULT_SCHEDULED_EXECUTOR_NAME, ConfigurationDrivenExecutorServiceProvider.ThreadPoolType.scheduled)));
     }
@@ -42,6 +32,8 @@ public class BuiltInAppLoader implements AppLoader {
     public void postProcess(ProviderRegistry providerRegistry) {
         EventManager instance = providerRegistry.getInstance(EventManager.class);
         instance.initialize(providerRegistry);
+        providerRegistry.getProviders(EventConsumer.class)
+                .forEach(ec -> instance.register(ec.get(), ec.allAnnotationTypes().contains(Async.class)));
     }
 
     @Override
@@ -52,27 +44,5 @@ public class BuiltInAppLoader implements AppLoader {
     @Override
     public void close() {
         // no-op
-    }
-
-    private static class EventManagerFacade implements EventManager {
-        private final List<EventManager> managers;
-
-        private EventManagerFacade(List<EventManager> managers) {
-            this.managers = managers;
-        }
-
-        @Override
-        public void initialize(ProviderRegistry providerRegistry) {
-            for (EventManager manager : managers) {
-                manager.initialize(providerRegistry);
-            }
-        }
-
-        @Override
-        public void publish(Object event) {
-            for (EventManager manager : managers) {
-                manager.publish(event);
-            }
-        }
     }
 }

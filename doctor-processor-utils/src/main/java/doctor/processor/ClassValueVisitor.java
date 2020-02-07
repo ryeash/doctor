@@ -1,4 +1,4 @@
-package vest.doctor.aop;
+package doctor.processor;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-final class ClassValueVisitor implements AnnotationValueVisitor<List<String>, Void> {
+public final class ClassValueVisitor implements AnnotationValueVisitor<List<String>, Void> {
 
     @Override
     public List<String> visit(AnnotationValue av, Void aVoid) {

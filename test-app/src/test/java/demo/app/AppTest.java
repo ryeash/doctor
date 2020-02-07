@@ -19,6 +19,8 @@ import org.testng.annotations.Test;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.DefaultConfigurationFacade;
 import vest.doctor.Doctor;
+import vest.doctor.EventConsumer;
+import vest.doctor.EventManager;
 import vest.doctor.MapConfigurationSource;
 
 import javax.inject.Provider;
@@ -33,6 +35,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -82,6 +85,24 @@ public class AppTest extends Assert {
         assertTrue(event.eventListened);
         Thread.sleep(5);
         assertEquals(event.messageReceived, "test");
+
+        // ad-hoc event consumer
+        AtomicBoolean messageReceived = new AtomicBoolean(false);
+        EventManager eventManager = doctor.getInstance(EventManager.class);
+        eventManager.register(new EventConsumer() {
+            @Override
+            public boolean isCompatible(Object event) {
+                return true;
+            }
+
+            @Override
+            public void accept(Object event) {
+                messageReceived.set(true);
+            }
+        });
+        eventManager.publish("anything");
+        assertTrue(messageReceived.get());
+
     }
 
     @Test
