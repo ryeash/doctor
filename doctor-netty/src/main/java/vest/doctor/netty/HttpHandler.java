@@ -82,7 +82,7 @@ class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     }
 
     private void handleError(RequestContext requestContext, Throwable throwable) {
-        log.error("error during route execution; request uri: {}", requestContext.requestUri(), throwable);
+        log.warn("error during route execution; request uri: {}", requestContext.requestUri(), throwable);
 
         requestContext.response(HttpResponseStatus.INTERNAL_SERVER_ERROR, throwable.getMessage());
         requestContext.responseHeader(HttpHeaderNames.CONTENT_TYPE, "text/plain");

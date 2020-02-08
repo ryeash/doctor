@@ -13,9 +13,11 @@ import vest.doctor.netty.GET;
 import vest.doctor.netty.HeaderParam;
 import vest.doctor.netty.POST;
 import vest.doctor.netty.Path;
+import vest.doctor.netty.PathParam;
 import vest.doctor.netty.QueryParam;
 import vest.doctor.netty.R;
 import vest.doctor.netty.RequestContext;
+import vest.doctor.netty.StreamFile;
 
 import javax.inject.Singleton;
 import java.io.InputStream;
@@ -77,5 +79,17 @@ public class TCNettyEndpoint {
     @Path("/headerparam")
     public R headerParam(@HeaderParam("x-param") String param) {
         return R.ok(param);
+    }
+
+    @GET
+    @Path("/void")
+    public void returnsVoid() {
+    }
+
+    @GET
+    @Path("/file/*")
+    public StreamFile staticFiles(RequestContext ctx, @PathParam("*") String file) {
+        log.info("{}", ctx.requestUri());
+        return new StreamFile("./", file);
     }
 }

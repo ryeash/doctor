@@ -7,9 +7,15 @@ import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
 
 import javax.inject.Provider;
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -139,7 +145,9 @@ public final class BodyInterchange {
                     || response instanceof InputStream
                     || response instanceof CharSequence
                     || response instanceof ByteBuf
-                    || response instanceof ByteBuffer;
+                    || response instanceof ByteBuffer
+                    || response instanceof StreamFile
+                    || response instanceof File;
         }
 
         @Override
@@ -156,6 +164,19 @@ public final class BodyInterchange {
                 ctx.responseBody((ByteBuf) response);
             } else if (response instanceof ByteBuffer) {
                 ctx.responseBody(Unpooled.wrappedBuffer((ByteBuffer) response));
+            } else if (response instanceof StreamFile) {
+                ((StreamFile) response).write(ctx);
+            } else if (response instanceof File) {
+                try {
+                    File file = (File) response;
+                    FileChannel fc = FileChannel.open(file.toPath(), StandardOpenOption.READ);
+                    MappedByteBuffer bb = fc.map(FileChannel.MapMode.READ_ONLY, 0, file.length());
+                    ByteBuf body = Unpooled.wrappedBuffer(bb);
+                    fc.close();
+                    ctx.responseBody(body);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
             } else {
                 throw new UnsupportedOperationException();
             }

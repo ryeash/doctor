@@ -155,6 +155,7 @@ public class RouterWriter implements ProviderDefinitionListener {
 
                 accept.line("pathParams = " + specField + ".matchAndCollect(ctx.requestUri().getRawPath());");
                 accept.line("if(pathParams != null){")
+                        .line("ctx.setPathParams(pathParams);")
                         .line(metadatum.buildMethodCall(context, metadatum.providerDefinition.uniqueInstanceName(), "ctx") + ";")
                         .line("ctx.future().thenRun(() -> filter(FilterStage.AFTER_ROUTE, ctx));");
 
@@ -220,7 +221,7 @@ public class RouterWriter implements ProviderDefinitionListener {
 
     private static List<String> getHttpMethods(AnnotationProcessorContext context, ExecutableElement method) {
         List<String> methods = new LinkedList<>();
-        for (AnnotationMirror am : context.processingEnvironment().getElementUtils().getAllAnnotationMirrors(method)) {
+        for (AnnotationMirror am : method.getAnnotationMirrors()) {
             for (AnnotationMirror annotationMirror : am.getAnnotationType().asElement().getAnnotationMirrors()) {
                 if (annotationMirror.getAnnotationType().toString().equals(HttpMethod.class.getCanonicalName())) {
                     for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : annotationMirror.getElementValues().entrySet()) {
