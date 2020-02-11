@@ -17,7 +17,6 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -48,13 +47,13 @@ public final class BodyInterchange {
         writers.sort(Prioritized.COMPARATOR);
     }
 
-    public <T> T read(RequestContext ctx, Class<T> type, Class<?>... genericTypes) {
+    public <T> T read(RequestContext ctx, TypeInfo typeInfo) {
         for (BodyReader reader : readers) {
-            if (reader.handles(ctx, type, genericTypes)) {
-                return reader.read(ctx, type, genericTypes);
+            if (reader.handles(ctx, typeInfo)) {
+                return reader.read(ctx, typeInfo);
             }
         }
-        throw new UnsupportedOperationException("unsupported request body type: " + type + " paramaterizedTypes: " + Arrays.toString(genericTypes));
+        throw new UnsupportedOperationException("unsupported request body type: " + typeInfo);
     }
 
     public void write(RequestContext ctx, Object response) {
@@ -103,7 +102,8 @@ public final class BodyInterchange {
     private static final class DefaultReader implements BodyReader {
 
         @Override
-        public boolean handles(RequestContext ctx, Class<?> rawType, Class<?>... parameterTypes) {
+        public boolean handles(RequestContext ctx, TypeInfo typeInfo) {
+            Class<?> rawType = typeInfo.getRawType();
             return ByteBuf.class.isAssignableFrom(rawType)
                     || InputStream.class.isAssignableFrom(rawType)
                     || byte[].class.isAssignableFrom(rawType)
@@ -113,7 +113,8 @@ public final class BodyInterchange {
 
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T read(RequestContext ctx, Class<T> rawType, Class<?>... parameterTypes) {
+        public <T> T read(RequestContext ctx, TypeInfo typeInfo) {
+            Class<?> rawType = typeInfo.getRawType();
             if (ByteBuf.class.isAssignableFrom(rawType)) {
                 return (T) ctx.requestBodyBuffer();
             } else if (InputStream.class.isAssignableFrom(rawType)) {

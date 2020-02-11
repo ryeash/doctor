@@ -4,18 +4,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.type.TypeBindings;
 import io.netty.handler.codec.http.HttpHeaderNames;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class JacksonInterchange implements BodyReader, BodyWriter {
 
@@ -26,46 +21,35 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
     }
 
     @Override
-    public boolean handles(RequestContext ctx, Class<?> rawType, Class<?>... parameterTypes) {
+    public boolean handles(RequestContext ctx, TypeInfo typeInfo) {
         return true;
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T read(RequestContext ctx, Class<T> rawType, Class<?>... parameterTypes) {
+    public <T> T read(RequestContext ctx, TypeInfo typeInfo) {
         try {
-            if (rawType == CompletableFuture.class) {
-                return (T) asyncRead(ctx, parameterTypes);
-            } else if (parameterTypes == null || parameterTypes.length == 0) {
-                return objectMapper.readValue(ctx.requestBodyStream(), rawType);
+            if (typeInfo.getRawType() == CompletableFuture.class) {
+                return (T) asyncRead(ctx, typeInfo);
+            } else if (!typeInfo.hasParameterizedTypes()) {
+                return (T) objectMapper.readValue(ctx.requestBodyStream(), typeInfo.getRawType());
             } else {
-                List<JavaType> typeParams = Stream.of(parameterTypes)
-                        .map(objectMapper::constructType)
-                        .collect(Collectors.toList());
-                TypeBindings typeBindings = TypeBindings.create(rawType, typeParams);
-                JavaType javaType = objectMapper.getTypeFactory().constructType(rawType, typeBindings);
-                return objectMapper.readValue(ctx.requestBodyStream(), javaType);
+                return objectMapper.readValue(ctx.requestBodyStream(), typeInfo.jacksonType(objectMapper));
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
-    private CompletableFuture<?> asyncRead(RequestContext ctx, Class<?>... parameterTypes) {
-        Class<?> rawType = parameterTypes[0];
+    private CompletableFuture<?> asyncRead(RequestContext ctx, TypeInfo typeInfo) {
+        TypeInfo paramType = typeInfo.getParameterTypes().get(0);
 
         AsyncMapper<?> asyncMapper;
 
-        if (parameterTypes.length > 1) {
-            List<JavaType> typeParams = Stream.of(parameterTypes)
-                    .skip(1)
-                    .map(objectMapper::constructType)
-                    .collect(Collectors.toList());
-            TypeBindings typeBindings = TypeBindings.create(rawType, typeParams);
-            JavaType javaType = objectMapper.getTypeFactory().constructType(rawType, typeBindings);
-            asyncMapper = new AsyncMapper<>(objectMapper, javaType);
+        if (paramType.hasParameterizedTypes()) {
+            asyncMapper = new AsyncMapper<>(objectMapper, paramType.jacksonType(objectMapper));
         } else {
-            asyncMapper = new AsyncMapper<>(objectMapper, rawType);
+            asyncMapper = new AsyncMapper<>(objectMapper, paramType.getRawType());
         }
         ctx.requestBody().readData((buf, finished) -> {
             byte[] b = new byte[1024];

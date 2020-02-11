@@ -40,6 +40,7 @@ public class RouterWriter implements ProviderDefinitionListener {
             .addImplementsInterface(Router.class)
             .addImportClass(ProviderRegistry.class)
             .addImportClass(PathSpec.class)
+            .addImportClass(TypeInfo.class)
             .addImportClass(Map.class)
             .addImportClass(DoctorProvider.class)
             .addImportClass(io.netty.handler.codec.http.HttpMethod.class)

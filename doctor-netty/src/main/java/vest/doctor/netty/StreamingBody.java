@@ -7,19 +7,13 @@ import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.LastHttpContent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 
 public class StreamingBody extends InputStream {
-    private static Logger log = LoggerFactory.getLogger(StreamingBody.class);
-
     private CompositeByteBuf composite = Unpooled.compositeBuffer();
     private CompletableFuture<ByteBuf> future = new CompletableFuture<>();
     private final long maxLength;
@@ -27,7 +21,7 @@ public class StreamingBody extends InputStream {
     private BiConsumer<ByteBuf, Boolean> dataConsumer;
     private HttpHeaders trailingHeaders;
 
-    private boolean inputStreamClosed = false;
+    private boolean closed = false;
 
     public StreamingBody(long maxLength) {
         this.maxLength = maxLength;
@@ -49,7 +43,10 @@ public class StreamingBody extends InputStream {
     }
 
     public void append(HttpContent content) {
-        log.info("append data {}", content);
+        if (closed) {
+            content.release();
+            return;
+        }
         composite.addComponent(true, content.content());
 
         size += content.content().readableBytes();
@@ -58,7 +55,6 @@ public class StreamingBody extends InputStream {
         }
 
         if (content instanceof LastHttpContent) {
-            log.info("last content");
             this.trailingHeaders = ((LastHttpContent) content).trailingHeaders();
             future.complete(composite);
         }
@@ -100,13 +96,13 @@ public class StreamingBody extends InputStream {
 
     @Override
     public void close() {
-        this.inputStreamClosed = true;
+        this.closed = true;
         composite.release();
     }
 
     private void readWait() {
-        if (inputStreamClosed) {
-            throw new UncheckedIOException(new IOException("this input has been closed"));
+        if (closed) {
+            return;
         }
         while (!future.isDone() && composite.readableBytes() <= 0) {
             synchronized (this) {

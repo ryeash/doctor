@@ -8,7 +8,7 @@ import vest.doctor.Prioritized;
 public interface BodyWriter extends Prioritized {
 
     /**
-     * Determine if this writer handler writing of the object type.
+     * Determine if this writer instance handles writing of the object type.
      *
      * @param ctx      the request context
      * @param response the response object from the endpoint method

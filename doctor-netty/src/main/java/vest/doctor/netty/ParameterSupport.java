@@ -37,18 +37,8 @@ final class ParameterSupport {
             return contextRef + ".requestUri()";
         } else if (annotationSource.getAnnotation(Body.class) != null) {
             GenericInfo gi = new GenericInfo(parameter.asType());
-            String rawType = typeWithoutParameters(gi.type());
-            String parameterizedTypes = gi.parameterTypes()
-                    .stream()
-                    .map(GenericInfo::type)
-                    .map(ParameterSupport::typeWithoutParameters)
-                    .map(s -> s + ".class")
-                    .collect(Collectors.joining(","));
-            if (parameterizedTypes.isEmpty()) {
-                return "(" + parameter.asType() + ") bodyInterchange.read(" + contextRef + "," + rawType + ".class)";
-            } else {
-                return "(" + parameter.asType() + ") bodyInterchange.read(" + contextRef + "," + rawType + ".class, " + parameterizedTypes + ")";
-            }
+            String typeInfo = toTypeInfo(gi);
+            return "(" + parameter.asType() + ") bodyInterchange.read(" + contextRef + "," + typeInfo + ")";
         } else if (annotationSource.getAnnotation(Attribute.class) != null) {
             String name = annotationSource.getAnnotation(Attribute.class).value();
             return "(" + parameter.asType() + ") " + contextRef + ".attribute(\"" + name + "\")";
@@ -182,5 +172,15 @@ final class ParameterSupport {
             }
         }
         throw new IllegalArgumentException("missing setter method for BeanParam field: " + field + " in " + field.getEnclosingElement());
+    }
+
+    private static String toTypeInfo(GenericInfo genericInfo) {
+        String prefix = "new TypeInfo(" + typeWithoutParameters(genericInfo.type()) + ".class";
+        if (genericInfo.parameterTypes() == null || genericInfo.parameterTypes().isEmpty()) {
+            return prefix + ")";
+        } else {
+            String param = genericInfo.parameterTypes().stream().map(ParameterSupport::toTypeInfo).collect(Collectors.joining(", "));
+            return prefix + ", " + param + ")";
+        }
     }
 }

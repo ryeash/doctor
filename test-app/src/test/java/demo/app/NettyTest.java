@@ -21,6 +21,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.IntStream;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -121,7 +122,6 @@ public class NettyTest extends BaseDoctorTest {
     @Test
     public void staticFiles() {
         req().get("/netty/file/pom.xml")
-                .prettyPeek()
                 .then()
                 .statusCode(200)
                 .body(containsString("<artifactId>doctor</artifactId>"));
@@ -129,6 +129,21 @@ public class NettyTest extends BaseDoctorTest {
         req().get("/netty/file/thisdoesntexist.html")
                 .then()
                 .statusCode(404);
+    }
+
+    @Test
+    public void throughput() {
+        for (int i = 0; i < 5; i++) {
+            long start = System.nanoTime();
+            IntStream.range(0, 100)
+                    .parallel()
+                    .forEach(j -> {
+                        req().get("/netty/hello2")
+                                .then()
+                                .statusCode(200);
+                    });
+            System.out.println(TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + "ms");
+        }
     }
 
     @Test

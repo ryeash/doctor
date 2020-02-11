@@ -26,7 +26,7 @@ public class NettyLoader implements AppLoader {
         routerList.sort(Prioritized.COMPARATOR);
         Routers routers = new Routers(routerList);
         routers.init(providerRegistry);
-        this.server = new HttpServer(nettyConfiguration, routers);
+        this.server = new HttpServer(providerRegistry, routers);
     }
 
     @Override
