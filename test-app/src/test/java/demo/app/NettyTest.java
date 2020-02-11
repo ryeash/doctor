@@ -61,13 +61,22 @@ public class NettyTest extends BaseDoctorTest {
                 .body(is("R"));
     }
 
-    @Test
+    @Test(groups = "dev")
     public void beanSerDer() throws JsonProcessingException {
         Person p = new Person();
         p.setName("herman");
         p.setAddress("hermitage");
-        req().body(new ObjectMapper().writeValueAsBytes(Collections.singletonList(p)))
+
+        req().body(new ObjectMapper().writeValueAsBytes(p))
                 .post("/netty/pojo")
+                .prettyPeek()
+                .then()
+                .statusCode(200)
+                .body(is("{\"name\":\"herman\",\"address\":\"hermitage\"}"));
+
+        req().body(new ObjectMapper().writeValueAsBytes(Collections.singletonList(p)))
+                .post("/netty/pojolist")
+                .prettyPeek()
                 .then()
                 .statusCode(200)
                 .body(is("[{\"name\":\"herman\",\"address\":\"hermitage\"}]"));
@@ -112,6 +121,7 @@ public class NettyTest extends BaseDoctorTest {
     @Test
     public void staticFiles() {
         req().get("/netty/file/pom.xml")
+                .prettyPeek()
                 .then()
                 .statusCode(200)
                 .body(containsString("<artifactId>doctor</artifactId>"));

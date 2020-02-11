@@ -14,8 +14,9 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpContentCompressor;
-import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.HttpContentDecompressor;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.ssl.SslContext;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import org.slf4j.Logger;
@@ -27,43 +28,40 @@ import java.util.List;
 import java.util.Objects;
 
 @Sharable
-public class HttpServer extends ChannelInitializer<SocketChannel> implements AutoCloseable {
+public class HttpServer implements AutoCloseable {
     private static final Logger log = LoggerFactory.getLogger(HttpServer.class);
 
     private final NettyConfiguration config;
     private final EventLoopGroup bossGroup;
-    private final EventLoopGroup workerGroup;
     private final List<Channel> serverChannels;
+    private final HttpHandler httpHandler;
+    private final SslContext sslContext;
 
-    private HttpHandler httpHandler;
-
-    public HttpServer(NettyConfiguration config) {
+    public HttpServer(NettyConfiguration config, Router router) {
         super();
         this.config = config;
+        this.sslContext = config.getSslContext();
         try {
             bossGroup = new NioEventLoopGroup(config.getTcpManagementThreads(), new DefaultThreadFactory(config.getTcpThreadPrefix(), false));
-            workerGroup = new NioEventLoopGroup(config.getWorkerThreads(), new DefaultThreadFactory(config.getWorkerThreadPrefix(), true));
             ServerBootstrap b = new ServerBootstrap()
-                    .group(bossGroup, workerGroup)
+                    .group(bossGroup)
                     .channel(NioServerSocketChannel.class)
                     .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, WriteBufferWaterMark.DEFAULT)
                     .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                     .option(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator())
                     .option(ChannelOption.SO_BACKLOG, config.getSocketBacklog())
-                    .childHandler(this);
+                    .childHandler(new NettyChannelInit());
 
             this.serverChannels = new LinkedList<>();
             for (InetSocketAddress inetSocketAddress : config.getListenAddresses()) {
                 log.info("netty http server binding to {}", inetSocketAddress);
                 serverChannels.add(b.bind(inetSocketAddress).channel());
             }
+
+            this.httpHandler = new HttpHandler(config, Objects.requireNonNull(router, "request handler may not be null"));
         } catch (Exception e) {
             throw new RuntimeException("error starting http server", e);
         }
-    }
-
-    public void setRequestHandler(Router requestHandler) {
-        this.httpHandler = new HttpHandler(Objects.requireNonNull(requestHandler, "request handler may not be null"));
     }
 
     @Override
@@ -75,31 +73,28 @@ public class HttpServer extends ChannelInitializer<SocketChannel> implements Aut
                 log.trace("ignored", e);
             }
         }
-        workerGroup.shutdownGracefully();
         bossGroup.shutdownGracefully();
     }
 
-    @Override
-    protected void initChannel(SocketChannel ch) {
-        if (httpHandler == null) {
-            throw new IllegalStateException("no handler has been found");
+    private final class NettyChannelInit extends ChannelInitializer<SocketChannel> {
+        @Override
+        protected void initChannel(SocketChannel ch) {
+            ChannelPipeline p = ch.pipeline();
+            if (sslContext != null) {
+                p.addLast(sslContext.newHandler(ch.alloc()));
+            }
+            p.addLast(new HttpServerCodec(
+                    config.getMaxInitialLineLength(),
+                    config.getMaxHeaderSize(),
+                    config.getMaxChunkSize(),
+                    config.isValidateHeaders(),
+                    config.getInitialBufferSize()));
+            p.addLast(new HttpContentCompressor(6, 15, 8, 812));
+            p.addLast(new HttpContentDecompressor());
+//        p.addLast(new HttpObjectAggregator(config.getMaxContentLength()));
+            p.addLast(new ChunkedWriteHandler());
+            p.addLast(new HttpContentCompressor());
+            p.addLast(httpHandler);
         }
-
-        ChannelPipeline p = ch.pipeline();
-        if (config.getSslContext() != null) {
-            p.addLast(config.getSslContext().newHandler(ch.alloc()));
-        }
-        p.addLast(new HttpServerCodec(
-                config.getMaxInitialLineLength(),
-                config.getMaxHeaderSize(),
-                config.getMaxChunkSize(),
-                config.isValidateHeaders(),
-                config.getInitialBufferSize()));
-        // p.addLast(new HttpContentDecompressor());
-        p.addLast(new HttpObjectAggregator(config.getMaxContentLength()));
-        p.addLast(new ChunkedWriteHandler());
-        p.addLast(new HttpContentCompressor());
-//        p.addLast(websocketHandler);
-        p.addLast(httpHandler);
     }
 }

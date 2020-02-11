@@ -1,17 +1,17 @@
 package vest.doctor.netty;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.DefaultHttpContent;
 import io.netty.handler.codec.http.DefaultHttpHeaders;
-import io.netty.handler.codec.http.EmptyHttpHeaders;
-import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.DefaultHttpResponse;
+import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
@@ -49,7 +49,8 @@ public class RequestContext {
 
     private final ChannelHandlerContext ctx;
     // request
-    private final FullHttpRequest request;
+    private final HttpRequest request;
+    private final StreamingBody streamingBody;
     private Map<String, Cookie> cookies;
     private final URI requestUri;
     private final QueryStringDecoder queryStringDecoder;
@@ -59,16 +60,17 @@ public class RequestContext {
     // response
     private HttpResponseStatus status;
     private final HttpHeaders responseHeaders;
-    private ByteBuf responseBody;
+    private HttpContent responseBody;
 
     private boolean halted = false;
     private Map<String, Object> attributes;
 
-    private final CompletableFuture<Void> future;
+    private final CompletableFuture<RequestContext> future;
 
-    RequestContext(ChannelHandlerContext ctx, FullHttpRequest request) {
+    RequestContext(ChannelHandlerContext ctx, HttpRequest request, StreamingBody body) {
         this.ctx = ctx;
         this.request = request;
+        this.streamingBody = body;
 
         this.requestUri = URI.create(request.uri());
         this.queryStringDecoder = new QueryStringDecoder(request.uri());
@@ -87,6 +89,10 @@ public class RequestContext {
      */
     public ChannelHandlerContext channelContext() {
         return ctx;
+    }
+
+    public HttpRequest request() {
+        return request;
     }
 
     /**
@@ -156,10 +162,17 @@ public class RequestContext {
     }
 
     /**
+     * Get the request body as a {@link StreamingBody}.
+     */
+    public StreamingBody requestBody() {
+        return streamingBody;
+    }
+
+    /**
      * Get the request body as a {@link ByteBuf}.
      */
-    public ByteBuf requestBody() {
-        return request.content();
+    public ByteBuf requestBodyBuffer() {
+        return streamingBody.future().join();
     }
 
     /**
@@ -178,12 +191,12 @@ public class RequestContext {
     public InputStream requestBodyStream(boolean detectCompression) {
         if (detectCompression && requestHeaders().get(HttpHeaderNames.CONTENT_ENCODING, "").contains(HttpHeaderValues.GZIP)) {
             try {
-                return new GZIPInputStream(new ByteBufInputStream(request.content()));
+                return new GZIPInputStream(streamingBody);
             } catch (IOException e) {
                 throw new UncheckedIOException("error reading gzip'd request body", e);
             }
         } else {
-            return new ByteBufInputStream(request.content());
+            return streamingBody;
         }
     }
 
@@ -437,12 +450,16 @@ public class RequestContext {
         responseHeader(HttpHeaderNames.SET_COOKIE, cookieValue);
     }
 
+    public void responseBody(HttpContent body) {
+        this.responseBody = body;
+    }
+
     /**
      * Set the response body.
      */
     public void responseBody(ByteBuf body) {
-        responseBody = body != null ? body : Unpooled.EMPTY_BUFFER;
-        responseHeader(HttpHeaderNames.CONTENT_LENGTH, responseBody.readableBytes());
+        responseBody(new DefaultHttpContent(body != null ? body : Unpooled.EMPTY_BUFFER));
+//        responseHeader(HttpHeaderNames.CONTENT_LENGTH, responseBody.readableBytes());
     }
 
     /**
@@ -510,7 +527,7 @@ public class RequestContext {
     /**
      * Get the CompletableFuture representing the future completion of this request.
      */
-    public CompletableFuture<Void> future() {
+    public CompletableFuture<RequestContext> future() {
         return future;
     }
 
@@ -519,7 +536,7 @@ public class RequestContext {
      * by application code, the router will handle calling this method when necessary.
      */
     public void complete() {
-        future.complete(null);
+        future.complete(this);
     }
 
     /**
@@ -534,7 +551,15 @@ public class RequestContext {
     }
 
     HttpResponse buildResponse() {
-        return new DefaultFullHttpResponse(HTTP_1_1, status, responseBody, responseHeaders, EmptyHttpHeaders.INSTANCE);
+        return new DefaultHttpResponse(HTTP_1_1, status, responseHeaders);
+    }
+
+    HttpContent buildResponseBody() {
+        if (responseBody != null) {
+            return responseBody;
+        } else {
+            return new DefaultHttpContent(Unpooled.EMPTY_BUFFER);
+        }
     }
 
     @Override

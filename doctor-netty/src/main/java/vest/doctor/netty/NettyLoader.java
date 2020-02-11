@@ -19,7 +19,6 @@ public class NettyLoader implements AppLoader {
             // don't start the server if no addresses are listed
             return;
         }
-        this.server = new HttpServer(nettyConfiguration);
         List<Router> routerList = new LinkedList<>();
         for (Router router : ServiceLoader.load(Router.class, NettyLoader.class.getClassLoader())) {
             routerList.add(router);
@@ -27,7 +26,7 @@ public class NettyLoader implements AppLoader {
         routerList.sort(Prioritized.COMPARATOR);
         Routers routers = new Routers(routerList);
         routers.init(providerRegistry);
-        server.setRequestHandler(routers);
+        this.server = new HttpServer(nettyConfiguration, routers);
     }
 
     @Override

@@ -115,17 +115,17 @@ public final class BodyInterchange {
         @SuppressWarnings("unchecked")
         public <T> T read(RequestContext ctx, Class<T> rawType, Class<?>... parameterTypes) {
             if (ByteBuf.class.isAssignableFrom(rawType)) {
-                return (T) ctx.requestBody();
+                return (T) ctx.requestBodyBuffer();
             } else if (InputStream.class.isAssignableFrom(rawType)) {
                 return (T) ctx.requestBodyStream();
             } else if (byte[].class.isAssignableFrom(rawType)) {
-                byte[] bytes = new byte[ctx.requestBody().readableBytes()];
-                ctx.requestBody().readBytes(bytes);
+                byte[] bytes = new byte[ctx.requestBodyBuffer().readableBytes()];
+                ctx.requestBodyBuffer().readBytes(bytes);
                 return (T) bytes;
             } else if (CharSequence.class.isAssignableFrom(rawType)) {
-                return (T) ctx.requestBody().toString(ctx.getRequestCharset(StandardCharsets.UTF_8));
+                return (T) ctx.requestBodyBuffer().toString(ctx.getRequestCharset(StandardCharsets.UTF_8));
             } else if (ByteBuffer.class.isAssignableFrom(rawType)) {
-                return (T) ctx.requestBody().nioBuffer();
+                return (T) ctx.requestBodyBuffer().nioBuffer();
             } else {
                 throw new UnsupportedOperationException();
             }

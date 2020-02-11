@@ -45,6 +45,24 @@ public class StreamFile {
         }
 
         try {
+//            FileChannel fc = FileChannel.open(filepath, StandardOpenOption.READ);
+//
+//            RandomAccessFile raf = new RandomAccessFile(file, "r");
+//            requestContext.responseBody(new ChunkedFile(raf, 0, file.length(), 8192));
+//
+//            if (requestContext.channelContext().pipeline().get(SslHandler.class) == null) {
+//                sendFileFuture =
+//                        ctx.write(new DefaultFileRegion(raf.getChannel(), 0, fileLength), ctx.newProgressivePromise());
+//                // Write the end marker.
+//                lastContentFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+//            } else {
+//                sendFileFuture =
+//                        ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(raf, 0, fileLength, 8192)),
+//                                ctx.newProgressivePromise());
+//                // HttpChunkedInput will write the end marker (LastHttpContent) for us.
+//                lastContentFuture = sendFileFuture;
+//            }
+
             FileChannel fc = FileChannel.open(filepath, StandardOpenOption.READ);
             MappedByteBuffer bb = fc.map(FileChannel.MapMode.READ_ONLY, 0, file.length());
             ByteBuf body = Unpooled.wrappedBuffer(bb);

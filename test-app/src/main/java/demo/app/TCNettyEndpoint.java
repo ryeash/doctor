@@ -21,6 +21,7 @@ import vest.doctor.netty.StreamFile;
 
 import javax.inject.Singleton;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -70,9 +71,22 @@ public class TCNettyEndpoint {
     }
 
     @POST
-    @Path("/pojo")
+    @Path("/pojolist")
     public String pojo(@Body List<Person> person) throws JsonProcessingException {
         return new ObjectMapper().writeValueAsString(person);
+    }
+
+    @POST
+    @Path("/pojo")
+    public CompletableFuture<String> pojo(@Body CompletableFuture<Person> person) {
+        log.info("pojo endpoint");
+        return person.thenApply(p -> {
+            try {
+                return new ObjectMapper().writeValueAsString(p);
+            } catch (JsonProcessingException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
     }
 
     @GET

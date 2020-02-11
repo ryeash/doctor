@@ -13,6 +13,7 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -30,9 +31,12 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T read(RequestContext ctx, Class<T> rawType, Class<?>... parameterTypes) {
         try {
-            if (parameterTypes == null || parameterTypes.length == 0) {
+            if (rawType == CompletableFuture.class) {
+                return (T) asyncRead(ctx, parameterTypes);
+            } else if (parameterTypes == null || parameterTypes.length == 0) {
                 return objectMapper.readValue(ctx.requestBodyStream(), rawType);
             } else {
                 List<JavaType> typeParams = Stream.of(parameterTypes)
@@ -45,6 +49,33 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    private CompletableFuture<?> asyncRead(RequestContext ctx, Class<?>... parameterTypes) {
+        Class<?> rawType = parameterTypes[0];
+
+        AsyncMapper<?> asyncMapper;
+
+        if (parameterTypes.length > 1) {
+            List<JavaType> typeParams = Stream.of(parameterTypes)
+                    .skip(1)
+                    .map(objectMapper::constructType)
+                    .collect(Collectors.toList());
+            TypeBindings typeBindings = TypeBindings.create(rawType, typeParams);
+            JavaType javaType = objectMapper.getTypeFactory().constructType(rawType, typeBindings);
+            asyncMapper = new AsyncMapper<>(objectMapper, javaType);
+        } else {
+            asyncMapper = new AsyncMapper<>(objectMapper, rawType);
+        }
+        ctx.requestBody().readData((buf, finished) -> {
+            byte[] b = new byte[1024];
+            while (buf.readableBytes() > 0) {
+                int toRead = Math.min(buf.readableBytes(), b.length);
+                buf.readBytes(b, 0, toRead);
+                asyncMapper.feed(b, 0, toRead);
+            }
+        });
+        return asyncMapper.future();
     }
 
     @Override

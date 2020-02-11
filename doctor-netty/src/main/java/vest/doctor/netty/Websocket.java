@@ -3,7 +3,7 @@ package vest.doctor.netty;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
@@ -143,11 +143,11 @@ public abstract class Websocket {
     /**
      * Handshakes the websocket connection.
      *
-     * @param ctx            The context to handshake
-     * @param request        The http request that initiated the websocket handshake
-     * @param requestContext The requestContext
+     * @param ctx     The context to handshake
+     * @param request The http request that initiated the websocket handshake
+     * @param path    The request path
      */
-    public final void handshake(ChannelHandlerContext ctx, FullHttpRequest request, RequestContext requestContext) {
+    public final void handshake(ChannelHandlerContext ctx, HttpRequest request, String path) {
         WebSocketServerHandshaker handshaker = handshakerFactory.newHandshaker(request);
         if (handshaker == null) {
             WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
@@ -156,7 +156,7 @@ public abstract class Websocket {
             ctx.channel().attr(WS_PATH).set(request.uri());
             handshaker.handshake(ctx.channel(), request).addListener(future -> {
                 if (future.isSuccess()) {
-                    connect(ctx, requestContext.requestPath());
+                    connect(ctx, path);
                 }
             });
         }

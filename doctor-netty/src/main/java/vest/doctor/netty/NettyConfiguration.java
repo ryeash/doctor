@@ -1,10 +1,14 @@
 package vest.doctor.netty;
 
 import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.util.SelfSignedCertificate;
 import vest.doctor.ConfigurationFacade;
 
+import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -43,8 +47,23 @@ class NettyConfiguration {
     }
 
     public SslContext getSslContext() {
-        // TODO
-        return null;
+        try {
+            if (configurationFacade.get("doctor.netty.ssl.selfSigned", false, Boolean::valueOf)) {
+                SelfSignedCertificate ssc = new SelfSignedCertificate();
+                return SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey()).build();
+            }
+
+            String keyCertChainFile = configurationFacade.get("doctor.netty.ssl.keyCertChainFile");
+            if (keyCertChainFile != null && !keyCertChainFile.isEmpty()) {
+                String keyFile = Objects.requireNonNull(configurationFacade.get("doctor.netty.ssl.keyFile"), "missing ssl key file configuration");
+                String keyPassword = configurationFacade.get("doctor.netty.ssl.keyPassword");
+                return SslContextBuilder.forServer(new File(keyCertChainFile), new File(keyFile), keyPassword).build();
+            }
+
+            return null;
+        } catch (Throwable t) {
+            throw new RuntimeException("error configuring ssl", t);
+        }
     }
 
     public int getMaxInitialLineLength() {
@@ -68,6 +87,6 @@ class NettyConfiguration {
     }
 
     public int getMaxContentLength() {
-        return configurationFacade.get("doctor.netty.http.initialBufferSize", 8388608, Integer::valueOf);
+        return configurationFacade.get("doctor.netty.http.maxContentLength", 8388608, Integer::valueOf);
     }
 }
