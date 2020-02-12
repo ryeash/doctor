@@ -4,12 +4,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.netty.handler.codec.http.HttpHeaderNames;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class JacksonInterchange implements BodyReader, BodyWriter {
@@ -34,7 +36,7 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
             } else if (!typeInfo.hasParameterizedTypes()) {
                 return (T) objectMapper.readValue(ctx.requestBodyStream(), typeInfo.getRawType());
             } else {
-                return objectMapper.readValue(ctx.requestBodyStream(), typeInfo.jacksonType(objectMapper));
+                return objectMapper.readValue(ctx.requestBodyStream(), jacksonType(objectMapper, typeInfo));
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -42,12 +44,15 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
     }
 
     private CompletableFuture<?> asyncRead(RequestContext ctx, TypeInfo typeInfo) {
+        if (!typeInfo.hasParameterizedTypes() || typeInfo.getParameterTypes().size() != 1) {
+            throw new IllegalArgumentException("asynchronous bodies must have exactly one parameterized type: " + typeInfo);
+        }
         TypeInfo paramType = typeInfo.getParameterTypes().get(0);
 
         AsyncMapper<?> asyncMapper;
 
         if (paramType.hasParameterizedTypes()) {
-            asyncMapper = new AsyncMapper<>(objectMapper, paramType.jacksonType(objectMapper));
+            asyncMapper = new AsyncMapper<>(objectMapper, jacksonType(objectMapper, paramType));
         } else {
             asyncMapper = new AsyncMapper<>(objectMapper, paramType.getRawType());
         }
@@ -94,5 +99,19 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
                 .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
                 .setDefaultMergeable(true)
                 .registerModules(ObjectMapper.findModules());
+    }
+
+    public static JavaType jacksonType(ObjectMapper mapper, TypeInfo typeInfo) {
+        Class<?> rawType = typeInfo.getRawType();
+        List<TypeInfo> parameterTypes = typeInfo.getParameterTypes();
+        if (parameterTypes == null || parameterTypes.isEmpty()) {
+            return mapper.getTypeFactory().constructType(rawType);
+        } else {
+            JavaType[] javaTypes = new JavaType[parameterTypes.size()];
+            for (int i = 0; i < parameterTypes.size(); i++) {
+                javaTypes[i] = jacksonType(mapper, parameterTypes.get(i));
+            }
+            return mapper.getTypeFactory().constructParametricType(rawType, javaTypes);
+        }
     }
 }

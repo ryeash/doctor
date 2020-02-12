@@ -1,15 +1,16 @@
 package vest.doctor.netty;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
+/**
+ * Information about the target type for parameter being deserialized from the HTTP request body.
+ */
 public class TypeInfo {
-    private Class<?> rawType;
-    private List<TypeInfo> parameterTypes;
+    private final Class<?> rawType;
+    private final List<TypeInfo> parameterTypes;
 
     public TypeInfo(Class<?> rawType, TypeInfo... parameterTypes) {
         this(rawType, parameterTypes != null ? Arrays.asList(parameterTypes) : Collections.emptyList());
@@ -17,28 +18,28 @@ public class TypeInfo {
 
     public TypeInfo(Class<?> rawType, List<TypeInfo> parameterTypes) {
         this.rawType = rawType;
-        this.parameterTypes = parameterTypes;
+        this.parameterTypes = Collections.unmodifiableList(parameterTypes);
     }
 
+    /**
+     * The raw type of the parameter.
+     */
     public Class<?> getRawType() {
         return rawType;
     }
 
+    /**
+     * A list of any parameterized types declared on the target parameter.
+     */
     public List<TypeInfo> getParameterTypes() {
         return parameterTypes;
     }
 
+    /**
+     * Return true if the list returned from {@link #getParameterTypes()} will be non-empty.
+     */
     public boolean hasParameterizedTypes() {
         return parameterTypes != null && !parameterTypes.isEmpty();
-    }
-
-    public JavaType jacksonType(ObjectMapper mapper) {
-        if (parameterTypes == null || parameterTypes.isEmpty()) {
-            return mapper.getTypeFactory().constructType(rawType);
-        } else {
-            JavaType[] javaTypes = parameterTypes.stream().map(t -> t.jacksonType(mapper)).toArray(JavaType[]::new);
-            return mapper.getTypeFactory().constructParametricType(rawType, javaTypes);
-        }
     }
 
     @Override
@@ -47,5 +48,23 @@ public class TypeInfo {
                 "rawType=" + rawType +
                 ", parameterTypes=" + parameterTypes +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        TypeInfo typeInfo = (TypeInfo) o;
+        return Objects.equals(rawType, typeInfo.rawType) &&
+                Objects.equals(parameterTypes, typeInfo.parameterTypes);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(rawType, parameterTypes);
     }
 }

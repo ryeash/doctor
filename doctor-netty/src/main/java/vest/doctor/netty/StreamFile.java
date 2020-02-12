@@ -17,56 +17,37 @@ public class StreamFile {
 
     private final java.nio.file.Path filepath;
     private final File file;
+    private final long modified;
 
     public StreamFile(String rootDirectory, String filePath) {
         java.nio.file.Path rootPath = new File(rootDirectory).getAbsoluteFile().toPath();
 
-        File theFile = new File(new File(rootDirectory), filePath).getAbsoluteFile();
-        if (!theFile.exists()) {
-            throw new HttpException(HttpResponseStatus.NOT_FOUND);
+        this.file = new File(new File(rootDirectory), filePath).getAbsoluteFile();
+        this.filepath = file.toPath();
+        if (!filepath.startsWith(rootPath)) {
+            throw new HttpException(HttpResponseStatus.FORBIDDEN, "invalid path: " + filePath);
         }
-        java.nio.file.Path thePath = theFile.toPath();
-        if (!thePath.startsWith(rootPath)) {
-            throw new HttpException(HttpResponseStatus.FORBIDDEN, "invalid path " + filePath);
+        if (!file.canRead() || file.isHidden() || !file.isFile()) {
+            throw new HttpException(HttpResponseStatus.NOT_FOUND, "file does not exist: " + filePath);
         }
-        if (theFile.isHidden() || !theFile.exists() || !theFile.isFile()) {
-            throw new HttpException(HttpResponseStatus.NOT_FOUND, "file does not exist " + filePath);
-        }
-        this.file = theFile;
-        this.filepath = thePath;
+        this.modified = file.lastModified();
     }
 
     void write(RequestContext requestContext) {
         Long ifModifiedSince = requestContext.requestHeaders().getTimeMillis(HttpHeaderNames.IF_MODIFIED_SINCE);
-        if (!isModified(file, ifModifiedSince)) {
+        if (!isModified(ifModifiedSince)) {
             requestContext.responseStatus(HttpResponseStatus.NOT_MODIFIED);
             requestContext.responseBody(Unpooled.EMPTY_BUFFER);
             return;
         }
 
         try {
-//            FileChannel fc = FileChannel.open(filepath, StandardOpenOption.READ);
-//
-//            RandomAccessFile raf = new RandomAccessFile(file, "r");
-//            requestContext.responseBody(new ChunkedFile(raf, 0, file.length(), 8192));
-//
-//            if (requestContext.channelContext().pipeline().get(SslHandler.class) == null) {
-//                sendFileFuture =
-//                        ctx.write(new DefaultFileRegion(raf.getChannel(), 0, fileLength), ctx.newProgressivePromise());
-//                // Write the end marker.
-//                lastContentFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
-//            } else {
-//                sendFileFuture =
-//                        ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(raf, 0, fileLength, 8192)),
-//                                ctx.newProgressivePromise());
-//                // HttpChunkedInput will write the end marker (LastHttpContent) for us.
-//                lastContentFuture = sendFileFuture;
-//            }
-
             FileChannel fc = FileChannel.open(filepath, StandardOpenOption.READ);
             MappedByteBuffer bb = fc.map(FileChannel.MapMode.READ_ONLY, 0, file.length());
             ByteBuf body = Unpooled.wrappedBuffer(bb);
             fc.close();
+
+            // only set these headers if they don't exists -> allows them to be overwritten by user code
             if (!requestContext.responseHeaders().contains(HttpHeaderNames.CONTENT_TYPE)) {
                 requestContext.responseHeader(HttpHeaderNames.CONTENT_TYPE, getContentType(file));
             }
@@ -79,10 +60,10 @@ public class StreamFile {
         }
     }
 
-    private static boolean isModified(File file, Long ifModifiedSince) {
+    private boolean isModified(Long ifModifiedSince) {
         if (ifModifiedSince != null) {
             long ifModifiedSinceDateSeconds = ifModifiedSince / 1000;
-            long fileLastModifiedSeconds = file.lastModified() / 1000;
+            long fileLastModifiedSeconds = modified / 1000;
             return ifModifiedSinceDateSeconds != fileLastModifiedSeconds;
         }
         return true;

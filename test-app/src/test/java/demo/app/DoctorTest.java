@@ -11,6 +11,7 @@ import vest.doctor.EventConsumer;
 import vest.doctor.EventManager;
 
 import javax.inject.Provider;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -95,6 +96,7 @@ public class DoctorTest extends BaseDoctorTest {
     @Test
     public void primary() {
         assertEquals(doctor.getInstance(TCPrimary.class), doctor.getInstance(TCPrimary.class, "primary"));
+        doctor.getInstance(OutputStream.class, "using-primary-test");
     }
 
     @Test

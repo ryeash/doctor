@@ -121,10 +121,18 @@ public class NettyTest extends BaseDoctorTest {
 
     @Test
     public void staticFiles() {
-        req().get("/netty/file/pom.xml")
+        String lastModified = req().get("/netty/file/pom.xml")
                 .then()
                 .statusCode(200)
-                .body(containsString("<artifactId>doctor</artifactId>"));
+                .body(containsString("<artifactId>doctor</artifactId>"))
+                .extract()
+                .header("Last-Modified");
+
+        req()
+                .header("If-Modified-Since", lastModified)
+                .get("/netty/file/pom.xml")
+                .then()
+                .statusCode(304);
 
         req().get("/netty/file/thisdoesntexist.html")
                 .then()

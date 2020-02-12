@@ -95,6 +95,11 @@ public class StreamingBody extends InputStream {
     }
 
     @Override
+    public int available() {
+        return composite.readableBytes();
+    }
+
+    @Override
     public void close() {
         this.closed = true;
         composite.release();

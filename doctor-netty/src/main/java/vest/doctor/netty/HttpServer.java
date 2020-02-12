@@ -218,7 +218,8 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
         if (HttpHeaderValues.WEBSOCKET.contentEqualsIgnoreCase(upgradeHeader)) {
             Websocket ws = router.getWebsocket(request.uri());
             if (ws != null) {
-                // add the websocket handler to the pipeline
+                // add the websocket handler to the end of the processing pipeline
+                ctx.pipeline().removeLast();
                 ctx.pipeline().addLast(new WebsocketHandler(ws));
                 ws.handshake(ctx, request, request.uri());
                 return;
@@ -267,11 +268,10 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
                     config.getMaxChunkSize(),
                     config.isValidateHeaders(),
                     config.getInitialBufferSize()));
-            p.addLast(new HttpContentCompressor(6, 15, 8, 812));
             p.addLast(new HttpContentDecompressor());
 //        p.addLast(new HttpObjectAggregator(config.getMaxContentLength()));
             p.addLast(new ChunkedWriteHandler());
-            p.addLast(new HttpContentCompressor());
+            p.addLast(new HttpContentCompressor(6, 15, 8, 812));
             p.addLast(server);
         }
     }

@@ -1,5 +1,6 @@
 package demo.app;
 
+import org.testng.Assert;
 import vest.doctor.Cached;
 import vest.doctor.Factory;
 import vest.doctor.Modules;
@@ -53,6 +54,7 @@ public class TestAppConfig {
     @Singleton
     @Named("using-primary-test")
     public OutputStream usingPrimary(TCPrimary primary, @Named("primary") TCPrimary qualifiedPrimary) {
+        Assert.assertSame(primary, qualifiedPrimary);
         return new OutputStream() {
             @Override
             public void write(int b) {

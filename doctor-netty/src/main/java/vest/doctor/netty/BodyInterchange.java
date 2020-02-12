@@ -154,7 +154,7 @@ public final class BodyInterchange {
         @Override
         public void write(RequestContext ctx, Object response) {
             if (response == null) {
-                ctx.responseBody("");
+                ctx.responseBody(Unpooled.EMPTY_BUFFER);
             } else if (response instanceof byte[]) {
                 ctx.responseBody((byte[]) response);
             } else if (response instanceof InputStream) {

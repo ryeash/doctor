@@ -459,7 +459,6 @@ public class RequestContext {
      */
     public void responseBody(ByteBuf body) {
         responseBody(new DefaultHttpContent(body != null ? body : Unpooled.EMPTY_BUFFER));
-//        responseHeader(HttpHeaderNames.CONTENT_LENGTH, responseBody.readableBytes());
     }
 
     /**

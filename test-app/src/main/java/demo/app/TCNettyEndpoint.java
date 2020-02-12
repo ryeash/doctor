@@ -72,8 +72,15 @@ public class TCNettyEndpoint {
 
     @POST
     @Path("/pojolist")
-    public String pojo(@Body List<Person> person) throws JsonProcessingException {
-        return new ObjectMapper().writeValueAsString(person);
+    public CompletableFuture<String> pojolist(@Body CompletableFuture<List<Person>> people) throws JsonProcessingException {
+        return people.thenApply(l -> {
+            try {
+                return new ObjectMapper().writeValueAsString(l);
+            } catch (JsonProcessingException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+//        return new ObjectMapper().writeValueAsString(person);
     }
 
     @POST

@@ -10,9 +10,8 @@ public interface BodyReader extends Prioritized {
     /**
      * Determine if this reader instance can deserialize the expected object from the http body.
      *
-     * @param ctx            the request context
-     * @param rawType        the raw type of the expected deserialized value
-     * @param parameterTypes any parameter types expected for the deserialized value
+     * @param ctx      the request context
+     * @param typeInfo information about the target type for the deserialized data
      * @return true if this reader can read a body of the expected type
      */
     boolean handles(RequestContext ctx, TypeInfo typeInfo);
@@ -20,9 +19,8 @@ public interface BodyReader extends Prioritized {
     /**
      * Read and deserialized the body of the http request to the expected type.
      *
-     * @param ctx            the request context
-     * @param rawType        the raw type of the expected deserialized value
-     * @param parameterTypes any parameter types expected for the deserialized value
+     * @param ctx      the request context
+     * @param typeInfo information about the target type for the deserialized data
      * @return the deserialized value
      */
     <T> T read(RequestContext ctx, TypeInfo typeInfo);

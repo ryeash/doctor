@@ -18,6 +18,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Internally used to assist in asynchronous parsing of json objects with Jackson.
+ */
 public class AsyncMapper<T> {
     private final ObjectMapper mapper;
     private final JavaType type;
