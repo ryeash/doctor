@@ -46,6 +46,18 @@ public class NettyTest extends BaseDoctorTest {
     }
 
     @Test
+    public void filters() {
+        req().queryParam("number", 42)
+                .queryParam("q", "queryparam")
+                .get("/netty/hello")
+                .prettyPeek()
+                .then()
+                .header("X-BEFORE-MATCH", is("true"))
+                .header("X-BEFORE-ROUTE", is("true"))
+                .header("X-AFTER-ROUTE", is("true"));
+    }
+
+    @Test
     public void returnedBytes() {
         req().get("/netty/hello2")
                 .then()
@@ -62,7 +74,7 @@ public class NettyTest extends BaseDoctorTest {
                 .body(is("R"));
     }
 
-    @Test(groups = "dev")
+    @Test
     public void beanSerDer() throws JsonProcessingException {
         Person p = new Person();
         p.setName("herman");

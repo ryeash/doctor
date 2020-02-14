@@ -8,14 +8,15 @@ import java.lang.annotation.Target;
 
 /**
  * Marks an interface as a properties object. An implementation of the interface will be created by the annotation
- * processor and exposed via a provider. The interface must use {@link Property} annotations on it's methods.
+ * processor and exposed via a provider. The interface must use {@link Property} annotations on it's methods and
+ * have a {@link javax.inject.Scope} (e.g. {@link javax.inject.Singleton}).
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
 public @interface Properties {
     /**
-     * Prefix for all properties
+     * Prefix to prepend before the values in {@link Property} annotations on the interface methods.
      */
     String value() default "";
 }

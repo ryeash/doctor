@@ -18,10 +18,8 @@ import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -37,8 +35,10 @@ import static vest.doctor.Constants.PROVIDER_REGISTRY;
 public class RouterWriter implements ProviderDefinitionListener {
 
     private final ClassBuilder routerBuilder = new ClassBuilder()
-            .addImplementsInterface(Router.class)
+            .setExtendsClass(AbstractRouter.class)
             .addImportClass(ProviderRegistry.class)
+            .addImportClass(Route.class)
+            .addImportClass(AbstractRoute.class)
             .addImportClass(PathSpec.class)
             .addImportClass(TypeInfo.class)
             .addImportClass(Map.class)
@@ -52,12 +52,9 @@ public class RouterWriter implements ProviderDefinitionListener {
             .addImportClass(HashMap.class);
 
     private final MethodBuilder init = new MethodBuilder("public void init(" + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY + ")");
-    private final MethodBuilder accept = new MethodBuilder("public boolean accept(RequestContext ctx) throws Exception");
-    private final MethodBuilder filter = new MethodBuilder("public void filter(FilterStage filterStage, RequestContext ctx)");
 
     private final Set<ExecutableElement> processedMethods = new HashSet<>();
-    private final List<Meta> routeMetadata = new LinkedList<>();
-    private final List<Meta> filterMetadata = new LinkedList<>();
+    private final Set<String> usedProviders = new HashSet<>();
 
     @Override
     public void process(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
@@ -71,9 +68,8 @@ public class RouterWriter implements ProviderDefinitionListener {
                     .filter(m -> m.getModifiers().contains(Modifier.PUBLIC))
                     .filter(processedMethods::add)
                     .forEach(method -> {
-                        List<String> methods = getHttpMethods(context, method);
+                        List<String> methods = getHttpMethods(method);
                         if (!methods.isEmpty()) {
-
                             String[] paths = Optional.ofNullable(method.getAnnotation(Path.class)).map(Path::value).orElse(new String[]{""});
                             List<String> fullPaths = paths(roots, paths);
 
@@ -84,7 +80,7 @@ public class RouterWriter implements ProviderDefinitionListener {
                                     meta.method = method;
                                     meta.httpMethod = httMethod;
                                     meta.path = new PathSpec(httMethod, fullPath);
-                                    routeMetadata.add(meta);
+                                    writeRoute(context, meta);
                                 }
                             }
                         }
@@ -96,7 +92,7 @@ public class RouterWriter implements ProviderDefinitionListener {
                                 meta.providerDefinition = providerDefinition;
                                 meta.method = method;
                                 meta.path = new PathSpec("FILTER", fullPath);
-                                filterMetadata.add(meta);
+                                writeRoute(context, meta);
                             }
                         }
                     });
@@ -113,99 +109,10 @@ public class RouterWriter implements ProviderDefinitionListener {
 
     @Override
     public void finish(AnnotationProcessorContext context) {
-        if (routeMetadata.isEmpty()) {
-            return;
-        }
-
-        routeMetadata.sort(Comparator.comparing(m -> m.path));
-
-        accept.line("Map<String, String> pathParams = null;");
-        accept.line("filter(FilterStage.{}, ctx);", FilterStage.BEFORE_MATCH);
-        accept.line("if(ctx.isHalted()) { return true; }");
-        int i = 0;
-
-        Set<String> usedProviders = new HashSet<>();
-
-        routerBuilder.addField("private static final HttpMethod HEAD = HttpMethod.HEAD");
-        routerBuilder.addField("private BodyInterchange bodyInterchange");
         init.line("bodyInterchange = new BodyInterchange({});", PROVIDER_REGISTRY);
-
-        Map<String, List<Meta>> methodToMetadata = routeMetadata.stream().collect(Collectors.groupingBy(m -> m.httpMethod, LinkedHashMap::new, Collectors.toList()));
-        for (Map.Entry<String, List<Meta>> entry : methodToMetadata.entrySet()) {
-            String method = entry.getKey();
-
-            routerBuilder.addField("private static final HttpMethod " + method + " = HttpMethod.valueOf(\"" + method + "\")");
-
-            // special logic for 'HEAD' requests
-            if (method.equals(io.netty.handler.codec.http.HttpMethod.GET.name())) {
-                accept.line("if(ctx.requestMethod().equals(" + method + ") || ctx.requestMethod().equals(HEAD)){");
-            } else {
-                accept.line("if(ctx.requestMethod().equals(" + method + ")){");
-            }
-
-            for (Meta metadatum : entry.getValue()) {
-                String specField = "spec" + (i++);
-                routerBuilder.addField("private final PathSpec " + specField + " = new PathSpec(\"" + metadatum.path.method().name() + "\", \"" + metadatum.path.getPath() + "\")");
-
-                if (usedProviders.add(metadatum.providerDefinition.uniqueInstanceName())) {
-                    routerBuilder.addField("private DoctorProvider<" + metadatum.providerDefinition.providedType().getQualifiedName() + "> " + metadatum.providerDefinition.uniqueInstanceName());
-                    ProviderDependency providerDependency = metadatum.providerDefinition.asDependency();
-                    init.line("{} = {}.getProvider({}.class, {});",
-                            metadatum.providerDefinition.uniqueInstanceName(), PROVIDER_REGISTRY, providerDependency.type(), providerDependency.qualifier());
-                }
-
-                accept.line("pathParams = " + specField + ".matchAndCollect(ctx.requestUri().getRawPath());");
-                accept.line("if(pathParams != null){")
-                        .line("ctx.setPathParams(pathParams);")
-                        .line(metadatum.buildMethodCall(context, metadatum.providerDefinition.uniqueInstanceName(), "ctx") + ";")
-                        .line("ctx.future().thenRun(() -> filter(FilterStage.AFTER_ROUTE, ctx));");
-
-                if (metadatum.method.getReturnType().getKind() != TypeKind.VOID) {
-                    accept.line("bodyInterchange.write(ctx, response);");
-                } else {
-                    accept.line("ctx.complete();");
-                }
-                accept.line("return true;")
-                        .line("}");
-            }
-            accept.line("}");
-        }
-
-        accept.line("return false;");
-
-        filter.line("try {");
-        filter.line("Map<String, String> pathParams = null;");
-        Map<FilterStage, List<Meta>> filterStageToMetadata = filterMetadata.stream().collect(Collectors.groupingBy(m -> m.method.getAnnotation(Filter.class).value()));
-        for (Map.Entry<FilterStage, List<Meta>> entry : filterStageToMetadata.entrySet()) {
-            filter.line("if(filterStage == FilterStage.{}) {", entry.getKey());
-            for (Meta metadatum : entry.getValue()) {
-                String specField = "filterSpec" + (i++);
-                routerBuilder.addField("private final PathSpec " + specField + " = new PathSpec(\"" + metadatum.path.method().name() + "\", \"" + metadatum.path.getPath() + "\")");
-
-                if (usedProviders.add(metadatum.providerDefinition.uniqueInstanceName())) {
-                    routerBuilder.addField("private DoctorProvider<" + metadatum.providerDefinition.providedType().getQualifiedName() + "> " + metadatum.providerDefinition.uniqueInstanceName());
-                    ProviderDependency providerDependency = metadatum.providerDefinition.asDependency();
-                    init.line("{} = {}.getProvider({}.class, {});",
-                            metadatum.providerDefinition.uniqueInstanceName(), PROVIDER_REGISTRY, providerDependency.type(), providerDependency.qualifier());
-                }
-
-                filter.line("if(ctx.isHalted()) { return; }")
-                        .line("pathParams = " + specField + ".matchAndCollect(ctx.requestUri().getRawPath());")
-                        .line("if(pathParams != null){")
-                        .line(metadatum.buildMethodCall(context, metadatum.providerDefinition.uniqueInstanceName(), "ctx") + ";")
-                        .line("}");
-            }
-            filter.line("}");
-        }
-        filter.line("} catch (Throwable t) {")
-                .line("throw new HttpException(\"error running filters\", t);")
-                .line("}");
+        init.line("postInit();");
 
         routerBuilder.addMethod(init.finish());
-        routerBuilder.addMethod(accept.finish());
-        routerBuilder.addMethod(filter.finish());
-        routerBuilder.addField("private final Map<String, Websocket> websockets = new HashMap<>()")
-                .addMethod("public Websocket getWebsocket(String uri)", mb -> mb.line("return websockets.get(uri);"));
         routerBuilder.setClassName(context.generatedPackage() + ".RouterImpl");
         routerBuilder.writeClass(context.filer());
 
@@ -220,7 +127,36 @@ public class RouterWriter implements ProviderDefinitionListener {
         }
     }
 
-    private static List<String> getHttpMethods(AnnotationProcessorContext context, ExecutableElement method) {
+    private void writeRoute(AnnotationProcessorContext context, Meta meta) {
+        if (usedProviders.add(meta.providerDefinition.uniqueInstanceName())) {
+            routerBuilder.addField("private DoctorProvider<" + meta.providerDefinition.providedType().getQualifiedName() + "> " + meta.providerDefinition.uniqueInstanceName());
+            ProviderDependency providerDependency = meta.providerDefinition.asDependency();
+            init.line("{} = {}.getProvider({}.class, {});",
+                    meta.providerDefinition.uniqueInstanceName(), PROVIDER_REGISTRY, providerDependency.type(), providerDependency.qualifier());
+        }
+
+        boolean isVoid = meta.method.getReturnType().getKind() == TypeKind.VOID;
+        String typeString = isVoid ? Object.class.getSimpleName() : meta.method.getReturnType().toString();
+
+        if (meta.method.getAnnotation(Filter.class) != null) {
+            FilterStage stage = meta.method.getAnnotation(Filter.class).value();
+            init.line("addFilter(FilterStage.{}, new AbstractRoute<{}>(\"{}\", \"{}\") {", stage.name(), typeString, stage.name(), meta.path.getPath());
+        } else {
+            init.line("addRoute(new AbstractRoute<{}>(\"{}\", \"{}\") {", typeString, meta.httpMethod, meta.path.getPath());
+        }
+
+        init.line("public {} executeRoute(RequestContext ctx, BodyInterchange bodyInterchange) throws Exception {", typeString);
+        init.line(meta.buildMethodCall(context, meta.providerDefinition.uniqueInstanceName(), "ctx") + ";");
+        if (!isVoid) {
+            init.line("return response;");
+        } else {
+            init.line("return null;");
+        }
+        init.line("}");
+        init.line("});");
+    }
+
+    private static List<String> getHttpMethods(ExecutableElement method) {
         List<String> methods = new LinkedList<>();
         for (AnnotationMirror am : method.getAnnotationMirrors()) {
             for (AnnotationMirror annotationMirror : am.getAnnotationType().asElement().getAnnotationMirrors()) {

@@ -58,7 +58,7 @@ public final class BodyInterchange {
 
     public void write(RequestContext ctx, Object response) {
         if (response == null) {
-            ctx.responseBody(Unpooled.EMPTY_BUFFER);
+            ctx.complete();
         } else if (response instanceof CompletableFuture) {
             write(ctx, (CompletableFuture<?>) response);
         } else if (response instanceof R) {
@@ -141,8 +141,7 @@ public final class BodyInterchange {
     private static final class DefaultWriter implements BodyWriter {
         @Override
         public boolean handles(RequestContext ctx, Object response) {
-            return response == null
-                    || response instanceof byte[]
+            return response instanceof byte[]
                     || response instanceof InputStream
                     || response instanceof CharSequence
                     || response instanceof ByteBuf
@@ -153,9 +152,7 @@ public final class BodyInterchange {
 
         @Override
         public void write(RequestContext ctx, Object response) {
-            if (response == null) {
-                ctx.responseBody(Unpooled.EMPTY_BUFFER);
-            } else if (response instanceof byte[]) {
+            if (response instanceof byte[]) {
                 ctx.responseBody((byte[]) response);
             } else if (response instanceof InputStream) {
                 ctx.responseBody((InputStream) response);

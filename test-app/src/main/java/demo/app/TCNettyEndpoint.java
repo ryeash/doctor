@@ -9,6 +9,7 @@ import vest.doctor.netty.Attribute;
 import vest.doctor.netty.BeanParam;
 import vest.doctor.netty.Body;
 import vest.doctor.netty.Filter;
+import vest.doctor.netty.FilterStage;
 import vest.doctor.netty.GET;
 import vest.doctor.netty.HeaderParam;
 import vest.doctor.netty.POST;
@@ -31,10 +32,23 @@ import java.util.concurrent.CompletableFuture;
 public class TCNettyEndpoint {
     private static final Logger log = LoggerFactory.getLogger(TCNettyEndpoint.class);
 
-    @Filter
+    @Filter(FilterStage.BEFORE_MATCH)
+    @Path("/*")
+    public void beforeMatchFilter(RequestContext ctx) {
+        ctx.responseHeader("X-BEFORE-MATCH", true);
+    }
+
+    @Filter(FilterStage.BEFORE_ROUTE)
     @Path("/*")
     public void filter(RequestContext ctx) {
+        ctx.responseHeader("X-BEFORE-ROUTE", true);
         ctx.attribute("filter", true);
+    }
+
+    @Filter(FilterStage.AFTER_ROUTE)
+    @Path("/*")
+    public void afterRouterFilter(RequestContext ctx) {
+        ctx.responseHeader("X-AFTER-ROUTE", true);
     }
 
     @GET

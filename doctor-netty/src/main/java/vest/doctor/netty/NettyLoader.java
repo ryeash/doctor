@@ -1,5 +1,6 @@
 package vest.doctor.netty;
 
+import vest.doctor.AdHocProvider;
 import vest.doctor.AppLoader;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
@@ -27,6 +28,8 @@ public class NettyLoader implements AppLoader {
         Routers routers = new Routers(routerList);
         routers.init(providerRegistry);
         this.server = new HttpServer(providerRegistry, routers);
+        providerRegistry.register(new AdHocProvider<>(Router.class, routers, null));
+        providerRegistry.register(new AdHocProvider<>(HttpServer.class, this.server, null));
     }
 
     @Override

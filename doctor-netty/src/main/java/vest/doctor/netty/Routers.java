@@ -3,6 +3,7 @@ package vest.doctor.netty;
 import vest.doctor.ProviderRegistry;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Internally used to join multiple routers together as a single router.
@@ -42,5 +43,12 @@ public final class Routers implements Router {
             }
         }
         return null;
+    }
+
+    @Override
+    public String toString() {
+        return routers.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining("--\n", "Routers --\n", ""));
     }
 }
