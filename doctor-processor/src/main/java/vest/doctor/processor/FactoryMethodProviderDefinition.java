@@ -63,7 +63,7 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
 
         classBuilder.addMethod("public " + providedType().getSimpleName() + " get()", b -> {
             b.line("try {");
-            b.line(container.getQualifiedName() + " container = " + Constants.PROVIDER_REGISTRY + ".getProvider(" + container.getQualifiedName() + ".class" + ", " + ProcessorUtils.getQualifier(context, container) + ").get();");
+            b.line(container.getQualifiedName() + " container = " + ProcessorUtils.getProviderCode(context, container) + ".get();");
             b.line(providedType().getSimpleName() + " instance = " + context.methodCall(this, factoryMethod, "container", Constants.PROVIDER_REGISTRY) + ";");
             for (NewInstanceCustomizer customizer : context.customizations(NewInstanceCustomizer.class)) {
                 customizer.customize(context, this, b, "instance", Constants.PROVIDER_REGISTRY);

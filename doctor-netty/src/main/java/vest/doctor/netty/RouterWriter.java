@@ -1,12 +1,12 @@
 package vest.doctor.netty;
 
+import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ClassBuilder;
 import vest.doctor.DoctorProvider;
 import vest.doctor.MethodBuilder;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionListener;
-import vest.doctor.ProviderDependency;
 import vest.doctor.ProviderRegistry;
 
 import javax.lang.model.element.AnnotationMirror;
@@ -37,8 +37,9 @@ public class RouterWriter implements ProviderDefinitionListener {
     private final ClassBuilder routerBuilder = new ClassBuilder()
             .setExtendsClass(AbstractRouter.class)
             .addImportClass(ProviderRegistry.class)
+            .addImportClass(NettyConfiguration.class)
             .addImportClass(Route.class)
-            .addImportClass(AbstractRoute.class)
+            .addImportClass(RouteImpl.class)
             .addImportClass(PathSpec.class)
             .addImportClass(TypeInfo.class)
             .addImportClass(Map.class)
@@ -51,7 +52,9 @@ public class RouterWriter implements ProviderDefinitionListener {
             .addImportClass(Websocket.class)
             .addImportClass(HashMap.class);
 
-    private final MethodBuilder init = new MethodBuilder("public void init(" + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY + ")");
+    private final MethodBuilder init = new MethodBuilder("public void init(" + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY + ")")
+            .line("this.configuration = new {}({}.configuration());", NettyConfiguration.class, PROVIDER_REGISTRY)
+            .line("this.bodyInterchange = new {}({});", BodyInterchange.class, PROVIDER_REGISTRY);
 
     private final Set<ExecutableElement> processedMethods = new HashSet<>();
     private final Set<String> usedProviders = new HashSet<>();
@@ -99,9 +102,8 @@ public class RouterWriter implements ProviderDefinitionListener {
 
             if (providerDefinition.isCompatibleWith(Websocket.class)) {
                 for (String path : roots) {
-                    ProviderDependency providerDependency = providerDefinition.asDependency();
-                    init.line("websockets.put(\"{}\", {}.getProvider({}.class, {}).get());",
-                            Utils.squeeze("/" + path, '/'), PROVIDER_REGISTRY, providerDependency.type().getQualifiedName(), providerDependency.qualifier());
+                    init.line("websockets.put(\"{}\", {}.get());",
+                            Utils.squeeze("/" + path, '/'), ProcessorUtils.getProviderCode(providerDefinition));
                 }
             }
         }
@@ -109,7 +111,6 @@ public class RouterWriter implements ProviderDefinitionListener {
 
     @Override
     public void finish(AnnotationProcessorContext context) {
-        init.line("bodyInterchange = new BodyInterchange({});", PROVIDER_REGISTRY);
         init.line("postInit();");
 
         routerBuilder.addMethod(init.finish());
@@ -130,30 +131,35 @@ public class RouterWriter implements ProviderDefinitionListener {
     private void writeRoute(AnnotationProcessorContext context, Meta meta) {
         if (usedProviders.add(meta.providerDefinition.uniqueInstanceName())) {
             routerBuilder.addField("private DoctorProvider<" + meta.providerDefinition.providedType().getQualifiedName() + "> " + meta.providerDefinition.uniqueInstanceName());
-            ProviderDependency providerDependency = meta.providerDefinition.asDependency();
-            init.line("{} = {}.getProvider({}.class, {});",
-                    meta.providerDefinition.uniqueInstanceName(), PROVIDER_REGISTRY, providerDependency.type(), providerDependency.qualifier());
+            init.line("{} = {};",
+                    meta.providerDefinition.uniqueInstanceName(), ProcessorUtils.getProviderCode(meta.providerDefinition));
         }
 
         boolean isVoid = meta.method.getReturnType().getKind() == TypeKind.VOID;
+        String providerTypeStr = meta.providerDefinition.providedType().toString();
         String typeString = isVoid ? Object.class.getSimpleName() : meta.method.getReturnType().toString();
+
+
+        String info = meta.method.getEnclosingElement().getSimpleName() + "." + meta.method;
+
+        StringBuilder functionCall = new StringBuilder();
+        functionCall.append("(instance, ctx, bodyInterchange) -> {\n");
+        functionCall.append(meta.buildMethodCall(context, "instance", "ctx")).append(";\n");
+        if (!isVoid) {
+            functionCall.append("return response;");
+        } else {
+            functionCall.append("return null;");
+        }
+        functionCall.append("\n}");
 
         if (meta.method.getAnnotation(Filter.class) != null) {
             FilterStage stage = meta.method.getAnnotation(Filter.class).value();
-            init.line("addFilter(FilterStage.{}, new AbstractRoute<{}>(\"{}\", \"{}\") {", stage.name(), typeString, stage.name(), meta.path.getPath());
+            init.line("addFilter(FilterStage.{}, new RouteImpl<{}, {}>({}, \"{}\", \"{}\", \"{}\", {}));",
+                    stage.name(), providerTypeStr, typeString, meta.providerDefinition.uniqueInstanceName(), stage.name(), meta.path.getPath(), info, functionCall);
         } else {
-            init.line("addRoute(new AbstractRoute<{}>(\"{}\", \"{}\") {", typeString, meta.httpMethod, meta.path.getPath());
+            init.line("addRoute(new RouteImpl<{}, {}>({}, \"{}\", \"{}\", \"{}\", {}));",
+                    providerTypeStr, typeString, meta.providerDefinition.uniqueInstanceName(), meta.httpMethod, meta.path.getPath(), info, functionCall);
         }
-
-        init.line("public {} executeRoute(RequestContext ctx, BodyInterchange bodyInterchange) throws Exception {", typeString);
-        init.line(meta.buildMethodCall(context, meta.providerDefinition.uniqueInstanceName(), "ctx") + ";");
-        if (!isVoid) {
-            init.line("return response;");
-        } else {
-            init.line("return null;");
-        }
-        init.line("}");
-        init.line("});");
     }
 
     private static List<String> getHttpMethods(ExecutableElement method) {
@@ -193,7 +199,7 @@ public class RouterWriter implements ProviderDefinitionListener {
             if (method.getReturnType().getKind() != TypeKind.VOID) {
                 sb.append(method.getReturnType()).append(" response = ");
             }
-            sb.append(providerRef).append(".get().").append(method.getSimpleName());
+            sb.append(providerRef).append('.').append(method.getSimpleName());
             String parameters = method.getParameters().stream()
                     .map(p -> ParameterSupport.parameterWriting(context, p, requestContextRef))
                     .collect(Collectors.joining(", ", "(", ")"));

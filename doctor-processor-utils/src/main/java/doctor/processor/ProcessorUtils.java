@@ -1,6 +1,9 @@
 package doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.Constants;
+import vest.doctor.ProviderDefinition;
+import vest.doctor.ProviderDependency;
 
 import javax.inject.Named;
 import javax.inject.Qualifier;
@@ -153,6 +156,18 @@ public class ProcessorUtils {
         } else {
             return element.toString();
         }
+    }
+
+    public static String getProviderCode(ProviderDefinition providerDefinition) {
+        return getProviderCode(providerDefinition.asDependency());
+    }
+
+    public static String getProviderCode(ProviderDependency providerDependency) {
+        return Constants.PROVIDER_REGISTRY + ".getProvider(" + providerDependency.type() + ".class, " + providerDependency.qualifier() + ")";
+    }
+
+    public static String getProviderCode(AnnotationProcessorContext context, TypeElement injectableType) {
+        return Constants.PROVIDER_REGISTRY + ".getProvider(" + injectableType.getQualifiedName() + ".class" + ", " + getQualifier(context, injectableType) + ")";
     }
 
     public static String uniqueHash() {

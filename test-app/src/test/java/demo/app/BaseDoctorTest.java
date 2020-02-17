@@ -8,7 +8,7 @@ import vest.doctor.MapConfigurationSource;
 
 public abstract class BaseDoctorTest extends Assert {
 
-    public Doctor doctor;
+    public static Doctor doctor;
 
     @BeforeSuite(alwaysRun = true)
     public void start() {

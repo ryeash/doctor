@@ -53,7 +53,7 @@ public class EventManagerWriter implements ProviderDefinitionListener {
                     .setClassName(context.generatedPackage() + "." + className)
                     .addField(line("private final DoctorProvider<{}> provider", providerDefinition.providedType().asType()))
                     .setConstructor("@Inject public " + className + "(" + ProviderRegistry.class.getSimpleName() + " " + Constants.PROVIDER_REGISTRY + ")", b -> {
-                        b.line("this.provider = {}.getProvider({}.class, {});", Constants.PROVIDER_REGISTRY, providerDefinition.providedType().asType(), providerDefinition.qualifier());
+                        b.line("this.provider = {};", ProcessorUtils.getProviderCode(providerDefinition));
                     })
                     .addMethod("public boolean isCompatible(Object event)", b -> {
                         b.line("return event instanceof {};", messageType);

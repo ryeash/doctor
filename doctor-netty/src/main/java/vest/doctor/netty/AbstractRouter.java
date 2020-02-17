@@ -17,6 +17,7 @@ public abstract class AbstractRouter implements Router {
     private final Map<FilterStage, List<Route<?>>> filters = new HashMap<>();
     protected final Map<String, Websocket> websockets = new HashMap<>();
     protected BodyInterchange bodyInterchange;
+    protected NettyConfiguration configuration;
 
     protected void addRoute(Route<?> route) {
         HttpMethod httpMethod = route.pathSpec().method();

@@ -13,6 +13,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.testng.annotations.Test;
+import vest.doctor.netty.Router;
 
 import java.net.URI;
 import java.util.Collections;
@@ -33,6 +34,11 @@ public class NettyTest extends BaseDoctorTest {
         return RestAssured.given()
                 .accept("application/json")
                 .contentType("application/json");
+    }
+
+    @Test
+    public void routerToString() {
+        System.out.println(doctor.getProvider(Router.class));
     }
 
     @Test
