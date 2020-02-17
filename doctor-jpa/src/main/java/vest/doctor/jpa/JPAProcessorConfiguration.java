@@ -2,7 +2,6 @@ package vest.doctor.jpa;
 
 import vest.doctor.CustomizationPoint;
 import vest.doctor.ProcessorConfiguration;
-import vest.doctor.ProviderDefinitionProcessor;
 
 import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceContexts;
@@ -15,11 +14,6 @@ public class JPAProcessorConfiguration implements ProcessorConfiguration {
     @Override
     public List<Class<? extends Annotation>> supportedAnnotations() {
         return Arrays.asList(PersistenceContext.class, PersistenceContexts.class);
-    }
-
-    @Override
-    public List<ProviderDefinitionProcessor> providerDefinitionProcessors() {
-        return Collections.emptyList();
     }
 
     @Override

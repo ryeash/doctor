@@ -108,6 +108,14 @@ public interface AnnotationProcessorContext {
     void registerDependency(ProviderDependency target, ProviderDependency dependency);
 
     /**
+     * Add a dependency that is known to be satisfied at runtime, so that compile time checks pass.
+     *
+     * @param type      the dependency that will be satisfied at runtime
+     * @param qualifier the qualifier for the dependency
+     */
+    void addSatisfiedDependency(Class<?> type, String qualifier);
+
+    /**
      * Create a {@link ProviderDependency}.
      *
      * @param type      the type

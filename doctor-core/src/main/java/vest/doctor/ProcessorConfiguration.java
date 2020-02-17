@@ -14,11 +14,6 @@ public interface ProcessorConfiguration {
     List<Class<? extends Annotation>> supportedAnnotations();
 
     /**
-     * Additional {@link ProviderDefinitionProcessor}s to use during annotation processing.
-     */
-    List<ProviderDefinitionProcessor> providerDefinitionProcessors();
-
-    /**
      * Additional {@link CustomizationPoint}s to use during annotation processing.
      */
     List<CustomizationPoint> customizationPoints();

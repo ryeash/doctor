@@ -111,6 +111,9 @@ public class RouterWriter implements ProviderDefinitionListener {
 
     @Override
     public void finish(AnnotationProcessorContext context) {
+        context.addSatisfiedDependency(Router.class, null);
+        context.addSatisfiedDependency(HttpServer.class, null);
+
         init.line("postInit();");
 
         routerBuilder.addMethod(init.finish());

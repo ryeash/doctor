@@ -57,6 +57,6 @@ class Dependency implements ProviderDependency {
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, qualifier);
+        return Objects.hash(type.asType().toString(), qualifier);
     }
 }

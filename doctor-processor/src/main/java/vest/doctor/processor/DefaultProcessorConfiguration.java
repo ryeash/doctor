@@ -5,7 +5,6 @@ import vest.doctor.CustomizationPoint;
 import vest.doctor.Factory;
 import vest.doctor.ProcessorConfiguration;
 import vest.doctor.Prototype;
-import vest.doctor.ProviderDefinitionProcessor;
 import vest.doctor.ThreadLocal;
 
 import javax.inject.Singleton;
@@ -21,14 +20,6 @@ public class DefaultProcessorConfiguration implements ProcessorConfiguration {
     }
 
     @Override
-    public List<ProviderDefinitionProcessor> providerDefinitionProcessors() {
-        return Arrays.asList(
-                new ConstructorProviderDefinitionProcessor(),
-                new FactoryProviderDefinitionProcessor(),
-                new PropertiesProviderDefinitionProcessor());
-    }
-
-    @Override
     public List<CustomizationPoint> customizationPoints() {
         return Arrays.asList(
                 new InjectMethodsCustomizer(),
@@ -38,6 +29,10 @@ public class DefaultProcessorConfiguration implements ProcessorConfiguration {
                 new ProviderParameterLookupCustomizer(),
                 new ShutdownCustomizationPoint(),
                 new StandardConversionGenerator(),
+
+                new ConstructorProviderDefinitionProcessor(),
+                new FactoryProviderDefinitionProcessor(),
+                new PropertiesProviderDefinitionProcessor(),
 
                 new SingletonScopeWriter(),
                 new ThreadLocalScopeWriter(),
