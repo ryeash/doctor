@@ -2,6 +2,7 @@ package demo.app;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -40,9 +41,12 @@ public class TCNettyEndpoint {
 
     @Filter(FilterStage.BEFORE_ROUTE)
     @Path("/*")
-    public void filter(RequestContext ctx) {
+    public void filter(RequestContext ctx, @QueryParam("halt") Optional<Boolean> halt) {
         ctx.responseHeader("X-BEFORE-ROUTE", true);
         ctx.attribute("filter", true);
+        if (halt.orElse(false)) {
+            ctx.halt(HttpResponseStatus.ACCEPTED, "halted");
+        }
     }
 
     @Filter(FilterStage.AFTER_ROUTE)

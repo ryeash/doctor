@@ -53,8 +53,7 @@ public class RouterWriter implements ProviderDefinitionListener {
             .addImportClass(HashMap.class);
 
     private final MethodBuilder init = new MethodBuilder("public void init(" + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY + ")")
-            .line("this.configuration = new {}({}.configuration());", NettyConfiguration.class, PROVIDER_REGISTRY)
-            .line("this.bodyInterchange = new {}({});", BodyInterchange.class, PROVIDER_REGISTRY);
+            .line("super.init({});", PROVIDER_REGISTRY);
 
     private final Set<ExecutableElement> processedMethods = new HashSet<>();
     private final Set<String> usedProviders = new HashSet<>();

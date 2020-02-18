@@ -13,6 +13,9 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 
+/**
+ * A handle to the HTTP request body. Supports event driven reading of body data.
+ */
 public class StreamingBody extends InputStream {
     private CompositeByteBuf composite = Unpooled.compositeBuffer();
     private CompletableFuture<ByteBuf> future = new CompletableFuture<>();
@@ -28,6 +31,11 @@ public class StreamingBody extends InputStream {
         this.size = 0;
     }
 
+    /**
+     * Get a future that completes when all bytes of the request body have been read.
+     *
+     * @return a future that completes when all bytes of the request body have been read
+     */
     public CompletableFuture<ByteBuf> future() {
         return future;
     }
@@ -43,27 +51,30 @@ public class StreamingBody extends InputStream {
     }
 
     public void append(HttpContent content) {
-        if (closed) {
-            content.release();
-            return;
-        }
-        composite.addComponent(true, content.content());
+        try {
+            if (closed) {
+                content.release();
+                return;
+            }
+            composite.addComponent(true, content.content());
 
-        size += content.content().readableBytes();
-        if (size >= maxLength) {
-            throw new HttpException(HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE);
-        }
+            size += content.content().readableBytes();
+            if (size >= maxLength) {
+                throw new HttpException(HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE);
+            }
 
-        if (content instanceof LastHttpContent) {
-            this.trailingHeaders = ((LastHttpContent) content).trailingHeaders();
-            future.complete(composite);
-        }
-        if (dataConsumer != null) {
-            dataConsumer.accept(composite, future.isDone());
-            composite.discardReadComponents();
-        }
-        synchronized (this) {
-            notifyAll();
+            if (content instanceof LastHttpContent) {
+                this.trailingHeaders = ((LastHttpContent) content).trailingHeaders();
+                future.complete(composite);
+            }
+            if (dataConsumer != null) {
+                dataConsumer.accept(composite, future.isDone());
+                composite.discardReadComponents();
+            }
+        } finally {
+            synchronized (this) {
+                notifyAll();
+            }
         }
     }
 

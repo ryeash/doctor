@@ -62,6 +62,7 @@ public class RequestContext {
     private final HttpHeaders responseHeaders;
     private HttpContent responseBody;
 
+    private final long startTime = System.currentTimeMillis();
     private boolean halted = false;
     private Map<String, Object> attributes;
 
@@ -91,8 +92,18 @@ public class RequestContext {
         return ctx;
     }
 
+    /**
+     * Get the original netty request object.
+     */
     public HttpRequest request() {
         return request;
+    }
+
+    /**
+     * Get the start time of this request; that is, the epoch milliseconds that this request context was created.
+     */
+    public long requestStartTime() {
+        return startTime;
     }
 
     /**

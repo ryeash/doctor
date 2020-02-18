@@ -1,6 +1,7 @@
 package vest.doctor.netty;
 
 import io.netty.handler.codec.http.HttpMethod;
+import vest.doctor.ProviderRegistry;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,6 +19,14 @@ public abstract class AbstractRouter implements Router {
     protected final Map<String, Websocket> websockets = new HashMap<>();
     protected BodyInterchange bodyInterchange;
     protected NettyConfiguration configuration;
+    protected boolean tracingEnabled;
+
+    @Override
+    public void init(ProviderRegistry providerRegistry) {
+        this.configuration = new NettyConfiguration(providerRegistry.configuration());
+        this.bodyInterchange = new BodyInterchange(providerRegistry);
+        this.tracingEnabled = configuration.debugRequestRouting();
+    }
 
     protected void addRoute(Route<?> route) {
         HttpMethod httpMethod = route.pathSpec().method();
@@ -39,6 +48,17 @@ public abstract class AbstractRouter implements Router {
 
     @Override
     public boolean accept(RequestContext requestContext) throws Exception {
+        if (tracingEnabled) {
+            requestContext.future().thenAccept(ctx -> {
+                List<String> traces = ctx.attribute(Utils.TRACE_ATTR);
+                if (traces != null && !traces.isEmpty()) {
+                    for (int i = 0; i < traces.size(); i++) {
+                        ctx.responseHeader("X-Debug-Trace-" + i, traces.get(i));
+                    }
+                }
+            });
+        }
+
         filter(FilterStage.BEFORE_MATCH, requestContext);
         if (requestContext.isHalted()) {
             return true;
@@ -51,6 +71,8 @@ public abstract class AbstractRouter implements Router {
             if (pathParams != null) {
                 selected = route;
                 break;
+            } else {
+                addTraceInfo(requestContext, "NO MATCH: ROUTE {}", route);
             }
         }
         if (selected == null) {
@@ -61,6 +83,9 @@ public abstract class AbstractRouter implements Router {
         if (requestContext.isHalted()) {
             return true;
         }
+
+        addTraceInfo(requestContext, "MATCH: ROUTE {}", selected);
+
         requestContext.future().thenRun(() -> filter(FilterStage.AFTER_ROUTE, requestContext));
         requestContext.setPathParams(pathParams);
         Object result = selected.executeRoute(requestContext, bodyInterchange);
@@ -106,11 +131,25 @@ public abstract class AbstractRouter implements Router {
                     return;
                 }
                 Map<String, String> pathParams = filter.pathSpec().matchAndCollect(ctx.requestPath());
-                ctx.setPathParams(pathParams);
-                filter.executeRoute(ctx, bodyInterchange);
+                if (pathParams != null) {
+                    addTraceInfo(ctx, "MATCH: {} {}", filterStage, filter);
+
+                    ctx.setPathParams(pathParams);
+                    filter.executeRoute(ctx, bodyInterchange);
+
+                    if (ctx.isHalted()) {
+                        addTraceInfo(ctx, "REQUEST HALTED");
+                    }
+                } else {
+                    addTraceInfo(ctx, "NO MATCH: {} {}", filterStage, filter);
+                }
             }
         } catch (Throwable t) {
             throw new HttpException("error running filters", t);
         }
+    }
+
+    private void addTraceInfo(RequestContext ctx, String message, Object... args) {
+        Utils.addTraceInfo(tracingEnabled, ctx, message, args);
     }
 }

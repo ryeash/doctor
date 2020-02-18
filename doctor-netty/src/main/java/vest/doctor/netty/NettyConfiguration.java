@@ -89,4 +89,8 @@ public class NettyConfiguration {
     public int getMaxContentLength() {
         return configurationFacade.get("doctor.netty.http.maxContentLength", 8388608, Integer::valueOf);
     }
+
+    public boolean debugRequestRouting() {
+        return configurationFacade.get("doctor.netty.http.debugRequestRouting", false, Boolean::valueOf);
+    }
 }

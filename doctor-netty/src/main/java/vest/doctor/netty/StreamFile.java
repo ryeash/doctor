@@ -13,12 +13,23 @@ import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.Date;
 
+/**
+ * Can be returned from an endpoint to efficiently stream a file as a response body.
+ */
 public class StreamFile {
 
     private final java.nio.file.Path filepath;
     private final File file;
     private final long modified;
 
+    /**
+     * Create a new streaming file body. The file is checked to makes sure that it is present under the root,
+     * else an exception is thrown.
+     *
+     * @param rootDirectory the root directory for the file, will be prefixed to the filePath to create the complete
+     *                      file path
+     * @param filePath      the path to the file to send
+     */
     public StreamFile(String rootDirectory, String filePath) {
         java.nio.file.Path rootPath = new File(rootDirectory).getAbsoluteFile().toPath();
 

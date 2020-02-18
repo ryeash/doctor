@@ -173,6 +173,15 @@ public class NettyTest extends BaseDoctorTest {
     }
 
     @Test
+    public void halting() {
+        req().queryParam("halt", true)
+                .get("/netty/hello")
+                .then()
+                .statusCode(202)
+                .body(is("halted"));
+    }
+
+    @Test
     public void ws() throws Exception {
         String destUri = "ws://localhost:8081/grumpy";
         WebSocketClient client = new WebSocketClient();
