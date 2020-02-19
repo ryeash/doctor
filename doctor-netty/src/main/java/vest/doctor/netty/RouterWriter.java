@@ -65,7 +65,7 @@ public class RouterWriter implements ProviderDefinitionListener {
                     .map(Path::value)
                     .orElse(new String[]{"/"});
 
-            providerDefinition.methods()
+            ProcessorUtils.uniqueMethods(context, providerDefinition.providedType())
                     .stream()
                     .filter(m -> m.getModifiers().contains(Modifier.PUBLIC))
                     .filter(processedMethods::add)

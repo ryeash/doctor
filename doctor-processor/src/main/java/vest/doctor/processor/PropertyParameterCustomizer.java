@@ -13,14 +13,12 @@ import java.util.Optional;
 
 public class PropertyParameterCustomizer implements ParameterLookupCustomizer {
 
-    private static final PropertyCodeGen propertyCodeGen = new PropertyCodeGen();
-
     @Override
     public String lookupCode(AnnotationProcessorContext context, VariableElement variableElement, String providerRegistryRef) {
         Property property = variableElement.getAnnotation(Property.class);
         if (property != null) {
             try {
-                return propertyCodeGen.getPropertyCode(context, property.value(), variableElement.asType(), providerRegistryRef);
+                return PropertyCodeGen.getPropertyCode(context, property.value(), variableElement.asType(), providerRegistryRef);
             } catch (IllegalArgumentException e) {
                 e.printStackTrace();
                 context.errorMessage(e.getMessage() + ": " + ProcessorUtils.debugString(variableElement));

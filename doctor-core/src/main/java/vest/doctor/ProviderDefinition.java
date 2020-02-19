@@ -2,13 +2,8 @@ package vest.doctor;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
-import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.VariableElement;
-import javax.lang.model.util.ElementFilter;
-import java.lang.annotation.Annotation;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Defines the contract for a class that can generate a provider.
@@ -60,44 +55,6 @@ public interface ProviderDefinition {
      * A hierarchy of all types that the provided type extends or implements.
      */
     List<TypeElement> hierarchy();
-
-    /**
-     * List all methods for the provided type that are marked with the given annotation.
-     *
-     * @param withAnnotation the annotation to filter on
-     * @return a list of methods
-     */
-    default List<ExecutableElement> methods(Class<? extends Annotation> withAnnotation) {
-        return methods().stream().filter(m -> m.getAnnotation(withAnnotation) != null).collect(Collectors.toList());
-    }
-
-    /**
-     * List all methods for the provided type, including inherited, at all access levels.
-     *
-     * @return a list of methods
-     */
-    default List<ExecutableElement> methods() {
-        return ElementFilter.methodsIn(hierarchy().stream().flatMap(t -> t.getEnclosedElements().stream()).distinct().collect(Collectors.toList()));
-    }
-
-    /**
-     * List all fields for the provided type that are marked with the given annotation.
-     *
-     * @param withAnnotation the annotation to filter on
-     * @return a list of fields
-     */
-    default List<VariableElement> fields(Class<? extends Annotation> withAnnotation) {
-        return fields().stream().filter(f -> f.getAnnotation(withAnnotation) != null).collect(Collectors.toList());
-    }
-
-    /**
-     * List all fields for the provided type, including inherited, at all access levels.
-     *
-     * @return a list of fields
-     */
-    default List<VariableElement> fields() {
-        return ElementFilter.fieldsIn(hierarchy().stream().flatMap(t -> t.getEnclosedElements().stream()).collect(Collectors.toList()));
-    }
 
     /**
      * Check if the annotation source is marked with {@link Primary}.

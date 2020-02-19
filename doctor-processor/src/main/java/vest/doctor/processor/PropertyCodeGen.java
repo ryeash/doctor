@@ -12,9 +12,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-public class PropertyCodeGen {
+public final class PropertyCodeGen {
 
-    public String getPropertyCode(AnnotationProcessorContext context, String propertyName, TypeMirror typeMirror, String beanProviderRef) {
+    private PropertyCodeGen() {
+    }
+
+    public static String getPropertyCode(AnnotationProcessorContext context, String propertyName, TypeMirror typeMirror, String beanProviderRef) {
         if (typeMirror.getKind().isPrimitive()) {
             return getPrimitivePropertyCode(context, propertyName, typeMirror, beanProviderRef);
         } else {
@@ -22,12 +25,12 @@ public class PropertyCodeGen {
         }
     }
 
-    private String getPrimitivePropertyCode(AnnotationProcessorContext context, String propertyName, TypeMirror typeMirror, String beanProviderRef) {
+    private static String getPrimitivePropertyCode(AnnotationProcessorContext context, String propertyName, TypeMirror typeMirror, String beanProviderRef) {
         String converterMethod = getConverterMethod(context, typeMirror);
         return buildPropCode(beanProviderRef, "get", propertyName, converterMethod);
     }
 
-    private String getObjectPropertyCode(AnnotationProcessorContext context, String propertyName, TypeMirror typeMirror, String beanProviderRef) {
+    private static String getObjectPropertyCode(AnnotationProcessorContext context, String propertyName, TypeMirror typeMirror, String beanProviderRef) {
         TypeElement typeElement = context.toTypeElement(typeMirror);
         if (ProcessorUtils.isCompatibleWith(context, typeElement, Provider.class)) {
             throw new IllegalArgumentException("@Properties can not be Provider types: " + ProcessorUtils.debugString(typeElement));
@@ -70,7 +73,7 @@ public class PropertyCodeGen {
         }
     }
 
-    private String getConverterMethod(AnnotationProcessorContext context, TypeMirror typeMirror) {
+    private static String getConverterMethod(AnnotationProcessorContext context, TypeMirror typeMirror) {
         for (StringConversionGenerator customization : context.customizations(StringConversionGenerator.class)) {
             String converterFunction = customization.converterFunction(context, typeMirror);
             if (converterFunction != null) {

@@ -36,6 +36,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.ElementFilter;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 import java.io.IOException;
@@ -75,8 +76,12 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
 
     private final Set<ProviderDependency> additionalSatisfiedDependencies = new HashSet<>();
 
+    private long start;
+
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
+        this.start = System.currentTimeMillis();
+
         super.init(processingEnv);
         this.processingEnv = processingEnv;
 
@@ -136,6 +141,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
             writeAppLoaderImplementation();
             writeServicesResource();
             compileTimeDependencyCheck();
+            infoMessage("took " + (System.currentTimeMillis() - start) + "ms");
         }
         return true;
     }
@@ -219,12 +225,18 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     }
 
     private void errorChecking(ProviderDefinition providerDefinition) {
-        for (VariableElement field : providerDefinition.fields(Inject.class)) {
-            errorMessage("field injection is not supported: " + ProcessorUtils.debugString(field));
+        for (TypeElement element : ProcessorUtils.hierarchy(this, providerDefinition.providedType())) {
+            for (VariableElement variableElement : ElementFilter.fieldsIn(element.getEnclosedElements())) {
+                if (variableElement.getAnnotation(Inject.class) != null) {
+                    errorMessage("field injection is not supported: " + ProcessorUtils.debugString(variableElement));
+                }
+            }
         }
         ProcessorUtils.<Annotation>ifClassExists("javax.annotation.PreDestroy", preDestroy -> {
-            for (ExecutableElement method : providerDefinition.methods(preDestroy)) {
-                errorMessage("@PreDestroy is not supported (use the AutoCloseable interface instead): " + ProcessorUtils.debugString(method));
+            for (ExecutableElement method : ProcessorUtils.uniqueMethods(this, providerDefinition.providedType())) {
+                if (method.getAnnotation(preDestroy) != null) {
+                    errorMessage("@PreDestroy is not supported (use the AutoCloseable interface instead): " + ProcessorUtils.debugString(method));
+                }
             }
         });
     }

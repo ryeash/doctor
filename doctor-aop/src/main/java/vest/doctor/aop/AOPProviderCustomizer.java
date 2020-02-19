@@ -1,5 +1,7 @@
 package vest.doctor.aop;
 
+import doctor.processor.ProcessorUtils;
+import doctor.processor.UniqueMethod;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ClassBuilder;
 import vest.doctor.Factory;
@@ -8,7 +10,6 @@ import vest.doctor.ProviderCustomizationPoint;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderRegistry;
 
-import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
@@ -16,11 +17,9 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.ElementFilter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
@@ -31,7 +30,7 @@ import java.util.stream.Collectors;
 public class AOPProviderCustomizer implements ProviderCustomizationPoint {
     @Override
     public String wrap(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String providerRef, String providerRegistryRef) {
-        if (hasAspects(providerDefinition)) {
+        if (hasAspects(context, providerDefinition)) {
             String delegationClass = createDelegationClass(context, providerDefinition);
             return "new " + AspectWrappingProvider.class.getCanonicalName() + "<>(" + providerRef + ", " + providerRegistryRef + ", " + delegationClass + "::new)";
         } else {
@@ -39,13 +38,12 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
         }
     }
 
-    private boolean hasAspects(ProviderDefinition providerDefinition) {
+    private boolean hasAspects(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
         if (providerDefinition.annotationSource().getAnnotation(Aspects.class) != null) {
             return true;
         }
-        return providerDefinition.hierarchy()
+        return ProcessorUtils.uniqueMethods(context, providerDefinition.providedType())
                 .stream()
-                .flatMap(t -> ElementFilter.methodsIn(t.getEnclosedElements()).stream())
                 .anyMatch(method -> method.getAnnotation(Aspects.class) != null && method.getAnnotation(Factory.class) == null);
     }
 
@@ -82,12 +80,11 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
         constructor.line("this.delegate = delegate;");
         constructor.line("this.beanProvider = beanProvider;");
 
-        providerDefinition.hierarchy()
+        ProcessorUtils.uniqueMethods(context, providerDefinition.providedType())
                 .stream()
-                .flatMap(t -> ElementFilter.methodsIn(t.getEnclosedElements()).stream())
                 .map(UniqueMethod::new)
                 .distinct()
-                .map(um -> um.method)
+                .map(UniqueMethod::unwrap)
                 .forEach(method -> {
                     Set<Modifier> modifiers = method.getModifiers();
                     // nothing we can do for final, private, and static methods
@@ -157,35 +154,4 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
         sb.append(parameters).append(";");
         return sb.toString();
     }
-
-    private static final class UniqueMethod {
-        private final ExecutableElement method;
-        private final String methodName;
-        private final List<String> parameterTypes;
-
-        private UniqueMethod(ExecutableElement method) {
-            this.method = method;
-            this.methodName = method.getSimpleName().toString();
-            this.parameterTypes = method.getParameters().stream().map(Element::asType).map(String::valueOf).collect(Collectors.toList());
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            UniqueMethod that = (UniqueMethod) o;
-            return Objects.equals(methodName, that.methodName)
-                    && Objects.equals(parameterTypes, that.parameterTypes);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(methodName, parameterTypes);
-        }
-    }
-
 }

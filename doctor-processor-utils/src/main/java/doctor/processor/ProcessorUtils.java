@@ -15,6 +15,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.ElementFilter;
 import java.lang.annotation.Annotation;
 import java.nio.ByteBuffer;
 import java.util.Base64;
@@ -104,27 +105,42 @@ public class ProcessorUtils {
         }
     }
 
+    private static final Map<TypeElement, List<TypeElement>> HIERARCHY_CACHE = new HashMap<>();
+
     public static List<TypeElement> hierarchy(AnnotationProcessorContext context, TypeElement type) {
-        Set<TypeElement> allProvidedTypes = new LinkedHashSet<>();
+        if (HIERARCHY_CACHE.containsKey(type)) {
+            return HIERARCHY_CACHE.get(type);
+        }
+        Set<TypeElement> allClasses = new LinkedHashSet<>();
         List<TypeElement> allInterfaces = new LinkedList<>();
-        allProvidedTypes.add(type);
+        allClasses.add(type);
         context.processingEnvironment()
                 .getTypeUtils()
-                .directSupertypes(
-                        type.asType())
+                .directSupertypes(type.asType())
                 .stream()
                 .map(context::toTypeElement)
                 .filter(t -> !t.toString().equals(Object.class.getCanonicalName()))
-                .forEach(allProvidedTypes::add);
-        for (TypeElement t : allProvidedTypes) {
+                .forEach(allClasses::add);
+        for (TypeElement t : allClasses) {
             for (TypeMirror intfc : t.getInterfaces()) {
                 allInterfaces.add(context.toTypeElement(intfc));
             }
         }
-        allProvidedTypes.addAll(allInterfaces);
-        List<TypeElement> list = new LinkedList<>(allProvidedTypes);
+        allClasses.addAll(allInterfaces);
+        List<TypeElement> list = new LinkedList<>(allClasses);
         Collections.reverse(list);
+        HIERARCHY_CACHE.put(type, list);
         return list;
+    }
+
+    public static List<ExecutableElement> uniqueMethods(AnnotationProcessorContext context, TypeElement type) {
+        return hierarchy(context, type)
+                .stream()
+                .flatMap(t -> ElementFilter.methodsIn(t.getEnclosedElements()).stream())
+                .map(UniqueMethod::new)
+                .distinct()
+                .map(UniqueMethod::unwrap)
+                .collect(Collectors.toList());
     }
 
     public static boolean isCompatibleWith(AnnotationProcessorContext context, TypeElement type, Class<?> checkType) {

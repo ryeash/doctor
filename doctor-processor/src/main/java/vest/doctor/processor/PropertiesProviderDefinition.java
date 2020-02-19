@@ -20,7 +20,6 @@ import static vest.doctor.Constants.PROVIDER_REGISTRY;
 
 public class PropertiesProviderDefinition extends AbstractProviderDefinition {
 
-    private static final PropertyCodeGen propertyCodeGen = new PropertyCodeGen();
     private final String generatedClassName;
     private final String uniqueName;
 
@@ -46,27 +45,24 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
         impl.setConstructor(CodeLine.line("public {}({} {}){ this.{} = {}; }",
                 implClass, ProviderRegistry.class, PROVIDER_REGISTRY, PROVIDER_REGISTRY, PROVIDER_REGISTRY));
 
-        for (TypeElement typeElement : hierarchy) {
-            // TODO: ensure each method is only processed once
-            for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements())) {
-                if (method.getAnnotation(Property.class) != null) {
-                    if (method.getParameters().size() > 0) {
-                        context.errorMessage("@Property methods in @Properties definition interfaces must not have parameters: " + ProcessorUtils.debugString(method));
-                    }
-                    MethodBuilder mb = new MethodBuilder("@Override public " + method.getReturnType() + " " + method.getSimpleName() + "()");
-                    TypeMirror returnType = method.getReturnType();
-                    try {
-                        String propertyName = propertyPrefix + method.getAnnotation(Property.class).value();
-                        String code = propertyCodeGen.getPropertyCode(context, propertyName, returnType, PROVIDER_REGISTRY);
-                        mb.line("return " + code + ";");
-                    } catch (IllegalArgumentException e) {
-                        e.printStackTrace();
-                        context.errorMessage(e.getMessage() + ": " + ProcessorUtils.debugString(method));
-                    }
-                    impl.addMethod(mb.finish());
-                } else if (!method.isDefault()) {
-                    context.errorMessage("all non-default methods defined in a @Properties interface must have a @Property annotation");
+        for (ExecutableElement method : ProcessorUtils.uniqueMethods(context, providedType())) {
+            if (method.getAnnotation(Property.class) != null) {
+                if (method.getParameters().size() > 0) {
+                    context.errorMessage("@Property methods in @Properties definition interfaces must not have parameters: " + ProcessorUtils.debugString(method));
                 }
+                MethodBuilder mb = new MethodBuilder("@Override public " + method.getReturnType() + " " + method.getSimpleName() + "()");
+                TypeMirror returnType = method.getReturnType();
+                try {
+                    String propertyName = propertyPrefix + method.getAnnotation(Property.class).value();
+                    String code = PropertyCodeGen.getPropertyCode(context, propertyName, returnType, PROVIDER_REGISTRY);
+                    mb.line("return " + code + ";");
+                } catch (IllegalArgumentException e) {
+                    e.printStackTrace();
+                    context.errorMessage(e.getMessage() + ": " + ProcessorUtils.debugString(method));
+                }
+                impl.addMethod(mb.finish());
+            } else if (!method.isDefault()) {
+                context.errorMessage("all non-default methods defined in a @Properties interface must have a @Property annotation: " + type);
             }
         }
         impl.writeClass(context.filer());

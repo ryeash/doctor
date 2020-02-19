@@ -1,6 +1,7 @@
 package vest.doctor.netty;
 
 import doctor.processor.GenericInfo;
+import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.StringConversionGenerator;
 
@@ -102,7 +103,7 @@ final class ParameterSupport {
         StringBuilder sb = new StringBuilder("new " + POJOHelper.class.getCanonicalName() + "<>(new " + typeWithoutParameters(typeMirror) + diamond + constructorParams + ")");
         for (VariableElement field : ElementFilter.fieldsIn(beanType.getEnclosedElements())) {
             if (supportedParam(field)) {
-                ExecutableElement setter = findCorrespondingSetter(field, beanType);
+                ExecutableElement setter = findCorrespondingSetter(context, field, beanType);
                 VariableElement setterParameter = setter.getParameters().get(0);
                 sb.append(".with(").append(beanType).append("::").append(setter.getSimpleName()).append(", ").append(parameterWriting(context, setterParameter, field, contextRef)).append(")");
             }
@@ -161,17 +162,33 @@ final class ParameterSupport {
         return null;
     }
 
-    private static ExecutableElement findCorrespondingSetter(VariableElement field, TypeElement beanType) {
-        for (ExecutableElement method : ElementFilter.methodsIn(beanType.getEnclosedElements())) {
-            if (method.getSimpleName().toString().equalsIgnoreCase("set" + field.getSimpleName())
-                    || method.getSimpleName().toString().equalsIgnoreCase("is" + field.getSimpleName())) {
-                if (method.getParameters().size() != 1) {
-                    throw new IllegalArgumentException("setters for BeanParam fields must have one and only one parameter");
-                }
-                return method;
-            }
-        }
-        throw new IllegalArgumentException("missing setter method for BeanParam field: " + field + " in " + field.getEnclosingElement());
+    private static ExecutableElement findCorrespondingSetter(AnnotationProcessorContext context, VariableElement field, TypeElement beanType) {
+        return ProcessorUtils.hierarchy(context, beanType)
+                .stream()
+                .flatMap(t -> ElementFilter.methodsIn(t.getEnclosedElements()).stream())
+                .distinct()
+                .filter(method -> {
+                    if (method.getSimpleName().toString().equalsIgnoreCase("set" + field.getSimpleName())
+                            || method.getSimpleName().toString().equalsIgnoreCase("is" + field.getSimpleName())) {
+                        if (method.getParameters().size() != 1) {
+                            throw new IllegalArgumentException("setters for BeanParam fields must have one and only one parameter");
+                        }
+                        return true;
+                    }
+                    return false;
+                })
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("missing setter method for BeanParam field: " + field + " in " + field.getEnclosingElement()));
+//        for (ExecutableElement method : ElementFilter.methodsIn(beanType.getEnclosedElements())) {
+//            if (method.getSimpleName().toString().equalsIgnoreCase("set" + field.getSimpleName())
+//                    || method.getSimpleName().toString().equalsIgnoreCase("is" + field.getSimpleName())) {
+//                if (method.getParameters().size() != 1) {
+//                    throw new IllegalArgumentException("setters for BeanParam fields must have one and only one parameter");
+//                }
+//                return method;
+//            }
+//        }
+//        throw new IllegalArgumentException("missing setter method for BeanParam field: " + field + " in " + field.getEnclosingElement());
     }
 
     private static String toTypeInfo(GenericInfo genericInfo) {

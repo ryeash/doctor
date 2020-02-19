@@ -25,7 +25,10 @@ public class EventManagerWriter implements ProviderDefinitionListener {
 
     @Override
     public void process(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
-        for (ExecutableElement listener : providerDefinition.methods(EventListener.class)) {
+        for (ExecutableElement listener : ProcessorUtils.uniqueMethods(context, providerDefinition.providedType())) {
+            if (listener.getAnnotation(EventListener.class) == null) {
+                continue;
+            }
             if (listener.getParameters().size() != 1) {
                 context.errorMessage("@EventListener methods must have only one parameter: " + ProcessorUtils.debugString(listener));
             }
