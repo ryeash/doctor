@@ -22,7 +22,7 @@ public class EventManagerImpl implements EventManager {
     }
 
     @Override
-    public void register(EventConsumer eventConsumer, boolean async) {
+    public void register(EventConsumer eventConsumer) {
         Objects.requireNonNull(eventConsumer);
         if (eventConsumer.async()) {
             asyncConsumers.add(eventConsumer);

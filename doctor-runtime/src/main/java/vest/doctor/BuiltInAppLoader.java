@@ -33,7 +33,7 @@ public class BuiltInAppLoader implements AppLoader {
         EventManager instance = providerRegistry.getInstance(EventManager.class);
         instance.initialize(providerRegistry);
         providerRegistry.getProviders(EventConsumer.class)
-                .forEach(ec -> instance.register(ec.get(), ec.allAnnotationTypes().contains(Async.class)));
+                .forEach(ec -> instance.register(ec.get()));
     }
 
     @Override

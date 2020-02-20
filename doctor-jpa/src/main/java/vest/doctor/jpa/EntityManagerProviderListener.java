@@ -1,5 +1,6 @@
 package vest.doctor.jpa;
 
+import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ClassBuilder;
 import vest.doctor.Factory;
@@ -39,7 +40,7 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
     }
 
     private void processAnnotation(AnnotationProcessorContext context, PersistenceContext persistenceContext) {
-        String pcName = Objects.requireNonNull(persistenceContext.name(), "@PersistenceContext annotations must have a name defined (matches the persistence unit name in the xml)");
+        String pcName = Objects.requireNonNull(persistenceContext.name(), "@PersistenceContext annotations must have a name defined that matches the persistence unit name in the xml");
 
         if (processedPersistenceUnits.contains(pcName)) {
             context.errorMessage("multiple @PersistenceContext annotations with the same name: " + pcName);
@@ -66,7 +67,7 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
 
         entityManagerFactory.addField("private final static Logger log = LoggerFactory.getLogger(" + generatedClassName + ".class)");
 
-        MethodBuilder mb = new MethodBuilder("@Singleton @Factory @Named(\"" + pcName + "\") " +
+        MethodBuilder mb = new MethodBuilder("@Singleton @Factory @Named(\"" + ProcessorUtils.escapeStringForCode(pcName) + "\") " +
                 "public " + EntityManager.class.getSimpleName() + " entityManagerFactory" + context.nextId() + "(" + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY + ")");
         mb.line("Map<String, String> properties = new LinkedHashMap<>();");
         for (PersistenceProperty property : persistenceContext.properties()) {

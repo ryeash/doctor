@@ -31,7 +31,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
         this.generatedClassName = type.getSimpleName() + "__propertiesprovider" + context.nextId();
         this.uniqueName = "props" + context.nextId();
 
-        this.implClass = type.getSimpleName() + "Impl";
+        this.implClass = type.getSimpleName() + "__impl" + context.nextId();
         ClassBuilder impl = new ClassBuilder()
                 .setClassName(context.generatedPackage() + "." + implClass)
                 .addImplementsInterface(type.toString());
@@ -45,7 +45,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
         impl.setConstructor(CodeLine.line("public {}({} {}){ this.{} = {}; }",
                 implClass, ProviderRegistry.class, PROVIDER_REGISTRY, PROVIDER_REGISTRY, PROVIDER_REGISTRY));
 
-        for (ExecutableElement method : ProcessorUtils.uniqueMethods(context, providedType())) {
+        for (ExecutableElement method : ProcessorUtils.allMethods(context, providedType())) {
             if (method.getAnnotation(Property.class) != null) {
                 if (method.getParameters().size() > 0) {
                     context.errorMessage("@Property methods in @Properties definition interfaces must not have parameters: " + ProcessorUtils.debugString(method));
@@ -62,7 +62,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
                 }
                 impl.addMethod(mb.finish());
             } else if (!method.isDefault()) {
-                context.errorMessage("all non-default methods defined in a @Properties interface must have a @Property annotation: " + type);
+                context.errorMessage("all non-default methods defined in a @Properties interface must have a @Property annotation: " + type + " " + method);
             }
         }
         impl.writeClass(context.filer());

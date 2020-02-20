@@ -40,7 +40,7 @@ public class ProcessorUtils {
     public static String getQualifier(AnnotationProcessorContext context, Element element) {
         Named named = element.getAnnotation(Named.class);
         if (named != null) {
-            return "\"" + named.value() + "\"";
+            return "\"" + escapeStringForCode(named.value()) + "\"";
         }
 
         AnnotationMirror annotationExtends = getAnnotationExtends(context, element, Qualifier.class);
@@ -82,7 +82,7 @@ public class ProcessorUtils {
                 .map(e -> e.getKey() + "=" + e.getValue())
                 .collect(Collectors.joining(", ", "(", ")"));
         sb.append(valuesString);
-        return "\"" + sb.toString().replaceAll("\"", "\\\\\"") + "\"";
+        return "\"" + escapeStringForCode(sb.toString()) + "\"";
     }
 
 
@@ -103,6 +103,39 @@ public class ProcessorUtils {
         } else {
             return value.toString();
         }
+    }
+
+    public static String escapeStringForCode(String str) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            switch (c) {
+                case '\"':
+                    sb.append("\\\"");
+                    break;
+                case '\b':
+                    sb.append("\\b");
+                    break;
+                case '\n':
+                    sb.append("\\n");
+                    break;
+                case '\r':
+                    sb.append("\\r");
+                    break;
+                case '\f':
+                    sb.append("\\f");
+                    break;
+                case '\t':
+                    sb.append("\\t");
+                    break;
+                case '\\':
+                    sb.append("\\\\");
+                    break;
+                default:
+                    sb.append(c);
+            }
+        }
+        return sb.toString();
     }
 
     private static final Map<TypeElement, List<TypeElement>> HIERARCHY_CACHE = new HashMap<>();
@@ -133,13 +166,17 @@ public class ProcessorUtils {
         return list;
     }
 
-    public static List<ExecutableElement> uniqueMethods(AnnotationProcessorContext context, TypeElement type) {
-        return hierarchy(context, type)
+    public static List<ExecutableElement> allMethods(AnnotationProcessorContext context, TypeElement type) {
+        return ElementFilter.methodsIn(context.processingEnvironment().getElementUtils().getAllMembers(type))
                 .stream()
-                .flatMap(t -> ElementFilter.methodsIn(t.getEnclosedElements()).stream())
-                .map(UniqueMethod::new)
-                .distinct()
-                .map(UniqueMethod::unwrap)
+                .filter(method -> !method.getEnclosingElement().asType().toString().equals(Object.class.getCanonicalName()))
+                .collect(Collectors.toList());
+    }
+
+    public static List<VariableElement> allFields(AnnotationProcessorContext context, TypeElement type) {
+        return ElementFilter.fieldsIn(context.processingEnvironment().getElementUtils().getAllMembers(type))
+                .stream()
+                .filter(method -> !method.getEnclosingElement().asType().toString().equals(Object.class.getCanonicalName()))
                 .collect(Collectors.toList());
     }
 

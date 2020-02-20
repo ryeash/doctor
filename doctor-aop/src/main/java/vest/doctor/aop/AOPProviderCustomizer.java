@@ -42,7 +42,7 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
         if (providerDefinition.annotationSource().getAnnotation(Aspects.class) != null) {
             return true;
         }
-        return ProcessorUtils.uniqueMethods(context, providerDefinition.providedType())
+        return ProcessorUtils.allMethods(context, providerDefinition.providedType())
                 .stream()
                 .anyMatch(method -> method.getAnnotation(Aspects.class) != null && method.getAnnotation(Factory.class) == null);
     }
@@ -80,7 +80,7 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
         constructor.line("this.delegate = delegate;");
         constructor.line("this.beanProvider = beanProvider;");
 
-        ProcessorUtils.uniqueMethods(context, providerDefinition.providedType())
+        ProcessorUtils.allMethods(context, providerDefinition.providedType())
                 .stream()
                 .map(UniqueMethod::new)
                 .distinct()

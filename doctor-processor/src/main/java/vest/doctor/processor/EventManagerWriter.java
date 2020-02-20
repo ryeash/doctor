@@ -25,7 +25,7 @@ public class EventManagerWriter implements ProviderDefinitionListener {
 
     @Override
     public void process(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
-        for (ExecutableElement listener : ProcessorUtils.uniqueMethods(context, providerDefinition.providedType())) {
+        for (ExecutableElement listener : ProcessorUtils.allMethods(context, providerDefinition.providedType())) {
             if (listener.getAnnotation(EventListener.class) == null) {
                 continue;
             }
@@ -51,7 +51,7 @@ public class EventManagerWriter implements ProviderDefinitionListener {
                     .addImportClass(Inject.class)
                     .addImportClass(messageType.getQualifiedName().toString())
                     .addClassAnnotation("@Singleton")
-                    .addClassAnnotation("@Named(\"" + ecQualifier + "\")")
+                    .addClassAnnotation("@Named(\"" + ProcessorUtils.escapeStringForCode(ecQualifier) + "\")")
                     .addImplementsInterface(EventConsumer.class)
                     .setClassName(context.generatedPackage() + "." + className)
                     .addField(line("private final DoctorProvider<{}> provider", providerDefinition.providedType().asType()))

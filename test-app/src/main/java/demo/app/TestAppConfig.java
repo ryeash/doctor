@@ -90,6 +90,13 @@ public class TestAppConfig {
     }
 
     @Factory
+    @Prototype
+    @Named("weirdNa\"me\na\rb\tc\bd\\e\ff")
+    public TCScope weirdName() {
+        return new TCScope();
+    }
+
+    @Factory
     @Cached(ttl = 10)
     @Named("cached")
     public TCScope cachedScope() {
@@ -113,6 +120,7 @@ public class TestAppConfig {
     public TCCustomQualifier customQualifier3() {
         return new TCCustomQualifier("defaultColor");
     }
+
 
     @Factory
     @Singleton

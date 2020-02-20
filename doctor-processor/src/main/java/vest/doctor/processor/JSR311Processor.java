@@ -36,7 +36,6 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.ElementFilter;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 import java.io.IOException;
@@ -143,7 +142,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
             compileTimeDependencyCheck();
             infoMessage("took " + (System.currentTimeMillis() - start) + "ms");
         }
-        return true;
+        return annotationsToProcess.containsAll(annotations);
     }
 
     @Override
@@ -225,15 +224,13 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     }
 
     private void errorChecking(ProviderDefinition providerDefinition) {
-        for (TypeElement element : ProcessorUtils.hierarchy(this, providerDefinition.providedType())) {
-            for (VariableElement variableElement : ElementFilter.fieldsIn(element.getEnclosedElements())) {
-                if (variableElement.getAnnotation(Inject.class) != null) {
-                    errorMessage("field injection is not supported: " + ProcessorUtils.debugString(variableElement));
-                }
+        for (VariableElement variableElement : ProcessorUtils.allFields(this, providerDefinition.providedType())) {
+            if (variableElement.getAnnotation(Inject.class) != null) {
+                errorMessage("field injection is not supported: " + ProcessorUtils.debugString(variableElement));
             }
         }
         ProcessorUtils.<Annotation>ifClassExists("javax.annotation.PreDestroy", preDestroy -> {
-            for (ExecutableElement method : ProcessorUtils.uniqueMethods(this, providerDefinition.providedType())) {
+            for (ExecutableElement method : ProcessorUtils.allMethods(this, providerDefinition.providedType())) {
                 if (method.getAnnotation(preDestroy) != null) {
                     errorMessage("@PreDestroy is not supported (use the AutoCloseable interface instead): " + ProcessorUtils.debugString(method));
                 }
