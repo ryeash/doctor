@@ -40,17 +40,26 @@ public class StreamingBody extends InputStream {
         return future;
     }
 
+    /**
+     * Get the trailing headers attached to the last content. If the body has not been fully read, or there
+     * were no trailing headers, the returned optional will be empty.
+     *
+     * @return the optional trailing headers
+     */
     public Optional<HttpHeaders> trailingHeaders() {
         return Optional.ofNullable(trailingHeaders).filter(h -> !h.isEmpty());
     }
 
     public void readData(BiConsumer<ByteBuf, Boolean> dataConsumer) {
+        if (this.dataConsumer != null) {
+            throw new IllegalStateException("there is already a data consumer attached to this body");
+        }
         this.dataConsumer = dataConsumer;
         dataConsumer.accept(composite, future.isDone());
         composite.discardReadComponents();
     }
 
-    public void append(HttpContent content) {
+    void append(HttpContent content) {
         try {
             if (closed) {
                 content.release();

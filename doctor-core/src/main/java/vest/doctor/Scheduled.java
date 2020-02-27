@@ -28,14 +28,9 @@ public @interface Scheduled {
     }
 
     /**
-     * The period for the task, definition changes slightly based on the schedule type.
+     * The interval for the schedule. See {@link Interval} for details on the format.
      */
-    long period();
-
-    /**
-     * The unit for the {@link #period()} value.
-     */
-    TimeUnit unit() default TimeUnit.MILLISECONDS;
+    String interval();
 
     /**
      * The schedule type.

@@ -2,6 +2,7 @@ package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.Constants;
+import vest.doctor.Interval;
 import vest.doctor.MethodBuilder;
 import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ProviderDefinition;
@@ -50,6 +51,8 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
                     throw new UnsupportedOperationException("unhandled scheduling type");
             }
 
+            Interval interval = new Interval(scheduled.interval());
+
             String wrapperRef = "wrapper" + count.incrementAndGet();
             method.line(ScheduledTaskWrapper.class.getCanonicalName() + "<" + providerDefinition.providedType().getSimpleName() + "> " + wrapperRef
                     + " = new " + ScheduledTaskWrapper.class.getCanonicalName() + "<" + providerDefinition.providedType().getSimpleName() + ">(" + providerRegistryRef + "," + instanceRef + "," + scheduled.executionLimit() + ") {");
@@ -58,7 +61,7 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
             method.line(context.methodCall(providerDefinition, scheduledMethod, "val", Constants.PROVIDER_REGISTRY) + ";");
             method.line("}");
             method.line("};");
-            method.line(wrapperRef + ".setFuture(ses." + schedulerMethod + "(" + wrapperRef + ", " + scheduled.period() + ", " + scheduled.period() + ", java.util.concurrent.TimeUnit." + scheduled.unit() + "));");
+            method.line(wrapperRef + ".setFuture(ses." + schedulerMethod + "(" + wrapperRef + ", " + interval.getMagnitude() + ", " + interval.getMagnitude() + ", java.util.concurrent.TimeUnit." + interval.getUnit() + "));");
         }
     }
 
