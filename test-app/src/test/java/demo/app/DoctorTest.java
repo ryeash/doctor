@@ -156,6 +156,8 @@ public class DoctorTest extends BaseDoctorTest {
         TimeUnit.MILLISECONDS.sleep(105);
         assertTrue(instance.every10Milliseconds.get() >= 10);
         assertTrue(instance.every50Milliseconds.get() >= 2);
+        TimeUnit.MILLISECONDS.sleep(900);
+        assertTrue(instance.cronEverySecond.get() >= 1);
     }
 
     @Test

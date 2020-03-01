@@ -94,4 +94,8 @@ public class ConstructorProviderDefinition extends AbstractProviderDefinition {
         return uniqueName;
     }
 
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" + ProcessorUtils.debugString(injectableConstructor) + ")";
+    }
 }

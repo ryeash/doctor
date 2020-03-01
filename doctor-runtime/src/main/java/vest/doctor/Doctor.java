@@ -13,7 +13,8 @@ import java.util.TreeMap;
 import java.util.stream.Stream;
 
 /**
- * Initializes (and serves as) the {@link ProviderRegistry} for an app.
+ * The entrypoint for applications to access generated {@link javax.inject.Provider}s.
+ * Initializes (and serves as) the {@link ProviderRegistry} for an application.
  */
 public class Doctor implements ProviderRegistry, AutoCloseable {
 

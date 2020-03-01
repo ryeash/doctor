@@ -14,7 +14,7 @@ public interface TCPropertiesIntfc extends TCPropertiesIntfcParent {
     @Property("number")
     Integer number();
 
-    @Property("none-existent-property")
+    @Property("non-existent-property$$$$")
     Optional<Integer> otherThing();
 
     @Property("list")

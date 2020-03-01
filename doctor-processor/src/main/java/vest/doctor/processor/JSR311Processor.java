@@ -10,6 +10,7 @@ import vest.doctor.CustomizationPoint;
 import vest.doctor.DoctorProvider;
 import vest.doctor.EventManager;
 import vest.doctor.EventProducer;
+import vest.doctor.InjectionException;
 import vest.doctor.MethodBuilder;
 import vest.doctor.PrimaryProviderWrapper;
 import vest.doctor.Prioritized;
@@ -260,47 +261,51 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
         MethodBuilder load = new MethodBuilder(line("public void load({} {})", ProviderRegistry.class, PROVIDER_REGISTRY));
 
         for (ProviderDefinition providerDefinition : providerDefinitions) {
-            cb.addNestedClass(providerDefinition.getClassBuilder());
+            try {
+                cb.addNestedClass(providerDefinition.getClassBuilder());
 
-            cb.addImportClass(providerDefinition.providedType().asType().toString());
+                cb.addImportClass(providerDefinition.providedType().asType().toString());
 
-            String creator = line("new {}({})", providerDefinition.generatedClassName(), PROVIDER_REGISTRY);
+                String creator = line("new {}({})", providerDefinition.generatedClassName(), PROVIDER_REGISTRY);
 
-            for (ProviderCustomizationPoint providerCustomizationPoint : customizations(ProviderCustomizationPoint.class)) {
-                creator = providerCustomizationPoint.wrap(this, providerDefinition, creator, PROVIDER_REGISTRY);
-            }
-
-            boolean hasModules = !providerDefinition.modules().isEmpty();
-            if (hasModules) {
-                String modules = providerDefinition.modules()
-                        .stream()
-                        .filter(Objects::nonNull)
-                        .map(m -> '"' + m + '"')
-                        .collect(Collectors.joining(", "));
-                if (providerDefinition.modules().size() == 1) {
-                    load.line("if(isActive({}, java.util.Collections.singletonList({}))){", PROVIDER_REGISTRY, modules);
-                } else {
-                    load.line("if(isActive({}, java.util.Arrays.asList({}))){", PROVIDER_REGISTRY, modules);
+                for (ProviderCustomizationPoint providerCustomizationPoint : customizations(ProviderCustomizationPoint.class)) {
+                    creator = providerCustomizationPoint.wrap(this, providerDefinition, creator, PROVIDER_REGISTRY);
                 }
-            }
 
-            if (providerDefinition.scope() != null) {
-                Class<?> scopeType = loadClass(providerDefinition.scope().getAnnotationType().toString());
-                ScopeWriter scopeWriter = getScopeWriter(scopeType);
-                creator = scopeWriter.wrapScope(this, providerDefinition, creator);
-            }
-            load.line("{}<{}> {} = {};", DoctorProvider.class, providerDefinition.providedType().getSimpleName(), providerDefinition.uniqueInstanceName(), creator);
-            load.line("{}.register({});", PROVIDER_REGISTRY, providerDefinition.uniqueInstanceName());
-            if (providerDefinition.isPrimary() && providerDefinition.qualifier() != null) {
-                load.line("{}.register(new {}({}));", PROVIDER_REGISTRY, PrimaryProviderWrapper.class, providerDefinition.uniqueInstanceName());
-            }
+                boolean hasModules = !providerDefinition.modules().isEmpty();
+                if (hasModules) {
+                    String modules = providerDefinition.modules()
+                            .stream()
+                            .filter(Objects::nonNull)
+                            .map(m -> '"' + m + '"')
+                            .collect(Collectors.joining(", "));
+                    if (providerDefinition.modules().size() == 1) {
+                        load.line("if(isActive({}, java.util.Collections.singletonList({}))){", PROVIDER_REGISTRY, modules);
+                    } else {
+                        load.line("if(isActive({}, java.util.Arrays.asList({}))){", PROVIDER_REGISTRY, modules);
+                    }
+                }
 
-            if (providerDefinition.isEager()) {
-                load.line("eagerList.add({});", providerDefinition.uniqueInstanceName());
-            }
+                if (providerDefinition.scope() != null) {
+                    Class<?> scopeType = loadClass(providerDefinition.scope().getAnnotationType().toString());
+                    ScopeWriter scopeWriter = getScopeWriter(scopeType);
+                    creator = scopeWriter.wrapScope(this, providerDefinition, creator);
+                }
+                load.line("{}<{}> {} = {};", DoctorProvider.class, providerDefinition.providedType().getSimpleName(), providerDefinition.uniqueInstanceName(), creator);
+                load.line("{}.register({});", PROVIDER_REGISTRY, providerDefinition.uniqueInstanceName());
+                if (providerDefinition.isPrimary() && providerDefinition.qualifier() != null) {
+                    load.line("{}.register(new {}({}));", PROVIDER_REGISTRY, PrimaryProviderWrapper.class, providerDefinition.uniqueInstanceName());
+                }
 
-            if (hasModules) {
-                load.line("}");
+                if (providerDefinition.isEager()) {
+                    load.line("eagerList.add({});", providerDefinition.uniqueInstanceName());
+                }
+
+                if (hasModules) {
+                    load.line("}");
+                }
+            } catch (Throwable t) {
+                throw new InjectionException("error processing: " + providerDefinition, t);
             }
         }
 

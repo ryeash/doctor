@@ -10,24 +10,139 @@ import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+/**
+ * Cron string parser and evaluator. Used internally to support {@link Scheduled} methods using cron expressions.
+ * <p>
+ * This implementation of cron requires 6 fields:
+ * <code>seconds, minutes, hours, day-of-month, month, day-of-week</code>
+ * Field definitions:
+ * - second: the second of the minute, restricted to [0, 59]
+ * - minute: the minute of the hour, restricted to [0, 59]
+ * - hour: the hour of the day (24hr), restricted to [0, 23]
+ * - day of month: the day of the month, restricted to [0, 28 29 30 or 31], varies with the month (and leap year)
+ * - month: the month of the year, restricted to [1, 12], January is the 1, December is 12
+ * - day of week: the day of the week, restricted to [1, 7], the week runs Monday (1) to Sunday (7).
+ * Example:
+ * 0 5 * * * *
+ * | | | | | - every day of the week
+ * | | | | - every month
+ * | | | - every day
+ * | | - every hour
+ * | - 5 minutes past the hour
+ * - 0 seconds
+ * The fire times will be, e.g
+ * Jan 1, 20201 00:05:00
+ * Jan 1, 20201 01:05:00
+ * Jan 1, 20201 02:05:00
+ * Jan 1, 20201 03:05:00
+ * <p>
+ * Supported field definitions:
+ * - a constant number, e.g. `5` will enforce fire times having only that value for the field
+ * - a comma delimited list of numbers, e.g. `5,10,15` will enforce fire times having one of those values for the field
+ * - ranges, e.g `5-25` will enforce fire times having any number in the range (inclusive) for the field
+ * - wildcard, e.g. `*` any value for the field is allowed in a fire time
+ * <p>
+ * Aliases for some field are supported:
+ * - Month: the first 3 letters of the english month name, all caps, are supported for the month expression, e.g. `JAN`, `NOV`, etc.
+ * - Day of week: the first 3 letter of the english day name, all caps, are supported for the day of week, e.g. `MON`, `SAT`
+ * <p>
+ * There are some built in macros supported with pre-defined cron expressions:
+ * <code>@yearly</code>: "0 0 0 1 JAN *" - every year at midnight on January 1st
+ * <code>@monthly</code>: "0 0 0 1 * *" - every month at midnight of the 1st day
+ * <code>@weekly</code>: "0 0 0 * * SUN" - every week at midnight on Sunday
+ * <code>@hourly</code>: "0 0 * * * *" - every hour at the top of the hour
+ * <code>@midnight</code>: "0 0 0 * * *" - every day at midnight
+ */
 public class Cron {
-    // six fields
-    // seconds, minutes, hours, day of month, month, day of week
-    // support explicit number
-    // comma delimited
-    // ranges
-    // keywords: @yearly, @monthly, @weekly, @hourly, @midnight
 
     private static final Pattern INTEGER_REGEX = Pattern.compile("\\d+");
     private static final Pattern RANGE_REGEX = Pattern.compile("([a-zA-Z0-9]+)-([a-zA-Z0-9]+)");
 
     public enum CronType {
-        SECONDS(0, 59, null),
-        MINUTES(0, 59, null),
-        HOURS(0, 23, null),
-        DAY_OF_MONTH(1, 31, null),
-        MONTH(1, 12, Arrays.asList("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")),
-        DAY_OF_WEEK(1, 7, Arrays.asList("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"));
+        SECONDS(0, 59, null) {
+            @Override
+            public ZonedDateTime adjust(ZonedDateTime date, int[] allowedValues) {
+                int adjustment = calculateAdjustment(allowedValues, date.getSecond(), 60);
+                if (adjustment > 0) {
+                    return date.plusSeconds(adjustment);
+                } else {
+                    return date;
+                }
+            }
+        },
+
+        MINUTES(0, 59, null) {
+            @Override
+            public ZonedDateTime adjust(ZonedDateTime date, int[] allowedValues) {
+                int adjustment = calculateAdjustment(allowedValues, date.getMinute(), 60);
+                if (adjustment > 0) {
+                    return date.plusMinutes(adjustment)
+                            .withSecond(0);
+                } else {
+                    return date;
+                }
+            }
+        },
+
+        HOURS(0, 23, null) {
+            @Override
+            public ZonedDateTime adjust(ZonedDateTime date, int[] allowedValues) {
+                int adjustment = calculateAdjustment(allowedValues, date.getHour(), 24);
+                if (adjustment > 0) {
+                    return date.plusHours(adjustment)
+                            .withSecond(0)
+                            .withMinute(0);
+                } else {
+                    return date;
+                }
+            }
+        },
+
+        DAY_OF_MONTH(1, 31, null) {
+            @Override
+            public ZonedDateTime adjust(ZonedDateTime date, int[] allowedValues) {
+                int adjustment = calculateAdjustment(allowedValues, date.getDayOfMonth(), date.getMonth().length(isLeapYear(date)));
+                if (adjustment > 0) {
+                    return date.plusDays(adjustment)
+                            .withSecond(0)
+                            .withMinute(0)
+                            .withHour(0);
+                } else {
+                    return date;
+                }
+            }
+        },
+
+        MONTH(1, 12, Arrays.asList("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")) {
+            @Override
+            public ZonedDateTime adjust(ZonedDateTime date, int[] allowedValues) {
+                int adjustment = calculateAdjustment(allowedValues, date.getMonth().getValue(), 12);
+                if (adjustment > 0) {
+                    return date.plusMonths(adjustment)
+                            .withSecond(0)
+                            .withMinute(0)
+                            .withHour(0)
+                            .withDayOfMonth(1);
+                } else {
+                    return date;
+                }
+            }
+        },
+
+        DAY_OF_WEEK(1, 7, Arrays.asList("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")) {
+            @Override
+            public ZonedDateTime adjust(ZonedDateTime date, int[] allowedValues) {
+                int adjustment = calculateAdjustment(allowedValues, date.getDayOfWeek().getValue(), 7);
+                if (adjustment > 0) {
+                    return date.plusDays(adjustment)
+                            .withSecond(0)
+                            .withMinute(0)
+                            .withHour(0);
+                } else {
+                    return date;
+                }
+            }
+        };
 
         private final int rangeStart;
         private final int rangeEnd;
@@ -82,6 +197,8 @@ public class Cron {
                 return Stream.of(str.split(",")).map(String::trim).mapToInt(this::convert).sorted().toArray();
             }
         }
+
+        public abstract ZonedDateTime adjust(ZonedDateTime date, int[] allowedValues);
     }
 
     private final String expression;
@@ -93,8 +210,8 @@ public class Cron {
     private final int[] dayOfWeek;
 
     public Cron(String cronExpression) {
-        this.expression = cronExpression;
-        String[] split = cronExpression.split("\\s+");
+        this.expression = translateMacro(cronExpression);
+        String[] split = expression.split("\\s+");
         if (split.length != 6) {
             throw new IllegalArgumentException("invalid cron expression [" + cronExpression + "]; expression must have 6 segments, white space delimited");
         }
@@ -114,99 +231,37 @@ public class Cron {
     public long nextFireTime(long fromEpochMillis) {
         Instant instant = Instant.ofEpochMilli(fromEpochMillis + 1000);
         ZonedDateTime next = instant.atZone(ZoneId.systemDefault());
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 15; i++) {
             long starting = next.toEpochSecond();
 
             if (seconds != null) {
-                next = adjustSeconds(next, seconds);
+                next = CronType.SECONDS.adjust(next, seconds);
             }
             if (minutes != null) {
-                next = adjustMinutes(next, minutes);
+                next = CronType.MINUTES.adjust(next, minutes);
             }
             if (hours != null) {
-                next = adjustHours(next, hours);
+                next = CronType.HOURS.adjust(next, hours);
             }
             if (dayOfWeek != null) {
-                next = adjustDayOfWeek(next, dayOfWeek);
+                next = CronType.DAY_OF_WEEK.adjust(next, dayOfWeek);
             }
             if (dayOfMonth != null) {
-                next = adjustDayOfMonth(next, dayOfMonth);
+                next = CronType.DAY_OF_MONTH.adjust(next, dayOfMonth);
             }
             if (month != null) {
-                next = adjustMonths(next, month);
+                next = CronType.MONTH.adjust(next, month);
             }
             if (starting == next.toEpochSecond()) {
                 return next.toInstant().toEpochMilli();
             }
         }
-        throw new RuntimeException("failed to find the next scheduled time, this is a bug or the cron expression is too complicated: " + expression);
+        throw new RuntimeException("failed to find the next scheduled time, this is a bug or the cron expression is too specific/complicated: " + expression);
     }
 
-    private static ZonedDateTime adjustMonths(ZonedDateTime date, int[] allowedValues) {
-        int adjustment = calculateAdjustment(allowedValues, date.getMonth().getValue(), 12);
-        if (adjustment > 0) {
-            return date.plusMonths(adjustment)
-                    .withSecond(0)
-                    .withMinute(0)
-                    .withHour(0)
-                    .withDayOfMonth(1);
-        } else {
-            return date;
-        }
-    }
-
-    private static ZonedDateTime adjustDayOfMonth(ZonedDateTime date, int[] allowedValues) {
-        int adjustment = calculateAdjustment(allowedValues, date.getDayOfMonth(), date.getMonth().length(isLeapYear(date)));
-        if (adjustment > 0) {
-            return date.plusDays(adjustment)
-                    .withSecond(0)
-                    .withMinute(0)
-                    .withHour(0);
-        } else {
-            return date;
-        }
-    }
-
-    private static ZonedDateTime adjustDayOfWeek(ZonedDateTime date, int[] allowedValues) {
-        int adjustment = calculateAdjustment(allowedValues, date.getDayOfWeek().getValue(), 7);
-        if (adjustment > 0) {
-            return date.plusDays(adjustment)
-                    .withSecond(0)
-                    .withMinute(0)
-                    .withHour(0);
-        } else {
-            return date;
-        }
-    }
-
-    private static ZonedDateTime adjustHours(ZonedDateTime date, int[] allowedValues) {
-        int adjustment = calculateAdjustment(allowedValues, date.getHour(), 24);
-        if (adjustment > 0) {
-            return date.plusHours(adjustment)
-                    .withSecond(0)
-                    .withMinute(0);
-        } else {
-            return date;
-        }
-    }
-
-    private static ZonedDateTime adjustMinutes(ZonedDateTime date, int[] allowedValues) {
-        int adjustment = calculateAdjustment(allowedValues, date.getMinute(), 60);
-        if (adjustment > 0) {
-            return date.plusMinutes(adjustment)
-                    .withSecond(0);
-        } else {
-            return date;
-        }
-    }
-
-    private static ZonedDateTime adjustSeconds(ZonedDateTime date, int[] allowedValues) {
-        int adjustment = calculateAdjustment(allowedValues, date.getSecond(), 60);
-        if (adjustment > 0) {
-            return date.plusSeconds(adjustment);
-        } else {
-            return date;
-        }
+    @Override
+    public String toString() {
+        return expression;
     }
 
     private static int calculateAdjustment(int[] allowedValues, int currentValue, int maxValue) {
@@ -235,5 +290,22 @@ public class Cron {
     private static boolean isLeapYear(ZonedDateTime date) {
         int year = date.getYear();
         return (year % 400 == 0) || ((year % 4 == 0) && (year % 100 != 0));
+    }
+
+    private static String translateMacro(String expression) {
+        switch (expression.trim()) {
+            case "@yearly":
+                return "0 0 0 1 JAN *";
+            case "@monthly":
+                return "0 0 0 1 * *";
+            case "@weekly":
+                return "0 0 0 * * SUN";
+            case "@hourly":
+                return "0 0 * * * *";
+            case "@midnight":
+                return "0 0 0 * * *";
+            default:
+                return expression;
+        }
     }
 }

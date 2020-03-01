@@ -3,6 +3,7 @@ package vest.doctor.processor;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.Cached;
 import vest.doctor.CachedScopeProvider;
+import vest.doctor.Interval;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ScopeWriter;
 
@@ -18,7 +19,8 @@ public class CachedScopeWriter implements ScopeWriter {
     @Override
     public String wrapScope(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String providerRef) {
         Cached cached = providerDefinition.annotationSource().getAnnotation(Cached.class);
-        long ttl = TimeUnit.NANOSECONDS.convert(cached.ttl(), cached.unit());
+        Interval interval = new Interval(cached.value());
+        long ttl = TimeUnit.NANOSECONDS.convert(interval.getMagnitude(), interval.getUnit());
         return "new " + CachedScopeProvider.class.getCanonicalName() + "(" + providerRef + ", " + ttl + ")";
     }
 }

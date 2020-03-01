@@ -78,4 +78,9 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
     public String uniqueInstanceName() {
         return uniqueName;
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" + ProcessorUtils.debugString(factoryMethod) + ")";
+    }
 }

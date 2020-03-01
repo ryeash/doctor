@@ -11,7 +11,7 @@ public interface StringConversionGenerator extends CustomizationPoint, Prioritiz
      *
      * @param context    the processor context
      * @param targetType the target type that the function should output
-     * @return the code function to convert the string value
+     * @return the code function to convert the string value, or null if the target type isn't supported by this generator
      */
     String converterFunction(AnnotationProcessorContext context, TypeMirror targetType);
 }

@@ -6,7 +6,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Scope annotation indicating that the provider should cache the provided instances for a period of time before
@@ -19,12 +18,7 @@ import java.util.concurrent.TimeUnit;
 public @interface Cached {
 
     /**
-     * The duration to cache returned instances.
+     * The interval to hold the cached value before refreshing it.
      */
-    long ttl();
-
-    /**
-     * The unit for the duration time.
-     */
-    TimeUnit unit() default TimeUnit.MILLISECONDS;
+    String value();
 }

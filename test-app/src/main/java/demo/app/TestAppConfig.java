@@ -97,7 +97,7 @@ public class TestAppConfig {
     }
 
     @Factory
-    @Cached(ttl = 10)
+    @Cached("10ms")
     @Named("cached")
     public TCScope cachedScope() {
         return new TCScope();

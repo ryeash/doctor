@@ -11,6 +11,7 @@ public class TCScheduled {
 
     public AtomicInteger every10Milliseconds = new AtomicInteger(0);
     public AtomicInteger every50Milliseconds = new AtomicInteger(0);
+    public AtomicInteger cronEverySecond = new AtomicInteger(0);
 
     @Scheduled(interval = "10 ms")
     public void every10Milliseconds() {
@@ -21,5 +22,10 @@ public class TCScheduled {
     public void event50Milliseconds(CoffeeMaker coffeeMaker) {
         Assert.assertNotNull(coffeeMaker);
         every50Milliseconds.incrementAndGet();
+    }
+
+    @Scheduled(interval = "* * * * * *")
+    public void cronEverySecond() {
+        cronEverySecond.incrementAndGet();
     }
 }
