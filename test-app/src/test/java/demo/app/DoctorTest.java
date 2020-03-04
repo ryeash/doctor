@@ -11,6 +11,7 @@ import vest.doctor.EventConsumer;
 import vest.doctor.EventManager;
 
 import javax.inject.Provider;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
@@ -226,7 +227,7 @@ public class DoctorTest extends BaseDoctorTest {
     }
 
     @Test
-    public void aspects() {
+    public void aspects() throws IOException {
         TCAspects instance = doctor.getInstance(TCAspects.class);
         instance.execute("name", Arrays.asList("a", "b"));
         assertEquals(instance.parrot("hi"), "hi altered");

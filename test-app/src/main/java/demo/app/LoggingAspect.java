@@ -20,7 +20,7 @@ public class LoggingAspect implements BeforeAdvice, AfterAdvice {
             Method method = methodInvocation.getMethod();
             log.info("{}", Arrays.toString(method.getDeclaredAnnotations()));
         } catch (NoSuchMethodException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         log.info("entering {}.{}",
                 methodInvocation.getContainingInstance().getClass().getSimpleName(),

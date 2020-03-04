@@ -3,13 +3,17 @@ package demo.app;
 import vest.doctor.aop.Aspects;
 
 import javax.inject.Singleton;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 @Singleton
 @Aspects(LoggingAspect.class)
 public class TCAspects {
+
+    private final boolean dummy = true;
 
     @Aspects(TimingAspect.class)
     public void execute(String name, List<String> values) {
@@ -17,7 +21,7 @@ public class TCAspects {
     }
 
     @Aspects(StringModificationAspect.class)
-    public String parrot(String name) {
+    public String parrot(String name) throws IOException {
         return name;
     }
 
@@ -37,5 +41,18 @@ public class TCAspects {
 
     private void privateMethodShouldntBeAProblem() {
         System.out.println("private method");
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TCAspects tcAspects = (TCAspects) o;
+        return dummy == tcAspects.dummy;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(dummy);
     }
 }
