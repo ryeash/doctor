@@ -20,6 +20,4 @@ public @interface Aspects {
      * The aspects to apply to the method, or class methods.
      */
     Class<? extends Aspect>[] value();
-
-    // TODO: add regex supports to control where the aspect applies
 }

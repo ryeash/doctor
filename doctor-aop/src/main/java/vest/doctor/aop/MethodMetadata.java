@@ -21,14 +21,29 @@ public class MethodMetadata {
         this.returnType = returnType;
     }
 
+    /**
+     * The object instance upon which the method was invoked.
+     *
+     * @return the object that contains the invoked method
+     */
     public Object getContainingInstance() {
         return containingInstance;
     }
 
+    /**
+     * The name of the invoked method.
+     *
+     * @return the method name
+     */
     public String getMethodName() {
         return methodName;
     }
 
+    /**
+     * The parameters that the method accepts.
+     *
+     * @return a list of the parameter types
+     */
     public List<Type> getMethodParameters() {
         return methodParameters;
     }

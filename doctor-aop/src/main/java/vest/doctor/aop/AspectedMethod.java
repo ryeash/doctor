@@ -26,6 +26,11 @@ final class AspectedMethod {
     private static final AtomicInteger i = new AtomicInteger(0);
     private static final Map<String, String> initializedAspectsMap = new HashMap<>();
 
+    public static void clearCache() {
+        initializedAspectsMap.clear();
+        i.set(0);
+    }
+
     private final ExecutableElement method;
     private final List<TypeElement> aspectClasses;
     private final String aspectClassUniqueKey;
@@ -111,28 +116,23 @@ final class AspectedMethod {
         sb.append("List<MutableMethodArgument> arguments = ").append(arguments).append(";\n");
 
         StringBuilder invoker = new StringBuilder();
+        String invokerParams = IntStream.range(0, method.getParameters().size())
+                .mapToObj(i -> "arguments.get(" + i + ").getValue()")
+                .collect(Collectors.joining(", ", "(", ")"));
         if (method.getReturnType().getKind() != TypeKind.VOID) {
             invoker.append("Callable<?> invoker = () -> ");
             invoker.append("delegate.").append(method.getSimpleName());
-            String invokerParams = IntStream.range(0, method.getParameters().size())
-                    .mapToObj(i -> "arguments.get(" + i + ").getValue()")
-                    .collect(Collectors.joining(", ", "(", ")"));
             invoker.append(invokerParams).append(";\n");
         } else {
             invoker.append("Callable<?> invoker = () -> {");
             invoker.append(" delegate.").append(method.getSimpleName());
-            String invokerParams = IntStream.range(0, method.getParameters().size())
-                    .mapToObj(i -> "arguments.get(" + i + ").getValue()")
-                    .collect(Collectors.joining(", ", "(", ")"));
             invoker.append(invokerParams);
             invoker.append("; return null; };\n");
         }
 
         sb.append(invoker.toString());
         sb.append("MethodInvocation invocation = new MethodInvocationImpl(").append(metadataName()).append(", arguments, invoker);\n");
-        sb.append(aspectName()).append(".before(invocation);\n");
-        sb.append(aspectName()).append(".execute(invocation);\n");
-        sb.append(aspectName()).append(".after(invocation);\n");
+        sb.append(aspectName()).append(".call(invocation);\n");
         if (method.getReturnType().getKind() != TypeKind.VOID) {
             sb.append("return invocation.getResult();");
         }

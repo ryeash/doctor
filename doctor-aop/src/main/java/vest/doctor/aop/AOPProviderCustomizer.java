@@ -108,6 +108,8 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
         classBuilder.setConstructor(constructor.finish());
         classBuilder.writeClass(context.filer());
 
+        AspectedMethod.clearCache();
+
         return delegateQualifiedClassName;
     }
 
