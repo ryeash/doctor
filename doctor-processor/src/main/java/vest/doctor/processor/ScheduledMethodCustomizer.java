@@ -1,8 +1,8 @@
 package vest.doctor.processor;
 
+import doctor.processor.Constants;
 import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.Constants;
 import vest.doctor.Cron;
 import vest.doctor.Interval;
 import vest.doctor.MethodBuilder;

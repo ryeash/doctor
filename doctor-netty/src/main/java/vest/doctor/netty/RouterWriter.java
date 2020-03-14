@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static vest.doctor.Constants.PROVIDER_REGISTRY;
+import static doctor.processor.Constants.PROVIDER_REGISTRY;
 
 /**
  * Code generator for the {@link Router} implementation.

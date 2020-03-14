@@ -1,10 +1,10 @@
 package vest.doctor.processor;
 
+import doctor.processor.Constants;
 import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.Async;
 import vest.doctor.ClassBuilder;
-import vest.doctor.Constants;
 import vest.doctor.DoctorProvider;
 import vest.doctor.EventConsumer;
 import vest.doctor.EventListener;

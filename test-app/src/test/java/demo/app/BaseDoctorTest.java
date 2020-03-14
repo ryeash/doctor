@@ -21,7 +21,8 @@ public abstract class BaseDoctorTest extends Assert {
                             "jaxrs.bind", "localhost:8080",
                             "doctor.netty.bind", "localhost:8081",
                             "jersey.config.server.tracing.type", "ALL",
-                            "jersey.config.server.tracing.threshold", "VERBOSE")));
+                            "jersey.config.server.tracing.threshold", "VERBOSE"))
+                    .addSource(new TCConfigReload()));
         }
     }
 }

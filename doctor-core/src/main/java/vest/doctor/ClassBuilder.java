@@ -113,11 +113,11 @@ public class ClassBuilder {
         return this;
     }
 
-    public ClassBuilder addMethod(String method) {
+    public ClassBuilder addMethod(String method, Object... args) {
         if (methods == null) {
             methods = new LinkedList<>();
         }
-        methods.add(method);
+        methods.add(CodeLine.line(method, args));
         return this;
     }
 

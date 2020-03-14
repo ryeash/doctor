@@ -16,7 +16,7 @@ import javax.lang.model.util.ElementFilter;
 import java.util.Objects;
 import java.util.Optional;
 
-import static vest.doctor.Constants.PROVIDER_REGISTRY;
+import static doctor.processor.Constants.PROVIDER_REGISTRY;
 
 public class PropertiesProviderDefinition extends AbstractProviderDefinition {
 

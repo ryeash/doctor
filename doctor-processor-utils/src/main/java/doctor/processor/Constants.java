@@ -1,4 +1,4 @@
-package vest.doctor;
+package doctor.processor;
 
 /**
  * Constants used during class generation.

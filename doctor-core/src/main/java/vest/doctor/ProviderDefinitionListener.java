@@ -1,7 +1,7 @@
 package vest.doctor;
 
 /**
- * A customization point that gets notified for each {@link ProviderDefinition} that is created during annoation
+ * A customization point that gets notified for each {@link ProviderDefinition} that is created during annotation
  * processing.
  */
 public interface ProviderDefinitionListener extends CustomizationPoint {

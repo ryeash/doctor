@@ -5,18 +5,19 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Represent a time interval, with magnitude and unit.
+ * Represents a time interval, with magnitude and unit.
  * <p>
  * The format for an interval string is 'magnitude[unit alias]'
  * The magnitude is an integer
  * <p>
- * Supported units are: Days, Hours, Minutes, Seconds, Milliseconds (default), and Microseconds
+ * Supported units are: Days, Hours, Minutes, Seconds, Milliseconds (default), Microseconds, and Nanoseconds
  * Shorthand strings for the units are supported:
  * Days: d, day, days
  * Hours: h, hour, hours
  * Minutes: m, min, minute, minutes
  * Seconds: s, sec, second, seconds
  * Microseconds: u, us, microsecond, microseconds
+ * Nanoseconds: ns, nanosecond, nanoseconds
  * <p>
  * Examples:
  * 10s -> 10 seconds

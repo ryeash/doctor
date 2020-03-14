@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import static vest.doctor.Constants.PROVIDER_REGISTRY;
+import static doctor.processor.Constants.PROVIDER_REGISTRY;
 
 public class EntityManagerProviderListener implements ProviderDefinitionListener {
 

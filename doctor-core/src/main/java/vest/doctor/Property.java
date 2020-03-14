@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  * Serves in two capacities:
  * <p>
  * Marks constructor and method parameters to indicate that they should be wired using values from the {@link ConfigurationFacade}
- * associated with the running app.
+ * associated with the {@link ProviderRegistry}.
  * <p>
  * Marks methods in {@link Properties} interfaces to indicate how to generate the method implementations.
  */

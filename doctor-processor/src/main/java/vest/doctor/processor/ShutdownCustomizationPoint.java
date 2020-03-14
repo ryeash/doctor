@@ -1,7 +1,7 @@
 package vest.doctor.processor;
 
+import doctor.processor.Constants;
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.Constants;
 import vest.doctor.ProviderCustomizationPoint;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ShutdownProviderWrapper;

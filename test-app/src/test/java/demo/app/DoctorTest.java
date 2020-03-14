@@ -9,6 +9,8 @@ import vest.doctor.ConfigurationFacade;
 import vest.doctor.Doctor;
 import vest.doctor.EventConsumer;
 import vest.doctor.EventManager;
+import vest.doctor.EventProducer;
+import vest.doctor.ReloadConfigurationEvent;
 
 import javax.inject.Provider;
 import java.io.IOException;
@@ -248,5 +250,12 @@ public class DoctorTest extends BaseDoctorTest {
         User user1 = dao.findUser(1L);
         assertEquals(user1.getFirstName(), "doug");
         assertEquals(user1.getLastName(), "fernwaller");
+    }
+
+    @Test
+    public void configurationReload() {
+        EventProducer instance = doctor.getInstance(EventProducer.class);
+        instance.publish(new ReloadConfigurationEvent());
+        assertTrue(TCConfigReload.reloaded);
     }
 }

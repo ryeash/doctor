@@ -1,7 +1,6 @@
 package doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.Constants;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDependency;
 

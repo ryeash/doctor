@@ -1,11 +1,11 @@
 package vest.doctor.processor;
 
+import doctor.processor.Constants;
 import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.AppLoader;
 import vest.doctor.ClassBuilder;
 import vest.doctor.ConfigurationFacade;
-import vest.doctor.Constants;
 import vest.doctor.CustomizationPoint;
 import vest.doctor.DoctorProvider;
 import vest.doctor.EventManager;
@@ -57,8 +57,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static doctor.processor.Constants.PROVIDER_REGISTRY;
 import static vest.doctor.CodeLine.line;
-import static vest.doctor.Constants.PROVIDER_REGISTRY;
 
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 @SupportedOptions({JSR311Processor.PACKAGE_NAME_OPTION})
