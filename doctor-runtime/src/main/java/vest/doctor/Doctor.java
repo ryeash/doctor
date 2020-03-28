@@ -1,5 +1,9 @@
 package vest.doctor;
 
+import vest.doctor.message.ApplicationShutdown;
+import vest.doctor.message.ApplicationStarted;
+
+import javax.inject.Provider;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collections;
@@ -115,7 +119,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         if (!configurationFacade.get("doctor.skip.validation", false, Boolean::valueOf)) {
             providerIndex.allProviders().forEach(np -> np.validateDependencies(this));
         }
-        getInstance(EventProducer.class).publish(new ApplicationStartedEvent(this));
+        getInstance(EventProducer.class).publish(new ApplicationStarted(this));
 
         if (configurationFacade.get("doctor.autoShutdown", true, Boolean::valueOf)) {
             Runtime.getRuntime().addShutdownHook(new Thread(this::close, "doctor-shutdown-" + this.hashCode()));
@@ -198,6 +202,9 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
 
     @Override
     public void close() {
+        getProviderOpt(EventProducer.class, null)
+                .map(Provider::get)
+                .ifPresent(ep -> ep.publish(new ApplicationShutdown(this)));
         for (AppLoader loader : loaders) {
             try {
                 loader.close();

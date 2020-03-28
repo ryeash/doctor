@@ -1,7 +1,7 @@
 package demo.app;
 
 import org.testng.Assert;
-import vest.doctor.ApplicationStartedEvent;
+import vest.doctor.message.ApplicationStarted;
 import vest.doctor.Async;
 import vest.doctor.EventListener;
 import vest.doctor.EventProducer;
@@ -35,9 +35,9 @@ public class TCEvent {
 
     @EventListener
     @Async
-    public void onStartup(ApplicationStartedEvent startup) {
+    public void onStartup(ApplicationStarted startup) {
         eventListened = true;
         Assert.assertNotNull(startup);
-        Assert.assertNotNull(startup.beanProvider());
+        Assert.assertNotNull(startup.providerRegistry());
     }
 }

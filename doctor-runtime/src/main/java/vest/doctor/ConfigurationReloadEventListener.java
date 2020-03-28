@@ -1,5 +1,7 @@
 package vest.doctor;
 
+import vest.doctor.message.ReloadConfiguration;
+
 public class ConfigurationReloadEventListener implements EventConsumer {
 
     private final ProviderRegistry providerRegistry;
@@ -10,7 +12,7 @@ public class ConfigurationReloadEventListener implements EventConsumer {
 
     @Override
     public boolean isCompatible(Object event) {
-        return event instanceof ReloadConfigurationEvent;
+        return event instanceof ReloadConfiguration;
     }
 
     @Override
