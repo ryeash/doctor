@@ -1,5 +1,8 @@
 package vest.doctor;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.ref.WeakReference;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -8,6 +11,7 @@ import java.util.concurrent.TimeUnit;
  * Used internally to support running scheduled methods.
  */
 public abstract class CronTaskWrapper<T> implements Runnable {
+    private static final Logger log = LoggerFactory.getLogger(CronTaskWrapper.class);
     private final ProviderRegistry providerRegistry;
     private final WeakReference<T> ref;
     private final Cron cron;
@@ -25,7 +29,11 @@ public abstract class CronTaskWrapper<T> implements Runnable {
     public void run() {
         T t = ref.get();
         if (t != null) {
-            internalRun(providerRegistry, t);
+            try {
+                internalRun(providerRegistry, t);
+            } catch (Throwable error) {
+                log.error("error running scheduled cron task", error);
+            }
             scheduleNext();
         }
     }
