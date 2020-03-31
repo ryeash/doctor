@@ -1,7 +1,7 @@
 package vest.doctor;
 
 /**
- * Interface defining a class that can consumer events published using {@link EventProducer#publish(Object)}
+ * Interface defining a class that can consume events published using {@link EventProducer#publish(Object)}
  */
 public interface EventConsumer {
 

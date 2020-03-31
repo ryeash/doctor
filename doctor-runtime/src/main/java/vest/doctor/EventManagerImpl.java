@@ -33,6 +33,7 @@ public class EventManagerImpl implements EventManager {
 
     @Override
     public void publish(Object event) {
+        Objects.requireNonNull(event);
         for (EventConsumer consumer : consumers) {
             if (consumer.isCompatible(event)) {
                 consumer.accept(event);

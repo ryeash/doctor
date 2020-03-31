@@ -10,7 +10,7 @@ import vest.doctor.Doctor;
 import vest.doctor.EventConsumer;
 import vest.doctor.EventManager;
 import vest.doctor.EventProducer;
-import vest.doctor.ReloadConfigurationEvent;
+import vest.doctor.message.ReloadConfiguration;
 
 import javax.inject.Provider;
 import java.io.IOException;
@@ -255,7 +255,7 @@ public class DoctorTest extends BaseDoctorTest {
     @Test
     public void configurationReload() {
         EventProducer instance = doctor.getInstance(EventProducer.class);
-        instance.publish(new ReloadConfigurationEvent());
+        instance.publish(new ReloadConfiguration());
         assertTrue(TCConfigReload.reloaded);
     }
 }
