@@ -40,7 +40,7 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
                     try {
                         processCron(context, providerDefinition, method, instanceRef, providerRegistryRef, m);
                     } catch (IllegalArgumentException e) {
-                        throw new IllegalArgumentException("the scheduled interval did not match the interval pattern, or the cron pattern: " + scheduled.interval(), e);
+                        throw new IllegalArgumentException("the scheduled interval did not match the interval or cron pattern: " + scheduled.interval(), e);
                     }
                 }
             }

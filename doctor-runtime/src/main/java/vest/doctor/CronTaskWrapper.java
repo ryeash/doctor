@@ -25,8 +25,8 @@ public abstract class CronTaskWrapper<T> implements Runnable {
     public void run() {
         T t = ref.get();
         if (t != null) {
-            scheduleNext();
             internalRun(providerRegistry, t);
+            scheduleNext();
         }
     }
 
