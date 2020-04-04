@@ -179,21 +179,11 @@ final class ParameterSupport {
                 })
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("missing setter method for BeanParam field: " + field + " in " + field.getEnclosingElement()));
-//        for (ExecutableElement method : ElementFilter.methodsIn(beanType.getEnclosedElements())) {
-//            if (method.getSimpleName().toString().equalsIgnoreCase("set" + field.getSimpleName())
-//                    || method.getSimpleName().toString().equalsIgnoreCase("is" + field.getSimpleName())) {
-//                if (method.getParameters().size() != 1) {
-//                    throw new IllegalArgumentException("setters for BeanParam fields must have one and only one parameter");
-//                }
-//                return method;
-//            }
-//        }
-//        throw new IllegalArgumentException("missing setter method for BeanParam field: " + field + " in " + field.getEnclosingElement());
     }
 
     private static String toTypeInfo(GenericInfo genericInfo) {
         String prefix = "new TypeInfo(" + typeWithoutParameters(genericInfo.type()) + ".class";
-        if (genericInfo.parameterTypes() == null || genericInfo.parameterTypes().isEmpty()) {
+        if (!genericInfo.hasTypeParameters()) {
             return prefix + ")";
         } else {
             String param = genericInfo.parameterTypes().stream().map(ParameterSupport::toTypeInfo).collect(Collectors.joining(", "));

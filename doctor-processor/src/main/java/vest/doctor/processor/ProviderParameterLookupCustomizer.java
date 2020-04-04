@@ -121,9 +121,9 @@ public class ProviderParameterLookupCustomizer implements ParameterLookupCustomi
 
     private static TypeMirror unwrapJustOne(TypeMirror mirror) {
         GenericInfo info = new GenericInfo(mirror);
-        if (info.parameterTypes() != null && info.parameterTypes().size() == 1) {
+        if (info.hasTypeParameters() && info.parameterTypes().size() == 1) {
             GenericInfo genericInfo = info.parameterTypes().get(0);
-            if (genericInfo.parameterTypes() != null && !genericInfo.parameterTypes().isEmpty()) {
+            if (genericInfo.hasTypeParameters()) {
                 throw new IllegalArgumentException("can not inject nested parameterized type: " + mirror);
             }
             return genericInfo.type();

@@ -15,6 +15,7 @@ import javax.lang.model.type.UnionType;
 import javax.lang.model.type.WildcardType;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -25,7 +26,7 @@ public class GenericInfo {
 
     public static Optional<TypeMirror> firstParameterizedType(TypeMirror type) {
         GenericInfo info = new GenericInfo(type);
-        if (info.parameterTypes() != null && !info.parameterTypes().isEmpty()) {
+        if (info.hasTypeParameters()) {
             return Optional.of(info.parameterTypes().get(0).type());
         }
         return Optional.empty();
@@ -45,6 +46,33 @@ public class GenericInfo {
 
     public List<GenericInfo> parameterTypes() {
         return generics;
+    }
+
+    public boolean hasTypeParameters() {
+        return generics != null && !generics.isEmpty();
+    }
+
+    @Override
+    public String toString() {
+        return type.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        GenericInfo that = (GenericInfo) o;
+        return Objects.equals(type, that.type) &&
+                Objects.equals(generics, that.generics);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(type, generics);
     }
 
     private static final class GenericInfoVisitor implements TypeVisitor<List<GenericInfo>, Void> {
