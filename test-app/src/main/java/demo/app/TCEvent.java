@@ -1,10 +1,10 @@
 package demo.app;
 
 import org.testng.Assert;
-import vest.doctor.message.ApplicationStarted;
 import vest.doctor.Async;
 import vest.doctor.EventListener;
 import vest.doctor.EventProducer;
+import vest.doctor.message.ApplicationStarted;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

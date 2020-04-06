@@ -11,10 +11,9 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public final class BodyInterchange {
+    private final boolean tracingEnabled;
     private final List<BodyReader> readers;
     private final List<BodyWriter> writers;
-
-    private final boolean tracingEnabled;
 
     public BodyInterchange(ProviderRegistry providerRegistry) {
         this.tracingEnabled = new NettyConfiguration(providerRegistry.configuration()).debugRequestRouting();
@@ -73,7 +72,7 @@ public final class BodyInterchange {
         }
     }
 
-    public void write(RequestContext ctx, CompletableFuture<?> response) {
+    private void write(RequestContext ctx, CompletableFuture<?> response) {
         if (response == null) {
             ctx.responseBody(Unpooled.EMPTY_BUFFER);
             return;
@@ -87,7 +86,7 @@ public final class BodyInterchange {
         });
     }
 
-    public void write(RequestContext ctx, R response) {
+    private void write(RequestContext ctx, R response) {
         if (response == null) {
             ctx.responseBody(Unpooled.EMPTY_BUFFER);
             return;

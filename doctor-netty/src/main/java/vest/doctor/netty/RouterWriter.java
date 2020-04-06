@@ -1,5 +1,6 @@
 package vest.doctor.netty;
 
+import doctor.processor.Constants;
 import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ClassBuilder;
@@ -9,8 +10,6 @@ import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionListener;
 import vest.doctor.ProviderRegistry;
 
-import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.type.TypeKind;
@@ -141,16 +140,15 @@ public class RouterWriter implements ProviderDefinitionListener {
         String providerTypeStr = meta.providerDefinition.providedType().toString();
         String typeString = isVoid ? Object.class.getSimpleName() : meta.method.getReturnType().toString();
 
-
         String info = meta.method.getEnclosingElement().getSimpleName() + "." + meta.method;
 
         StringBuilder functionCall = new StringBuilder();
         functionCall.append("(instance, ctx, bodyInterchange) -> {\n");
         functionCall.append(meta.buildMethodCall(context, "instance", "ctx")).append(";\n");
-        if (!isVoid) {
-            functionCall.append("return response;");
-        } else {
+        if (isVoid) {
             functionCall.append("return null;");
+        } else {
+            functionCall.append("return response;");
         }
         functionCall.append("\n}");
 
@@ -165,19 +163,14 @@ public class RouterWriter implements ProviderDefinitionListener {
     }
 
     private static List<String> getHttpMethods(ExecutableElement method) {
-        List<String> methods = new LinkedList<>();
-        for (AnnotationMirror am : method.getAnnotationMirrors()) {
-            for (AnnotationMirror annotationMirror : am.getAnnotationType().asElement().getAnnotationMirrors()) {
-                if (annotationMirror.getAnnotationType().toString().equals(HttpMethod.class.getCanonicalName())) {
-                    for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : annotationMirror.getElementValues().entrySet()) {
-                        if (entry.getKey().getSimpleName().toString().equals("value")) {
-                            methods.add(entry.getValue().getValue().toString());
-                        }
-                    }
-                }
-            }
-        }
-        return methods;
+        return method.getAnnotationMirrors()
+                .stream()
+                .flatMap(methodAnnotation -> methodAnnotation.getAnnotationType().asElement().getAnnotationMirrors().stream())
+                .filter(annotation -> annotation.getAnnotationType().toString().equals(HttpMethod.class.getCanonicalName()))
+                .flatMap(httpMethodAnnotation -> httpMethodAnnotation.getElementValues().entrySet().stream())
+                .filter(entry -> entry.getKey().getSimpleName().toString().equals(Constants.ANNOTATION_VALUE))
+                .map(entry -> entry.getValue().getValue().toString())
+                .collect(Collectors.toList());
     }
 
     private static List<String> paths(String[] roots, String[] paths) {

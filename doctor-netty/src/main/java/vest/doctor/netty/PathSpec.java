@@ -58,6 +58,7 @@ public final class PathSpec implements Comparable<PathSpec> {
         }
         builder.append(temp, i, temp.length());
 
+        // TODO: should we use insensitive matching?
         this.pattern = Pattern.compile(builder.toString());
     }
 

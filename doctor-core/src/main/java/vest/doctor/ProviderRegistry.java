@@ -1,5 +1,6 @@
 package vest.doctor;
 
+import javax.inject.Provider;
 import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +20,8 @@ public interface ProviderRegistry {
      * Register a new provider.
      *
      * @param provider the provider to register
+     * @throws IllegalArgumentException if there is already a provider that satisfies the given provider's type and
+     *                                  qualifier
      */
     void register(DoctorProvider<?> provider);
 
@@ -40,6 +43,27 @@ public interface ProviderRegistry {
      * @throws IllegalArgumentException if the type can not be provided
      */
     <T> T getInstance(Class<T> type, String qualifier);
+
+    /**
+     * Optionally get an instance of a provided type, without throwing an exception if the type is not provided.
+     *
+     * @param type the type to get the instance of
+     * @return an optional instance of the provided type
+     */
+    default <T> Optional<T> getInstanceOpt(Class<T> type) {
+        return getInstanceOpt(type, null);
+    }
+
+    /**
+     * Optionally get an instance of a provided type, without throwing an exception if the type is not provided.
+     *
+     * @param type      the type to get the instance of
+     * @param qualifier the qualifier of the instance
+     * @return an optional instance of the provided type
+     */
+    default <T> Optional<T> getInstanceOpt(Class<T> type, String qualifier) {
+        return getProviderOpt(type, qualifier).map(Provider::get);
+    }
 
     /**
      * Get a provider for the given type.

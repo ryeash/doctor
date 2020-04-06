@@ -1,6 +1,7 @@
 package vest.doctor.aop;
 
 import doctor.processor.ClassValueVisitor;
+import doctor.processor.Constants;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ClassBuilder;
 import vest.doctor.MethodBuilder;
@@ -143,7 +144,7 @@ final class AspectedMethod {
         return element.getAnnotationMirrors().stream()
                 .filter(am -> am.getAnnotationType().toString().equals(Aspects.class.getCanonicalName()))
                 .flatMap(am -> am.getElementValues().entrySet().stream())
-                .filter(e -> e.getKey().getSimpleName().toString().equals("value"))
+                .filter(e -> e.getKey().getSimpleName().toString().equals(Constants.ANNOTATION_VALUE))
                 .map(Map.Entry::getValue)
                 .map(val -> val.accept(new ClassValueVisitor(), null))
                 .flatMap(Collection::stream)
