@@ -40,7 +40,8 @@ public class NettyConfiguration {
     }
 
     public List<? extends InetSocketAddress> getListenAddresses() {
-        return configurationFacade.getSplit("doctor.netty.bind", Function.identity())
+        return configurationFacade.getList("doctor.netty.bind", Function.identity())
+                .stream()
                 .map(s -> s.split(":"))
                 .map(hp -> new InetSocketAddress(hp[0].trim(), Integer.parseInt(hp[1].trim())))
                 .collect(Collectors.toList());

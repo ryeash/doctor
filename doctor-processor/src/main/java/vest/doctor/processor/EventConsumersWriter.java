@@ -19,9 +19,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 
-import static vest.doctor.CodeLine.line;
-
-public class EventManagerWriter implements ProviderDefinitionListener {
+public class EventConsumersWriter implements ProviderDefinitionListener {
 
     @Override
     public void process(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
@@ -54,7 +52,7 @@ public class EventManagerWriter implements ProviderDefinitionListener {
                     .addClassAnnotation("@Named(\"" + ProcessorUtils.escapeStringForCode(ecQualifier) + "\")")
                     .addImplementsInterface(EventConsumer.class)
                     .setClassName(context.generatedPackage() + "." + className)
-                    .addField(line("private final DoctorProvider<{}> provider", providerDefinition.providedType().asType()))
+                    .addField("private final DoctorProvider<{}> provider", providerDefinition.providedType().asType())
                     .setConstructor("@Inject public " + className + "(" + ProviderRegistry.class.getSimpleName() + " " + Constants.PROVIDER_REGISTRY + ")", b -> {
                         b.line("this.provider = {};", ProcessorUtils.getProviderCode(providerDefinition));
                     })

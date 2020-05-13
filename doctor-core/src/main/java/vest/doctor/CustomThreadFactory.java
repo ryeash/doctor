@@ -49,7 +49,7 @@ public final class CustomThreadFactory implements ThreadFactory, ForkJoinPool.Fo
         return configure(ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool));
     }
 
-    private <T extends Thread> T configure(T thread) {
+    protected <T extends Thread> T configure(T thread) {
         thread.setDaemon(daemonize);
         thread.setName(threadPrefix + counter.incrementAndGet());
         thread.setUncaughtExceptionHandler(uncaughtExceptionHandler);

@@ -23,7 +23,7 @@ public class DefaultProcessorConfiguration implements ProcessorConfiguration {
     public List<CustomizationPoint> customizationPoints() {
         return Arrays.asList(
                 new InjectMethodsCustomizer(),
-                new EventManagerWriter(),
+                new EventConsumersWriter(),
                 new ScheduledMethodCustomizer(),
                 new PropertyParameterCustomizer(),
                 new ProviderParameterLookupCustomizer(),

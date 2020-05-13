@@ -93,11 +93,11 @@ public class ClassBuilder {
         return this;
     }
 
-    public ClassBuilder addField(String field) {
+    public ClassBuilder addField(String field, Object... args) {
         if (fields == null) {
             fields = new LinkedList<>();
         }
-        fields.add(field);
+        fields.add(CodeLine.line(field, args));
         return this;
     }
 
@@ -108,8 +108,8 @@ public class ClassBuilder {
         return this;
     }
 
-    public ClassBuilder setConstructor(String constructor) {
-        this.constructor = constructor;
+    public ClassBuilder setConstructor(String constructor, Object... args) {
+        this.constructor = CodeLine.line(constructor, args);
         return this;
     }
 

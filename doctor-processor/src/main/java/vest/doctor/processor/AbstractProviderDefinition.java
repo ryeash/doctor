@@ -26,7 +26,6 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static doctor.processor.Constants.PROVIDER_REGISTRY;
-import static vest.doctor.CodeLine.line;
 
 public abstract class AbstractProviderDefinition implements ProviderDefinition {
 
@@ -123,8 +122,8 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                 .addImplementsInterface(DoctorProvider.class.getSimpleName() + "<" + providedType().getSimpleName() + ">")
                 .addField("private final " + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY)
 
-                .setConstructor(line("public {}({} {}) { this.{} = {}; }",
-                        generatedClassName().substring(generatedClassName().lastIndexOf('.') + 1), ProviderRegistry.class, PROVIDER_REGISTRY, PROVIDER_REGISTRY, PROVIDER_REGISTRY))
+                .setConstructor("public {}({} {}) { this.{} = {}; }",
+                        generatedClassName().substring(generatedClassName().lastIndexOf('.') + 1), ProviderRegistry.class, PROVIDER_REGISTRY, PROVIDER_REGISTRY, PROVIDER_REGISTRY)
 
                 .addMethod("public Class<" + providedType().getSimpleName() + "> type() { " +
                         "return " + providedType().getSimpleName() + ".class; }")

@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Marks a class or factory method with the modules that the generated provider will be activated for.
+ * Marks a class or factory method with activation modules.
  */
 @Documented
 @Retention(RUNTIME)
@@ -16,7 +16,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 public @interface Modules {
 
     /**
-     * The modules that the provider will be active for.
+     * The modules for which the provider will be active.
      */
     String[] value() default {};
 }

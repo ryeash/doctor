@@ -31,7 +31,7 @@ public class StandardConversionGenerator implements StringConversionGenerator {
         CLASS_TO_CONVERTER.put("long", valueOfCode(Long.class));
         CLASS_TO_CONVERTER.put("float", valueOfCode(Float.class));
         CLASS_TO_CONVERTER.put("double", valueOfCode(Double.class));
-        CLASS_TO_CONVERTER.put("char", "str -> str.length() > 0 ? str.charAt(0) : null");
+        CLASS_TO_CONVERTER.put("char", "str -> str.length() > 0 ? str.charAt(0) : (char) -1");
 
         CLASS_TO_CONVERTER.put(String.class.getCanonicalName(), "java.util.function.Function.identity()");
         CLASS_TO_CONVERTER.put(Character.class.getCanonicalName(), "str -> str.length() > 0 ? str.charAt(0) : null");

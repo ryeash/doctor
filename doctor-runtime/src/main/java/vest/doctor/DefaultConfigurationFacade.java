@@ -5,20 +5,26 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
  * Default implementation of the {@link ConfigurationFacade}.
  */
 public class DefaultConfigurationFacade implements ConfigurationFacade {
+
+    public static final String PROPERTIES = "doctor.app.properties";
+    private static final String MACRO_OPEN = "${";
+    private static final String MACRO_CLOSE = "}";
+    private static final char LIST_DELIMITER = ',';
 
     /**
      * Creates a new configuration facade and automatically adds configuration sources (in query order):
@@ -33,7 +39,8 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
                 .addSource(new EnvironmentVariablesConfigurationSource())
                 .addSource(new SystemPropertiesConfigurationSource());
 
-        facade.getSplit(DefaultConfigurationFacade.PROPERTIES, Function.identity())
+        facade.getList(DefaultConfigurationFacade.PROPERTIES, Function.identity())
+                .stream()
                 .map(props -> {
                     try {
                         return new File(props).toURI().toURL();
@@ -45,11 +52,6 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
                 .forEach(facade::addSource);
         return facade;
     }
-
-    public static final String PROPERTIES = "doctor.app.properties";
-    private static final String MACRO_OPEN = "${";
-    private static final String MACRO_CLOSE = "}";
-    private static final char LIST_DELIMITER = ',';
 
     private final List<ConfigurationSource> sources = new ArrayList<>();
 
@@ -110,31 +112,36 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
     }
 
     @Override
-    public <T> Collection<T> getCollection(String fullyQualifiedPropertyName, Function<String, T> converter) {
-        return getList(fullyQualifiedPropertyName, converter);
+    public <T> List<T> getList(String fullyQualifiedPropertyName, Function<String, T> converter) {
+        return getList(fullyQualifiedPropertyName, Collections.emptyList(), converter);
     }
 
     @Override
-    public <T> List<T> getList(String fullyQualifiedPropertyName, Function<String, T> converter) {
-        return getSplit(fullyQualifiedPropertyName, converter).collect(Collectors.toList());
+    public <T> List<T> getList(String fullyQualifiedPropertyName, List<T> defaultValue, Function<String, T> converter) {
+        return spl(fullyQualifiedPropertyName, defaultValue, converter, ArrayList::new);
     }
 
     @Override
     public <T> Set<T> getSet(String fullyQualifiedPropertyName, Function<String, T> converter) {
-        return getSplit(fullyQualifiedPropertyName, converter).collect(Collectors.toCollection(LinkedHashSet::new));
+        return getSet(fullyQualifiedPropertyName, Collections.emptySet(), converter);
     }
 
     @Override
-    public <T> Stream<T> getSplit(String fullyQualifiedPropertyName, Function<String, T> converter) {
+    public <T> Set<T> getSet(String fullyQualifiedPropertyName, Set<T> defaultValue, Function<String, T> converter) {
+        return spl(fullyQualifiedPropertyName, defaultValue, converter, LinkedHashSet::new);
+    }
+
+    private <C extends Collection<T>, T> C spl(String fullyQualifiedPropertyName, C defaultValue, Function<String, T> converter, Supplier<C> collectionFactory) {
         String value = get(fullyQualifiedPropertyName);
         if (value == null) {
-            return Stream.empty();
+            return defaultValue;
         }
-        List<String> split = split(value, LIST_DELIMITER);
+        List<String> split = split(value);
         return split.stream()
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
-                .map(converter);
+                .map(converter)
+                .collect(Collectors.toCollection(collectionFactory));
     }
 
     @Override
@@ -177,12 +184,12 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
         return new FacadeToProperties(this);
     }
 
-    private static List<String> split(String str, char delimiter) {
+    private static List<String> split(String str) {
         List<String> split = new ArrayList<>();
         int i = 0;
         int next;
         while (i >= 0) {
-            next = str.indexOf(delimiter, i);
+            next = str.indexOf(LIST_DELIMITER, i);
             if (next < 0) {
                 break;
             } else {

@@ -77,7 +77,7 @@ public class App {
 ```
 
 Any provider that has modules will _only_ be active if the app is started with one of the modules listed in the active list.
-Provider without modules will _always_ be active. 
+Providers without modules will _always_ be active. 
 
 ### @Eager
 By default providers will not instantiate an instance when they are initialized, i.e. they're lazy. If you want an
@@ -114,7 +114,7 @@ Methods in provided objects can be scheduled for periodic execution using the `@
 ```java
 @Singleton
 public class SomethingPeriodic {
-    @Scheduled(period = 10)
+    @Scheduled(interval = "10ms")
     public void every10Milliseconds() {
         // do something every 10 milliseconds
     }

@@ -30,10 +30,13 @@ public class TCProviderInject {
         Assert.assertEquals(coffeeMakersArr.length, 3);
     }
 
+    public boolean postConstructCalled = false;
+
     @PostConstruct
     public void postConstruct(ProviderRegistry providerRegistry,
                               ConfigurationFacade configurationFacade) {
         Assert.assertNotNull(providerRegistry);
         Assert.assertNotNull(configurationFacade);
+        postConstructCalled = true;
     }
 }

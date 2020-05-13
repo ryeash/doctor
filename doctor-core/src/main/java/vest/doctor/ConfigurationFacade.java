@@ -1,11 +1,9 @@
 package vest.doctor;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 /**
  * Provides unified access to properties by corralling multiple {@link ConfigurationSource}s together and
@@ -30,8 +28,8 @@ public interface ConfigurationFacade extends ConfigurationSource {
      * Get a property value.
      *
      * @param fullyQualifiedPropertyName the full name of the property
-     * @param defaultValue               the default value to fall back to
-     * @return the property value, or the default value if no property is found
+     * @param defaultValue               the value to return if the property is not set
+     * @return the property value, or the default value if the property is not found
      */
     String get(String fullyQualifiedPropertyName, String defaultValue);
 
@@ -40,7 +38,7 @@ public interface ConfigurationFacade extends ConfigurationSource {
      *
      * @param fullyQualifiedPropertyName the full name of the property
      * @param converter                  the converter to use to convert the property value
-     * @return the converted property value or null if no property is found
+     * @return the converted property value or null if the property is not found
      */
     <T> T get(String fullyQualifiedPropertyName, Function<String, T> converter);
 
@@ -48,21 +46,11 @@ public interface ConfigurationFacade extends ConfigurationSource {
      * Get a property value, converting it to another value using the given converter function.
      *
      * @param fullyQualifiedPropertyName the full name of the property
-     * @param defaultValue               the default value to fall back to
+     * @param defaultValue               the value to return if the property is not set
      * @param converter                  the converter to use to convert the property value
-     * @return the converted property value, or the default value if no property is found
+     * @return the converted property value, or the default value if the property is not found
      */
     <T> T get(String fullyQualifiedPropertyName, T defaultValue, Function<String, T> converter);
-
-    /**
-     * Get a collection of property values, delimited by commas. Individual values will be converted using the given
-     * converter function.
-     *
-     * @param fullyQualifiedPropertyName the full name of the property
-     * @param converter                  the converter to use to convert the property value
-     * @return the property values, or an empty collection if no property is found
-     */
-    <T> Collection<T> getCollection(String fullyQualifiedPropertyName, Function<String, T> converter);
 
     /**
      * Get a list of property values, delimited by commas. Individual values will be converted using the given
@@ -70,9 +58,20 @@ public interface ConfigurationFacade extends ConfigurationSource {
      *
      * @param fullyQualifiedPropertyName the full name of the property
      * @param converter                  the converter to use to convert the property value
-     * @return the property values, or an empty list if no property is found
+     * @return the property values, or an empty list if the property is not found
      */
     <T> List<T> getList(String fullyQualifiedPropertyName, Function<String, T> converter);
+
+    /**
+     * Get a list of property values, delimited by commas. Individual values will be converted using the given
+     * converter function.
+     *
+     * @param fullyQualifiedPropertyName the full name of the property
+     * @param defaultValue               the value to return if the property is not set
+     * @param converter                  the converter to use to convert the property value
+     * @return the property values, or the default value if the property is not found
+     */
+    <T> List<T> getList(String fullyQualifiedPropertyName, List<T> defaultValue, Function<String, T> converter);
 
     /**
      * Get a set of property values, delimited by commas. Individual values will be converted using the given
@@ -80,19 +79,20 @@ public interface ConfigurationFacade extends ConfigurationSource {
      *
      * @param fullyQualifiedPropertyName the full name of the property
      * @param converter                  the converter to use to convert the property value
-     * @return the property values, or an empty set if no property is found
+     * @return the property values, or an empty set if the property is not found
      */
     <T> Set<T> getSet(String fullyQualifiedPropertyName, Function<String, T> converter);
 
     /**
-     * Get a stream of property values, delimited by commas. Individual values will be converted using the given
+     * Get a set of property values, delimited by commas. Individual values will be converted using the given
      * converter function.
      *
      * @param fullyQualifiedPropertyName the full name of the property
+     * @param defaultValue               the value to return if the property is not set
      * @param converter                  the converter to use to convert the property value
-     * @return the property values, or an empty stream if no property is found
+     * @return the property values, or the default value if the property is not found
      */
-    <T> Stream<T> getSplit(String fullyQualifiedPropertyName, Function<String, T> converter);
+    <T> Set<T> getSet(String fullyQualifiedPropertyName, Set<T> defaultValue, Function<String, T> converter);
 
     /**
      * Resolve placeholder values in the given string. Placeholders are designated like `${property.name}` and can be

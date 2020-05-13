@@ -35,22 +35,26 @@ public final class PropertyCodeGen {
         if (ProcessorUtils.isCompatibleWith(context, typeElement, Provider.class)) {
             throw new IllegalArgumentException("@Properties can not be Provider types: " + ProcessorUtils.debugString(typeElement));
         }
-        boolean isOptional = ProcessorUtils.isCompatibleWith(context, typeElement, Optional.class);
 
+        boolean isOptional = ProcessorUtils.isCompatibleWith(context, typeMirror, Optional.class);
         if (isOptional) {
             typeElement = ProcessorUtils.getParameterizedType(context, typeMirror)
                     .orElseThrow(() -> new IllegalArgumentException("no parameterized type found on Optional property"));
         }
 
-        boolean isCollection = true;
+        boolean isCollection;
         String confMethod;
 
-        if (ProcessorUtils.isCompatibleWith(context, typeElement, Set.class)) {
-            confMethod = "getSet";
-        } else if (ProcessorUtils.isCompatibleWith(context, typeElement, List.class)) {
-            confMethod = "getList";
-        } else if (ProcessorUtils.isCompatibleWith(context, typeElement, Collection.class)) {
-            confMethod = "getCollection";
+        if (ProcessorUtils.isCompatibleWith(context, typeElement, Collection.class)) {
+            isCollection = true;
+            if (ProcessorUtils.isCompatibleWith(context, typeElement, Set.class)) {
+                confMethod = "getSet";
+            } else if (ProcessorUtils.isCompatibleWith(context, typeElement, List.class)
+                    || ProcessorUtils.isCompatibleWith(context, typeElement, Collection.class)) {
+                confMethod = "getList";
+            } else {
+                throw new IllegalArgumentException("can not inject collection property of type: " + typeElement);
+            }
         } else {
             confMethod = "get";
             isCollection = false;

@@ -2,7 +2,7 @@ package vest.doctor;
 
 import java.util.Objects;
 
-class ClassKey {
+class ClassKey implements Comparable<ClassKey> {
 
     private final String type;
     private final int typeHash;
@@ -28,5 +28,10 @@ class ClassKey {
     @Override
     public int hashCode() {
         return typeHash;
+    }
+
+    @Override
+    public int compareTo(ClassKey o) {
+        return this.type.compareTo(o.type);
     }
 }

@@ -42,8 +42,8 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
 
         impl.addImportClass(ProviderRegistry.class);
         impl.addField("private final " + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY);
-        impl.setConstructor(CodeLine.line("public {}({} {}){ this.{} = {}; }",
-                implClass, ProviderRegistry.class, PROVIDER_REGISTRY, PROVIDER_REGISTRY, PROVIDER_REGISTRY));
+        impl.setConstructor("public {}({} {}){ this.{} = {}; }",
+                implClass, ProviderRegistry.class, PROVIDER_REGISTRY, PROVIDER_REGISTRY, PROVIDER_REGISTRY);
 
         for (ExecutableElement method : ProcessorUtils.allMethods(context, providedType())) {
             if (method.getAnnotation(Property.class) != null) {
@@ -82,7 +82,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
         classBuilder.addMethod(CodeLine.line("public void validateDependencies({} {})", ProviderRegistry.class, PROVIDER_REGISTRY), b -> {
             for (TypeElement typeElement : hierarchy) {
                 for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements())) {
-                    if (!ProcessorUtils.isCompatibleWith(context, context.toTypeElement(method.getReturnType()), Optional.class)) {
+                    if (!ProcessorUtils.isCompatibleWith(context, method.getReturnType(), Optional.class)) {
                         Property property = method.getAnnotation(Property.class);
                         if (property != null) {
                             String propertyName = propertyPrefix + property.value();

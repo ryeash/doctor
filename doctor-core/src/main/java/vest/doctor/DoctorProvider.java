@@ -38,14 +38,14 @@ public interface DoctorProvider<T> extends Provider<T> {
     }
 
     /**
-     * The modules that this provider are active with.
+     * The modules that this provider is active with.
      */
     default List<String> modules() {
         return Collections.emptyList();
     }
 
     /**
-     * Check all dependencies are met by the current state of the {@link ProviderRegistry}.
+     * Check all dependencies are met by the current state of the given {@link ProviderRegistry}.
      */
     void validateDependencies(ProviderRegistry providerRegistry);
 }

@@ -143,6 +143,9 @@ public class ProcessorUtils {
         if (HIERARCHY_CACHE.containsKey(type)) {
             return HIERARCHY_CACHE.get(type);
         }
+        if (type == null) {
+            return Collections.emptyList();
+        }
         Set<TypeElement> allClasses = new LinkedHashSet<>();
         List<TypeElement> allInterfaces = new LinkedList<>();
         allClasses.add(type);
@@ -177,6 +180,10 @@ public class ProcessorUtils {
                 .stream()
                 .filter(method -> !method.getEnclosingElement().asType().toString().equals(Object.class.getCanonicalName()))
                 .collect(Collectors.toList());
+    }
+
+    public static boolean isCompatibleWith(AnnotationProcessorContext context, TypeMirror mirror, Class<?> checkType) {
+        return isCompatibleWith(context, context.toTypeElement(mirror), checkType);
     }
 
     public static boolean isCompatibleWith(AnnotationProcessorContext context, TypeElement type, Class<?> checkType) {

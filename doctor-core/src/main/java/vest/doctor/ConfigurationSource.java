@@ -14,12 +14,12 @@ public interface ConfigurationSource {
     String get(String fullyQualifiedPropertyName);
 
     /**
-     * Get an iterable over all property names contained within this source.
+     * Get an iterable for all property names contained within this source.
      */
     Iterable<String> propertyNames();
 
     /**
-     * Reload this source. Up to the implementation to decide what this means.
+     * Reload this source. It is up to the implementation to decide what this means.
      */
     default void reload() {
     }

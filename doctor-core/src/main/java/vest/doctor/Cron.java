@@ -31,10 +31,10 @@ import java.util.stream.Stream;
  * | - 5 minutes past the hour
  * - 0 seconds
  * The fire times will be, e.g
- * Jan 1, 20201 00:05:00
- * Jan 1, 20201 01:05:00
- * Jan 1, 20201 02:05:00
- * Jan 1, 20201 03:05:00
+ * Jan 1, 2020 00:05:00
+ * Jan 1, 2020 01:05:00
+ * Jan 1, 2020 02:05:00
+ * Jan 1, 2020 03:05:00
  * <p>
  * Supported field definitions:
  * - a constant number, e.g. `5` will enforce fire times having only that value for the field

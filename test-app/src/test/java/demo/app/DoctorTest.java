@@ -165,7 +165,8 @@ public class DoctorTest extends BaseDoctorTest {
 
     @Test
     public void providerInjection() {
-        doctor.getInstance(TCProviderInject.class);
+        TCProviderInject instance = doctor.getInstance(TCProviderInject.class);
+        assertTrue(instance.postConstructCalled);
     }
 
     @Test

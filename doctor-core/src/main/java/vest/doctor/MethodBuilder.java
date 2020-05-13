@@ -10,8 +10,8 @@ public class MethodBuilder {
     private final StringBuilder sb = new StringBuilder();
     private final Consumer<String> onFinish;
 
-    public MethodBuilder(String methodDefinition) {
-        this(methodDefinition, null);
+    public MethodBuilder(String methodDefinition, Object... args) {
+        this(CodeLine.line(methodDefinition, args), (Consumer<String>) null);
     }
 
     public MethodBuilder(String methodDefinition, Consumer<String> onFinish) {

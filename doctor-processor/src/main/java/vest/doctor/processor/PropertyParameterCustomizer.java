@@ -7,7 +7,6 @@ import vest.doctor.Property;
 import vest.doctor.ProviderDependency;
 
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.TypeMirror;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -31,11 +30,10 @@ public class PropertyParameterCustomizer implements ParameterLookupCustomizer {
     public String dependencyCheckCode(AnnotationProcessorContext context, VariableElement variableElement, String providerRegistryRef) {
         Property property = variableElement.getAnnotation(Property.class);
         if (property != null) {
-            TypeMirror element = variableElement.asType();
-            if (Optional.class.getCanonicalName().equals(element.toString())) {
+            if (ProcessorUtils.isCompatibleWith(context, variableElement.asType(), Optional.class)) {
                 return "";
             } else {
-                return Objects.class.getCanonicalName() + ".requireNonNull(" + providerRegistryRef + ".configuration().get(\"" + property.value() + "\", \"missing required property '" + property.value() + "'\"));";
+                return Objects.class.getCanonicalName() + ".requireNonNull(" + providerRegistryRef + ".configuration().get(\"" + property.value() + "\"), \"missing required property '" + property.value() + "'\");";
             }
         }
         return null;

@@ -14,7 +14,7 @@ public abstract class BaseDoctorTest extends Assert {
     public void start() {
         if (doctor == null) {
             System.setProperty("qualifierInterpolation", "interpolated");
-            System.setProperty("doctor.app.properties", "test-override.properties,test.properties");
+            System.setProperty("doctor.app.properties", "test-override.props,test.props");
 
             doctor = Doctor.load(DefaultConfigurationFacade.defaultConfigurationFacade()
                     .addSource(new MapConfigurationSource(

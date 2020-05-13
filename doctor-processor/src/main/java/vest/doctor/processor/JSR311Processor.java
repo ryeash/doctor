@@ -251,14 +251,14 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 .addImportClass(DoctorProvider.class)
                 .addImportClass(PrimaryProviderWrapper.class)
                 .addImportClass(ShutdownContainer.class)
-                .addField(line("private final {} {} = new {}()", ShutdownContainer.class, Constants.SHUTDOWN_CONTAINER_NAME, ShutdownContainer.class))
+                .addField("private final {} {} = new {}()", ShutdownContainer.class, Constants.SHUTDOWN_CONTAINER_NAME, ShutdownContainer.class)
                 // call eager providers
-                .addMethod(line("public void postProcess({} {}) { eagerList.stream().filter(Objects::nonNull).forEach({}::get); }", ProviderRegistry.class, PROVIDER_REGISTRY, DoctorProvider.class))
-                .addMethod(line("public void close() { {}.close(); }", Constants.SHUTDOWN_CONTAINER_NAME));
+                .addMethod("public void postProcess({} {}) { eagerList.stream().filter(Objects::nonNull).forEach({}::get); }", ProviderRegistry.class, PROVIDER_REGISTRY, DoctorProvider.class)
+                .addMethod("public void close() { {}.close(); }", Constants.SHUTDOWN_CONTAINER_NAME);
 
-        cb.addField(line("private final List<{}<?>> eagerList = new ArrayList<>()", DoctorProvider.class));
+        cb.addField("private final List<{}<?>> eagerList = new ArrayList<>()", DoctorProvider.class);
 
-        MethodBuilder load = new MethodBuilder(line("public void load({} {})", ProviderRegistry.class, PROVIDER_REGISTRY));
+        MethodBuilder load = new MethodBuilder("public void load({} {})", ProviderRegistry.class, PROVIDER_REGISTRY);
 
         for (ProviderDefinition providerDefinition : providerDefinitions) {
             try {

@@ -8,6 +8,7 @@ import vest.doctor.Prototype;
 import javax.inject.Inject;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -21,7 +22,7 @@ public class TCProperties {
                         @Property("boolean") Boolean bool,
                         @Property("boolean") boolean primBool,
                         @Property("string") Optional<String> optionalString,
-                        @Property("none-existent-property") Optional<Integer> otherThing) {
+                        @Property("non-existent-property") Optional<Integer> otherThing) {
         Assert.assertEquals(stringProp, "value");
         Assert.assertEquals(c, 'v');
         Assert.assertTrue(bool);
@@ -32,7 +33,7 @@ public class TCProperties {
 
     @Inject
     public void injectProperties(@Property("list") List<String> stringList,
-                                 @Property("list") List<Integer> numberList,
+                                 @Property("list") Collection<Integer> numberList,
                                  @Property("set") Set<String> set) {
         Assert.assertEquals(stringList, Arrays.asList("42", "12", "97"));
         Assert.assertEquals(numberList, Arrays.asList(42, 12, 97));
