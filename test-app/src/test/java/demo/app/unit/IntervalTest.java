@@ -2,7 +2,7 @@ package demo.app.unit;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import vest.doctor.Interval;
+import vest.doctor.scheduled.Interval;
 
 import java.util.concurrent.TimeUnit;
 

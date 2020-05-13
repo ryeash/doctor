@@ -4,14 +4,10 @@ import doctor.processor.Constants;
 import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.AppLoader;
-import vest.doctor.ClassBuilder;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.CustomizationPoint;
 import vest.doctor.DoctorProvider;
-import vest.doctor.EventManager;
-import vest.doctor.EventProducer;
 import vest.doctor.InjectionException;
-import vest.doctor.MethodBuilder;
 import vest.doctor.PrimaryProviderWrapper;
 import vest.doctor.Prioritized;
 import vest.doctor.ProcessorConfiguration;
@@ -23,6 +19,10 @@ import vest.doctor.ProviderDependency;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.ScopeWriter;
 import vest.doctor.ShutdownContainer;
+import vest.doctor.codegen.ClassBuilder;
+import vest.doctor.codegen.MethodBuilder;
+import vest.doctor.event.EventManager;
+import vest.doctor.event.EventProducer;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -58,7 +58,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static doctor.processor.Constants.PROVIDER_REGISTRY;
-import static vest.doctor.CodeLine.line;
+import static vest.doctor.codegen.CodeLine.line;
 
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 @SupportedOptions({JSR311Processor.PACKAGE_NAME_OPTION})

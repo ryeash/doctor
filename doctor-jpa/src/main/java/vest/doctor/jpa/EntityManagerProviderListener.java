@@ -2,12 +2,12 @@ package vest.doctor.jpa;
 
 import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.ClassBuilder;
 import vest.doctor.Factory;
-import vest.doctor.MethodBuilder;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionListener;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.codegen.ClassBuilder;
+import vest.doctor.codegen.MethodBuilder;
 
 import javax.inject.Named;
 import javax.inject.Singleton;

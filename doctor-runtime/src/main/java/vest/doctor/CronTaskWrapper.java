@@ -2,6 +2,7 @@ package vest.doctor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import vest.doctor.scheduled.Cron;
 
 import java.lang.ref.WeakReference;
 import java.util.concurrent.ScheduledExecutorService;

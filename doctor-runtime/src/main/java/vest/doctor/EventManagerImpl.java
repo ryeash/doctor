@@ -1,5 +1,8 @@
 package vest.doctor;
 
+import vest.doctor.event.EventConsumer;
+import vest.doctor.event.EventManager;
+
 import javax.inject.Provider;
 import java.util.LinkedList;
 import java.util.List;

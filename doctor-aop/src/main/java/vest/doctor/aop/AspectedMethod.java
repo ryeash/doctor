@@ -3,9 +3,9 @@ package vest.doctor.aop;
 import doctor.processor.ClassValueVisitor;
 import doctor.processor.Constants;
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.ClassBuilder;
-import vest.doctor.MethodBuilder;
 import vest.doctor.ProviderDefinition;
+import vest.doctor.codegen.ClassBuilder;
+import vest.doctor.codegen.MethodBuilder;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;

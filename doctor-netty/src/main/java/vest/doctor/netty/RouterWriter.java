@@ -3,12 +3,12 @@ package vest.doctor.netty;
 import doctor.processor.Constants;
 import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.ClassBuilder;
 import vest.doctor.DoctorProvider;
-import vest.doctor.MethodBuilder;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionListener;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.codegen.ClassBuilder;
+import vest.doctor.codegen.MethodBuilder;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;

@@ -1,4 +1,4 @@
-package vest.doctor;
+package vest.doctor.event;
 
 /**
  * Handle to the event system. Used to publish events to {@link EventListener} methods.

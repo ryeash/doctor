@@ -1,4 +1,4 @@
-package vest.doctor;
+package vest.doctor.event;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

@@ -2,12 +2,12 @@ package vest.doctor.processor;
 
 import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.ClassBuilder;
-import vest.doctor.CodeLine;
-import vest.doctor.MethodBuilder;
 import vest.doctor.Properties;
 import vest.doctor.Property;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.codegen.ClassBuilder;
+import vest.doctor.codegen.CodeLine;
+import vest.doctor.codegen.MethodBuilder;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;

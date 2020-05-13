@@ -4,13 +4,13 @@ import doctor.processor.Constants;
 import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.Async;
-import vest.doctor.ClassBuilder;
 import vest.doctor.DoctorProvider;
-import vest.doctor.EventConsumer;
-import vest.doctor.EventListener;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionListener;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.codegen.ClassBuilder;
+import vest.doctor.event.EventConsumer;
+import vest.doctor.event.EventListener;
 
 import javax.inject.Inject;
 import javax.inject.Named;

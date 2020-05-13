@@ -1,8 +1,10 @@
 package vest.doctor.jaxrs;
 
 import vest.doctor.AppLoader;
-import vest.doctor.EventProducer;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.event.EventProducer;
+import vest.doctor.event.ServiceStarted;
+import vest.doctor.event.ServiceStopped;
 
 public class JAXRSLoader implements AppLoader {
     private ProviderRegistry providerRegistry;
@@ -12,7 +14,7 @@ public class JAXRSLoader implements AppLoader {
     public void postProcess(ProviderRegistry providerRegistry) {
         this.providerRegistry = providerRegistry;
         server = new JAXRSServer(providerRegistry);
-        providerRegistry.getInstance(EventProducer.class).publish(new ServerStarted());
+        providerRegistry.getInstance(EventProducer.class).publish(new ServiceStarted("jetty-jaxrs", server));
     }
 
     @Override
@@ -21,7 +23,7 @@ public class JAXRSLoader implements AppLoader {
             server.close();
         }
         if (providerRegistry != null) {
-            providerRegistry.getInstance(EventProducer.class).publish(new ServerStopped());
+            providerRegistry.getInstance(EventProducer.class).publish(new ServiceStopped("jetty-jaxrs", server));
         }
     }
 

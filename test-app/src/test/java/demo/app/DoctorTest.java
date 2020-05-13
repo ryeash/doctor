@@ -7,10 +7,10 @@ import org.testng.annotations.AfterSuite;
 import org.testng.annotations.Test;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.Doctor;
-import vest.doctor.EventConsumer;
-import vest.doctor.EventManager;
-import vest.doctor.EventProducer;
-import vest.doctor.message.ReloadConfiguration;
+import vest.doctor.event.EventConsumer;
+import vest.doctor.event.EventManager;
+import vest.doctor.event.EventProducer;
+import vest.doctor.event.ReloadConfiguration;
 
 import javax.inject.Provider;
 import java.io.IOException;
@@ -108,7 +108,7 @@ public class DoctorTest extends BaseDoctorTest {
         assertEquals(conf.get("string"), "value");
         assertEquals((int) conf.<Integer>get("number", Integer::valueOf), 42);
         assertTrue(conf.get("boolean", Boolean::valueOf));
-        assertEquals(conf.get("override.this"), "overriden");
+        assertEquals(conf.get("override.this"), "overridden");
     }
 
     @Test

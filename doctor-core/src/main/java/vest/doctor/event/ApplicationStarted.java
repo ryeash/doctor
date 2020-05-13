@@ -1,10 +1,9 @@
-package vest.doctor.message;
+package vest.doctor.event;
 
-import vest.doctor.Doctor;
 import vest.doctor.ProviderRegistry;
 
 /**
- * Event sent by the {@link Doctor} instance when all providers have been loaded.
+ * Event sent by the doctor instance when all providers have been loaded.
  */
 public final class ApplicationStarted extends ProviderRegistryHolder {
 

@@ -1,4 +1,4 @@
-package vest.doctor.message;
+package vest.doctor.event;
 
 import vest.doctor.ProviderRegistry;
 

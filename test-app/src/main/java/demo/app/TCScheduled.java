@@ -2,7 +2,7 @@ package demo.app;
 
 import org.testng.Assert;
 import vest.doctor.Prototype;
-import vest.doctor.Scheduled;
+import vest.doctor.scheduled.Scheduled;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

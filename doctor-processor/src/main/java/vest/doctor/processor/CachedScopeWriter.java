@@ -3,9 +3,9 @@ package vest.doctor.processor;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.Cached;
 import vest.doctor.CachedScopeProvider;
-import vest.doctor.Interval;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ScopeWriter;
+import vest.doctor.scheduled.Interval;
 
 import java.lang.annotation.Annotation;
 import java.util.concurrent.TimeUnit;

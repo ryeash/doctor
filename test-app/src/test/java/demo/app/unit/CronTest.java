@@ -1,7 +1,7 @@
 package demo.app.unit;
 
 import org.testng.annotations.Test;
-import vest.doctor.Cron;
+import vest.doctor.scheduled.Cron;
 
 import java.time.DayOfWeek;
 import java.time.Instant;

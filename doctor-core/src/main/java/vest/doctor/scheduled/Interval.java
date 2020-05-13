@@ -1,4 +1,4 @@
-package vest.doctor;
+package vest.doctor.scheduled;
 
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;

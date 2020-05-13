@@ -1,4 +1,4 @@
-package vest.doctor;
+package vest.doctor.event;
 
 /**
  * Interface defining a class that can consume events published using {@link EventProducer#publish(Object)}

@@ -2,12 +2,12 @@ package vest.doctor.processor;
 
 import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.ClassBuilder;
 import vest.doctor.DoctorProvider;
 import vest.doctor.Modules;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDependency;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.codegen.ClassBuilder;
 
 import javax.inject.Provider;
 import javax.lang.model.element.AnnotationMirror;

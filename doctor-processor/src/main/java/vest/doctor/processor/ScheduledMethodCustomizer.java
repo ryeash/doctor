@@ -3,13 +3,13 @@ package vest.doctor.processor;
 import doctor.processor.Constants;
 import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.Cron;
-import vest.doctor.Interval;
-import vest.doctor.MethodBuilder;
 import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderRegistry;
-import vest.doctor.Scheduled;
+import vest.doctor.codegen.MethodBuilder;
+import vest.doctor.scheduled.Cron;
+import vest.doctor.scheduled.Interval;
+import vest.doctor.scheduled.Scheduled;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;

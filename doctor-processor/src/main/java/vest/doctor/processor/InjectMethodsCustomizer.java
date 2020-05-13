@@ -4,9 +4,9 @@ import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.Async;
 import vest.doctor.InjectionException;
-import vest.doctor.MethodBuilder;
 import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ProviderDefinition;
+import vest.doctor.codegen.MethodBuilder;
 
 import javax.inject.Inject;
 import javax.lang.model.element.ExecutableElement;

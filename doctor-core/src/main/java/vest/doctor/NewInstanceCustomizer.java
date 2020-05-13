@@ -1,5 +1,7 @@
 package vest.doctor;
 
+import vest.doctor.codegen.MethodBuilder;
+
 import javax.inject.Provider;
 
 /**

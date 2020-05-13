@@ -1,4 +1,4 @@
-package vest.doctor;
+package vest.doctor.codegen;
 
 import javax.annotation.processing.Filer;
 import javax.tools.JavaFileObject;

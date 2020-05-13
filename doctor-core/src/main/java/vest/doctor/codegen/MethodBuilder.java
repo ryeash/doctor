@@ -1,4 +1,4 @@
-package vest.doctor;
+package vest.doctor.codegen;
 
 import java.util.function.Consumer;
 

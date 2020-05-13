@@ -1,6 +1,7 @@
 package vest.doctor;
 
-import vest.doctor.message.ReloadConfiguration;
+import vest.doctor.event.EventConsumer;
+import vest.doctor.event.ReloadConfiguration;
 
 public class ConfigurationReloadEventListener implements EventConsumer {
 

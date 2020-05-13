@@ -1,4 +1,6 @@
-package vest.doctor;
+package vest.doctor.scheduled;
+
+import vest.doctor.ProviderRegistry;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

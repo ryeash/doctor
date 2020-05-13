@@ -1,4 +1,4 @@
-package vest.doctor;
+package vest.doctor.scheduled;
 
 import java.time.Instant;
 import java.time.ZoneId;

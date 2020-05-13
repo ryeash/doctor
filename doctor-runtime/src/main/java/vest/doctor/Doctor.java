@@ -1,7 +1,8 @@
 package vest.doctor;
 
-import vest.doctor.message.ApplicationShutdown;
-import vest.doctor.message.ApplicationStarted;
+import vest.doctor.event.ApplicationShutdown;
+import vest.doctor.event.ApplicationStarted;
+import vest.doctor.event.EventProducer;
 
 import javax.inject.Provider;
 import java.lang.annotation.Annotation;
@@ -87,6 +88,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
     private final List<AppLoader> loaders;
     private final ProviderIndex providerIndex;
     private final ConfigurationFacade configurationFacade;
+    private boolean closed = false;
 
     /**
      * Create a new Doctor instance. Loading all available generated services automatically.
@@ -202,14 +204,17 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
 
     @Override
     public void close() {
-        getProviderOpt(EventProducer.class, null)
-                .map(Provider::get)
-                .ifPresent(ep -> ep.publish(new ApplicationShutdown(this)));
-        for (AppLoader loader : loaders) {
-            try {
-                loader.close();
-            } catch (Exception e) {
-                // ignored
+        if (!closed) {
+            closed = true;
+            getProviderOpt(EventProducer.class, null)
+                    .map(Provider::get)
+                    .ifPresent(ep -> ep.publish(new ApplicationShutdown(this)));
+            for (AppLoader loader : loaders) {
+                try {
+                    loader.close();
+                } catch (Exception e) {
+                    // ignored
+                }
             }
         }
     }

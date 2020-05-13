@@ -1,4 +1,4 @@
-package vest.doctor;
+package vest.doctor.codegen;
 
 import javax.lang.model.element.TypeElement;
 import java.util.Arrays;

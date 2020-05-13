@@ -1,4 +1,6 @@
-package vest.doctor;
+package vest.doctor.event;
+
+import vest.doctor.ProviderRegistry;
 
 /**
  * Manages the {@link EventListener}s and routing of messages.

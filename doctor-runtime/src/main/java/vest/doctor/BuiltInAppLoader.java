@@ -1,5 +1,8 @@
 package vest.doctor;
 
+import vest.doctor.event.EventManager;
+import vest.doctor.event.EventProducer;
+
 import java.util.Arrays;
 import java.util.Properties;
 
