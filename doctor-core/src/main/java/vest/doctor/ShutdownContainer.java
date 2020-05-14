@@ -6,7 +6,7 @@ import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Used internally to support auto-closing of provided isntances.
+ * Used internally to support auto-closing of provided instances.
  */
 public class ShutdownContainer implements AutoCloseable {
 
@@ -17,11 +17,11 @@ public class ShutdownContainer implements AutoCloseable {
         if (closeable == null) {
             return;
         }
-        synchronized (closed) {
-            if (closed.get()) {
-                closeQuietly(closeable);
-                return;
-            }
+        if (closed.get()) {
+            closeQuietly(closeable);
+            return;
+        }
+        synchronized (cleanupObjects) {
             cleanupObjects.add(closeable);
         }
     }
@@ -29,7 +29,7 @@ public class ShutdownContainer implements AutoCloseable {
     @Override
     public void close() {
         if (closed.compareAndSet(false, true)) {
-            synchronized (closed) {
+            synchronized (cleanupObjects) {
                 cleanupObjects.forEach(ShutdownContainer::closeQuietly);
                 cleanupObjects.clear();
             }
