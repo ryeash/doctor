@@ -1,4 +1,4 @@
-package vest.doctor.netty;
+package vest.doctor.netty.impl;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
@@ -7,21 +7,25 @@ import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.LastHttpContent;
+import vest.doctor.netty.HttpException;
+import vest.doctor.netty.RequestBody;
 
 import java.io.InputStream;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 
 /**
  * A handle to the HTTP request body. Supports event driven reading of body data.
  */
-public class StreamingBody extends InputStream {
-    private CompositeByteBuf composite = Unpooled.compositeBuffer();
-    private CompletableFuture<ByteBuf> future = new CompletableFuture<>();
+public class StreamingBody extends InputStream implements RequestBody {
+    private final CompositeByteBuf composite = Unpooled.compositeBuffer(1024);
+    private final CompletableFuture<ByteBuf> future = new CompletableFuture<>();
     private final long maxLength;
     private long size;
-    private BiConsumer<ByteBuf, Boolean> dataConsumer;
+
+    private CompletableFuture<Object> asyncReadFuture;
+    private BiFunction<ByteBuf, Boolean, ?> dataConsumer;
     private HttpHeaders trailingHeaders;
 
     private boolean closed = false;
@@ -31,13 +35,40 @@ public class StreamingBody extends InputStream {
         this.size = 0;
     }
 
-    /**
-     * Get a future that completes when all bytes of the request body have been read.
-     *
-     * @return a future that completes when all bytes of the request body have been read
-     */
-    public CompletableFuture<ByteBuf> future() {
+    @Override
+    public CompletableFuture<ByteBuf> completionFuture() {
         return future;
+    }
+
+    @Override
+    public InputStream inputStream() {
+        return this;
+    }
+
+    @Override
+    public <T> CompletableFuture<T> asyncRead(BiFunction<ByteBuf, Boolean, T> reader) {
+        if (this.dataConsumer != null) {
+            throw new IllegalStateException("there is already a data consumer attached to this body");
+        }
+        this.asyncReadFuture = new CompletableFuture<>();
+        this.dataConsumer = reader;
+        internalAsyncRead();
+        return (CompletableFuture<T>) asyncReadFuture;
+    }
+
+    private void internalAsyncRead() {
+        if (dataConsumer == null) {
+            return;
+        }
+        synchronized (composite) {
+            Object result = dataConsumer.apply(composite, future.isDone());
+            if (composite.refCnt() > 0) {
+                composite.discardReadComponents();
+            }
+            if (result != null) {
+                asyncReadFuture.complete(result);
+            }
+        }
     }
 
     /**
@@ -50,36 +81,29 @@ public class StreamingBody extends InputStream {
         return Optional.ofNullable(trailingHeaders).filter(h -> !h.isEmpty());
     }
 
-    public void readData(BiConsumer<ByteBuf, Boolean> dataConsumer) {
-        if (this.dataConsumer != null) {
-            throw new IllegalStateException("there is already a data consumer attached to this body");
-        }
-        this.dataConsumer = dataConsumer;
-        dataConsumer.accept(composite, future.isDone());
-        composite.discardReadComponents();
-    }
-
-    void append(HttpContent content) {
+    public void append(HttpContent content) {
         try {
             if (closed) {
                 content.release();
                 return;
             }
-            composite.addComponent(true, content.content());
-
-            size += content.content().readableBytes();
-            if (size >= maxLength) {
+            ByteBuf buf = content.content();
+            int readable = buf.readableBytes();
+            if (size + readable >= maxLength) {
                 throw new HttpException(HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE);
+            }
+            if (readable > 0) {
+                synchronized (composite) {
+                    composite.addComponent(true, buf);
+                    size += readable;
+                }
             }
 
             if (content instanceof LastHttpContent) {
                 this.trailingHeaders = ((LastHttpContent) content).trailingHeaders();
                 future.complete(composite);
             }
-            if (dataConsumer != null) {
-                dataConsumer.accept(composite, future.isDone());
-                composite.discardReadComponents();
-            }
+            internalAsyncRead();
         } finally {
             synchronized (this) {
                 notifyAll();
@@ -125,12 +149,17 @@ public class StreamingBody extends InputStream {
         composite.release();
     }
 
+    @Override
+    public String toString() {
+        return "StreamingBody{" + composite + ", done?:" + future.isDone() + "}";
+    }
+
     private void readWait() {
         if (closed) {
             return;
         }
         while (!future.isDone() && composite.readableBytes() <= 0) {
-            synchronized (this) {
+            synchronized (composite) {
                 try {
                     wait(1000);
                 } catch (InterruptedException e) {

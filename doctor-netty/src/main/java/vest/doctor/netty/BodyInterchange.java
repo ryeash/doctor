@@ -1,7 +1,6 @@
 package vest.doctor.netty;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.netty.buffer.Unpooled;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
 
@@ -11,13 +10,10 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public final class BodyInterchange {
-    private final boolean tracingEnabled;
     private final List<BodyReader> readers;
     private final List<BodyWriter> writers;
 
     public BodyInterchange(ProviderRegistry providerRegistry) {
-        this.tracingEnabled = new NettyConfiguration(providerRegistry.configuration()).debugRequestRouting();
-
         DefaultReaderWriter defaultRW = new DefaultReaderWriter();
 
         JacksonInterchange jacksonInterchange = providerRegistry.getProviderOpt(ObjectMapper.class)
@@ -42,57 +38,41 @@ public final class BodyInterchange {
         writers.sort(Prioritized.COMPARATOR);
     }
 
-    public <T> T read(RequestContext ctx, TypeInfo typeInfo) {
+    public <T> CompletableFuture<T> read(Request request, TypeInfo typeInfo) {
         for (BodyReader reader : readers) {
-            if (reader.handles(ctx, typeInfo)) {
-                Utils.addTraceInfo(tracingEnabled, ctx, "BODY READER {}", reader);
-                return reader.read(ctx, typeInfo);
+            if (reader.handles(request, typeInfo)) {
+                return reader.read(request, typeInfo);
             }
         }
         throw new UnsupportedOperationException("unsupported request body type: " + typeInfo);
     }
 
-    public void write(RequestContext ctx, Object response) {
-        if (response == null) {
-            ctx.complete();
-        } else if (response instanceof CompletableFuture) {
-            write(ctx, (CompletableFuture<?>) response);
-        } else if (response instanceof R) {
-            write(ctx, (R) response);
+    public CompletableFuture<Response> write(Request request, Object data) {
+        if (data instanceof CompletableFuture) {
+            return ((CompletableFuture<?>) data).thenCompose(d -> write(request, d));
+        } else if (data instanceof Response) {
+            return CompletableFuture.completedFuture((Response) data);
+        } else if (data instanceof ResponseBody) {
+            return CompletableFuture.completedFuture(request.createResponse().body((ResponseBody) data));
+        } else if (data == null) {
+            return CompletableFuture.completedFuture(request.createResponse().body(ResponseBody.empty()));
+        } else if (data instanceof R) {
+            R r = (R) data;
+            return write(request, r.body())
+                    .thenApply(response -> {
+                        r.headers().forEach(response.headers()::set);
+                        response.status(r.status());
+                        return response;
+                    });
         } else {
+            Response response = request.createResponse();
             for (BodyWriter writer : writers) {
-                if (writer.handles(ctx, response)) {
-                    Utils.addTraceInfo(tracingEnabled, ctx, "BODY WRITER {}", writer);
-                    writer.write(ctx, response);
-                    ctx.complete();
-                    return;
+                if (writer.handles(response, data)) {
+                    return writer.write(response, data)
+                            .thenApply(response::body);
                 }
             }
             throw new UnsupportedOperationException("unsupported response type: " + response.getClass());
         }
-    }
-
-    private void write(RequestContext ctx, CompletableFuture<?> response) {
-        if (response == null) {
-            ctx.responseBody(Unpooled.EMPTY_BUFFER);
-            return;
-        }
-        response.whenComplete((value, error) -> {
-            if (error != null) {
-                ctx.complete(error);
-            } else {
-                write(ctx, value);
-            }
-        });
-    }
-
-    private void write(RequestContext ctx, R response) {
-        if (response == null) {
-            ctx.responseBody(Unpooled.EMPTY_BUFFER);
-            return;
-        }
-        ctx.responseStatus(response.status());
-        response.headers().forEach(ctx.responseHeaders()::set);
-        write(ctx, response.body());
     }
 }

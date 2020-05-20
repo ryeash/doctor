@@ -1,9 +1,6 @@
 package vest.doctor.netty;
 
-import java.util.Arrays;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 
 public class Utils {
 
@@ -46,13 +43,13 @@ public class Utils {
         return sb.toString();
     }
 
-    public static void addTraceInfo(boolean enabled, RequestContext ctx, String message, Object... args) {
-        if (enabled) {
-            if (ctx.attribute(TRACE_ATTR) == null) {
-                ctx.attribute(TRACE_ATTR, new LinkedList<>());
-            }
-            long ms = System.currentTimeMillis() - ctx.requestStartTime();
-            ((List<String>) ctx.attribute(TRACE_ATTR)).add(ms + "ms " + Utils.fillTemplate(message, Arrays.asList(args)));
-        }
-    }
+//    public static void addTraceInfo(boolean enabled, RequestContext ctx, String message, Object... args) {
+//        if (enabled) {
+//            if (ctx.attribute(TRACE_ATTR) == null) {
+//                ctx.attribute(TRACE_ATTR, new LinkedList<>());
+//            }
+//            long ms = System.currentTimeMillis() - ctx.requestStartTime();
+//            ((List<String>) ctx.attribute(TRACE_ATTR)).add(ms + "ms " + Utils.fillTemplate(message, Arrays.asList(args)));
+//        }
+//    }
 }

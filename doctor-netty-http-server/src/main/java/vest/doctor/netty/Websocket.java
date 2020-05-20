@@ -20,8 +20,8 @@ import java.util.concurrent.CompletableFuture;
  */
 public abstract class Websocket {
 
-    public static final AttributeKey<WebSocketServerHandshaker> WS_HANDSHAKER = AttributeKey.valueOf("vest.websocket.handshaker");
-    public static final AttributeKey<String> WS_PATH = AttributeKey.valueOf("vest.websocket.path");
+    public static final AttributeKey<WebSocketServerHandshaker> WS_HANDSHAKER = AttributeKey.valueOf("doctor.websocket.handshaker");
+    public static final AttributeKey<String> WS_PATH = AttributeKey.valueOf("doctor.websocket.path");
     public static final WebSocketServerHandshakerFactory handshakerFactory = new WebSocketServerHandshakerFactory("/*", null, false);
 
     /**
@@ -133,7 +133,7 @@ public abstract class Websocket {
      * @param status  The close status to send
      * @param message The message to send
      */
-    protected void close(ChannelHandlerContext ctx, int status, String message) {
+    public void close(ChannelHandlerContext ctx, int status, String message) {
         if (ctx != null && ctx.channel() != null && ctx.channel().isOpen()) {
             WebSocketServerHandshaker handshaker = ctx.channel().attr(WS_HANDSHAKER).get();
             handshaker.close(ctx.channel(), new CloseWebSocketFrame(status, message));

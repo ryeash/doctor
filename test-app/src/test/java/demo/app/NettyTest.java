@@ -3,7 +3,10 @@ package demo.app;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
+import io.restassured.config.HttpClientConfig;
+import io.restassured.config.RestAssuredConfig;
 import io.restassured.specification.RequestSpecification;
+import org.apache.http.params.CoreConnectionPNames;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -13,7 +16,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.testng.annotations.Test;
-import vest.doctor.netty.Router;
+import vest.doctor.netty.impl.Router;
 
 import java.net.URI;
 import java.util.Collections;
@@ -31,7 +34,12 @@ public class NettyTest extends BaseDoctorTest {
 
     private RequestSpecification req() {
         RestAssured.baseURI = "http://localhost:8081/";
+        RestAssuredConfig config = RestAssured.config()
+                .httpClient(HttpClientConfig.httpClientConfig()
+                        .setParam(CoreConnectionPNames.CONNECTION_TIMEOUT, 5000)
+                        .setParam(CoreConnectionPNames.SO_TIMEOUT, 5000));
         return RestAssured.given()
+                .config(config)
                 .accept("application/json")
                 .contentType("application/json");
     }
@@ -51,17 +59,17 @@ public class NettyTest extends BaseDoctorTest {
                 .body(is("ok queryparam 42 42"));
     }
 
-    @Test
-    public void filters() {
-        req().queryParam("number", 42)
-                .queryParam("q", "queryparam")
-                .get("/netty/hello")
-                .prettyPeek()
-                .then()
-                .header("X-BEFORE-MATCH", is("true"))
-                .header("X-BEFORE-ROUTE", is("true"))
-                .header("X-AFTER-ROUTE", is("true"));
-    }
+//    @Test
+//    public void filters() {
+//        req().queryParam("number", 42)
+//                .queryParam("q", "queryparam")
+//                .get("/netty/hello")
+//                .prettyPeek()
+//                .then()
+//                .header("X-BEFORE-MATCH", is("true"))
+//                .header("X-BEFORE-ROUTE", is("true"))
+//                .header("X-AFTER-ROUTE", is("true"));
+//    }
 
     @Test
     public void returnedBytes() {
@@ -179,6 +187,14 @@ public class NettyTest extends BaseDoctorTest {
                 .then()
                 .statusCode(202)
                 .body(is("halted"));
+    }
+
+    @Test
+    public void paramtest() {
+        req().get("/netty/paramtest/str/42")
+                .then()
+                .statusCode(200)
+                .body(is("str 42"));
     }
 
     @Test

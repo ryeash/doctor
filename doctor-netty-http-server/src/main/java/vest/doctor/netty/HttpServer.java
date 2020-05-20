@@ -19,6 +19,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.DefaultLastHttpContent;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpContentCompressor;
@@ -39,39 +40,48 @@ import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import vest.doctor.CustomThreadFactory;
-import vest.doctor.ProviderRegistry;
+import vest.doctor.netty.impl.DefaultExceptionHandler;
+import vest.doctor.netty.impl.ServerRequest;
+import vest.doctor.netty.impl.StreamingBody;
+import vest.doctor.netty.impl.WebsocketHandler;
 
-import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
+
+import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 @Sharable
 public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implements AutoCloseable, Thread.UncaughtExceptionHandler {
-    private static final AttributeKey<StreamingBody> contextBody = AttributeKey.newInstance("doctor.netty.contextBody");
+    private static final AttributeKey<StreamingBody> CONTEXT_BODY = AttributeKey.newInstance("doctor.netty.contextBody");
     private static final Logger log = LoggerFactory.getLogger(HttpServer.class);
 
     private final NettyConfiguration config;
     private final EventLoopGroup bossGroup;
+    private final EventLoopGroup workerGroup;
     private final List<Channel> serverChannels;
     private final SslContext sslContext;
-    private final Router router;
-    private final ExecutorService workers;
+    private final Handler handler;
+    private final Map<String, Websocket> websockets;
+    private final ExceptionHandler exceptionHandler;
 
-    public HttpServer(ProviderRegistry providerRegistry, Router router) {
+    public HttpServer(NettyConfiguration config, Handler handler) {
+        this(config, handler, new DefaultExceptionHandler());
+    }
+
+    public HttpServer(NettyConfiguration config, Handler handler, ExceptionHandler exceptionHandler) {
         super();
-        this.config = new NettyConfiguration(providerRegistry.configuration());
+        this.config = config;
         this.sslContext = config.getSslContext();
-        this.router = router;
+        this.handler = handler;
+        this.websockets = new HashMap<>();
+        this.exceptionHandler = exceptionHandler;
         this.bossGroup = new NioEventLoopGroup(config.getTcpManagementThreads(), new DefaultThreadFactory(config.getTcpThreadPrefix(), false));
+        this.workerGroup = new NioEventLoopGroup(config.getWorkerThreads(), new DefaultThreadFactory(config.getWorkerThreadPrefix(), true));
         ServerBootstrap b = new ServerBootstrap()
-                .group(bossGroup)
+                .group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
                 .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, WriteBufferWaterMark.DEFAULT)
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
@@ -80,20 +90,17 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
                 .childHandler(new NettyChannelInit(this));
 
         this.serverChannels = new LinkedList<>();
-        for (InetSocketAddress inetSocketAddress : config.getListenAddresses()) {
+        for (InetSocketAddress inetSocketAddress : config.getBindAddresses()) {
             log.info("netty http server binding to {}", inetSocketAddress);
             serverChannels.add(b.bind(inetSocketAddress).channel());
         }
+    }
 
-        CustomThreadFactory threadFactory = new CustomThreadFactory(false, config.getWorkerThreadPrefix(), this, null);
-        ThreadPoolExecutor tpe = new ThreadPoolExecutor(config.getWorkerThreads(), config.getWorkerThreads(),
-                0L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>(),
-                threadFactory);
-        tpe.prestartAllCoreThreads();
-        tpe.allowCoreThreadTimeOut(false);
-        tpe.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
-        this.workers = Executors.unconfigurableExecutorService(tpe);
+    public void addWebsocket(String uri, Websocket websocket) {
+        if (websockets.containsKey(uri)) {
+            throw new IllegalArgumentException("there is already a websocket registered for " + uri);
+        }
+        websockets.put(uri, websocket);
     }
 
     @Override
@@ -127,6 +134,7 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
     }
 
     private void startRequestContext(ChannelHandlerContext ctx, HttpRequest request) {
+        // upgrade to websocket connection, if requested
         String upgradeHeader = request.headers().get(HttpHeaderNames.UPGRADE);
         if (upgradeHeader != null) {
             handleWebsocketUpgrade(ctx, request, upgradeHeader);
@@ -135,88 +143,61 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
 
         // handle as a normal HTTP request
         StreamingBody body = new StreamingBody(config.getMaxContentLength());
-        if (request.headers().getInt(HttpHeaderNames.CONTENT_LENGTH, 0) == 0
-                && !request.headers().contains(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED, true)) {
+        if (!expectingContent(request)) {
             // end it since there is no body expected
             body.append(new DefaultLastHttpContent(Unpooled.EMPTY_BUFFER));
         }
+        ctx.channel().attr(CONTEXT_BODY).set(body);
 
-        RequestContext requestContext = new RequestContext(ctx, request, body);
-        ctx.channel().attr(contextBody).set(body);
+        ServerRequest req = new ServerRequest(request, ctx, workerGroup, body);
 
-        requestContext.future().whenComplete(this::handleCompletedContext);
+        handler.handle(req)
+                .exceptionally(error -> handleError(req, error))
+                .thenAccept(response -> writeResponse(response.request(), response));
+    }
 
-        workers.submit(() -> {
-            try {
-                boolean handled = router.accept(requestContext);
-                if (!handled) {
-                    requestContext.response(404, "");
-                    requestContext.complete();
-                }
-            } catch (Throwable throwable) {
-                handleError(requestContext, throwable);
-                requestContext.complete();
-            }
-        });
+    private Response handleError(Request request, Throwable error) {
+        try {
+            return exceptionHandler.handle(request, error);
+        } catch (Throwable fatal) {
+            log.error("error mapping exception", fatal);
+            log.error("original exception", error);
+            request.channelContext().close();
+            return request.createResponse().status(500);
+        }
     }
 
     private void handleBodyData(ChannelHandlerContext ctx, HttpContent content) {
         HttpContent dup = content.retainedDuplicate();
-        StreamingBody streamingBody = ctx.channel().attr(contextBody).get();
-        workers.submit(() -> streamingBody.append(dup));
-    }
-
-    private void handleCompletedContext(RequestContext requestContext, Throwable error) {
-        if (error != null) {
-            handleError(requestContext, error);
+        StreamingBody streamingBody = ctx.channel().attr(CONTEXT_BODY).get();
+        if (streamingBody != null) {
+            streamingBody.append(dup);
         }
-        writeResponse(requestContext);
     }
 
-    private void writeResponse(RequestContext requestContext) {
+    private void writeResponse(Request request, Response response) {
         try {
-            ChannelHandlerContext ctx = requestContext.channelContext();
-            HttpResponse nettyResponse = requestContext.buildResponse();
-            HttpContent httpContent = requestContext.buildResponseBody();
+            ChannelHandlerContext ctx = request.channelContext();
+            HttpContent httpContent = response.body().toContent(request, response);
+            HttpResponse nettyResponse = new DefaultHttpResponse(HTTP_1_1, response.status(), response.headers());
             ctx.write(nettyResponse);
             ctx.write(httpContent);
-            ctx.channel().attr(contextBody).set(null);
+            ctx.channel().attr(CONTEXT_BODY).set(null);
             ChannelFuture f = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT)
                     .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-            if (!HttpUtil.isKeepAlive(requestContext.request()) || !HttpUtil.isKeepAlive(nettyResponse)) {
+            if (!request.headers().containsValue(HttpHeaderNames.CONNECTION, "closed", true)
+                    || !HttpUtil.isKeepAlive(nettyResponse)) {
                 f.addListener(ChannelFutureListener.CLOSE);
             }
         } catch (Throwable t) {
             log.error("error writing response", t);
-        }
-    }
-
-    private void handleError(RequestContext requestContext, Throwable throwable) {
-        log.warn("error during route execution; request uri: {}", requestContext.requestUri(), throwable);
-
-        requestContext.response(HttpResponseStatus.INTERNAL_SERVER_ERROR, throwable.getMessage());
-        requestContext.responseHeader(HttpHeaderNames.CONTENT_TYPE, "text/plain");
-        requestContext.responseHeader(HttpHeaderNames.CONNECTION, "close");
-
-        Throwable temp = throwable;
-        for (int i = 0; i < 4 && temp != null; i++) {
-            if (temp instanceof HttpException) {
-                requestContext.response(((HttpException) temp).status(), temp.getMessage());
-                return;
-            }
-            temp = temp.getCause();
-        }
-
-        if (throwable instanceof IllegalArgumentException) {
-            requestContext.response(HttpResponseStatus.BAD_REQUEST, throwable.getMessage());
-        } else if (throwable instanceof InvocationTargetException && throwable.getCause() != null) {
-            requestContext.response(HttpResponseStatus.INTERNAL_SERVER_ERROR, throwable.getCause().getMessage());
+            request.channelContext().close();
         }
     }
 
     private void handleWebsocketUpgrade(ChannelHandlerContext ctx, HttpRequest request, String upgradeHeader) {
         if (HttpHeaderValues.WEBSOCKET.contentEqualsIgnoreCase(upgradeHeader)) {
-            Websocket ws = router.getWebsocket(request.uri());
+            Websocket ws = websockets.get(request.uri());
             if (ws != null) {
                 // add the websocket handler to the end of the processing pipeline
                 ctx.pipeline().removeLast();
@@ -248,6 +229,26 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
         bossGroup.shutdownGracefully();
     }
 
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("HttpServer:\n");
+        sb.append("Handler: ").append(handler).append("\n");
+        if (!websockets.isEmpty()) {
+            sb.append("Websockets:\n");
+            for (Map.Entry<String, Websocket> entry : websockets.entrySet()) {
+                sb.append("  ").append(entry.getKey()).append(" -> ").append(entry.getValue()).append("\n");
+            }
+        }
+        sb.append("ExceptionHandler: ").append(exceptionHandler);
+        return sb.toString();
+    }
+
+    private static boolean expectingContent(HttpRequest request) {
+        return request.headers().getInt(HttpHeaderNames.CONTENT_LENGTH, 0) > 0
+                || request.headers().contains(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED, true);
+    }
+
     private final class NettyChannelInit extends ChannelInitializer<SocketChannel> {
 
         private final HttpServer server;
@@ -269,7 +270,6 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
                     config.isValidateHeaders(),
                     config.getInitialBufferSize()));
             p.addLast(new HttpContentDecompressor());
-//        p.addLast(new HttpObjectAggregator(config.getMaxContentLength()));
             p.addLast(new ChunkedWriteHandler());
             p.addLast(new HttpContentCompressor(6, 15, 8, 812));
             p.addLast(server);

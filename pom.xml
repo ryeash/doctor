@@ -13,6 +13,7 @@
         <module>doctor-processor-utils</module>
         <module>doctor-processor</module>
         <module>doctor-runtime</module>
+        <module>doctor-netty-http-server</module>
         <module>doctor-netty</module>
         <module>doctor-jaxrs</module>
         <module>doctor-aop</module>

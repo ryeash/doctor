@@ -1,6 +1,4 @@
-package vest.doctor.netty;
-
-import io.netty.handler.codec.http.HttpMethod;
+package vest.doctor.netty.impl;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,21 +9,16 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Used internally by the generated router implementation.
- */
 public final class PathSpec implements Comparable<PathSpec> {
     private static final Pattern PATH_PARAM_PATTERN = Pattern.compile("\\{.*?}");
     private static final Pattern SPLAT_PARAM_PATTERN = Pattern.compile("/\\*");
     private static final String DEFAULT_PARAM_REGEX = "[^/]+?";
 
-    private final HttpMethod method;
     private final String path;
     private final List<String> paramNames;
     private final Pattern pattern;
 
-    public PathSpec(String method, String path) {
-        this.method = HttpMethod.valueOf(method);
+    public PathSpec(String path) {
         if (path.isEmpty()) {
             throw new IllegalArgumentException("the route path may not be empty");
         }
@@ -60,10 +53,6 @@ public final class PathSpec implements Comparable<PathSpec> {
 
         // TODO: should we use insensitive matching?
         this.pattern = Pattern.compile(builder.toString());
-    }
-
-    public HttpMethod method() {
-        return method;
     }
 
     public String getPath() {

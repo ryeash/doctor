@@ -16,6 +16,6 @@ public class NettyProcessorConfiguration implements ProcessorConfiguration {
 
     @Override
     public List<CustomizationPoint> customizationPoints() {
-        return Collections.singletonList(new RouterWriter());
+        return Collections.singletonList(new EndpointWriter());
     }
 }

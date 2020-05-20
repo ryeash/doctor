@@ -23,27 +23,29 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
     }
 
     @Override
-    public boolean handles(RequestContext ctx, TypeInfo typeInfo) {
+    public boolean handles(Request request, TypeInfo typeInfo) {
         return true;
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T read(RequestContext ctx, TypeInfo typeInfo) {
+    public <T> CompletableFuture<T> read(Request request, TypeInfo typeInfo) {
         try {
+            CompletableFuture<?> future;
             if (typeInfo.getRawType() == CompletableFuture.class) {
-                return (T) asyncRead(ctx, typeInfo);
+                future = asyncRead(request, typeInfo);
             } else if (!typeInfo.hasParameterizedTypes()) {
-                return (T) objectMapper.readValue(ctx.requestBodyStream(), typeInfo.getRawType());
+                future = CompletableFuture.completedFuture(objectMapper.readValue(request.body().inputStream(), typeInfo.getRawType()));
             } else {
-                return objectMapper.readValue(ctx.requestBodyStream(), jacksonType(objectMapper, typeInfo));
+                future = CompletableFuture.completedFuture(objectMapper.readValue(request.body().inputStream(), jacksonType(objectMapper, typeInfo)));
             }
+            return (CompletableFuture<T>) future;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
-    private CompletableFuture<?> asyncRead(RequestContext ctx, TypeInfo typeInfo) {
+    private CompletableFuture<?> asyncRead(Request request, TypeInfo typeInfo) {
         if (!typeInfo.hasParameterizedTypes() || typeInfo.getParameterTypes().size() != 1) {
             throw new IllegalArgumentException("asynchronous bodies must have exactly one parameterized type: " + typeInfo);
         }
@@ -56,29 +58,22 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
         } else {
             asyncMapper = new AsyncMapper<>(objectMapper, paramType.getRawType());
         }
-        ctx.requestBody().readData((buf, finished) -> {
-            byte[] b = new byte[1024];
-            while (buf.readableBytes() > 0) {
-                int toRead = Math.min(buf.readableBytes(), b.length);
-                buf.readBytes(b, 0, toRead);
-                asyncMapper.feed(b, 0, toRead);
-            }
-        });
-        return asyncMapper.future();
+        return request.body().asyncRead(asyncMapper::feed);
     }
 
     @Override
-    public boolean handles(RequestContext ctx, Object response) {
+    public boolean handles(Response ctx, Object response) {
         return true;
     }
 
     @Override
-    public void write(RequestContext ctx, Object response) {
+    public CompletableFuture<ResponseBody> write(Response ctx, Object response) {
         try {
-            ctx.responseBody(objectMapper.writeValueAsBytes(response));
-            if (!ctx.responseHeaders().contains(HttpHeaderNames.CONTENT_TYPE)) {
-                ctx.responseHeaders().set(HttpHeaderNames.CONTENT_TYPE, "application/json;charset=utf-8");
+            byte[] bytes = objectMapper.writeValueAsBytes(response);
+            if (!ctx.headers().contains(HttpHeaderNames.CONTENT_TYPE)) {
+                ctx.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json;charset=utf-8");
             }
+            return CompletableFuture.completedFuture(ResponseBody.of(bytes));
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }

@@ -1,9 +1,15 @@
-package vest.doctor.netty;
+package vest.doctor.netty.impl;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.DefaultHttpContent;
+import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import vest.doctor.netty.HttpException;
+import vest.doctor.netty.Request;
+import vest.doctor.netty.Response;
+import vest.doctor.netty.ResponseBody;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,7 +22,7 @@ import java.util.Date;
 /**
  * Can be returned from an endpoint to efficiently stream a file as a response body.
  */
-public class StreamFile {
+public class FileResponseBody implements ResponseBody {
 
     private final java.nio.file.Path filepath;
     private final File file;
@@ -30,7 +36,7 @@ public class StreamFile {
      *                      file path
      * @param filePath      the path to the file to send
      */
-    public StreamFile(String rootDirectory, String filePath) {
+    public FileResponseBody(String rootDirectory, String filePath) {
         java.nio.file.Path rootPath = new File(rootDirectory).getAbsoluteFile().toPath();
 
         this.file = new File(new File(rootDirectory), filePath).getAbsoluteFile();
@@ -44,12 +50,12 @@ public class StreamFile {
         this.modified = file.lastModified();
     }
 
-    void write(RequestContext requestContext) {
-        Long ifModifiedSince = requestContext.requestHeaders().getTimeMillis(HttpHeaderNames.IF_MODIFIED_SINCE);
+    @Override
+    public HttpContent toContent(Request request, Response response) {
+        Long ifModifiedSince = request.headers().getTimeMillis(HttpHeaderNames.IF_MODIFIED_SINCE);
         if (!isModified(ifModifiedSince)) {
-            requestContext.responseStatus(HttpResponseStatus.NOT_MODIFIED);
-            requestContext.responseBody(Unpooled.EMPTY_BUFFER);
-            return;
+            response.status(HttpResponseStatus.NOT_MODIFIED);
+            return new DefaultHttpContent(Unpooled.EMPTY_BUFFER);
         }
 
         try {
@@ -59,13 +65,13 @@ public class StreamFile {
             fc.close();
 
             // only set these headers if they don't exists -> allows them to be overwritten by user code
-            if (!requestContext.responseHeaders().contains(HttpHeaderNames.CONTENT_TYPE)) {
-                requestContext.responseHeader(HttpHeaderNames.CONTENT_TYPE, getContentType(file));
+            if (!response.headers().contains(HttpHeaderNames.CONTENT_TYPE)) {
+                response.headers().set(HttpHeaderNames.CONTENT_TYPE, getContentType(file));
             }
-            if (!requestContext.responseHeaders().contains(HttpHeaderNames.LAST_MODIFIED)) {
-                requestContext.responseHeader(HttpHeaderNames.LAST_MODIFIED, new Date(file.lastModified()));
+            if (!response.headers().contains(HttpHeaderNames.LAST_MODIFIED)) {
+                response.headers().set(HttpHeaderNames.LAST_MODIFIED, new Date(file.lastModified()));
             }
-            requestContext.responseBody(body);
+            return new DefaultHttpContent(body);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

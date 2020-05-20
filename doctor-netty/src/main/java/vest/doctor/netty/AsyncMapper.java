@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.async.ByteArrayFeeder;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -16,7 +17,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Internally used to assist in asynchronous parsing of json objects with Jackson.
@@ -28,7 +28,6 @@ public class AsyncMapper<T> {
     private final ByteArrayFeeder feeder;
 
     private final Deque<Object> stack;
-    private final CompletableFuture<T> future;
 
     public AsyncMapper(ObjectMapper mapper, Class<T> type) {
         this(mapper, mapper.getTypeFactory().constructType(type));
@@ -48,11 +47,24 @@ public class AsyncMapper<T> {
             throw new UncheckedIOException(e);
         }
         stack = new LinkedList<>();
-        future = new CompletableFuture<>();
     }
 
-    public CompletableFuture<T> future() {
-        return future;
+    public T feed(ByteBuf buf, boolean finished) {
+        byte[] b = new byte[1024];
+        T result = null;
+        while (buf.readableBytes() > 0) {
+            int toRead = Math.min(buf.readableBytes(), b.length);
+            buf.readBytes(b, 0, toRead);
+            result = feed(b, 0, toRead);
+            if (result != null) {
+                break;
+            }
+        }
+        // TODO: warning about leftover buffer data?
+        if (finished && result == null) {
+            throw new IllegalStateException("data stream terminated before full document was sent");
+        }
+        return result;
     }
 
     public T feed(byte[] data, int offset, int length) {
@@ -116,7 +128,6 @@ public class AsyncMapper<T> {
             }
             return null;
         } catch (Throwable t) {
-            future.completeExceptionally(t);
             throw new RuntimeException("error parsing data", t);
         }
     }
@@ -141,7 +152,6 @@ public class AsyncMapper<T> {
 
     private T complete(Object obj) {
         T t = mapper.convertValue(obj, type);
-        future.complete(t);
         feeder.endOfInput();
         return t;
     }
