@@ -5,6 +5,7 @@ import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.Async;
 import vest.doctor.DoctorProvider;
+import vest.doctor.ExplicitProvidedTypes;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionListener;
 import vest.doctor.ProviderRegistry;
@@ -47,9 +48,11 @@ public class EventConsumersWriter implements ProviderDefinitionListener {
                     .addImportClass(Singleton.class)
                     .addImportClass(Named.class)
                     .addImportClass(Inject.class)
+                    .addImportClass(ExplicitProvidedTypes.class)
                     .addImportClass(messageType.getQualifiedName().toString())
                     .addClassAnnotation("@Singleton")
                     .addClassAnnotation("@Named(\"" + ProcessorUtils.escapeStringForCode(ecQualifier) + "\")")
+                    .addClassAnnotation("@ExplicitProvidedTypes({EventConsumer.class})")
                     .addImplementsInterface(EventConsumer.class)
                     .setClassName(context.generatedPackage() + "." + className)
                     .addField("private final DoctorProvider<{}> provider", providerDefinition.providedType().asType())

@@ -31,14 +31,14 @@ public interface DoctorProvider<T> extends Provider<T> {
     List<Class<?>> allProvidedTypes();
 
     /**
-     * All annotation types attached to the provided type
+     * All annotation types attached to the provided type.
      */
     default List<Class<? extends Annotation>> allAnnotationTypes() {
         return Collections.emptyList();
     }
 
     /**
-     * The modules that this provider is active with.
+     * The modules that activate this provider.
      */
     default List<String> modules() {
         return Collections.emptyList();
