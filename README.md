@@ -47,7 +47,7 @@ public class BookDao {
 
 ### Scoping
 These are the built-in scopes supported:
-- @Prototype : no instance is cached, for each request for the type a new instance is created
+- @Prototype : each all to Provider.get() creates a new instance
 - @Singleton : one and only one instance is created per jvm
 - @ThreadLocal : one instance is created per thread
 - @Cached : an instance is created and shared for a configurable length of time
@@ -80,7 +80,7 @@ Any provider that has modules will _only_ be active if the app is started with o
 Providers without modules will _always_ be active. 
 
 ### @Eager
-By default providers will not instantiate an instance when they are initialized, i.e. they're lazy. If you want an
+By default, providers will not instantiate an instance when they are initialized, i.e. they're lazy. If you want an
 instance automatically created on startup, you can mark the class or factory method with `@Eager`.
 ```java
 @Eager
@@ -89,14 +89,14 @@ public class Heater {
     // ...
 }
 ```
-On startup, one instance of Heater will be created by it's provider. 
+On startup, one instance of Heater will be created automatically. 
 
-While `@Eager` can be called for any scope, it makes the most sense for singletons.
+While `@Eager` can be used on any scope, it makes the most sense for singletons.
 
 
 ### @SkipInjection
 There are rare occasions where it may be necessary to skip the post-instantiation injection phase for a provided instance
-(Skip calling `@Inject` marked methods and similar processing). `@SkipInjection` can be used to accomplish this.
+(Skip calling `@Inject` marked methods and similar processing). In these cases use `@SkipInjection`.
 ```java
 @SkipInjectin
 @Prototype
