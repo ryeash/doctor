@@ -2,15 +2,12 @@ package demo.app;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import vest.doctor.netty.Attribute;
 import vest.doctor.netty.BeanParam;
 import vest.doctor.netty.Body;
-import vest.doctor.netty.Filter;
-import vest.doctor.netty.FilterStage;
 import vest.doctor.netty.GET;
 import vest.doctor.netty.HeaderParam;
 import vest.doctor.netty.POST;
@@ -18,8 +15,8 @@ import vest.doctor.netty.Path;
 import vest.doctor.netty.PathParam;
 import vest.doctor.netty.QueryParam;
 import vest.doctor.netty.R;
-import vest.doctor.netty.RequestContext;
-import vest.doctor.netty.StreamFile;
+import vest.doctor.netty.Request;
+import vest.doctor.netty.ResponseBody;
 
 import javax.inject.Singleton;
 import java.io.InputStream;
@@ -32,28 +29,6 @@ import java.util.concurrent.CompletableFuture;
 @Singleton
 public class TCNettyEndpoint {
     private static final Logger log = LoggerFactory.getLogger(TCNettyEndpoint.class);
-
-    @Filter(FilterStage.BEFORE_MATCH)
-    @Path("/*")
-    public void beforeMatchFilter(RequestContext ctx) {
-        ctx.responseHeader("X-BEFORE-MATCH", true);
-    }
-
-    @Filter(FilterStage.BEFORE_ROUTE)
-    @Path("/*")
-    public void filter(RequestContext ctx, @QueryParam("halt") Optional<Boolean> halt) {
-        ctx.responseHeader("X-BEFORE-ROUTE", true);
-        ctx.attribute("filter", true);
-        if (halt.orElse(false)) {
-            ctx.halt(HttpResponseStatus.ACCEPTED, "halted");
-        }
-    }
-
-    @Filter(FilterStage.AFTER_ROUTE)
-    @Path("/*")
-    public void afterRouterFilter(RequestContext ctx) {
-        ctx.responseHeader("X-AFTER-ROUTE", true);
-    }
 
     @GET
     @Path("/hello")
@@ -127,8 +102,16 @@ public class TCNettyEndpoint {
 
     @GET
     @Path("/file/*")
-    public StreamFile staticFiles(RequestContext ctx, @PathParam("*") String file) {
-        log.info("{}", ctx.requestUri());
-        return new StreamFile("./", file);
+    public ResponseBody staticFiles(Request ctx, @PathParam("*") String file) {
+        log.info("{}", ctx.uri());
+        return ResponseBody.of("./", file);
+    }
+
+    @GET
+    @Path("/paramtest/{normal}/{custom:\\\\d+}")
+    public String paramtest(@PathParam("normal") String normal,
+                            @PathParam("custom") Integer custom) {
+        return normal + " " + custom;
+
     }
 }

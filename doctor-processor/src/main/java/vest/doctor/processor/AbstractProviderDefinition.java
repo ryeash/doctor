@@ -1,8 +1,11 @@
 package vest.doctor.processor;
 
+import doctor.processor.ClassValueVisitor;
+import doctor.processor.Constants;
 import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.DoctorProvider;
+import vest.doctor.ExplicitProvidedTypes;
 import vest.doctor.Modules;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDependency;
@@ -17,9 +20,11 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collector;
@@ -41,9 +46,20 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
 
     public AbstractProviderDefinition(AnnotationProcessorContext context, TypeElement providedType, Element annotationSource) {
         this.context = context;
-        this.providedType = providedType;
         this.annotationSource = annotationSource;
-        this.hierarchy = ProcessorUtils.hierarchy(context, providedType);
+
+        this.providedType = providedType;
+        ExplicitProvidedTypes explicitProvidedTypes = annotationSource.getAnnotation(ExplicitProvidedTypes.class);
+        if (explicitProvidedTypes != null) {
+            List<TypeElement> types = explicitTypes(context, annotationSource);
+            if (types.isEmpty()) {
+                throw new IllegalArgumentException("explicitly defined types must not be empty: " + ProcessorUtils.debugString(annotationSource));
+            }
+            this.hierarchy = types;
+        } else {
+            this.hierarchy = ProcessorUtils.hierarchy(context, providedType);
+        }
+
         this.scope = ProcessorUtils.getScope(context, annotationSource);
         this.qualifier = ProcessorUtils.getQualifier(context, annotationSource);
 
@@ -175,5 +191,18 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
 
         // must define the .get() method
         return classBuilder;
+    }
+
+    private static List<TypeElement> explicitTypes(AnnotationProcessorContext context, Element annotationSource) {
+        return annotationSource.getAnnotationMirrors()
+                .stream()
+                .filter(am -> am.getAnnotationType().toString().equals(ExplicitProvidedTypes.class.getCanonicalName()))
+                .flatMap(am -> am.getElementValues().entrySet().stream())
+                .filter(e -> e.getKey().getSimpleName().toString().equals(Constants.ANNOTATION_VALUE))
+                .map(Map.Entry::getValue)
+                .map(val -> val.accept(new ClassValueVisitor(), null))
+                .flatMap(Collection::stream)
+                .map(context.processingEnvironment().getElementUtils()::getTypeElement)
+                .collect(Collectors.toList());
     }
 }
