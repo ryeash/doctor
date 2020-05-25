@@ -1,6 +1,7 @@
 package vest.doctor.netty;
 
 import vest.doctor.Prioritized;
+import vest.doctor.TypeInfo;
 
 import java.util.concurrent.CompletableFuture;
 

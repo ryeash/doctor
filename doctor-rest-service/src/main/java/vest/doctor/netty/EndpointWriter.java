@@ -9,6 +9,7 @@ import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionListener;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.StringConversionGenerator;
+import vest.doctor.TypeInfo;
 import vest.doctor.codegen.ClassBuilder;
 
 import javax.inject.Inject;
@@ -39,29 +40,30 @@ public class EndpointWriter implements ProviderDefinitionListener {
 
     @Override
     public void process(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
-        if (providerDefinition.annotationSource().getAnnotation(Path.class) != null) {
-            String[] roots = Optional.ofNullable(providerDefinition.annotationSource().getAnnotation(Path.class))
-                    .map(Path::value)
-                    .orElse(new String[]{"/"});
+        if (providerDefinition.annotationSource().getAnnotation(Path.class) == null) {
+            return;
+        }
+        String[] roots = Optional.ofNullable(providerDefinition.annotationSource().getAnnotation(Path.class))
+                .map(Path::value)
+                .orElse(new String[]{"/"});
 
-            ProcessorUtils.allMethods(context, providerDefinition.providedType())
-                    .stream()
-                    .filter(m -> m.getModifiers().contains(Modifier.PUBLIC))
-                    .filter(processedMethods::add)
-                    .forEach(method -> {
-                        List<String> methods = getHttpMethods(method);
-                        if (!methods.isEmpty()) {
-                            String[] paths = Optional.ofNullable(method.getAnnotation(Path.class)).map(Path::value).orElse(new String[]{""});
-                            List<String> fullPaths = paths(roots, paths);
+        ProcessorUtils.allMethods(context, providerDefinition.providedType())
+                .stream()
+                .filter(m -> m.getModifiers().contains(Modifier.PUBLIC))
+                .filter(processedMethods::add)
+                .forEach(method -> {
+                    List<String> methods = getHttpMethods(method);
+                    if (!methods.isEmpty()) {
+                        String[] paths = Optional.ofNullable(method.getAnnotation(Path.class)).map(Path::value).orElse(new String[]{""});
+                        List<String> fullPaths = paths(roots, paths);
 
-                            for (String httMethod : methods) {
-                                for (String fullPath : fullPaths) {
-                                    writeEndpoint(context, httMethod, fullPath, providerDefinition, method);
-                                }
+                        for (String httMethod : methods) {
+                            for (String fullPath : fullPaths) {
+                                writeEndpoint(context, httMethod, fullPath, providerDefinition, method);
                             }
                         }
-                    });
-        }
+                    }
+                });
     }
 
     private static List<String> getHttpMethods(ExecutableElement method) {
@@ -110,7 +112,7 @@ public class EndpointWriter implements ProviderDefinitionListener {
 
         endpoint.setConstructor("@Inject public " + className + "(ProviderRegistry " + Constants.PROVIDER_REGISTRY + ")", b -> {
             String typeInfo = buildTypeInfoCode(method);
-            b.line("super({}, \"{}\", \"{}\", {});", Constants.PROVIDER_REGISTRY, httpMethod, path, typeInfo);
+            b.line("super({}, \"{}\", \"{}\", {});", Constants.PROVIDER_REGISTRY, httpMethod, ProcessorUtils.escapeStringForCode(path), typeInfo);
             b.line("this.provider = " + Constants.PROVIDER_REGISTRY + ".getProvider(" + serviceProvider.providedType() + ".class, " + serviceProvider.qualifier() + ");");
         });
 
@@ -208,7 +210,7 @@ public class EndpointWriter implements ProviderDefinitionListener {
                 .map(p -> parameterWriting(context, p, contextRef))
                 .collect(Collectors.joining(", ", "(", ")"));
 
-        StringBuilder sb = new StringBuilder("new " + POJOHelper.class.getCanonicalName() + "<>(new " + typeWithoutParameters(typeMirror) + diamond + constructorParams + ")");
+        StringBuilder sb = new StringBuilder("new " + POJOHelper.class.getCanonicalName() + "<>(new " + ProcessorUtils.typeWithoutParameters(typeMirror) + diamond + constructorParams + ")");
         for (VariableElement field : ElementFilter.fieldsIn(beanType.getEnclosedElements())) {
             if (supportedParam(field)) {
                 ExecutableElement setter = findCorrespondingSetter(context, field, beanType);
@@ -251,14 +253,6 @@ public class EndpointWriter implements ProviderDefinitionListener {
         return false;
     }
 
-    private static String typeWithoutParameters(TypeMirror type) {
-        String s = type.toString();
-        int i = s.indexOf('<');
-        return i >= 0
-                ? s.substring(0, i)
-                : s;
-    }
-
     private static String getStringConversion(AnnotationProcessorContext context, TypeMirror target) {
         for (StringConversionGenerator customization : context.customizations(StringConversionGenerator.class)) {
             String function = customization.converterFunction(context, target);
@@ -295,18 +289,8 @@ public class EndpointWriter implements ProviderDefinitionListener {
                 .filter(m -> m.getAnnotation(Body.class) != null)
                 .map(VariableElement::asType)
                 .map(GenericInfo::new)
-                .map(EndpointWriter::toTypeInfo)
+                .map(ProcessorUtils::newTypeInfo)
                 .findFirst()
                 .orElse("null");
-    }
-
-    private static String toTypeInfo(GenericInfo genericInfo) {
-        String prefix = "new TypeInfo(" + typeWithoutParameters(genericInfo.type()) + ".class";
-        if (!genericInfo.hasTypeParameters()) {
-            return prefix + ")";
-        } else {
-            String param = genericInfo.parameterTypes().stream().map(EndpointWriter::toTypeInfo).collect(Collectors.joining(", "));
-            return prefix + ", " + param + ")";
-        }
     }
 }

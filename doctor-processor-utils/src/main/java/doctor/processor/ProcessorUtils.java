@@ -248,4 +248,26 @@ public class ProcessorUtils {
             // ignored
         }
     }
+
+    public static String typeWithoutParameters(TypeMirror type) {
+        String s = type.toString();
+        int i = s.indexOf('<');
+        return i >= 0
+                ? s.substring(0, i)
+                : s;
+    }
+
+    public static String newTypeInfo(VariableElement variableElement) {
+        return newTypeInfo(new GenericInfo(variableElement.asType()));
+    }
+
+    public static String newTypeInfo(GenericInfo genericInfo) {
+        String prefix = "new TypeInfo(" + typeWithoutParameters(genericInfo.type()) + ".class";
+        if (!genericInfo.hasTypeParameters()) {
+            return prefix + ")";
+        } else {
+            String param = genericInfo.parameterTypes().stream().map(ProcessorUtils::newTypeInfo).collect(Collectors.joining(", "));
+            return prefix + ", " + param + ")";
+        }
+    }
 }

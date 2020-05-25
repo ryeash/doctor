@@ -3,6 +3,7 @@ package vest.doctor.netty;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
+import vest.doctor.TypeInfo;
 
 import java.io.File;
 import java.io.IOException;

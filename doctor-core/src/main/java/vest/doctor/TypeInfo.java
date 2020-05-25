@@ -1,4 +1,4 @@
-package vest.doctor.netty;
+package vest.doctor;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Information about the target type for parameter being deserialized from the HTTP request body.
+ * Information about the type of a parameter or field.
  */
 public class TypeInfo {
     private final Class<?> rawType;
@@ -17,7 +17,7 @@ public class TypeInfo {
     }
 
     public TypeInfo(Class<?> rawType, List<TypeInfo> parameterTypes) {
-        this.rawType = rawType;
+        this.rawType = Objects.requireNonNull(rawType);
         this.parameterTypes = Collections.unmodifiableList(parameterTypes);
     }
 

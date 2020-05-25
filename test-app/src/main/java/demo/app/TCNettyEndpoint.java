@@ -108,7 +108,7 @@ public class TCNettyEndpoint {
     }
 
     @GET
-    @Path("/paramtest/{normal}/{custom:\\\\d+}")
+    @Path("/paramtest/{normal}/{custom:\\d+}")
     public String paramtest(@PathParam("normal") String normal,
                             @PathParam("custom") Integer custom) {
         return normal + " " + custom;

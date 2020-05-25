@@ -1,6 +1,7 @@
 package vest.doctor.netty;
 
 import vest.doctor.ProviderRegistry;
+import vest.doctor.TypeInfo;
 import vest.doctor.netty.impl.Router;
 
 import java.util.Map;

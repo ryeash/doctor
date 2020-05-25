@@ -3,6 +3,7 @@ package vest.doctor.netty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.TypeInfo;
 
 import javax.inject.Provider;
 import java.util.ArrayList;

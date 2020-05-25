@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.netty.handler.codec.http.HttpHeaderNames;
+import vest.doctor.TypeInfo;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
