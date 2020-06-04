@@ -1,11 +1,11 @@
 package vest.doctor.netty;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 @FunctionalInterface
 public interface Handler {
 
-    CompletableFuture<Response> handle(Request request);
+    CompletionStage<Response> handle(Request request);
 
     static Handler sync(SynchronousHandler function) {
         return function;

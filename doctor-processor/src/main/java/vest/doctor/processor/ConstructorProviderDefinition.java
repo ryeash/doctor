@@ -21,12 +21,10 @@ public class ConstructorProviderDefinition extends AbstractProviderDefinition {
 
     private final String generatedClassName;
     private final ExecutableElement injectableConstructor;
-    private final String uniqueName;
 
     public ConstructorProviderDefinition(AnnotationProcessorContext context, TypeElement providedType) {
         super(context, providedType, providedType);
-        this.generatedClassName = providedType.getSimpleName() + "__constructorProvider" + context.nextId();
-//        this.generatedClassName = context.generatedPackage() + "." + providedType.getSimpleName() + "__constructorProvider" + context.nextId();
+        this.generatedClassName = context.generatedPackage() + "." + providedType.getSimpleName() + "__constructorProvider" + context.nextId();
 
         int injectMarked = 0;
         LinkedList<ExecutableElement> injectable = new LinkedList<>();
@@ -46,7 +44,6 @@ public class ConstructorProviderDefinition extends AbstractProviderDefinition {
             context.errorMessage("no injectable constructor: " + ProcessorUtils.debugString(providedType));
         }
         this.injectableConstructor = injectable.get(0);
-        this.uniqueName = "inst" + context.nextId();
     }
 
     @Override
@@ -87,11 +84,6 @@ public class ConstructorProviderDefinition extends AbstractProviderDefinition {
             b.line("} catch(Throwable t) { throw new " + InjectionException.class.getCanonicalName() + "(\"error instantiating provided type\", t); }");
         });
         return classBuilder;
-    }
-
-    @Override
-    public String uniqueInstanceName() {
-        return uniqueName;
     }
 
     @Override

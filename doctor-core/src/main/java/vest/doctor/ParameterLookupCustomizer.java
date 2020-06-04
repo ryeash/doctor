@@ -9,7 +9,7 @@ import javax.lang.model.element.VariableElement;
 public interface ParameterLookupCustomizer extends CustomizationPoint, Prioritized {
 
     /**
-     * Generated the lookup code for a parameter. Return null to indicate this customizer does not handle the target
+     * Generate the lookup code for a parameter. Return null to indicate this customizer does not handle the target
      * parameter.
      *
      * @param context             the processor context

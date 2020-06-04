@@ -7,7 +7,6 @@ import vest.doctor.AppLoader;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.CustomizationPoint;
 import vest.doctor.DoctorProvider;
-import vest.doctor.InjectionException;
 import vest.doctor.PrimaryProviderWrapper;
 import vest.doctor.Prioritized;
 import vest.doctor.ProcessorConfiguration;
@@ -78,6 +77,9 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
 
     private long start;
 
+    private ClassBuilder cb;
+    private final MethodBuilder load = new MethodBuilder("public void load({} {})", ProviderRegistry.class, PROVIDER_REGISTRY);
+
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
         this.start = System.currentTimeMillis();
@@ -98,6 +100,24 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
         addSatisfiedDependency(ConfigurationFacade.class, null);
         addSatisfiedDependency(EventProducer.class, null);
         addSatisfiedDependency(EventManager.class, null);
+
+        this.cb = new ClassBuilder()
+                .setClassName(generatedPackage + ".AppLoaderImpl")
+                .addImplementsInterface(AppLoader.class)
+                .addImportClass(List.class)
+                .addImportClass(ArrayList.class)
+                .addImportClass(Objects.class)
+                .addImportClass(ProviderRegistry.class)
+                .addImportClass(Provider.class)
+                .addImportClass(DoctorProvider.class)
+                .addImportClass(PrimaryProviderWrapper.class)
+                .addImportClass(ShutdownContainer.class)
+                .addField("private final {} {} = new {}()", ShutdownContainer.class, Constants.SHUTDOWN_CONTAINER_NAME, ShutdownContainer.class)
+                // call eager providers
+                .addMethod("public void postProcess({} {}) { eagerList.stream().filter(Objects::nonNull).forEach({}::get); }", ProviderRegistry.class, PROVIDER_REGISTRY, DoctorProvider.class)
+                .addMethod("public void close() { {}.close(); }", Constants.SHUTDOWN_CONTAINER_NAME)
+                .addField("private final List<{}<?>> eagerList = new ArrayList<>()", DoctorProvider.class);
+
     }
 
     private void loadConf(ProcessorConfiguration processorConfiguration) {
@@ -128,6 +148,11 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                             for (ProviderDefinitionListener providerDefinitionListener : customizations(ProviderDefinitionListener.class)) {
                                 providerDefinitionListener.process(this, provDef);
                             }
+                            ClassBuilder classBuilder = provDef.getClassBuilder();
+                            if (classBuilder != null) {
+                                classBuilder.writeClass(filer());
+                            }
+                            writeInProvider(provDef);
                             break;
                         }
                     }
@@ -138,7 +163,8 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
 
         if (roundEnv.processingOver()) {
             customizationPoints.forEach(c -> c.finish(this));
-            writeAppLoaderImplementation();
+            cb.addMethod(load.finish())
+                    .writeClass(filer());
             writeServicesResource();
             compileTimeDependencyCheck();
             infoMessage("took " + (System.currentTimeMillis() - start) + "ms");
@@ -239,78 +265,47 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
         });
     }
 
-    private void writeAppLoaderImplementation() {
-        ClassBuilder cb = new ClassBuilder()
-                .setClassName(generatedPackage + ".AppLoaderImpl")
-                .addImplementsInterface(AppLoader.class)
-                .addImportClass(List.class)
-                .addImportClass(ArrayList.class)
-                .addImportClass(Objects.class)
-                .addImportClass(ProviderRegistry.class)
-                .addImportClass(Provider.class)
-                .addImportClass(DoctorProvider.class)
-                .addImportClass(PrimaryProviderWrapper.class)
-                .addImportClass(ShutdownContainer.class)
-                .addField("private final {} {} = new {}()", ShutdownContainer.class, Constants.SHUTDOWN_CONTAINER_NAME, ShutdownContainer.class)
-                // call eager providers
-                .addMethod("public void postProcess({} {}) { eagerList.stream().filter(Objects::nonNull).forEach({}::get); }", ProviderRegistry.class, PROVIDER_REGISTRY, DoctorProvider.class)
-                .addMethod("public void close() { {}.close(); }", Constants.SHUTDOWN_CONTAINER_NAME);
+    private void writeInProvider(ProviderDefinition providerDefinition) {
+        cb.addImportClass(providerDefinition.providedType().asType().toString());
 
-        cb.addField("private final List<{}<?>> eagerList = new ArrayList<>()", DoctorProvider.class);
+        String creator = line("new {}({})", providerDefinition.generatedClassName(), PROVIDER_REGISTRY);
 
-        MethodBuilder load = new MethodBuilder("public void load({} {})", ProviderRegistry.class, PROVIDER_REGISTRY);
+        for (ProviderCustomizationPoint providerCustomizationPoint : customizations(ProviderCustomizationPoint.class)) {
+            creator = providerCustomizationPoint.wrap(this, providerDefinition, creator, PROVIDER_REGISTRY);
+        }
 
-        for (ProviderDefinition providerDefinition : providerDefinitions) {
-            try {
-                cb.addNestedClass(providerDefinition.getClassBuilder());
-
-                cb.addImportClass(providerDefinition.providedType().asType().toString());
-
-                String creator = line("new {}({})", providerDefinition.generatedClassName(), PROVIDER_REGISTRY);
-
-                for (ProviderCustomizationPoint providerCustomizationPoint : customizations(ProviderCustomizationPoint.class)) {
-                    creator = providerCustomizationPoint.wrap(this, providerDefinition, creator, PROVIDER_REGISTRY);
-                }
-
-                boolean hasModules = !providerDefinition.modules().isEmpty();
-                if (hasModules) {
-                    String modules = providerDefinition.modules()
-                            .stream()
-                            .filter(Objects::nonNull)
-                            .map(m -> '"' + m + '"')
-                            .collect(Collectors.joining(", "));
-                    if (providerDefinition.modules().size() == 1) {
-                        load.line("if(isActive({}, java.util.Collections.singletonList({}))){", PROVIDER_REGISTRY, modules);
-                    } else {
-                        load.line("if(isActive({}, java.util.Arrays.asList({}))){", PROVIDER_REGISTRY, modules);
-                    }
-                }
-
-                if (providerDefinition.scope() != null) {
-                    Class<?> scopeType = loadClass(providerDefinition.scope().getAnnotationType().toString());
-                    ScopeWriter scopeWriter = getScopeWriter(scopeType);
-                    creator = scopeWriter.wrapScope(this, providerDefinition, creator);
-                }
-                load.line("{}<{}> {} = {};", DoctorProvider.class, providerDefinition.providedType().getSimpleName(), providerDefinition.uniqueInstanceName(), creator);
-                load.line("{}.register({});", PROVIDER_REGISTRY, providerDefinition.uniqueInstanceName());
-                if (providerDefinition.isPrimary() && providerDefinition.qualifier() != null) {
-                    load.line("{}.register(new {}({}));", PROVIDER_REGISTRY, PrimaryProviderWrapper.class, providerDefinition.uniqueInstanceName());
-                }
-
-                if (providerDefinition.isEager()) {
-                    load.line("eagerList.add({});", providerDefinition.uniqueInstanceName());
-                }
-
-                if (hasModules) {
-                    load.line("}");
-                }
-            } catch (Throwable t) {
-                throw new InjectionException("error processing: " + providerDefinition, t);
+        boolean hasModules = !providerDefinition.modules().isEmpty();
+        if (hasModules) {
+            String modules = providerDefinition.modules()
+                    .stream()
+                    .filter(Objects::nonNull)
+                    .map(m -> '"' + m + '"')
+                    .collect(Collectors.joining(", "));
+            if (providerDefinition.modules().size() == 1) {
+                load.line("if(isActive({}, java.util.Collections.singletonList({}))){", PROVIDER_REGISTRY, modules);
+            } else {
+                load.line("if(isActive({}, java.util.Arrays.asList({}))){", PROVIDER_REGISTRY, modules);
             }
         }
 
-        cb.addMethod(load.finish())
-                .writeClass(filer());
+        if (providerDefinition.scope() != null) {
+            Class<?> scopeType = loadClass(providerDefinition.scope().getAnnotationType().toString());
+            ScopeWriter scopeWriter = getScopeWriter(scopeType);
+            creator = scopeWriter.wrapScope(this, providerDefinition, creator);
+        }
+        load.line("{}<{}> {} = {};", DoctorProvider.class, providerDefinition.providedType().getSimpleName(), providerDefinition.uniqueInstanceName(), creator);
+        load.line("{}.register({});", PROVIDER_REGISTRY, providerDefinition.uniqueInstanceName());
+        if (providerDefinition.isPrimary() && providerDefinition.qualifier() != null) {
+            load.line("{}.register(new {}({}));", PROVIDER_REGISTRY, PrimaryProviderWrapper.class, providerDefinition.uniqueInstanceName());
+        }
+
+        if (providerDefinition.isEager()) {
+            load.line("eagerList.add({});", providerDefinition.uniqueInstanceName());
+        }
+
+        if (hasModules) {
+            load.line("}");
+        }
     }
 
     private ScopeWriter getScopeWriter(Class<?> scopeType) {

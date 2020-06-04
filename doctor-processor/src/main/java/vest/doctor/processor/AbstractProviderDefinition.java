@@ -43,6 +43,7 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
     protected final AnnotationMirror scope;
     protected final String qualifier;
     protected final List<String> modules;
+    protected final String uniqueName;
 
     public AbstractProviderDefinition(AnnotationProcessorContext context, TypeElement providedType, Element annotationSource) {
         this.context = context;
@@ -76,6 +77,7 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                     .ifPresent(modules::addAll);
         }
         this.modules = Collections.unmodifiableList(modules);
+        this.uniqueName = "inst" + context.nextId();
     }
 
     @Override
@@ -191,6 +193,11 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
 
         // must define the .get() method
         return classBuilder;
+    }
+
+    @Override
+    public String uniqueInstanceName() {
+        return uniqueName;
     }
 
     private static List<TypeElement> explicitTypes(AnnotationProcessorContext context, Element annotationSource) {

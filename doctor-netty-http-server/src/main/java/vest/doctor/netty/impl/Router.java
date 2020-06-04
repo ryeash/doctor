@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public class Router implements Handler {
     public static final String PATH_PARAMS = "doctor.netty.router.pathparams";
@@ -63,20 +64,20 @@ public class Router implements Handler {
     }
 
     @Override
-    public CompletableFuture<Response> handle(Request request) {
+    public CompletionStage<Response> handle(Request request) {
         CompletableFuture<Response> parent = new CompletableFuture<>();
-        CompletableFuture<Response> temp = parent;
+        CompletionStage<Response> temp = parent;
 
         for (Filter filter : filters) {
             temp = filter.filter(request, temp);
         }
 
-        CompletableFuture<Response> response = selectAndExecute(request);
+        CompletionStage<Response> response = selectAndExecute(request);
         forward(response, parent);
         return temp;
     }
 
-    private CompletableFuture<Response> selectAndExecute(Request request) {
+    private CompletionStage<Response> selectAndExecute(Request request) {
         return selectHandler(request).handle(request);
     }
 
@@ -92,7 +93,7 @@ public class Router implements Handler {
         return NOT_FOUND;
     }
 
-    private static <T> void forward(CompletableFuture<T> source, CompletableFuture<T> receiver) {
+    private static <T> void forward(CompletionStage<T> source, CompletableFuture<T> receiver) {
         source.whenComplete((t, error) -> {
             if (error != null) {
                 receiver.completeExceptionally(error);

@@ -3,10 +3,13 @@ package vest.doctor.aop;
 import doctor.processor.ProcessorUtils;
 import doctor.processor.UniqueMethod;
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.CustomizationPoint;
 import vest.doctor.Factory;
+import vest.doctor.ProcessorConfiguration;
 import vest.doctor.ProviderCustomizationPoint;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.TypeInfo;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
 
@@ -17,6 +20,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -27,7 +31,18 @@ import java.util.stream.Collectors;
 /**
  * Customization that handles the aspected class generation and wrapping.
  */
-public class AOPProviderCustomizer implements ProviderCustomizationPoint {
+public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCustomizationPoint {
+
+    @Override
+    public List<Class<? extends Annotation>> supportedAnnotations() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<CustomizationPoint> customizationPoints() {
+        return Collections.singletonList(this);
+    }
+
     @Override
     public String wrap(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String providerRef, String providerRegistryRef) {
         if (hasAspects(context, providerDefinition)) {
@@ -65,6 +80,7 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
                 .addImportClass(Callable.class)
                 .addImportClass(AspectException.class)
                 .addImportClass(AspectCoordinator.class)
+                .addImportClass(TypeInfo.class)
                 .addImportClass(typeElement.getQualifiedName().toString());
 
         boolean isInterface = typeElement.getKind() == ElementKind.INTERFACE;

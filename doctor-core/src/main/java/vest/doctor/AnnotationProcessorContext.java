@@ -142,7 +142,7 @@ public interface AnnotationProcessorContext {
      * @return generated code to call the constructor
      */
     default String constructorCall(ProviderDefinition providerDefinition, ExecutableElement executableElement, String providerRegistryRef) {
-        return methodCall(providerDefinition, executableElement, null, providerRegistryRef);
+        return executableCall(providerDefinition, executableElement, null, providerRegistryRef);
     }
 
     /**
@@ -154,7 +154,7 @@ public interface AnnotationProcessorContext {
      * @param providerRegistryRef the name to use when referencing the {@link ProviderRegistry} instance
      * @return generated code to call the method
      */
-    default String methodCall(ProviderDefinition providerDefinition, ExecutableElement executableElement, String instanceRef, String providerRegistryRef) {
+    default String executableCall(ProviderDefinition providerDefinition, ExecutableElement executableElement, String instanceRef, String providerRegistryRef) {
         String parameters = executableElement.getParameters().stream()
                 .map(ve -> {
                     for (ParameterLookupCustomizer lookup : customizations(ParameterLookupCustomizer.class)) {

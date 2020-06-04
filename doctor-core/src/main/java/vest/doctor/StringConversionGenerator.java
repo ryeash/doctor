@@ -3,7 +3,7 @@ package vest.doctor;
 import javax.lang.model.type.TypeMirror;
 
 /**
- * Customization that generates jkd8 lambda function code to convert string values into other types.
+ * Customization that generates lambda function code to convert string values into other types.
  */
 public interface StringConversionGenerator extends CustomizationPoint, Prioritized {
     /**

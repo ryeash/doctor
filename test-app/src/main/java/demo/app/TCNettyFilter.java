@@ -7,13 +7,13 @@ import vest.doctor.netty.ResponseBody;
 
 import javax.inject.Singleton;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 @Singleton
 public class TCNettyFilter implements Filter {
 
     @Override
-    public CompletableFuture<Response> filter(Request request, CompletableFuture<Response> response) {
+    public CompletionStage<Response> filter(Request request, CompletionStage<Response> response) {
         if (Objects.equals(request.queryParam("halt"), "true")) {
             return request.createResponse()
                     .status(202)

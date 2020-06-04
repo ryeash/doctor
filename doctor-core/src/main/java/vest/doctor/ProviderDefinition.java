@@ -94,19 +94,4 @@ public interface ProviderDefinition {
      */
     String uniqueInstanceName();
 
-    /**
-     * Determine if the type provided by the generated provider will be compatible with the given class.
-     *
-     * @param type the type to check
-     * @return true if the given type can be satisfied by the provided type, else false
-     */
-    default boolean isCompatibleWith(Class<?> type) {
-        String str = type.getCanonicalName();
-        for (TypeElement typeElement : hierarchy()) {
-            if (typeElement.asType().toString().equals(str)) {
-                return true;
-            }
-        }
-        return false;
-    }
 }

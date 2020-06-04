@@ -68,7 +68,7 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
                 + " = new " + STW_CLASS + "<" + providerDefinition.providedType().getSimpleName() + ">(" + providerRegistryRef + "," + instanceRef + "," + scheduled.executionLimit() + ") {");
         method.line("protected void internalRun({} {}, {} val) {",
                 ProviderRegistry.class, Constants.PROVIDER_REGISTRY, providerDefinition.providedType().getSimpleName());
-        method.line(context.methodCall(providerDefinition, scheduledMethod, "val", Constants.PROVIDER_REGISTRY) + ";");
+        method.line(context.executableCall(providerDefinition, scheduledMethod, "val", Constants.PROVIDER_REGISTRY) + ";");
         method.line("}");
         method.line("};");
         method.line(wrapperRef + ".setFuture(ses." + schedulerMethod + "(" + wrapperRef + ", " + interval.getMagnitude() + ", " + interval.getMagnitude() + ", java.util.concurrent.TimeUnit." + interval.getUnit() + "));");
@@ -94,7 +94,7 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
 
         method.line("protected void internalRun({} {}, {} val) {",
                 ProviderRegistry.class, Constants.PROVIDER_REGISTRY, providerDefinition.providedType().getSimpleName());
-        method.line(context.methodCall(providerDefinition, scheduledMethod, "val", Constants.PROVIDER_REGISTRY) + ";");
+        method.line(context.executableCall(providerDefinition, scheduledMethod, "val", Constants.PROVIDER_REGISTRY) + ";");
         method.line("}");
         method.line("};");
     }

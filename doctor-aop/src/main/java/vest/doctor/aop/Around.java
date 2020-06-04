@@ -3,7 +3,7 @@ package vest.doctor.aop;
 /**
  * Customizes a method invocation to add around-invoke workflows.
  */
-public interface AroundAdvice extends Aspect {
+public interface Around extends Aspect {
 
     /**
      * Called to invoke the method. Implementations should, but don't have to,

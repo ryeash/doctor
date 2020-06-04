@@ -25,11 +25,7 @@ public interface RequestBody {
                 CharSequence charSequence = buf.readCharSequence(buf.readableBytes(), StandardCharsets.UTF_8);
                 sb.append(charSequence);
             }
-            if (finished) {
-                return sb.toString();
-            } else {
-                return null;
-            }
+            return finished ? sb.toString() : null;
         });
     }
 

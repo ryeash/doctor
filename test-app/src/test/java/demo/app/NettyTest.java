@@ -3,10 +3,7 @@ package demo.app;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
-import io.restassured.config.HttpClientConfig;
-import io.restassured.config.RestAssuredConfig;
 import io.restassured.specification.RequestSpecification;
-import org.apache.http.params.CoreConnectionPNames;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -34,12 +31,7 @@ public class NettyTest extends BaseDoctorTest {
 
     private RequestSpecification req() {
         RestAssured.baseURI = "http://localhost:8081/";
-        RestAssuredConfig config = RestAssured.config()
-                .httpClient(HttpClientConfig.httpClientConfig()
-                        .setParam(CoreConnectionPNames.CONNECTION_TIMEOUT, 5000)
-                        .setParam(CoreConnectionPNames.SO_TIMEOUT, 5000));
         return RestAssured.given()
-                .config(config)
                 .accept("application/json")
                 .contentType("application/json");
     }

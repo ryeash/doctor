@@ -28,7 +28,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
 
     public PropertiesProviderDefinition(AnnotationProcessorContext context, TypeElement type) {
         super(context, type, type);
-        this.generatedClassName = type.getSimpleName() + "__propertiesprovider" + context.nextId();
+        this.generatedClassName = context.generatedPackage() + '.' + type.getSimpleName() + "__propertiesprovider" + context.nextId();
         this.uniqueName = "props" + context.nextId();
 
         this.implClass = type.getSimpleName() + "__impl" + context.nextId();

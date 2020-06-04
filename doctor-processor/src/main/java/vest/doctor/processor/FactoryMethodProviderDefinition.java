@@ -18,7 +18,6 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
     private final TypeElement container;
     private final ExecutableElement factoryMethod;
     private final String generatedClass;
-    private final String uniqueName;
 
     public FactoryMethodProviderDefinition(AnnotationProcessorContext context, TypeElement container, ExecutableElement factoryMethod) {
         super(context, context.toTypeElement(factoryMethod.getReturnType()), factoryMethod);
@@ -27,9 +26,8 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
         if (providedType().getTypeParameters().size() != 0) {
             context.errorMessage("factory methods may not return parameterized types: " + ProcessorUtils.debugString(factoryMethod));
         }
-        this.generatedClass = providedType().getSimpleName() + "__factoryProvider" + context.nextId();
-//        this.generatedClass = context.generatedPackage() + "." + providedType().getSimpleName() + "__factoryProvider" + context.nextId();
-        this.uniqueName = "inst" + context.nextId();
+//        this.generatedClass = providedType().getSimpleName() + "__factoryProvider" + context.nextId();
+        this.generatedClass = context.generatedPackage() + "." + providedType().getSimpleName() + "__factoryProvider" + context.nextId();
     }
 
     @Override
@@ -64,7 +62,7 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
         classBuilder.addMethod("public " + providedType().getSimpleName() + " get()", b -> {
             b.line("try {");
             b.line(container.getQualifiedName() + " container = " + ProcessorUtils.getProviderCode(context, container) + ".get();");
-            b.line(providedType().getSimpleName() + " instance = " + context.methodCall(this, factoryMethod, "container", Constants.PROVIDER_REGISTRY) + ";");
+            b.line(providedType().getSimpleName() + " instance = " + context.executableCall(this, factoryMethod, "container", Constants.PROVIDER_REGISTRY) + ";");
             for (NewInstanceCustomizer customizer : context.customizations(NewInstanceCustomizer.class)) {
                 customizer.customize(context, this, b, "instance", Constants.PROVIDER_REGISTRY);
             }
@@ -72,11 +70,6 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
             b.line("} catch(Throwable t) { throw new " + InjectionException.class.getCanonicalName() + "(\"error instantiating provided type\", t); }");
         });
         return classBuilder;
-    }
-
-    @Override
-    public String uniqueInstanceName() {
-        return uniqueName;
     }
 
     @Override

@@ -2,8 +2,8 @@ package demo.app;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import vest.doctor.aop.AfterAdvice;
-import vest.doctor.aop.BeforeAdvice;
+import vest.doctor.aop.After;
+import vest.doctor.aop.Before;
 import vest.doctor.aop.MethodInvocation;
 
 import javax.inject.Singleton;
@@ -11,7 +11,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 
 @Singleton
-public class LoggingAspect implements BeforeAdvice, AfterAdvice {
+public class LoggingAspect implements Before, After {
     private static Logger log = LoggerFactory.getLogger(LoggingAspect.class);
 
     @Override

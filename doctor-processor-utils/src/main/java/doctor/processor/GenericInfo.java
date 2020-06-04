@@ -89,17 +89,17 @@ public class GenericInfo {
 
         @Override
         public List<GenericInfo> visitPrimitive(PrimitiveType t, Void aVoid) {
-            return null;
+            return Collections.emptyList();
         }
 
         @Override
         public List<GenericInfo> visitNull(NullType t, Void aVoid) {
-            return null;
+            return Collections.emptyList();
         }
 
         @Override
         public List<GenericInfo> visitArray(ArrayType t, Void aVoid) {
-            return null;
+            return Collections.emptyList();
         }
 
         @Override
@@ -112,42 +112,48 @@ public class GenericInfo {
 
         @Override
         public List<GenericInfo> visitError(ErrorType t, Void aVoid) {
-            return null;
+            return Collections.emptyList();
         }
 
         @Override
         public List<GenericInfo> visitTypeVariable(TypeVariable t, Void aVoid) {
-            return null;
+            TypeMirror upperBound = t.getUpperBound();
+            if (upperBound instanceof IntersectionType) {
+                TypeMirror typeMirror = ((IntersectionType) upperBound).getBounds().get(0);
+                return Collections.singletonList(new GenericInfo(typeMirror));
+            } else {
+                return Collections.singletonList(new GenericInfo(t.getUpperBound()));
+            }
         }
 
         @Override
         public List<GenericInfo> visitWildcard(WildcardType t, Void aVoid) {
-            return null;
+            return Collections.singletonList(new GenericInfo(Optional.ofNullable(t.getSuperBound()).orElse(t.getExtendsBound())));
         }
 
         @Override
         public List<GenericInfo> visitExecutable(ExecutableType t, Void aVoid) {
-            return null;
+            return Collections.emptyList();
         }
 
         @Override
         public List<GenericInfo> visitNoType(NoType t, Void aVoid) {
-            return null;
+            return Collections.emptyList();
         }
 
         @Override
         public List<GenericInfo> visitUnknown(TypeMirror t, Void aVoid) {
-            return null;
+            return Collections.emptyList();
         }
 
         @Override
         public List<GenericInfo> visitUnion(UnionType t, Void aVoid) {
-            return null;
+            return Collections.emptyList();
         }
 
         @Override
         public List<GenericInfo> visitIntersection(IntersectionType t, Void aVoid) {
-            return null;
+            return Collections.emptyList();
         }
     }
 }

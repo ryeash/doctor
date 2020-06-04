@@ -13,7 +13,10 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.IntersectionType;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
+import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.ElementFilter;
 import java.lang.annotation.Annotation;
 import java.nio.ByteBuffer;
@@ -262,12 +265,76 @@ public class ProcessorUtils {
     }
 
     public static String newTypeInfo(GenericInfo genericInfo) {
-        String prefix = "new TypeInfo(" + typeWithoutParameters(genericInfo.type()) + ".class";
+        TypeMirror type = genericInfo.type();
+        if (type.getKind().isPrimitive()) {
+            return "new TypeInfo(" + rawPrimitiveClass(type) + ")";
+        }
+
+        TypeMirror reportedType = rawClass(type);
+
+        if (reportedType == null) {
+            return "new TypeInfo(null)";
+        }
+        String prefix = "new TypeInfo(" + typeWithoutParameters(reportedType) + ".class";
         if (!genericInfo.hasTypeParameters()) {
             return prefix + ")";
         } else {
             String param = genericInfo.parameterTypes().stream().map(ProcessorUtils::newTypeInfo).collect(Collectors.joining(", "));
             return prefix + ", " + param + ")";
+        }
+    }
+
+    private static String rawPrimitiveClass(TypeMirror mirror) {
+        if (!mirror.getKind().isPrimitive()) {
+            throw new IllegalArgumentException("expected a primitive type");
+        }
+        switch (mirror.getKind()) {
+            case BOOLEAN:
+                return Boolean.class.getCanonicalName() + ".TYPE";
+            case BYTE:
+                return Byte.class.getCanonicalName() + ".TYPE";
+            case SHORT:
+                return Short.class.getCanonicalName() + ".TYPE";
+            case INT:
+                return Integer.class.getCanonicalName() + ".TYPE";
+            case LONG:
+                return Long.class.getCanonicalName() + ".TYPE";
+            case CHAR:
+                return Character.class.getCanonicalName() + ".TYPE";
+            case FLOAT:
+                return Float.class.getCanonicalName() + ".TYPE";
+            case DOUBLE:
+                return Double.class.getCanonicalName() + ".TYPE";
+            default:
+                throw new IllegalArgumentException("unhandled primitive type: " + mirror);
+        }
+    }
+
+    private static TypeMirror rawClass(TypeMirror mirror) {
+        switch (mirror.getKind()) {
+            case DECLARED:
+            case ARRAY:
+                return mirror;
+
+            case TYPEVAR:
+                TypeVariable tv = (TypeVariable) mirror;
+                TypeMirror v = Optional.ofNullable(tv.getUpperBound()).orElse(tv.getLowerBound());
+                return rawClass(v);
+
+            case WILDCARD:
+                WildcardType wc = (WildcardType) mirror;
+                TypeMirror bound = Optional.ofNullable(wc.getSuperBound()).orElse(wc.getExtendsBound());
+                if (bound == null) {
+                    throw new IllegalArgumentException("unspecified bounds");
+                }
+                return rawClass(bound);
+
+            case INTERSECTION:
+                IntersectionType it = (IntersectionType) mirror;
+                return rawClass(it.getBounds().get(0));
+
+            default:
+                return null;
         }
     }
 }

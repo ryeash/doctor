@@ -121,7 +121,6 @@ public class TestAppConfig {
         return new TCCustomQualifier("defaultColor");
     }
 
-
     @Factory
     @Singleton
     @Named("coffee-aspect")

@@ -107,9 +107,6 @@ public class ProviderParameterLookupCustomizer implements ParameterLookupCustomi
                 || ProcessorUtils.isCompatibleWith(context, typeElement, Provider.class)
                 || ProcessorUtils.isCompatibleWith(context, typeElement, Iterable.class)
                 || ProcessorUtils.isCompatibleWith(context, typeElement, Stream.class)) {
-
-            ProcessorUtils.getParameterizedType(context, variableElement.asType())
-                    .orElseThrow(() -> new IllegalArgumentException());
             TypeElement type = context.toTypeElement(unwrapJustOne(variableElement.asType()));
             return context.buildDependency(type, qualifier, false);
         }

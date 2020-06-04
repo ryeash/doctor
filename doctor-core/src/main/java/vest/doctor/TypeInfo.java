@@ -17,8 +17,12 @@ public class TypeInfo {
     }
 
     public TypeInfo(Class<?> rawType, List<TypeInfo> parameterTypes) {
-        this.rawType = Objects.requireNonNull(rawType);
-        this.parameterTypes = Collections.unmodifiableList(parameterTypes);
+        this.rawType = rawType;
+        if (rawType != null) {
+            this.parameterTypes = Collections.unmodifiableList(parameterTypes);
+        } else {
+            this.parameterTypes = Collections.emptyList();
+        }
     }
 
     /**

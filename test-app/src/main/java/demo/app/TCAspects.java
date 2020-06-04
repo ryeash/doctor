@@ -35,7 +35,7 @@ public class TCAspects {
         return name;
     }
 
-    public <T extends String & CharSequence, R extends InputStream> List<T> parametric(Class<T> type) {
+    public <T extends String & CharSequence, R extends InputStream> List<T> parametric(Class<T> type, boolean[] booleans) {
         return Collections.emptyList();
     }
 

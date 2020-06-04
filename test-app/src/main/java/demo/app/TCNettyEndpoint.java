@@ -38,6 +38,8 @@ public class TCNettyEndpoint {
                         @Attribute("list") List<InputStream> streams,
                         @BeanParam NettyBeanParam<?> beanParam) {
         Assert.assertNull(streams);
+        Assert.assertEquals(q.get(), beanParam.getQ().get());
+        Assert.assertEquals(num, beanParam.getNum());
         return "ok " + q.orElse(null) + " " + num + " " + optNum.orElse(-1);
     }
 
@@ -110,7 +112,7 @@ public class TCNettyEndpoint {
     @GET
     @Path("/paramtest/{normal}/{custom:\\d+}")
     public String paramtest(@PathParam("normal") String normal,
-                            @PathParam("custom") Integer custom) {
+                            @PathParam("custom") int custom) {
         return normal + " " + custom;
 
     }

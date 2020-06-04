@@ -90,7 +90,7 @@ public class EndpointWriter implements ProviderDefinitionListener {
     private static void writeEndpoint(AnnotationProcessorContext context,
                                       String httpMethod, String path,
                                       ProviderDefinition serviceProvider, ExecutableElement method) {
-        String className = "Endpoint__" + context.nextId();
+        String className = "Endpoint_" + httpMethod + "_" + method.getSimpleName() + "_" + context.nextId();
         String qualifiedClassName = context.generatedPackage() + "." + className;
 
         ClassBuilder endpoint = new ClassBuilder()

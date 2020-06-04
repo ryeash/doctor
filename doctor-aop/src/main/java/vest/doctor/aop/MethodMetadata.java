@@ -1,20 +1,21 @@
 package vest.doctor.aop;
 
-import java.lang.reflect.Type;
+import vest.doctor.TypeInfo;
+
 import java.util.Collections;
 import java.util.List;
 
 /**
- * Metadata about an invoked method.
+ * Static metadata about an invoked method.
  */
 public class MethodMetadata {
 
     private final Object containingInstance;
     private final String methodName;
-    private final List<Type> methodParameters;
-    private final Type returnType;
+    private final List<TypeInfo> methodParameters;
+    private final TypeInfo returnType;
 
-    public MethodMetadata(Object containingInstance, String methodName, List<Type> methodParameters, Type returnType) {
+    public MethodMetadata(Object containingInstance, String methodName, List<TypeInfo> methodParameters, TypeInfo returnType) {
         this.containingInstance = containingInstance;
         this.methodName = methodName;
         this.methodParameters = Collections.unmodifiableList(methodParameters);
@@ -44,11 +45,11 @@ public class MethodMetadata {
      *
      * @return a list of the parameter types
      */
-    public List<Type> getMethodParameters() {
+    public List<TypeInfo> getMethodParameters() {
         return methodParameters;
     }
 
-    public Type getReturnType() {
+    public TypeInfo getReturnType() {
         return returnType;
     }
 }

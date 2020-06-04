@@ -2,6 +2,8 @@ package vest.doctor.aop;
 
 import doctor.processor.ClassValueVisitor;
 import doctor.processor.Constants;
+import doctor.processor.GenericInfo;
+import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.codegen.ClassBuilder;
@@ -79,14 +81,14 @@ final class AspectedMethod {
             paramTypes = "Collections.emptyList()";
         } else {
             paramTypes = method.getParameters().stream()
-                    .map(p -> stripParams(p.asType()) + ".class")
+                    .map(ProcessorUtils::newTypeInfo)
                     .collect(Collectors.joining(", ", "Arrays.asList(", ")"));
         }
         String returnType;
         if (method.getReturnType().getKind() == TypeKind.VOID) {
             returnType = "null";
         } else {
-            returnType = stripParams(method.getReturnType()) + ".class";
+            returnType = ProcessorUtils.newTypeInfo(new GenericInfo(method.getReturnType()));
         }
         constructor.line("this." + metadataName() + " =  new MethodMetadata(delegate, \"" + method.getSimpleName() + "\", " + paramTypes + ", " + returnType + ");");
 
@@ -133,10 +135,10 @@ final class AspectedMethod {
 
         sb.append(invoker.toString());
         sb.append("MethodInvocation invocation = new MethodInvocationImpl(").append(metadataName()).append(", arguments, invoker);\n");
-        sb.append(aspectName()).append(".call(invocation);\n");
         if (method.getReturnType().getKind() != TypeKind.VOID) {
-            sb.append("return invocation.getResult();");
+            sb.append("return ");
         }
+        sb.append(aspectName()).append(".call(invocation);");
         return sb.toString();
     }
 

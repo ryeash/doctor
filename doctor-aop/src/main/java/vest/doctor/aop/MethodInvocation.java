@@ -1,7 +1,8 @@
 package vest.doctor.aop;
 
+import vest.doctor.TypeInfo;
+
 import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 import java.util.List;
 
 /**
@@ -25,18 +26,18 @@ public interface MethodInvocation {
     String getMethodName();
 
     /**
-     * Get the parameter type for the method that was invoked.
+     * Get the parameter types for the method that was invoked.
      *
      * @return the parameter types
      */
-    List<Type> getMethodParameters();
+    List<TypeInfo> getMethodParameters();
 
     /**
      * Get the type of the returned value.
      *
      * @return the return type
      */
-    Type getReturnType();
+    TypeInfo getReturnType();
 
     /**
      * Get the number of arguments the method was invoked with.

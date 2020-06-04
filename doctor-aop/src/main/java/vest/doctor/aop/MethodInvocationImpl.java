@@ -1,7 +1,8 @@
 package vest.doctor.aop;
 
+import vest.doctor.TypeInfo;
+
 import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -32,12 +33,12 @@ public class MethodInvocationImpl implements MethodInvocation {
     }
 
     @Override
-    public List<Type> getMethodParameters() {
+    public List<TypeInfo> getMethodParameters() {
         return methodMetadata.getMethodParameters();
     }
 
     @Override
-    public Type getReturnType() {
+    public TypeInfo getReturnType() {
         return methodMetadata.getReturnType();
     }
 
@@ -90,7 +91,7 @@ public class MethodInvocationImpl implements MethodInvocation {
     @Override
     public Method getMethod() throws NoSuchMethodException {
         return methodMetadata.getContainingInstance().getClass().getMethod(methodMetadata.getMethodName(),
-                methodMetadata.getMethodParameters().stream().map(t -> (Class<?>) t).toArray(Class<?>[]::new));
+                methodMetadata.getMethodParameters().stream().map(TypeInfo::getRawType).toArray(Class<?>[]::new));
     }
 
     public void setInvokable(boolean invokable) {

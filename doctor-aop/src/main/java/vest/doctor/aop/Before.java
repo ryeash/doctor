@@ -3,10 +3,10 @@ package vest.doctor.aop;
 /**
  * Customized a method to add pre-invoke workflows.
  */
-public interface BeforeAdvice extends Aspect {
+public interface Before extends Aspect {
 
     /**
-     * Called before any {@link AroundAdvice} to customize the method before it has been invoked. In this context
+     * Called before any {@link Around} to customize the method before it has been invoked. In this context
      * the {@link MethodInvocation#invoke()} will throw an {@link UnsupportedOperationException}.
      *
      * @param invocation the method invocation

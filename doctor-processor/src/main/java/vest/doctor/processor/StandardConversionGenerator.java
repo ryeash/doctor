@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 public class StandardConversionGenerator implements StringConversionGenerator {
@@ -24,21 +25,22 @@ public class StandardConversionGenerator implements StringConversionGenerator {
         Stream.of(Boolean.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class)
                 .forEach(c -> CLASS_TO_CONVERTER.put(c.getCanonicalName(), valueOfCode(c)));
 
-        CLASS_TO_CONVERTER.put("boolean", valueOfCode(Boolean.class));
-        CLASS_TO_CONVERTER.put("byte", valueOfCode(Byte.class));
-        CLASS_TO_CONVERTER.put("short", valueOfCode(Short.class));
-        CLASS_TO_CONVERTER.put("int", valueOfCode(Integer.class));
-        CLASS_TO_CONVERTER.put("long", valueOfCode(Long.class));
-        CLASS_TO_CONVERTER.put("float", valueOfCode(Float.class));
-        CLASS_TO_CONVERTER.put("double", valueOfCode(Double.class));
+        CLASS_TO_CONVERTER.put("boolean", Boolean.class.getCanonicalName() + "::parseBoolean");
+        CLASS_TO_CONVERTER.put("byte", Byte.class.getCanonicalName() + "::parseByte");
+        CLASS_TO_CONVERTER.put("short", Short.class.getCanonicalName() + "::parseShort");
+        CLASS_TO_CONVERTER.put("int", Integer.class.getCanonicalName() + "::parseInt");
+        CLASS_TO_CONVERTER.put("long", Long.class.getCanonicalName() + "::parseLong");
+        CLASS_TO_CONVERTER.put("float", Float.class.getCanonicalName() + "::parseFloat");
+        CLASS_TO_CONVERTER.put("double", Double.class.getCanonicalName() + "::parseDouble");
         CLASS_TO_CONVERTER.put("char", "str -> str.length() > 0 ? str.charAt(0) : (char) -1");
 
         CLASS_TO_CONVERTER.put(String.class.getCanonicalName(), "java.util.function.Function.identity()");
-        CLASS_TO_CONVERTER.put(Character.class.getCanonicalName(), "str -> str.length() > 0 ? str.charAt(0) : null");
         CLASS_TO_CONVERTER.put(CharSequence.class.getCanonicalName(), "java.util.function.Function.identity()");
+        CLASS_TO_CONVERTER.put(Character.class.getCanonicalName(), "str -> str.length() > 0 ? str.charAt(0) : null");
         CLASS_TO_CONVERTER.put(BigDecimal.class.getCanonicalName(), BigDecimal.class.getCanonicalName() + "::new");
         CLASS_TO_CONVERTER.put(BigInteger.class.getCanonicalName(), BigInteger.class.getCanonicalName() + "::new");
         CLASS_TO_CONVERTER.put(Number.class.getCanonicalName(), BigDecimal.class.getCanonicalName() + "::new");
+        CLASS_TO_CONVERTER.put(UUID.class.getCanonicalName(), UUID.class.getCanonicalName() + "::fromString");
     }
 
     @Override

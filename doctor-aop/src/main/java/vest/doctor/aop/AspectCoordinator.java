@@ -7,10 +7,10 @@ import java.util.List;
 /**
  * Internally used to coordinate aspects and method invocations.
  */
-public class AspectCoordinator implements AroundAdvice, BeforeAdvice, AfterAdvice {
-    private final List<BeforeAdvice> befores = new LinkedList<>();
-    private final List<AroundAdvice> arounds = new LinkedList<>();
-    private final List<AfterAdvice> afters = new LinkedList<>();
+public class AspectCoordinator implements Around, Before, After {
+    private final List<Before> befores = new LinkedList<>();
+    private final List<Around> arounds = new LinkedList<>();
+    private final List<After> afters = new LinkedList<>();
 
     public AspectCoordinator(Aspect... delegates) {
         this(Arrays.asList(delegates));
@@ -18,29 +18,30 @@ public class AspectCoordinator implements AroundAdvice, BeforeAdvice, AfterAdvic
 
     public AspectCoordinator(List<Aspect> delegates) {
         for (Aspect delegate : delegates) {
-            if (delegate instanceof BeforeAdvice) {
-                befores.add((BeforeAdvice) delegate);
+            if (delegate instanceof Before) {
+                befores.add((Before) delegate);
             }
-            if (delegate instanceof AroundAdvice) {
-                arounds.add((AroundAdvice) delegate);
+            if (delegate instanceof Around) {
+                arounds.add((Around) delegate);
             }
-            if (delegate instanceof AfterAdvice) {
-                afters.add((AfterAdvice) delegate);
+            if (delegate instanceof After) {
+                afters.add((After) delegate);
             }
         }
     }
 
-    public void call(MethodInvocation invocation) {
+    public <T> T call(MethodInvocation invocation) {
         before(invocation);
         execute(invocation);
         after(invocation);
+        return invocation.getResult();
     }
 
     @Override
     public void before(MethodInvocation invocation) {
         ((MethodInvocationImpl) invocation).setInvokable(false);
         if (!befores.isEmpty()) {
-            for (BeforeAdvice before : befores) {
+            for (Before before : befores) {
                 before.before(invocation);
             }
         }
@@ -51,7 +52,7 @@ public class AspectCoordinator implements AroundAdvice, BeforeAdvice, AfterAdvic
         ((MethodInvocationImpl) invocation).setInvokable(true);
         try {
             if (!arounds.isEmpty()) {
-                for (AroundAdvice around : arounds) {
+                for (Around around : arounds) {
                     around.execute(invocation);
                 }
             } else {
@@ -66,7 +67,7 @@ public class AspectCoordinator implements AroundAdvice, BeforeAdvice, AfterAdvic
     public void after(MethodInvocation invocation) {
         ((MethodInvocationImpl) invocation).setInvokable(false);
         if (!afters.isEmpty()) {
-            for (AfterAdvice after : afters) {
+            for (After after : afters) {
                 after.after(invocation);
             }
         }

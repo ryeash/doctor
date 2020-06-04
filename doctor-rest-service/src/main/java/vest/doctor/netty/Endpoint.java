@@ -6,6 +6,7 @@ import vest.doctor.netty.impl.Router;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public abstract class Endpoint implements Handler {
 
@@ -44,7 +45,7 @@ public abstract class Endpoint implements Handler {
     }
 
     @Override
-    public CompletableFuture<Response> handle(Request request) {
+    public CompletionStage<Response> handle(Request request) {
         try {
             Object result = executeMethod(request);
             if (result instanceof CompletableFuture) {

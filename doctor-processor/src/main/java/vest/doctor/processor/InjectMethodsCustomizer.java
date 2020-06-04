@@ -41,7 +41,7 @@ public class InjectMethodsCustomizer implements NewInstanceCustomizer {
         for (ExecutableElement executableElement : ElementFilter.methodsIn(context.processingEnvironment().getElementUtils().getAllMembers(typeElement))) {
             if (targetAnnotations.stream().map(executableElement::getAnnotation).anyMatch(Objects::nonNull)) {
 
-                String call = context.methodCall(providerDefinition, executableElement, instanceRef, providerRegistryRef);
+                String call = context.executableCall(providerDefinition, executableElement, instanceRef, providerRegistryRef);
 
                 if (executableElement.getAnnotation(Async.class) != null) {
                     if (!executorRef) {

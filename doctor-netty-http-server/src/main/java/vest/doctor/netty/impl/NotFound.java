@@ -5,14 +5,15 @@ import vest.doctor.netty.Request;
 import vest.doctor.netty.Response;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public class NotFound implements Handler {
 
     @Override
-    public CompletableFuture<Response> handle(Request request) {
+    public CompletionStage<Response> handle(Request request) {
         return request.body()
                 .ignored()
                 .thenCombine(CompletableFuture.supplyAsync(request::createResponse),
-                        (v, resp) -> resp.status(404));
+                        (v, resp) -> resp.status(404).body(EmptyBody.INSTANCE));
     }
 }

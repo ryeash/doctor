@@ -2,15 +2,15 @@ package demo.app;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import vest.doctor.aop.AroundAdvice;
+import vest.doctor.aop.Around;
 import vest.doctor.aop.AspectException;
 import vest.doctor.aop.MethodInvocation;
 
 import javax.inject.Singleton;
 
 @Singleton
-public class TimingAspect implements AroundAdvice {
-    private static Logger log = LoggerFactory.getLogger(TimingAspect.class);
+public class TimingAspect implements Around {
+    private static final Logger log = LoggerFactory.getLogger(TimingAspect.class);
 
     @Override
     public void execute(MethodInvocation methodInvocation) {

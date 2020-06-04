@@ -1,12 +1,12 @@
 package demo.app;
 
-import vest.doctor.aop.AfterAdvice;
+import vest.doctor.aop.After;
 import vest.doctor.aop.MethodInvocation;
 
 import javax.inject.Singleton;
 
 @Singleton
-public class StringModificationAspect implements AfterAdvice {
+public class StringModificationAspect implements After {
     @Override
     public void after(MethodInvocation invocation) {
         if (invocation.getResult() instanceof String) {
