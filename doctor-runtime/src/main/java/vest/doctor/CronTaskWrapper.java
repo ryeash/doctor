@@ -7,22 +7,28 @@ import vest.doctor.scheduled.Cron;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 
 /**
  * Used internally to support running scheduled methods.
  */
-public abstract class CronTaskWrapper<T> implements Runnable {
+public final class CronTaskWrapper<T> implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(CronTaskWrapper.class);
     private final ProviderRegistry providerRegistry;
     private final WeakReference<T> ref;
     private final Cron cron;
+    private final AtomicInteger executionLimit;
     private final ScheduledExecutorService scheduledExecutorService;
+    private final BiConsumer<ProviderRegistry, T> execute;
 
-    public CronTaskWrapper(ProviderRegistry providerRegistry, T val, Cron cron, ScheduledExecutorService scheduledExecutorService) {
+    public CronTaskWrapper(ProviderRegistry providerRegistry, T val, Cron cron, int executions, ScheduledExecutorService scheduledExecutorService, BiConsumer<ProviderRegistry, T> execute) {
         this.providerRegistry = providerRegistry;
         this.ref = new WeakReference<>(val);
         this.cron = cron;
+        this.executionLimit = executions > 0 ? new AtomicInteger(executions) : null;
         this.scheduledExecutorService = scheduledExecutorService;
+        this.execute = execute;
         scheduleNext();
     }
 
@@ -31,7 +37,11 @@ public abstract class CronTaskWrapper<T> implements Runnable {
         T t = ref.get();
         if (t != null) {
             try {
-                internalRun(providerRegistry, t);
+                execute.accept(providerRegistry, t);
+                if (executionLimit != null && executionLimit.decrementAndGet() == 0) {
+                    ref.clear();
+                    return;
+                }
             } catch (Throwable error) {
                 log.error("error running scheduled cron task", error);
             }
@@ -44,6 +54,4 @@ public abstract class CronTaskWrapper<T> implements Runnable {
         long delay = nextExecutionTime - System.currentTimeMillis();
         scheduledExecutorService.schedule(this, delay, TimeUnit.MILLISECONDS);
     }
-
-    protected abstract void internalRun(ProviderRegistry providerRegistry, T val);
 }

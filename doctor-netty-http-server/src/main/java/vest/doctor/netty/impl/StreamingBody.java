@@ -46,6 +46,7 @@ public class StreamingBody extends InputStream implements RequestBody {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> CompletableFuture<T> asyncRead(BiFunction<ByteBuf, Boolean, T> reader) {
         if (this.dataConsumer != null) {
             throw new IllegalStateException("there is already a data consumer attached to this body");

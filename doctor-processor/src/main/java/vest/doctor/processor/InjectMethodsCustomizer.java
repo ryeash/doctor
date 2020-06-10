@@ -48,9 +48,14 @@ public class InjectMethodsCustomizer implements NewInstanceCustomizer {
                         executorRef = true;
                         method.line(ExecutorService.class.getCanonicalName() + " executor = " + providerRegistryRef + ".getInstance(" + ExecutorService.class.getCanonicalName() + ".class, \"default\");");
                     }
-                    method.line("executor.submit(() -> {\ntry {\n" + call
-                            + ";\n} catch(Throwable t) { throw new " + InjectionException.class.getCanonicalName() + "(\"error injecting method\", t); }"
-                            + "});");
+                    method.var("InjectionException", InjectionException.class.getCanonicalName())
+
+                            .line("executor.submit(() -> {")
+                            .line("try {")
+                            .line(call + ";")
+                            .line("} catch(Throwable t) {")
+                            .line("throw new {InjectionException}(\"error injecting method\", t); }")
+                            .line("});");
                 } else {
                     method.line(call + ";");
                 }

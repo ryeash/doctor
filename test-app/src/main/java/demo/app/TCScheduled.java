@@ -13,19 +13,19 @@ public class TCScheduled {
     public AtomicInteger every50Milliseconds = new AtomicInteger(0);
     public AtomicInteger cronEverySecond = new AtomicInteger(0);
 
-    @Scheduled(interval = "10 ms")
+    @Scheduled(interval = "${configurableInterval}")
     public void every10Milliseconds() {
         every10Milliseconds.incrementAndGet();
     }
 
     @Scheduled(interval = "50", type = Scheduled.Type.FIXED_DELAY)
-    public void event50Milliseconds(CoffeeMaker coffeeMaker) {
+    public void every50Milliseconds(CoffeeMaker coffeeMaker) {
         Assert.assertNotNull(coffeeMaker);
         every50Milliseconds.incrementAndGet();
     }
 
-    @Scheduled(interval = "* * * * * *")
-    public void cronEverySecond() {
-        cronEverySecond.incrementAndGet();
+    @Scheduled(cron = "* * * * * *")
+    public Integer cronEverySecond() {
+        return cronEverySecond.incrementAndGet();
     }
 }

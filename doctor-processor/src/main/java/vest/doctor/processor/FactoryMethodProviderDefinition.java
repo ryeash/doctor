@@ -39,10 +39,11 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
     public ClassBuilder getClassBuilder() {
         ClassBuilder classBuilder = super.getClassBuilder();
 
-        classBuilder.addMethod("public String toString() { return \"FactoryProvider("
-                + factoryMethod.getEnclosingElement().getSimpleName() + "#"
-                + factoryMethod.getSimpleName()
-                + "):\" + hashCode(); }");
+        classBuilder.addMethod("public String toString()", b -> {
+            b.var("enclosing", factoryMethod.getEnclosingElement().getSimpleName())
+                    .var("method", factoryMethod.getSimpleName())
+                    .line("return \"FactoryProvider({enclosing}#{method}):\" + hashCode();");
+        });
 
         classBuilder.addMethod(CodeLine.line("public void validateDependencies({} {})", ProviderRegistry.class, Constants.PROVIDER_REGISTRY), b -> {
             for (VariableElement parameter : factoryMethod.getParameters()) {
@@ -60,14 +61,20 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
         });
 
         classBuilder.addMethod("public " + providedType().getSimpleName() + " get()", b -> {
-            b.line("try {");
-            b.line(container.getQualifiedName() + " container = " + ProcessorUtils.getProviderCode(context, container) + ".get();");
-            b.line(providedType().getSimpleName() + " instance = " + context.executableCall(this, factoryMethod, "container", Constants.PROVIDER_REGISTRY) + ";");
+            b.var("container", container.getQualifiedName())
+                    .var("getContainer", ProcessorUtils.getProviderCode(context, container))
+                    .var("providedType", providedType().getSimpleName())
+                    .var("call", context.executableCall(this, factoryMethod, "container", Constants.PROVIDER_REGISTRY))
+                    .var("InjectionException", InjectionException.class.getCanonicalName());
+
+            b.line("try {")
+                    .line("{container} container = {getContainer}.get();")
+                    .line("{providedType} instance = {call};");
             for (NewInstanceCustomizer customizer : context.customizations(NewInstanceCustomizer.class)) {
                 customizer.customize(context, this, b, "instance", Constants.PROVIDER_REGISTRY);
             }
             b.line("return instance;");
-            b.line("} catch(Throwable t) { throw new " + InjectionException.class.getCanonicalName() + "(\"error instantiating provided type\", t); }");
+            b.line("} catch(Throwable t) { throw new {InjectionException}(\"error instantiating provided type\", t); }");
         });
         return classBuilder;
     }

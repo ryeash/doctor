@@ -1,8 +1,8 @@
 package vest.doctor.processor;
 
-import doctor.processor.Constants;
 import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.InjectionException;
 import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderRegistry;
@@ -12,7 +12,6 @@ import vest.doctor.scheduled.Interval;
 import vest.doctor.scheduled.Scheduled;
 
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.Name;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
@@ -30,18 +29,20 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
         for (ExecutableElement m : ProcessorUtils.allMethods(context, providerDefinition.providedType())) {
             if (m.getAnnotation(Scheduled.class) != null) {
                 if (!executorInitialized) {
-                    method.line("java.util.concurrent.ScheduledExecutorService ses = " + providerRegistryRef + ".getInstance(java.util.concurrent.ScheduledExecutorService.class, \"defaultScheduled\");");
+                    method.line("java.util.concurrent.ScheduledExecutorService ses = " + providerRegistryRef + ".getInstance(java.util.concurrent.ScheduledExecutorService.class, \"defaultScheduled\");\n");
                     executorInitialized = true;
                 }
                 Scheduled scheduled = m.getAnnotation(Scheduled.class);
-                if (Interval.matches(scheduled.interval())) {
+                if (scheduled.interval().isEmpty() && scheduled.cron().isEmpty()) {
+                    throw new IllegalArgumentException("cron or interval must be set for the @Scheduled annotation: " + ProcessorUtils.debugString(m));
+                }
+                if (!scheduled.interval().isEmpty() && !scheduled.cron().isEmpty()) {
+                    throw new IllegalArgumentException("can not set both cron or interval for the @Scheduled annotation: " + ProcessorUtils.debugString(m));
+                }
+                if (!scheduled.interval().isEmpty()) {
                     processScheduled(context, providerDefinition, method, instanceRef, providerRegistryRef, m);
                 } else {
-                    try {
-                        processCron(context, providerDefinition, method, instanceRef, providerRegistryRef, m);
-                    } catch (IllegalArgumentException e) {
-                        throw new IllegalArgumentException("the scheduled interval did not match the interval or cron pattern: " + scheduled.interval(), e);
-                    }
+                    processCron(context, providerDefinition, method, instanceRef, providerRegistryRef, m);
                 }
             }
         }
@@ -49,53 +50,49 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
 
     private void processScheduled(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef, ExecutableElement scheduledMethod) {
         Scheduled scheduled = scheduledMethod.getAnnotation(Scheduled.class);
-        String schedulerMethod;
-        switch (scheduled.type()) {
-            case FIXED_DELAY:
-                schedulerMethod = "scheduleWithFixedDelay";
-                break;
-            case FIXED_RATE:
-                schedulerMethod = "scheduleAtFixedRate";
-                break;
-            default:
-                throw new UnsupportedOperationException("unhandled scheduling type");
-        }
+        method.var("providerRegistry", providerRegistryRef)
+                .var("stw", STW_CLASS)
+                .var("wrapper", "wrapper" + count.incrementAndGet())
+                .var("instance", instanceRef)
+                .var("executionLimit", String.valueOf(scheduled.executionLimit()))
+                .var("providedType", providerDefinition.providedType().getSimpleName())
+                .var("ProviderRegistry", ProviderRegistry.class.getSimpleName())
+                .var("intvl", "{providerRegistry}.resolvePlaceholders(\"" + ProcessorUtils.escapeStringForCode(scheduled.interval()) + "\")")
+                .var("Interval", Interval.class.getCanonicalName())
+                .var("fixedRate", scheduled.type() == Scheduled.Type.FIXED_RATE)
+                .var("InjectionException", InjectionException.class.getCanonicalName())
+                .var("method", ProcessorUtils.debugString(scheduledMethod))
 
-        Interval interval = new Interval(scheduled.interval());
-
-        String wrapperRef = "wrapper" + count.incrementAndGet();
-        method.line(STW_CLASS + "<" + providerDefinition.providedType().getSimpleName() + "> " + wrapperRef
-                + " = new " + STW_CLASS + "<" + providerDefinition.providedType().getSimpleName() + ">(" + providerRegistryRef + "," + instanceRef + "," + scheduled.executionLimit() + ") {");
-        method.line("protected void internalRun({} {}, {} val) {",
-                ProviderRegistry.class, Constants.PROVIDER_REGISTRY, providerDefinition.providedType().getSimpleName());
-        method.line(context.executableCall(providerDefinition, scheduledMethod, "val", Constants.PROVIDER_REGISTRY) + ";");
-        method.line("}");
-        method.line("};");
-        method.line(wrapperRef + ".setFuture(ses." + schedulerMethod + "(" + wrapperRef + ", " + interval.getMagnitude() + ", " + interval.getMagnitude() + ", java.util.concurrent.TimeUnit." + interval.getUnit() + "));");
+                .line("{stw}<{providedType}> {wrapper} = new {stw}<{providedType}>({providerRegistry}, {instance}, {executionLimit}, new {Interval}({intvl}), ses, {fixedRate}, (provRegistry, val) -> {")
+                .line("try {")
+                .line(context.executableCall(providerDefinition, scheduledMethod, "val", "provRegistry") + ";")
+                .line("} catch(Throwable t) {")
+                .line("throw new {InjectionException}(\"error executing scheduled method {method}\", t);")
+                .line("}")
+                .line("});");
     }
 
     private void processCron(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef, ExecutableElement scheduledMethod) {
         Scheduled scheduled = scheduledMethod.getAnnotation(Scheduled.class);
+        method.var("wrapper", "wrapper" + count.incrementAndGet())
+                .var("ctw", CTW_CLASS)
+                .var("ProviderRegistry", ProviderRegistry.class.getSimpleName())
+                .var("providerRegistry", providerRegistryRef)
+                .var("providedType", providerDefinition.providedType().getSimpleName())
+                .var("instance", instanceRef)
+                .var("Cron", Cron.class.getCanonicalName())
+                .var("schedule", "{providerRegistry}.resolvePlaceholders(\"" + ProcessorUtils.escapeStringForCode(scheduled.cron()) + "\")")
+                .var("executionLimit", String.valueOf(scheduled.executionLimit()))
+                .var("cron", "new {Cron}({schedule})")
+                .var("InjectionException", InjectionException.class.getCanonicalName())
+                .var("method", ProcessorUtils.debugString(scheduledMethod))
 
-        // validate the cron string isn't broken by getting the next few fire times
-        Cron cron = new Cron(scheduled.interval());
-        long l = cron.nextFireTime();
-        for (int i = 0; i < 10; i++) {
-            l = cron.nextFireTime(l);
-        }
-
-        Name simpleProvidedType = providerDefinition.providedType().getSimpleName();
-
-        // ProviderRegistry providerRegistry, T val, Cron cron, ScheduledExecutorService scheduledExecutorService
-        String wrapperRef = "wrapper" + count.incrementAndGet();
-        method.line("{}<{}> {} = new {}<{}>({}, {}, new {}(\"{}\"), ses) {",
-                CTW_CLASS, simpleProvidedType, wrapperRef, CTW_CLASS, simpleProvidedType,
-                Constants.PROVIDER_REGISTRY, instanceRef, Cron.class.getCanonicalName(), scheduled.interval());
-
-        method.line("protected void internalRun({} {}, {} val) {",
-                ProviderRegistry.class, Constants.PROVIDER_REGISTRY, providerDefinition.providedType().getSimpleName());
-        method.line(context.executableCall(providerDefinition, scheduledMethod, "val", Constants.PROVIDER_REGISTRY) + ";");
-        method.line("}");
-        method.line("};");
+                .line("{ctw}<{providedType}> {wrapper} = new {ctw}<{providedType}>({providerRegistry}, {instance}, {cron}, {executionLimit}, ses, (provRegistry, val) -> {")
+                .line("try {")
+                .line(context.executableCall(providerDefinition, scheduledMethod, "val", providerRegistryRef) + ";")
+                .line("} catch(Throwable t) {")
+                .line("throw new {InjectionException}(\"error executing scheduled method {method}\", t);")
+                .line("}")
+                .line("});");
     }
 }

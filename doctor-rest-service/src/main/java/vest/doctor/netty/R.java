@@ -155,4 +155,10 @@ public class R {
     public Object body() {
         return body;
     }
+
+    Response applyTo(Response response) {
+        response.status(status);
+        headers.forEach(response::header);
+        return response;
+    }
 }

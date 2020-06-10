@@ -19,8 +19,6 @@ public interface Response {
 
     HttpHeaders headers();
 
-    Response setCookie(String name, String value);
-
     Response body(ResponseBody body);
 
     ResponseBody body();

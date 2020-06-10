@@ -1,14 +1,11 @@
 package vest.doctor.netty.impl;
 
 import io.netty.handler.codec.http.DefaultHttpHeaders;
-import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import vest.doctor.netty.Request;
 import vest.doctor.netty.Response;
 import vest.doctor.netty.ResponseBody;
-
-import static io.netty.handler.codec.http.cookie.ServerCookieEncoder.STRICT;
 
 public class ServerResponse implements Response {
 
@@ -54,13 +51,6 @@ public class ServerResponse implements Response {
     @Override
     public HttpHeaders headers() {
         return headers;
-    }
-
-    @Override
-    public Response setCookie(String name, String value) {
-        String cookieValue = STRICT.encode(new io.netty.handler.codec.http.cookie.DefaultCookie(name, value));
-        header(HttpHeaderNames.SET_COOKIE, cookieValue);
-        return this;
     }
 
     @Override

@@ -12,6 +12,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * Marks a method to be automatically scheduled with the default {@link java.util.concurrent.ScheduledExecutorService}
  * provided by the {@link ProviderRegistry}.
+ * <p>
+ * One and only one of {@link #interval()} or {@link #cron()} must be set.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
@@ -32,10 +34,15 @@ public @interface Scheduled {
     /**
      * The interval for the schedule. See {@link Interval} for details on the format.
      */
-    String interval();
+    String interval() default "";
 
     /**
-     * The schedule type.
+     * The cron schedule. See {@link Cron} for details on the format.
+     */
+    String cron() default "";
+
+    /**
+     * The schedule type. Only applies when using {@link #interval()}.
      */
     Type type() default Type.FIXED_RATE;
 

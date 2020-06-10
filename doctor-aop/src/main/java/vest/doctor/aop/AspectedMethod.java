@@ -13,7 +13,6 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
-import javax.lang.model.type.TypeMirror;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -152,15 +151,4 @@ final class AspectedMethod {
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
     }
-
-    private static String stripParams(TypeMirror mirror) {
-        String s = mirror.toString();
-        int i = s.indexOf('<');
-        if (i >= 0) {
-            return s.substring(0, i);
-        } else {
-            return s;
-        }
-    }
-
 }

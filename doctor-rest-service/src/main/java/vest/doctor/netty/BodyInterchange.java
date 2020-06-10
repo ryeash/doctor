@@ -59,12 +59,7 @@ public final class BodyInterchange {
             return CompletableFuture.completedFuture(request.createResponse().body(ResponseBody.empty()));
         } else if (data instanceof R) {
             R r = (R) data;
-            return write(request, r.body())
-                    .thenApply(response -> {
-                        r.headers().forEach(response.headers()::set);
-                        response.status(r.status());
-                        return response;
-                    });
+            return write(request, r.body()).thenApply(r::applyTo);
         } else {
             Response response = request.createResponse();
             for (BodyWriter writer : writers) {

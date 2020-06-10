@@ -71,6 +71,7 @@ public abstract class Endpoint implements Handler {
         }
     }
 
+    @SuppressWarnings("unchecked")
     protected <T> T readBody(Request request) {
         CompletableFuture<?> r = null;
         if (bodyType() == null) {

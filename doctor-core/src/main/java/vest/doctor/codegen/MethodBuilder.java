@@ -7,6 +7,7 @@ import java.util.function.Consumer;
  */
 public class MethodBuilder {
 
+    private final Bindings bindings = Bindings.create();
     private final StringBuilder sb = new StringBuilder();
     private final Consumer<String> onFinish;
 
@@ -19,13 +20,22 @@ public class MethodBuilder {
         this.onFinish = onFinish;
     }
 
+    public MethodBuilder(Consumer<String> onFinish) {
+        this.onFinish = onFinish;
+    }
+
     public MethodBuilder line(String line) {
-        sb.append(line).append("\n");
+        sb.append(bindings.fill(line)).append("\n");
         return this;
     }
 
     public MethodBuilder line(String line, Object... args) {
         sb.append(CodeLine.line(line, args)).append("\n");
+        return this;
+    }
+
+    public MethodBuilder var(String name, Object value) {
+        bindings.var(name, value);
         return this;
     }
 
