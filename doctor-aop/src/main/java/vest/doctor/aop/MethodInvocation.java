@@ -44,7 +44,7 @@ public interface MethodInvocation {
      *
      * @return the number of arguments
      */
-    int argumentSize();
+    int arity();
 
     /**
      * Get the value of an argument from a specific position.

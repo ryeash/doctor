@@ -43,7 +43,7 @@ public class MethodInvocationImpl implements MethodInvocation {
     }
 
     @Override
-    public int argumentSize() {
+    public int arity() {
         return argumentList.size();
     }
 
