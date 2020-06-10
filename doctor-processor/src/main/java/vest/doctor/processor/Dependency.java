@@ -46,7 +46,9 @@ class Dependency implements ProviderDependency {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
+        if (this == o) {
+            return true;
+        }
         if (!(o instanceof ProviderDependency)) {
             return false;
         }
