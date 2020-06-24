@@ -28,9 +28,10 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
@@ -40,9 +41,9 @@ import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import vest.doctor.netty.impl.DefaultExceptionHandler;
+import vest.doctor.netty.impl.CompositeExceptionHandler;
 import vest.doctor.netty.impl.ServerRequest;
-import vest.doctor.netty.impl.StreamingBody;
+import vest.doctor.netty.impl.StreamingRequestBody;
 import vest.doctor.netty.impl.WebsocketHandler;
 
 import java.net.InetSocketAddress;
@@ -55,7 +56,7 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 @Sharable
 public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implements AutoCloseable, Thread.UncaughtExceptionHandler {
-    private static final AttributeKey<StreamingBody> CONTEXT_BODY = AttributeKey.newInstance("doctor.netty.contextBody");
+    private static final AttributeKey<StreamingRequestBody> CONTEXT_BODY = AttributeKey.newInstance("doctor.netty.contextBody");
     private static final Logger log = LoggerFactory.getLogger(HttpServer.class);
 
     private final NettyConfiguration config;
@@ -68,7 +69,7 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
     private final ExceptionHandler exceptionHandler;
 
     public HttpServer(NettyConfiguration config, Handler handler) {
-        this(config, handler, new DefaultExceptionHandler());
+        this(config, handler, new CompositeExceptionHandler());
     }
 
     public HttpServer(NettyConfiguration config, Handler handler, ExceptionHandler exceptionHandler) {
@@ -142,7 +143,7 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
         }
 
         // handle as a normal HTTP request
-        StreamingBody body = new StreamingBody(config.getMaxContentLength());
+        StreamingRequestBody body = new StreamingRequestBody(config.getMaxContentLength());
         if (!expectingContent(request)) {
             // end it since there is no body expected
             body.append(new DefaultLastHttpContent(Unpooled.EMPTY_BUFFER));
@@ -169,19 +170,18 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
 
     private void handleBodyData(ChannelHandlerContext ctx, HttpContent content) {
         HttpContent dup = content.retainedDuplicate();
-        StreamingBody streamingBody = ctx.channel().attr(CONTEXT_BODY).get();
-        if (streamingBody != null) {
-            streamingBody.append(dup);
+        StreamingRequestBody streamingRequestBody = ctx.channel().attr(CONTEXT_BODY).get();
+        if (streamingRequestBody != null) {
+            streamingRequestBody.append(dup);
         }
     }
 
     private void writeResponse(Request request, Response response) {
         try {
             ChannelHandlerContext ctx = request.channelContext();
-            HttpContent httpContent = response.body().toContent(request, response);
             HttpResponse nettyResponse = new DefaultHttpResponse(HTTP_1_1, response.status(), response.headers());
             ctx.write(nettyResponse);
-            ctx.write(httpContent);
+            response.body().writeTo(ctx);
             ctx.channel().attr(CONTEXT_BODY).set(null);
             ChannelFuture f = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT)
                     .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
@@ -263,15 +263,16 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
             if (sslContext != null) {
                 p.addLast(sslContext.newHandler(ch.alloc()));
             }
-            p.addLast(new HttpServerCodec(
-                    config.getMaxInitialLineLength(),
+            // the ordering of these handlers is very sensitive
+            p.addLast(new HttpRequestDecoder(config.getMaxInitialLineLength(),
                     config.getMaxHeaderSize(),
                     config.getMaxChunkSize(),
                     config.isValidateHeaders(),
                     config.getInitialBufferSize()));
             p.addLast(new HttpContentDecompressor());
-            p.addLast(new ChunkedWriteHandler());
+            p.addLast(new HttpResponseEncoder());
             p.addLast(new HttpContentCompressor(6, 15, 8, 812));
+            p.addLast(new ChunkedWriteHandler());
             p.addLast(server);
         }
     }

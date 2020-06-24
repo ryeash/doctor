@@ -16,7 +16,6 @@ import vest.doctor.netty.PathParam;
 import vest.doctor.netty.QueryParam;
 import vest.doctor.netty.R;
 import vest.doctor.netty.Request;
-import vest.doctor.netty.ResponseBody;
 
 import javax.inject.Singleton;
 import java.io.InputStream;
@@ -104,9 +103,9 @@ public class TCNettyEndpoint {
 
     @GET
     @Path("/file/*")
-    public ResponseBody staticFiles(Request ctx, @PathParam("*") String file) {
+    public R staticFiles(Request ctx, @PathParam("*") String file) {
         log.info("{}", ctx.uri());
-        return ResponseBody.of("./", file);
+        return R.file(ctx, "./", file);
     }
 
     @GET

@@ -10,7 +10,7 @@ import vest.doctor.ProviderRegistry;
 import vest.doctor.event.EventProducer;
 import vest.doctor.event.ServiceStarted;
 import vest.doctor.event.ServiceStopped;
-import vest.doctor.netty.impl.DefaultExceptionHandler;
+import vest.doctor.netty.impl.CompositeExceptionHandler;
 import vest.doctor.netty.impl.Router;
 
 import javax.inject.Provider;
@@ -46,12 +46,12 @@ public class NettyLoader implements AppLoader {
                 .map(Provider::get)
                 .forEach(endpoint -> router.addRoute(endpoint.method(), endpoint.path(), endpoint));
 
-        DefaultExceptionHandler defaultExceptionHandler = new DefaultExceptionHandler();
+        CompositeExceptionHandler compositeExceptionHandler = new CompositeExceptionHandler();
         providerRegistry.getProviders(ExceptionHandler.class)
                 .map(Provider::get)
-                .forEach(defaultExceptionHandler::addHandler);
+                .forEach(compositeExceptionHandler::addHandler);
 
-        this.server = new HttpServer(conf, router, defaultExceptionHandler);
+        this.server = new HttpServer(conf, router, compositeExceptionHandler);
 
         providerRegistry.getProviders(Websocket.class)
                 .forEach(ws -> {

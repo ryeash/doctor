@@ -7,6 +7,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -22,6 +24,8 @@ import java.util.Map;
  * Internally used to assist in asynchronous parsing of json objects with Jackson.
  */
 public class AsyncMapper<T> {
+    private static Logger log = LoggerFactory.getLogger(AsyncMapper.class);
+
     private final ObjectMapper mapper;
     private final JavaType type;
     private final JsonParser async;
@@ -57,12 +61,14 @@ public class AsyncMapper<T> {
             buf.readBytes(b, 0, toRead);
             result = feed(b, 0, toRead);
             if (result != null) {
+                if (buf.readableBytes() > 0 || !finished) {
+                    log.warn("complete result read, but data was left in the buffer");
+                }
                 break;
             }
         }
-        // TODO: warning about leftover buffer data?
         if (finished && result == null) {
-            throw new IllegalStateException("data stream terminated before full document was sent");
+            throw new IllegalStateException("data stream terminated before full result was read");
         }
         return result;
     }

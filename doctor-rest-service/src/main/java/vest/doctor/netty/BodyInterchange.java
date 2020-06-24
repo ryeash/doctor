@@ -52,11 +52,11 @@ public final class BodyInterchange {
         if (data instanceof CompletableFuture) {
             return ((CompletableFuture<?>) data).thenCompose(d -> write(request, d));
         } else if (data instanceof Response) {
-            return CompletableFuture.completedFuture((Response) data);
+            return ((Response) data).wrapFuture();
         } else if (data instanceof ResponseBody) {
-            return CompletableFuture.completedFuture(request.createResponse().body((ResponseBody) data));
+            return request.createResponse().body((ResponseBody) data).wrapFuture();
         } else if (data == null) {
-            return CompletableFuture.completedFuture(request.createResponse().body(ResponseBody.empty()));
+            return request.createResponse().body(ResponseBody.empty()).wrapFuture();
         } else if (data instanceof R) {
             R r = (R) data;
             return write(request, r.body()).thenApply(r::applyTo);

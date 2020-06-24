@@ -154,7 +154,6 @@ public class EndpointWriter implements ProviderDefinitionListener {
             String name = annotationSource.getAnnotation(Attribute.class).value();
             return "(" + parameter.asType() + ") " + contextRef + ".attribute(\"" + name + "\")";
         } else if (annotationSource.getAnnotation(BeanParam.class) != null) {
-            // TODO: should this pass annotationSource?
             return beanParameterCode(context, parameter, contextRef);
         }
 

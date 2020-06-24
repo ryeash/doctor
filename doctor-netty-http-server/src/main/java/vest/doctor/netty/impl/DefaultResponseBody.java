@@ -2,10 +2,8 @@ package vest.doctor.netty.impl;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultHttpContent;
-import io.netty.handler.codec.http.HttpContent;
-import vest.doctor.netty.Request;
-import vest.doctor.netty.Response;
 import vest.doctor.netty.ResponseBody;
 
 public class DefaultResponseBody implements ResponseBody {
@@ -16,7 +14,7 @@ public class DefaultResponseBody implements ResponseBody {
     }
 
     @Override
-    public HttpContent toContent(Request request, Response response) {
-        return new DefaultHttpContent(buf);
+    public void writeTo(ChannelHandlerContext channel) {
+        channel.write(new DefaultHttpContent(buf));
     }
 }

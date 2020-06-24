@@ -15,12 +15,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
-public class DefaultExceptionHandler implements ExceptionHandler {
+public class CompositeExceptionHandler implements ExceptionHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(DefaultExceptionHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(CompositeExceptionHandler.class);
     private final List<ExceptionHandler> handlers = new LinkedList<>();
 
-    public DefaultExceptionHandler addHandler(ExceptionHandler exceptionHandler) {
+    public CompositeExceptionHandler addHandler(ExceptionHandler exceptionHandler) {
         if (!handlers.contains(exceptionHandler)) {
             handlers.add(exceptionHandler);
             handlers.sort(Prioritized.COMPARATOR);

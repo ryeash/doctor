@@ -3,6 +3,8 @@ package vest.doctor.netty;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaderValues;
 import vest.doctor.TypeInfo;
 
 import java.io.File;
@@ -71,16 +73,21 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
     @Override
     public CompletableFuture<ResponseBody> write(Response response, Object data) {
         if (data instanceof byte[]) {
+            setContentTypeIfAbsent(response, HttpHeaderValues.APPLICATION_OCTET_STREAM);
             return CompletableFuture.completedFuture(ResponseBody.of((byte[]) data));
         } else if (data instanceof CharSequence) {
+            setContentTypeIfAbsent(response, HttpHeaderValues.TEXT_PLAIN);
             return CompletableFuture.completedFuture(ResponseBody.of(data.toString(), response.request().requestCharset(StandardCharsets.UTF_8)));
         } else if (data instanceof ByteBuf) {
+            setContentTypeIfAbsent(response, HttpHeaderValues.APPLICATION_OCTET_STREAM);
             return CompletableFuture.completedFuture(ResponseBody.of((ByteBuf) data));
         } else if (data instanceof ByteBuffer) {
+            setContentTypeIfAbsent(response, HttpHeaderValues.APPLICATION_OCTET_STREAM);
             return CompletableFuture.completedFuture(ResponseBody.of(Unpooled.wrappedBuffer((ByteBuffer) data)));
         } else if (data instanceof File) {
             try {
                 File file = (File) data;
+                setContentTypeIfAbsent(response, Utils.getContentType(file));
                 FileChannel fc = FileChannel.open(file.toPath(), StandardOpenOption.READ);
                 MappedByteBuffer bb = fc.map(FileChannel.MapMode.READ_ONLY, 0, file.length());
                 ByteBuf body = Unpooled.wrappedBuffer(bb);
@@ -97,5 +104,11 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
     @Override
     public int priority() {
         return 0;
+    }
+
+    private void setContentTypeIfAbsent(Response response, CharSequence contentType) {
+        if (!response.headers().contains(HttpHeaderNames.CONTENT_TYPE)) {
+            response.headers().set(HttpHeaderNames.CONTENT_TYPE, contentType);
+        }
     }
 }

@@ -40,7 +40,8 @@ public interface AppLoader extends Prioritized, AutoCloseable {
      *
      * @param providerRegistry an instance of the {@link ProviderRegistry}
      * @param modules          the modules to check
-     * @return true if any of the given modules are in the list of active modules
+     * @return true if any of the given modules are in the list of active modules OR if the given list
+     * of modules is empty
      */
     default boolean isActive(ProviderRegistry providerRegistry, List<String> modules) {
         if (modules == null || modules.isEmpty()) {

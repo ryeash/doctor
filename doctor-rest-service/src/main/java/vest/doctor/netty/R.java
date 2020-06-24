@@ -1,8 +1,20 @@
 package vest.doctor.netty;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.DefaultHttpHeaders;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
-import java.util.HashMap;
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
 
@@ -40,12 +52,12 @@ public class R {
     }
 
     private HttpResponseStatus status;
-    private final Map<CharSequence, Object> headers;
+    private final HttpHeaders headers;
     private Object body;
 
     private R(HttpResponseStatus status) {
         this.status = status;
-        this.headers = new HashMap<>(8);
+        this.headers = new DefaultHttpHeaders();
     }
 
     /**
@@ -94,7 +106,7 @@ public class R {
         if (values == null) {
             headers.remove(name);
         } else {
-            headers.put(name, values);
+            headers.set(name, values);
         }
         return this;
     }
@@ -110,7 +122,7 @@ public class R {
         if (value == null) {
             headers.remove(name);
         } else {
-            headers.put(name, value);
+            headers.set(name, value);
         }
         return this;
     }
@@ -143,7 +155,7 @@ public class R {
      *
      * @return the headers
      */
-    public Map<CharSequence, Object> headers() {
+    public HttpHeaders headers() {
         return headers;
     }
 
@@ -158,7 +170,59 @@ public class R {
 
     Response applyTo(Response response) {
         response.status(status);
-        headers.forEach(response::header);
+        for (Map.Entry<String, String> entry : headers) {
+            response.header(entry.getKey(), entry.getValue());
+        }
         return response;
+    }
+
+    public static R file(Request request, String rootDirectory, String filePath) {
+        java.nio.file.Path rootPath = new File(rootDirectory).getAbsoluteFile().toPath();
+
+        File file = new File(new File(rootDirectory), filePath).getAbsoluteFile();
+        Path filepath = file.toPath();
+        if (!filepath.startsWith(rootPath)) {
+            throw new HttpException(HttpResponseStatus.FORBIDDEN, "invalid path: " + filePath);
+        }
+        if (!file.canRead() || file.isHidden() || !file.isFile()) {
+            throw new HttpException(HttpResponseStatus.NOT_FOUND, "file does not exist: " + filePath);
+        }
+        long modified = file.lastModified();
+
+        Long ifModifiedSince = request.headers().getTimeMillis(HttpHeaderNames.IF_MODIFIED_SINCE);
+        if (!isModified(modified, ifModifiedSince)) {
+            return new R(HttpResponseStatus.NOT_MODIFIED).body(null);
+        }
+
+        try {
+            FileChannel fc = FileChannel.open(filepath, StandardOpenOption.READ);
+            MappedByteBuffer bb = fc.map(FileChannel.MapMode.READ_ONLY, 0, file.length());
+            ByteBuf body = Unpooled.wrappedBuffer(bb);
+            fc.close();
+
+            R r = R.ok();
+
+            // only set these headers if they don't exists -> allows them to be overwritten by user code
+            if (!r.headers().contains(HttpHeaderNames.CONTENT_TYPE)) {
+                r.header(HttpHeaderNames.CONTENT_TYPE, Utils.getContentType(file));
+            }
+            if (!r.headers().contains(HttpHeaderNames.LAST_MODIFIED)) {
+                r.header(HttpHeaderNames.LAST_MODIFIED, new Date(file.lastModified()));
+            }
+            r.body(ResponseBody.of(body));
+            return r;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+
+    private static boolean isModified(long modified, Long ifModifiedSince) {
+        if (ifModifiedSince != null) {
+            long ifModifiedSinceDateSeconds = ifModifiedSince / 1000;
+            long fileLastModifiedSeconds = modified / 1000;
+            return ifModifiedSinceDateSeconds != fileLastModifiedSeconds;
+        }
+        return true;
     }
 }

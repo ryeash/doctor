@@ -73,12 +73,13 @@ public abstract class Endpoint implements Handler {
 
     @SuppressWarnings("unchecked")
     protected <T> T readBody(Request request) {
-        CompletableFuture<?> r = null;
+        CompletableFuture<?> r;
         if (bodyType() == null) {
             // ignore the data, but wait for the body to be read fully
             r = request.body().ignored();
+        } else {
+            r = bodyInterchange().read(request, bodyType());
         }
-        r = bodyInterchange().read(request, bodyType());
         if (bodyType().getRawType().isAssignableFrom(CompletableFuture.class)) {
             return (T) r;
         } else {

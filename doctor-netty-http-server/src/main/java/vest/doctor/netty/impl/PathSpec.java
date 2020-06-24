@@ -29,7 +29,6 @@ public final class PathSpec implements Comparable<PathSpec> {
 
         // build the regex pattern uri and extract parameter names
         // pre-process to handle '*'
-        // TODO: add ^ to the beginning of the regex
         String temp = SPLAT_PARAM_PATTERN.matcher(path).replaceAll("/{*:.*}");
 
         StringBuilder builder = new StringBuilder("^");
@@ -50,31 +49,17 @@ public final class PathSpec implements Comparable<PathSpec> {
             i = matcher.end();
         }
         builder.append(temp, i, temp.length());
-
-        // TODO: should we use insensitive matching?
-        this.pattern = Pattern.compile(builder.toString());
+        this.pattern = Pattern.compile(builder.toString(), Pattern.CASE_INSENSITIVE);
     }
 
     public String getPath() {
         return path;
     }
 
-    public int paramCount() {
-        return paramNames.size();
-    }
-
-    public List<String> getParamNames() {
-        return paramNames;
-    }
-
-    public Pattern getPattern() {
-        return pattern;
-    }
-
     public Map<String, String> matchAndCollect(String requestUri) {
         // short circuit: if no parameters were found in the route path, just do a string compare
         if (paramNames.isEmpty()) {
-            return requestUri.equals(path) ? Collections.emptyMap() : null;
+            return requestUri.equalsIgnoreCase(path) ? Collections.emptyMap() : null;
         }
 
         Matcher matcher = pattern.matcher(requestUri);

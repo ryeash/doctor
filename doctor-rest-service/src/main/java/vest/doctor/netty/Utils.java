@@ -1,5 +1,6 @@
 package vest.doctor.netty;
 
+import java.io.File;
 import java.util.Iterator;
 
 public class Utils {
@@ -52,4 +53,52 @@ public class Utils {
 //            ((List<String>) ctx.attribute(TRACE_ATTR)).add(ms + "ms " + Utils.fillTemplate(message, Arrays.asList(args)));
 //        }
 //    }
+
+    public static String getContentType(File file) {
+        return getContentType(file.getName());
+    }
+
+    public static String getContentType(String file) {
+        int extStart = file.lastIndexOf('.');
+        if (extStart < 0) {
+            return "text/plain";
+        }
+        String ext = file.substring(extStart + 1);
+        switch (ext) {
+            case "html":
+            case "htm":
+                return "text/html";
+            case "json":
+            case "jsn":
+                return "application/json";
+            case "js":
+            case "javascript":
+                return "text/javascript";
+            case "xml":
+                return "application/xml";
+            case "css":
+                return "text/css";
+            case "csv":
+                return "text/csv";
+            case "png":
+                return "image/png";
+            case "jpg":
+            case "jpeg":
+                return "image/jpeg";
+            case "gif":
+                return "image/gif";
+            case "ico":
+                return "image/x-icon";
+            case "woff":
+                return "application/woff";
+            case "otf":
+                return "font/opentype";
+            case "bin":
+                return "application/octet-stream";
+            case "txt":
+            case "text":
+            default:
+                return "text/plain";
+        }
+    }
 }

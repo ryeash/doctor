@@ -18,7 +18,7 @@ import java.util.function.BiFunction;
 /**
  * A handle to the HTTP request body. Supports event driven reading of body data.
  */
-public class StreamingBody extends InputStream implements RequestBody {
+public class StreamingRequestBody extends InputStream implements RequestBody {
     private final CompositeByteBuf composite = Unpooled.compositeBuffer(1024);
     private final CompletableFuture<ByteBuf> future = new CompletableFuture<>();
     private final long maxLength;
@@ -30,7 +30,7 @@ public class StreamingBody extends InputStream implements RequestBody {
 
     private boolean closed = false;
 
-    public StreamingBody(long maxLength) {
+    public StreamingRequestBody(long maxLength) {
         this.maxLength = maxLength;
         this.size = 0;
     }
