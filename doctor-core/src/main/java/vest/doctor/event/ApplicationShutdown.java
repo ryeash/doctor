@@ -2,7 +2,10 @@ package vest.doctor.event;
 
 import vest.doctor.ProviderRegistry;
 
-public class ApplicationShutdown extends ProviderRegistryHolder {
+/**
+ * Event sent by the doctor instance when shutdown has started.
+ */
+public final class ApplicationShutdown extends ProviderRegistryHolder {
     public ApplicationShutdown(ProviderRegistry providerRegistry) {
         super(providerRegistry);
     }

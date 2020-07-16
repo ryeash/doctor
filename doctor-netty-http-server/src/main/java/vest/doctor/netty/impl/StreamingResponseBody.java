@@ -1,5 +1,6 @@
 package vest.doctor.netty.impl;
 
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpChunkedInput;
 import io.netty.handler.stream.ChunkedNioStream;
@@ -22,7 +23,7 @@ public class StreamingResponseBody implements ResponseBody {
     }
 
     @Override
-    public void writeTo(ChannelHandlerContext channel) {
-        channel.write(chunked);
+    public ChannelFuture writeTo(ChannelHandlerContext channel) {
+        return channel.write(chunked);
     }
 }

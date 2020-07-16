@@ -2,6 +2,7 @@ package vest.doctor.netty;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.DefaultFileRegion;
 import io.netty.channel.FileRegion;
@@ -19,7 +20,7 @@ import java.nio.charset.StandardCharsets;
 
 public interface ResponseBody {
 
-    void writeTo(ChannelHandlerContext channel);
+    ChannelFuture writeTo(ChannelHandlerContext channel);
 
     static ResponseBody of(String str) {
         return of(str, StandardCharsets.UTF_8);

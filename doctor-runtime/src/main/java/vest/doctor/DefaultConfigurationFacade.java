@@ -184,7 +184,7 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
         return new FacadeToProperties(this);
     }
 
-    private static List<String> split(String str) {
+    public static List<String> split(String str) {
         List<String> split = new ArrayList<>();
         int i = 0;
         int next;

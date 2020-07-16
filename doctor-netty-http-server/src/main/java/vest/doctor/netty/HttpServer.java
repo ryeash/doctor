@@ -28,13 +28,11 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.AttributeKey;
@@ -51,6 +49,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
@@ -152,9 +151,14 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
 
         ServerRequest req = new ServerRequest(request, ctx, workerGroup, body);
 
-        handler.handle(req)
-                .exceptionally(error -> handleError(req, error))
-                .thenAccept(response -> writeResponse(response.request(), response));
+        try {
+            CompletionStage<Response> handle = handler.handle(req);
+            handle.exceptionally(error -> handleError(req, error))
+                    .thenAccept(response -> writeResponse(response.request(), response));
+        } catch (Throwable t) {
+            Response errorResponse = handleError(req, t);
+            writeResponse(req, errorResponse);
+        }
     }
 
     private Response handleError(Request request, Throwable error) {
@@ -181,14 +185,13 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
             ChannelHandlerContext ctx = request.channelContext();
             HttpResponse nettyResponse = new DefaultHttpResponse(HTTP_1_1, response.status(), response.headers());
             ctx.write(nettyResponse);
-            response.body().writeTo(ctx);
+            ChannelFuture f = response.body().writeTo(ctx);
             ctx.channel().attr(CONTEXT_BODY).set(null);
-            ChannelFuture f = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT)
-                    .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
             if (!request.headers().containsValue(HttpHeaderNames.CONNECTION, "closed", true)
                     || !HttpUtil.isKeepAlive(nettyResponse)) {
                 f.addListener(ChannelFutureListener.CLOSE);
             }
+            ctx.flush();
         } catch (Throwable t) {
             log.error("error writing response", t);
             request.channelContext().close();
@@ -264,13 +267,12 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
                 p.addLast(sslContext.newHandler(ch.alloc()));
             }
             // the ordering of these handlers is very sensitive
-            p.addLast(new HttpRequestDecoder(config.getMaxInitialLineLength(),
+            p.addLast(new HttpServerCodec(config.getMaxInitialLineLength(),
                     config.getMaxHeaderSize(),
                     config.getMaxChunkSize(),
                     config.isValidateHeaders(),
                     config.getInitialBufferSize()));
             p.addLast(new HttpContentDecompressor());
-            p.addLast(new HttpResponseEncoder());
             p.addLast(new HttpContentCompressor(6, 15, 8, 812));
             p.addLast(new ChunkedWriteHandler());
             p.addLast(server);

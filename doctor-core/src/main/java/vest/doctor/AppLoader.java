@@ -35,6 +35,10 @@ public interface AppLoader extends Prioritized, AutoCloseable {
         // no-op
     }
 
+    @Override
+    default void close() throws Exception {
+    }
+
     /**
      * Determine if any of the given modules are in the list of active modules.
      *

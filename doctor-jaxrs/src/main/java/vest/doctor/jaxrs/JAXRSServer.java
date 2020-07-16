@@ -28,9 +28,13 @@ import javax.inject.Provider;
 import javax.ws.rs.Path;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseFilter;
+import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.ExceptionMapper;
+import javax.ws.rs.ext.InterceptorContext;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
+import javax.ws.rs.ext.ParamConverter;
+import javax.ws.rs.ext.ParamConverterProvider;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 import java.net.InetSocketAddress;
@@ -49,7 +53,11 @@ class JAXRSServer extends WebSocketServlet implements WebSocketCreator, AutoClos
             MessageBodyReader.class,
             ReaderInterceptor.class,
             WriterInterceptor.class,
-            Provider.class);
+            InterceptorContext.class,
+            Provider.class,
+            ParamConverter.class,
+            ParamConverterProvider.class,
+            ContextResolver.class);
 
     private final JaxrsConfiguration jaxrsConfiguration;
     private final Map<String, Object> pathToWebsocket;

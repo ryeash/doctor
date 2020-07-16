@@ -62,6 +62,9 @@ public class NettyHttpTest {
                     Arrays.fill(bytes, (byte) 'a');
                     return request.createResponse().body(ResponseBody.of(new ByteArrayInputStream(bytes)));
                 }))
+                .get("/exception", sync(request -> {
+                    throw new RuntimeException("I threw an error");
+                }))
                 .post("/", (request) -> request.body()
                         .asString()
                         .thenApply(ResponseBody::of)
@@ -127,11 +130,17 @@ public class NettyHttpTest {
                 .prettyPeek()
                 .body()
                 .asString();
-//        String recovered = new String(uncompress(as), StandardCharsets.UTF_8);
         Assert.assertEquals(as, test);
     }
 
     @Test
+    public void exception() {
+        req().get("/exception")
+                .then()
+                .statusCode(500);
+    }
+
+    @Test(invocationCount = 5)
     public void throughput() {
         long start = System.nanoTime();
         IntStream.range(0, 1000)

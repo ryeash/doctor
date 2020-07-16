@@ -72,13 +72,9 @@ public class Router implements Handler {
             temp = filter.filter(request, temp);
         }
 
-        CompletionStage<Response> response = selectAndExecute(request);
+        CompletionStage<Response> response = selectHandler(request).handle(request);
         forward(response, parent);
         return temp;
-    }
-
-    private CompletionStage<Response> selectAndExecute(Request request) {
-        return selectHandler(request).handle(request);
     }
 
     private Handler selectHandler(Request request) {

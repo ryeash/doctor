@@ -10,10 +10,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 
 final class ProviderIndex {
 
+    private final Lock writeLock = new ReentrantLock();
     private final Map<ClassKey, Map<String, DoctorProvider<?>>> primary = new HashMap<>();
     private final Map<ClassKey, Map<String, List<DoctorProvider<?>>>> secondary = new HashMap<>();
     private final Map<ClassKey, Collection<DoctorProvider<?>>> annotationTypeToProvider = new HashMap<>(128);
@@ -21,7 +24,8 @@ final class ProviderIndex {
     void setProvider(DoctorProvider<?> provider) {
         Objects.requireNonNull(provider);
         Objects.requireNonNull(provider.type());
-        synchronized (this) {
+        writeLock.lock();
+        try {
             // primary
             Map<String, DoctorProvider<?>> qualifierToProvider = primary.computeIfAbsent(new ClassKey(provider.type()), t -> new HashMap<>());
             if (qualifierToProvider.containsKey(provider.qualifier())) {
@@ -38,6 +42,8 @@ final class ProviderIndex {
             for (Class<? extends Annotation> annotation : provider.allAnnotationTypes()) {
                 annotationTypeToProvider.computeIfAbsent(new ClassKey(annotation), a -> new HashSet<>(16)).add(provider);
             }
+        } finally {
+            writeLock.unlock();
         }
     }
 

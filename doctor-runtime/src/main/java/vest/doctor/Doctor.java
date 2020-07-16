@@ -96,7 +96,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
      * @param configurationFacade the configuration for the application
      * @param activeModules       the active modules
      */
-    public Doctor(ConfigurationFacade configurationFacade, List<String> activeModules) {
+    public Doctor(ConfigurationFacade configurationFacade, List<String> activeModules, AppLoader... additionalLoaders) {
         this.providerIndex = new ProviderIndex();
         providerIndex.setProvider(new AdHocProvider<>(Doctor.class, this, null, Arrays.asList(Doctor.class, ProviderRegistry.class)));
         this.activeModules = activeModules;
@@ -106,6 +106,9 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         this.loaders.add(new BuiltInAppLoader());
         for (AppLoader appLoader : ServiceLoader.load(AppLoader.class)) {
             loaders.add(appLoader);
+        }
+        if (additionalLoaders != null) {
+            loaders.addAll(Arrays.asList(additionalLoaders));
         }
         loaders.sort(Prioritized.COMPARATOR);
         for (AppLoader loader : loaders) {
