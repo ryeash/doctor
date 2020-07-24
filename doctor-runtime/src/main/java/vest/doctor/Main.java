@@ -18,7 +18,7 @@ public final class Main {
 
     public static void main(String[] args) {
         Args a = new Args(args);
-        String modules = a.anyFlagValue("m", "modules", "");
+        String modules = a.option("modules", 'm', "");
         doctor = new Doctor(mainConfig(a), DefaultConfigurationFacade.split(modules), new ArgsLoader(a));
     }
 
@@ -27,7 +27,7 @@ public final class Main {
     }
 
     private static ConfigurationFacade mainConfig(Args args) {
-        String properties = args.anyFlagValue("p", "properties", "");
+        String properties = args.option("properties", 'p', "");
 
         ConfigurationFacade facade = new DefaultConfigurationFacade()
                 .addSource(new EnvironmentVariablesConfigurationSource())

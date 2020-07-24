@@ -1,18 +1,27 @@
 package vest.doctor;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * An immutable wrapper around the arguments passed into the main method.
+ * Options (named arguments that are followed by a value)
+ * and Flags (named arguments that are interpreted as boolean true) are supported.
+ * <p>
+ * Example:
+ * java -jar app.jar -Fg --debug -e "dev"
+ * F, g, and debug would all be flags (i.e. {@link  #flag(String)} would return true)
+ * e is an option (i.e {@link #option(String)} would return "dev" for "e")
  */
 public class Args implements Iterable<String> {
 
@@ -20,33 +29,38 @@ public class Args implements Iterable<String> {
     public static final String VERBOSE_FLAG = "--";
 
     private final List<String> args;
-    private final Map<String, String> flagValues;
+    private final Set<String> flags;
+    private final Map<String, String> options;
 
     public Args(String[] args) {
-        List<String> temp = Stream.of(args).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toCollection(ArrayList::new));
-        this.args = Collections.unmodifiableList(temp);
+        List<String> temp = Stream.of(args)
+                .map(String::trim)
+                .flatMap(Args::expandCharFlags)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toCollection(ArrayList::new));
+        this.args = Collections.unmodifiableList(Arrays.asList(args));
 
-        Map<String, String> tempValues = new HashMap<>();
-        for (int i = 0; i < args.length; i++) {
-            String arg = args[i].trim();
-            if (arg.startsWith(VERBOSE_FLAG)) {
-                int eq = arg.indexOf('=');
-                if (eq < 0) {
-                    continue;
+        this.flags = new HashSet<>();
+        this.options = new LinkedHashMap<>();
+
+        for (int i = 0; i < temp.size(); i++) {
+            String arg = temp.get(i);
+
+            if (arg.startsWith(FLAG) || arg.startsWith(VERBOSE_FLAG)) {
+                String cleaned = stripDashes(arg);
+                String optionVal = Optional.of(i + 1)
+                        .filter(n -> n < temp.size())
+                        .map(temp::get)
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty() && !s.startsWith(FLAG))
+                        .orElse(null);
+                if (optionVal == null) {
+                    flags.add(cleaned);
+                } else {
+                    options.put(cleaned, optionVal);
                 }
-                String name = arg.substring(2, eq).trim();
-                String value = arg.substring(eq + 1).trim();
-                tempValues.put(name, value);
-            } else if (arg.startsWith(FLAG) && (i + 1) < args.length) {
-                String lastChar = String.valueOf(arg.charAt(arg.length() - 1));
-                String value = args[i + 1];
-                if (value.startsWith(FLAG)) {
-                    continue;
-                }
-                tempValues.put(lastChar, value.trim());
             }
         }
-        this.flagValues = Collections.unmodifiableMap(tempValues);
     }
 
     /**
@@ -105,93 +119,109 @@ public class Args implements Iterable<String> {
         return args.size();
     }
 
+
     /**
-     * Look for the flag, for example: args like "-e", flag("e") =&gt; true.
+     * Check if the flag was set, for example: args like "-Aefl", flag('e') =&gt; true.
      *
-     * @param flag The flag to search for
+     * @param c the flag to search for
+     * @return true if the flag is present in the arguments, else false
+     */
+    public boolean flag(char c) {
+        return flags.contains(Character.toString(c));
+    }
+
+    /**
+     * Check if the flag was set, for example: args like "--extra", flag("extra") =&gt; true.
+     *
+     * @param flag the flag to search for
      * @return true if the flag is present in the arguments, else false
      */
     public boolean flag(String flag) {
-        for (String arg : args) {
-            if (arg.startsWith(FLAG) && !arg.startsWith(VERBOSE_FLAG) && arg.contains(flag)) {
-                return true;
-            }
-        }
-        return false;
+        return flags.contains(flag);
     }
 
     /**
-     * Looks for the value of a flag, for example: args like "-e dev", flagValue("e") =&gt; "dev"
+     * Check if the flag was set, using either the short or long name.
      *
-     * @param flag     The flag to get the value for
-     * @param fallback The fallback value to use
-     * @return The value of the flag, or the fallback if it's not present
+     * @param longName  the long name for the flag, ex: "debug"
+     * @param shortName the short name for the flag, ex: 'd'
+     * @return true if the flag was set
+     * @see #flag(String)
+     * @see #flag(char)
      */
-    public String flagValue(String flag, String fallback) {
-        return flagValues.getOrDefault(flag, fallback);
+    public boolean flag(String longName, char shortName) {
+        return flag(longName) || flag(shortName);
     }
 
     /**
-     * Looks for the value of a flag, for example: args like "-e dev", flagValue("e") =&gt; "dev"
+     * Get the value of an option with a fallback value if not set.
      *
-     * @param flag The flag to get the value for
-     * @return The value of the flag, or null if it's not present
+     * @param c        the short name for the option
+     * @param fallback the fallback value to return if the option was not set
+     * @return the value of the option, or the fallback value if not set
+     * @see #option(String)
      */
-    public String flagValue(String flag) {
-        return flagValues.get(flag);
+    public String option(char c, String fallback) {
+        return option(Character.toString(c), fallback);
     }
 
     /**
-     * Look for a verbose flag, for example: args like "--debug", verboseFlag("debug") =&gt; true.
+     * Get the value of an option with a fallback value if not set.
      *
-     * @param flag The verbose flag name to look for
-     * @return true if the flag is present in the arguments, else false
+     * @param name     the name of the option
+     * @param fallback the fallback value to return if the option was not set
+     * @return the value of the option, or the fallback value if not set
+     * @see #option(String)
      */
-    public boolean verboseFlag(String flag) {
-        for (String arg : args) {
-            if (arg.startsWith(VERBOSE_FLAG) && Objects.equals(arg.substring(2), flag)) {
-                return true;
-            }
-        }
-        return false;
+    public String option(String name, String fallback) {
+        return options.getOrDefault(name, fallback);
     }
 
     /**
-     * Look for the value of a verbose flag,
-     * for example: args like "--properties=myprops.props", verboseFlagValue("properties") =&gt; "myprops.props".
+     * Get the value of an option;
+     * e.g. args like "-e dev", option('e') =&gt; "dev"
      *
-     * @param flag     The flag to get the value for
-     * @param fallback The fallback value to use
-     * @return The value of the flag, or the fallback if it's not present
+     * @param c the short name for the option
+     * @return the value of the option, or null if not set
      */
-    public String verboseFlagValue(String flag, String fallback) {
-        return flagValues.getOrDefault(flag, fallback);
+    public String option(char c) {
+        return option(Character.toString(c));
     }
 
     /**
-     * Look for the value of a verbose flag,
-     * for example: args like "--properties=myprops.props", verboseFlagValue("properties") =&gt; "myprops.props".
+     * Get the value of an option;
+     * e.g. args like "--environment dev", option("environment") =&gt; "dev"
      *
-     * @param flag The flag to get the value for
-     * @return The value of the flag, or null if it's not present
+     * @param name the name of the option
+     * @return the value of the option, or null if not set
      */
-    public String verboseFlagValue(String flag) {
-        return flagValues.get(flag);
+    public String option(String name) {
+        return options.get(name);
     }
 
     /**
-     * Get either the flag value or verbose flag value for the given names. Useful when you have
-     * the option of using short or verbose names for the same setting.
+     * Get the value of an option using either the short or long name.
      *
-     * @param flagName     the short name for the flag
-     * @param verboseName  the verbose name for the flag
-     * @param defaultValue the default value if the flag is unset
-     * @return the value of the short name flag, or if null, the value of the verbose flag, if both are null
-     * return the default value
+     * @param longName  the long name for the option, ex: "environment"
+     * @param shortName the short name for the option, ex: 'e'
+     * @return the value of the option, or null if not set
+     * @see #option(String)
+     * @see #option(char)
      */
-    public String anyFlagValue(String flagName, String verboseName, String defaultValue) {
-        return Optional.ofNullable(flagValue(flagName))
-                .orElse(verboseFlagValue(verboseName, defaultValue));
+    public String option(String longName, char shortName) {
+        return Optional.ofNullable(option(longName)).orElse(option(shortName));
+    }
+
+    /**
+     * Get the value of an option using either the short or long name, or default to a fallback value.
+     *
+     * @param longName  the long name for the option, ex: "environment"
+     * @param shortName the short name for the option, ex: 'e'
+     * @param fallback  the fallback value to return if the option was not set
+     * @return the value of the option, or the fallback value if not set
+     */
+    public String option(String longName, char shortName, String fallback) {
+        return Optional.ofNullable(option(longName)).orElse(option(shortName, fallback));
     }
 
     /**
@@ -209,5 +239,25 @@ public class Args implements Iterable<String> {
     @Override
     public Iterator<String> iterator() {
         return args.iterator();
+    }
+
+    private static Stream<String> expandCharFlags(String s) {
+        if (s.startsWith(FLAG) && !s.startsWith(VERBOSE_FLAG)) {
+            return s.substring(1).chars()
+                    .mapToObj(c -> Character.toString((char) c))
+                    .map(f -> '-' + f);
+        } else {
+            return Stream.of(s);
+        }
+    }
+
+    private static String stripDashes(String s) {
+        if (s.startsWith(VERBOSE_FLAG)) {
+            return s.substring(2);
+        } else if (s.startsWith(FLAG)) {
+            return s.substring(1);
+        } else {
+            return s;
+        }
     }
 }

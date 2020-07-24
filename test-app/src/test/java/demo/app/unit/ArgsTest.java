@@ -10,38 +10,40 @@ public class ArgsTest {
     public void args() {
         Args args = new Args(new String[]{
                 "vest.app.BootConfig",
+                "-vb",
                 "-e", "extra",
-                "--debug", "--withValue=something",
-                "-b"
-        });
+                "--debug",
+                "--withValue", "something"});
         // validation expects the arguments: vest.assist.app.BootConfig -e extra --debug --withValue=something
-        Assert.assertEquals(args.length(), 6);
+        Assert.assertEquals(args.length(), 7);
 
         Assert.assertEquals(args.first(), "vest.app.BootConfig");
 
-        Assert.assertTrue(args.flag("e"));
+        Assert.assertTrue(args.flag('v'));
+        Assert.assertTrue(args.flag("debug", 'd'));
         Assert.assertFalse(args.flag("f"));
 
-        Assert.assertEquals(args.flagValue("e"), "extra");
-        Assert.assertEquals(args.flagValue("e", "fallback"), "extra");
-        Assert.assertEquals(args.flagValue("u", "fallback"), "fallback");
+        Assert.assertEquals(args.option('e'), "extra");
+        Assert.assertEquals(args.option('e', "fallback"), "extra");
+        Assert.assertEquals(args.option("u", "fallback"), "fallback");
 
-        Assert.assertTrue(args.verboseFlag("debug"));
-        Assert.assertFalse(args.verboseFlag("info"));
+        Assert.assertTrue(args.flag("debug"));
+        Assert.assertFalse(args.flag("info"));
 
-        Assert.assertEquals(args.verboseFlagValue("withValue"), "something");
-        Assert.assertEquals(args.verboseFlagValue("withValue", "fallback"), "something");
-        Assert.assertEquals(args.verboseFlagValue("u", "fallback"), "fallback");
-        Assert.assertNull(args.verboseFlagValue("unknown"));
-        Assert.assertNull(args.verboseFlagValue("debug"));
+        Assert.assertEquals(args.option("withValue"), "something");
+        Assert.assertEquals(args.option("withValue", "fallback"), "something");
+        Assert.assertEquals(args.option("u", "fallback"), "fallback");
+        Assert.assertNull(args.option("unknown"));
+        Assert.assertNull(args.option("debug"));
+        Assert.assertNull(args.option("long", 'l'));
 
         Assert.assertTrue(args.contains("-e"));
 
         Assert.assertEquals(args.first(), "vest.app.BootConfig");
-        Assert.assertEquals(args.second(), "-e");
-        Assert.assertEquals(args.third(), "extra");
-        Assert.assertEquals(args.fourth(), "--debug");
-        Assert.assertEquals(args.fifth(), "--withValue=something");
+        Assert.assertEquals(args.second(), "-vb");
+        Assert.assertEquals(args.third(), "-e");
+        Assert.assertEquals(args.fourth(), "extra");
+        Assert.assertEquals(args.fifth(), "--debug");
 
         Assert.assertThrows(IndexOutOfBoundsException.class, () -> args.get(10));
         Assert.assertThrows(IndexOutOfBoundsException.class, () -> args.get(-1));

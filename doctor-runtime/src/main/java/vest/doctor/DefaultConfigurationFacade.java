@@ -193,11 +193,11 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
             if (next < 0) {
                 break;
             } else {
-                split.add(str.substring(i, next));
+                split.add(str.substring(i, next).trim());
                 i = next + 1;
             }
         }
-        split.add(str.substring(i));
+        split.add(str.substring(i).trim());
         return split;
     }
 }

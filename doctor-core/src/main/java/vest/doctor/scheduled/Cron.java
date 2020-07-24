@@ -20,7 +20,7 @@ import java.util.stream.Stream;
  * - minute: the minute of the hour, restricted to [0, 59]
  * - hour: the hour of the day (24hr), restricted to [0, 23]
  * - day of month: the day of the month, restricted to [0, 28 29 30 or 31], varies with the month (and leap year)
- * - month: the month of the year, restricted to [1, 12], January is the 1, December is 12
+ * - month: the month of the year, restricted to [1, 12], January is 1, December is 12
  * - day of week: the day of the week, restricted to [1, 7], the week runs Monday (1) to Sunday (7).
  * Example:
  * 0 5 * * * *
@@ -29,7 +29,7 @@ import java.util.stream.Stream;
  * | | | - every day
  * | | - every hour
  * | - 5 minutes past the hour
- * - 0 seconds
+ * - 0 seconds past the minute
  * The fire times will be, e.g
  * Jan 1, 2020 00:05:00
  * Jan 1, 2020 01:05:00

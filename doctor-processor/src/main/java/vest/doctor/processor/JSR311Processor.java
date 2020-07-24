@@ -168,6 +168,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
             writeServicesResource();
             compileTimeDependencyCheck();
             infoMessage("took " + (System.currentTimeMillis() - start) + "ms");
+            infoMessage(dependencyGraph.toString());
         }
         return annotationsToProcess.containsAll(annotations);
     }
@@ -218,15 +219,19 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     }
 
     private final Map<ProviderDependency, Set<ProviderDependency>> typesToDependencies = new HashMap<>();
+    private final DependencyGraph dependencyGraph = new DependencyGraph();
 
     @Override
     public void registerDependency(ProviderDependency target, ProviderDependency dependency) {
         if (target == null) {
             errorMessage("cannot register dependency for null target");
+            return;
         }
         if (dependency == null) {
             errorMessage("cannot register null dependency for " + target);
+            return;
         }
+        dependencyGraph.addDependency(target.type().toString(), target.qualifier(), dependency.type().toString(), dependency.qualifier());
         typesToDependencies.computeIfAbsent(target, t -> new HashSet<>()).add(dependency);
     }
 
