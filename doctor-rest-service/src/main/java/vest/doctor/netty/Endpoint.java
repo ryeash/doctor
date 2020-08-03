@@ -62,7 +62,7 @@ public abstract class Endpoint implements Handler {
 
     protected abstract Object executeMethod(Request request) throws Exception;
 
-    protected String pathParam(Request request, String name) {
+    protected static String pathParam(Request request, String name) {
         Map<String, String> map = request.attribute(Router.PATH_PARAMS);
         if (map == null) {
             throw new IllegalStateException("path matching did not produce a parameter map?");

@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-@Path("netty")
 @Singleton
+@Path("netty")
 public class TCNettyEndpoint {
     private static final Logger log = LoggerFactory.getLogger(TCNettyEndpoint.class);
 
@@ -74,7 +74,6 @@ public class TCNettyEndpoint {
                 throw new UncheckedIOException(e);
             }
         });
-//        return new ObjectMapper().writeValueAsString(person);
     }
 
     @POST

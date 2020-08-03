@@ -64,7 +64,6 @@ public class NettyLoader implements AppLoader {
                     }
                 });
 
-
         providerRegistry.register(new AdHocProvider<>(Router.class, router, null));
         providerRegistry.register(new AdHocProvider<>(HttpServer.class, this.server, null));
         providerRegistry.getInstance(EventProducer.class).publish(new ServiceStarted("netty-http", server));

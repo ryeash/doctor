@@ -1,19 +1,13 @@
 package vest.doctor.netty;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.DefaultHttpHeaders;
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
@@ -42,6 +36,13 @@ public class R {
      */
     public static R of(int status) {
         return new R(HttpResponseStatus.valueOf(status));
+    }
+
+    /**
+     * Create a response with the given status code.
+     */
+    public static R of(HttpResponseStatus status) {
+        return new R(status);
     }
 
     /**
@@ -182,10 +183,12 @@ public class R {
         File file = new File(new File(rootDirectory), filePath).getAbsoluteFile();
         Path filepath = file.toPath();
         if (!filepath.startsWith(rootPath)) {
-            throw new HttpException(HttpResponseStatus.FORBIDDEN, "invalid path: " + filePath);
+            return R.of(HttpResponseStatus.FORBIDDEN)
+                    .body("invalid path: " + filePath);
         }
         if (!file.canRead() || file.isHidden() || !file.isFile()) {
-            throw new HttpException(HttpResponseStatus.NOT_FOUND, "file does not exist: " + filePath);
+            return R.of(HttpResponseStatus.NOT_FOUND)
+                    .body("file does not exist: " + filePath);
         }
         long modified = file.lastModified();
 
@@ -193,29 +196,25 @@ public class R {
         if (!isModified(modified, ifModifiedSince)) {
             return new R(HttpResponseStatus.NOT_MODIFIED).body(null);
         }
+        R r = R.ok()
+                .header(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED)
+                .body(ResponseBody.sendFile(file));
 
-        try {
-            FileChannel fc = FileChannel.open(filepath, StandardOpenOption.READ);
-            MappedByteBuffer bb = fc.map(FileChannel.MapMode.READ_ONLY, 0, file.length());
-            ByteBuf body = Unpooled.wrappedBuffer(bb);
-            fc.close();
-
-            R r = R.ok();
-
-            // only set these headers if they don't exists -> allows them to be overwritten by user code
-            if (!r.headers().contains(HttpHeaderNames.CONTENT_TYPE)) {
-                r.header(HttpHeaderNames.CONTENT_TYPE, Utils.getContentType(file));
-            }
-            if (!r.headers().contains(HttpHeaderNames.LAST_MODIFIED)) {
-                r.header(HttpHeaderNames.LAST_MODIFIED, new Date(file.lastModified()));
-            }
-            r.body(ResponseBody.of(body));
-            return r;
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        // only set these headers if they don't exists -> allows them to be overwritten by user code
+        if (!r.headers().contains(HttpHeaderNames.CONTENT_TYPE)) {
+            r.header(HttpHeaderNames.CONTENT_TYPE, Utils.getContentType(file));
         }
+        if (!r.headers().contains(HttpHeaderNames.LAST_MODIFIED)) {
+            r.header(HttpHeaderNames.LAST_MODIFIED, new Date(file.lastModified()));
+        }
+        if (file.getName().endsWith(".gz")) {
+            r.header(HttpHeaderNames.CONTENT_ENCODING, "gzip");
+            r.header(HttpHeaderNames.CONTENT_TYPE, "application/gzip");
+        } else {
+            r.header(HttpHeaderNames.CONTENT_ENCODING, "");
+        }
+        return r;
     }
-
 
     private static boolean isModified(long modified, Long ifModifiedSince) {
         if (ifModifiedSince != null) {

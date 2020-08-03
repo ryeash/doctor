@@ -17,6 +17,8 @@ import vest.doctor.netty.impl.Router;
 
 import java.net.URI;
 import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -86,14 +88,16 @@ public class NettyTest extends BaseDoctorTest {
         p.setName("herman");
         p.setAddress("hermitage");
 
-        req().body(new ObjectMapper().writeValueAsBytes(p))
+        ObjectMapper mapper = new ObjectMapper();
+
+        req().body(mapper.writeValueAsBytes(p))
                 .post("/netty/pojo")
                 .prettyPeek()
                 .then()
                 .statusCode(200)
                 .body(is("{\"name\":\"herman\",\"address\":\"hermitage\"}"));
 
-        req().body(new ObjectMapper().writeValueAsBytes(Collections.singletonList(p)))
+        req().body(mapper.writeValueAsBytes(Collections.singletonList(p)))
                 .post("/netty/pojolist")
                 .prettyPeek()
                 .then()
@@ -163,11 +167,9 @@ public class NettyTest extends BaseDoctorTest {
             long start = System.nanoTime();
             IntStream.range(0, 100)
                     .parallel()
-                    .forEach(j -> {
-                        req().get("/netty/hello2")
-                                .then()
-                                .statusCode(200);
-                    });
+                    .forEach(j -> req().get("/netty/hello2")
+                            .then()
+                            .statusCode(200));
             System.out.println(TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + "ms");
         }
     }
@@ -200,25 +202,28 @@ public class NettyTest extends BaseDoctorTest {
             SimpleEchoSocket socket = new SimpleEchoSocket();
             ClientUpgradeRequest request = new ClientUpgradeRequest();
             client.connect(socket, echoUri, request);
-            System.out.println("Connecting to : " + echoUri);
+            socket.connectLatch.await(5, TimeUnit.SECONDS);
             assertTrue(socket.awaitClose(5, TimeUnit.SECONDS));
+            assertEquals(socket.messagesReceived.get(0), "go away I'm a test");
         } finally {
             client.stop();
         }
     }
 
     @WebSocket(maxTextMessageSize = 64 * 1024)
+    @SuppressWarnings("unused")
     public static class SimpleEchoSocket {
-        private final CountDownLatch closeLatch;
-        @SuppressWarnings("unused")
-        private Session session;
+        final CountDownLatch connectLatch;
+        final CountDownLatch closeLatch;
+        final List<String> messagesReceived = new LinkedList<>();
+        Session session;
 
         public SimpleEchoSocket() {
+            this.connectLatch = new CountDownLatch(1);
             this.closeLatch = new CountDownLatch(1);
         }
 
         public boolean awaitClose(int duration, TimeUnit unit) throws InterruptedException {
-            System.out.println("in await " + closeLatch.getCount());
             return this.closeLatch.await(duration, unit);
         }
 
@@ -226,21 +231,19 @@ public class NettyTest extends BaseDoctorTest {
         public void onClose(int statusCode, String reason) {
             this.session = null;
             this.closeLatch.countDown();
-            System.out.println("Connection closed: " + statusCode + " - " + reason);
         }
 
         @OnWebSocketConnect
         public void onConnect(Session session) throws InterruptedException, ExecutionException, TimeoutException {
-            System.out.println("Got connect: " + session);
+            connectLatch.countDown();
             this.session = session;
             Future<Void> fut = session.getRemote().sendStringByFuture("I'm a test");
             fut.get(2, TimeUnit.SECONDS);
-            System.out.println("send complete");
         }
 
         @OnWebSocketMessage
         public void onMessage(String msg) {
-            System.out.println("Got msg: " + msg);
+            messagesReceived.add(msg);
         }
 
         @OnWebSocketError

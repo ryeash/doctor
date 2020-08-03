@@ -9,7 +9,7 @@
         <properties>
             <property name="javax.persistence.jdbc.driver" value="org.hsqldb.jdbc.JDBCDriver"/>
             <!-- Commented properties moved to the @PersistenceContext annotation -->
-            <!-- <property name="javax.persistence.jdbc.url" value="jdbc:hsqldb:mem:mymemdb"/>-->
+            <!-- <property name="javax.persistence.jdbc.url" value=""/>-->
             <property name="javax.persistence.jdbc.user" value="SA"/>
             <property name="javax.persistence.jdbc.password" value=""/>
 

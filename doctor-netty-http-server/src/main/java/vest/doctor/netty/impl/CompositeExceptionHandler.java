@@ -15,6 +15,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * {@link ExceptionHandler} implementation that combines multiple handlers together
+ * to provide robust handling of exceptions.
+ */
 public class CompositeExceptionHandler implements ExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(CompositeExceptionHandler.class);

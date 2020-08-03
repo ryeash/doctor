@@ -2,7 +2,6 @@ package vest.doctor.netty;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.AdaptiveRecvByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -20,7 +19,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpResponse;
-import io.netty.handler.codec.http.DefaultLastHttpContent;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpContentCompressor;
 import io.netty.handler.codec.http.HttpContentDecompressor;
@@ -33,6 +31,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.AttributeKey;
@@ -83,10 +82,10 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
         ServerBootstrap b = new ServerBootstrap()
                 .group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
-                .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, WriteBufferWaterMark.DEFAULT)
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .option(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator())
                 .option(ChannelOption.SO_BACKLOG, config.getSocketBacklog())
+                .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, WriteBufferWaterMark.DEFAULT)
                 .childHandler(new NettyChannelInit(this));
 
         this.serverChannels = new LinkedList<>();
@@ -145,7 +144,7 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
         StreamingRequestBody body = new StreamingRequestBody(config.getMaxContentLength());
         if (!expectingContent(request)) {
             // end it since there is no body expected
-            body.append(new DefaultLastHttpContent(Unpooled.EMPTY_BUFFER));
+            body.append(LastHttpContent.EMPTY_LAST_CONTENT);
         }
         ctx.channel().attr(CONTEXT_BODY).set(body);
 
@@ -187,11 +186,10 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
             ctx.write(nettyResponse);
             ChannelFuture f = response.body().writeTo(ctx);
             ctx.channel().attr(CONTEXT_BODY).set(null);
-            if (!request.headers().containsValue(HttpHeaderNames.CONNECTION, "closed", true)
-                    || !HttpUtil.isKeepAlive(nettyResponse)) {
+            ctx.flush();
+            if (!(HttpUtil.isKeepAlive(request.unwrap()) && HttpUtil.isKeepAlive(nettyResponse))) {
                 f.addListener(ChannelFutureListener.CLOSE);
             }
-            ctx.flush();
         } catch (Throwable t) {
             log.error("error writing response", t);
             request.channelContext().close();

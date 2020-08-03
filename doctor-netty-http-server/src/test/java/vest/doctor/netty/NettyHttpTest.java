@@ -19,12 +19,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import static org.hamcrest.Matchers.is;
 import static vest.doctor.netty.Handler.sync;
 
 public class NettyHttpTest {
@@ -46,6 +49,13 @@ public class NettyHttpTest {
                 .addFilter(Filter.after(response -> {
                     response.headers().set("X-Filter2", new Date());
                     return response;
+                }))
+                .addFilter(((request, response) -> {
+                    if (Objects.equals(request.queryParam("shortcircuit"), "true")) {
+                        return CompletableFuture.completedFuture(request.createResponse().status(500).body(ResponseBody.of("shortcircuited")));
+                    } else {
+                        return response;
+                    }
                 }))
                 .get("/", sync((request) -> {
                     System.out.println(request);
@@ -115,7 +125,7 @@ public class NettyHttpTest {
                 .prettyPeek()
                 .then()
                 .statusCode(200)
-                .header("content-encoding", Matchers.is("gzip"))
+                .header("content-encoding", is("gzip"))
                 .extract()
                 .asByteArray();
         Assert.assertEquals(bytes.length, 1024);
@@ -138,6 +148,16 @@ public class NettyHttpTest {
         req().get("/exception")
                 .then()
                 .statusCode(500);
+    }
+
+    @Test
+    public void shortCircuit() {
+        req()
+                .queryParam("shortcircuit", "true")
+                .get("/")
+                .then()
+                .statusCode(500)
+                .body(is("shortcircuited"));
     }
 
     @Test(invocationCount = 5)

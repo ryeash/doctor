@@ -6,6 +6,9 @@ import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Configuration for the netty server.
+ */
 public class NettyConfiguration {
     private int tcpManagementThreads = 1;
     private String tcpThreadPrefix = "netty-tcp";
