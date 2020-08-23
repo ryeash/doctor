@@ -19,6 +19,8 @@ public @interface Cached {
 
     /**
      * The interval to hold the cached value before refreshing it.
+     *
+     * @see vest.doctor.scheduled.Interval
      */
     String value();
 }

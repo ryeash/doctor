@@ -18,7 +18,7 @@ public final class PathSpec implements Comparable<PathSpec> {
     private final List<String> paramNames;
     private final Pattern pattern;
 
-    public PathSpec(String path) {
+    public PathSpec(String path, boolean caseInsensitiveMatch) {
         if (path.isEmpty()) {
             throw new IllegalArgumentException("the route path may not be empty");
         }
@@ -49,7 +49,7 @@ public final class PathSpec implements Comparable<PathSpec> {
             i = matcher.end();
         }
         builder.append(temp, i, temp.length());
-        this.pattern = Pattern.compile(builder.toString(), Pattern.CASE_INSENSITIVE);
+        this.pattern = Pattern.compile(builder.toString(), caseInsensitiveMatch ? Pattern.CASE_INSENSITIVE : 0);
     }
 
     public String getPath() {

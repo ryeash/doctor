@@ -23,9 +23,18 @@ public class Router implements Handler {
 
     private final List<Filter> filters = new LinkedList<>();
     private final Map<HttpMethod, List<Route>> routes = new TreeMap<>();
+    private final boolean caseInsensitiveMatch;
+
+    public Router() {
+        this(true);
+    }
+
+    public Router(boolean caseInsensitiveMatch) {
+        this.caseInsensitiveMatch = caseInsensitiveMatch;
+    }
 
     public Router get(String path, Handler handler) {
-        // cross list all GETs as HEAD requests
+        // cross list all GETs as HEADs
         addRoute(HttpMethod.HEAD, path, handler);
         return addRoute(HttpMethod.GET, path, handler);
     }
@@ -52,7 +61,7 @@ public class Router implements Handler {
 
     public Router addRoute(HttpMethod method, String path, Handler handler) {
         List<Route> routes = this.routes.computeIfAbsent(method, v -> new ArrayList<>());
-        routes.add(new Route(path, handler));
+        routes.add(new Route(path, caseInsensitiveMatch, handler));
         routes.sort(Comparator.comparing(Route::getPathSpec));
         return this;
     }

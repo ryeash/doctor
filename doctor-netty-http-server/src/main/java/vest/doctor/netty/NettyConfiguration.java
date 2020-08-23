@@ -23,6 +23,7 @@ public class NettyConfiguration {
     private boolean validateHeaders = false;
     private int initialBufferSize = 8192;
     private int maxContentLength = 8388608;
+    private boolean caseInsensitiveMatching = true;
 
     public int getTcpManagementThreads() {
         return tcpManagementThreads;
@@ -133,5 +134,13 @@ public class NettyConfiguration {
 
     public void setMaxContentLength(int maxContentLength) {
         this.maxContentLength = maxContentLength;
+    }
+
+    public boolean getCaseInsensitiveMatching() {
+        return caseInsensitiveMatching;
+    }
+
+    public void setCaseInsensitiveMatching(boolean caseInsensitiveMatching) {
+        this.caseInsensitiveMatching = caseInsensitiveMatching;
     }
 }

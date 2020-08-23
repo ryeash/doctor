@@ -1,5 +1,6 @@
 package vest.doctor.scheduled;
 
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,7 +42,8 @@ public class Interval {
      * @param intervalString the string to parse as an interval
      */
     public Interval(String intervalString) {
-        Matcher matcher = INTERVAL_REGEX.matcher(intervalString);
+        Objects.requireNonNull(intervalString);
+        Matcher matcher = INTERVAL_REGEX.matcher(intervalString.trim());
         if (!matcher.matches()) {
             throw new IllegalArgumentException("malformed interval string, must be in the form <number>[<unit>]");
         }

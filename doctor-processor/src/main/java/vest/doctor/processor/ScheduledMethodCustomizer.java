@@ -89,7 +89,7 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
 
                 .line("{ctw}<{providedType}> {wrapper} = new {ctw}<{providedType}>({providerRegistry}, {instance}, {cron}, {executionLimit}, ses, (provRegistry, val) -> {")
                 .line("try {")
-                .line(context.executableCall(providerDefinition, scheduledMethod, "val", providerRegistryRef) + ";")
+                .line(context.executableCall(providerDefinition, scheduledMethod, instanceRef, providerRegistryRef) + ";")
                 .line("} catch(Throwable t) {")
                 .line("throw new {InjectionException}(\"error executing scheduled method {method}\", t);")
                 .line("}")

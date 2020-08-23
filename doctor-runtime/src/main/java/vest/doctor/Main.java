@@ -10,7 +10,7 @@ import java.util.Objects;
  * <p>
  * Supported flags:
  * -m, --modules : a comma delimited list of modules to enable
- * -p, --properties : a comma delimited list of properties files to load (in order)
+ * -p, --properties : a comma delimited list of properties files to load (in precedence order)
  */
 public final class Main {
 

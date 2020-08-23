@@ -37,7 +37,7 @@ public class NettyLoader implements AppLoader {
         BodyInterchange bodyInterchange = new BodyInterchange(providerRegistry);
         providerRegistry.register(new AdHocProvider<>(BodyInterchange.class, bodyInterchange, null));
 
-        Router router = new Router();
+        Router router = new Router(conf.getCaseInsensitiveMatching());
         providerRegistry.getProviders(Filter.class)
                 .map(Provider::get)
                 .forEach(router::addFilter);
@@ -121,6 +121,7 @@ public class NettyLoader implements AppLoader {
         conf.setInitialBufferSize(cf.get("doctor.netty.http.initialBufferSize", 8192, Integer::valueOf));
         conf.setMaxContentLength(cf.get("doctor.netty.http.maxContentLength", 8388608, Integer::valueOf));
 
+        conf.setCaseInsensitiveMatching(cf.get("doctor.netty.http.caseInsensitiveMatching", false, Boolean::valueOf));
         // TODO
         boolean debugRouting = cf.get("doctor.netty.http.debugRequestRouting", false, Boolean::valueOf);
         return conf;
