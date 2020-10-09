@@ -48,7 +48,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
@@ -63,7 +65,7 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
     private final List<Channel> serverChannels;
     private final SslContext sslContext;
     private final Handler handler;
-    private final Map<String, Websocket> websockets;
+    private final Map<String, Supplier<Websocket>> websockets;
     private final ExceptionHandler exceptionHandler;
 
     public HttpServer(NettyConfiguration config, Handler handler) {
@@ -96,6 +98,10 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
     }
 
     public void addWebsocket(String uri, Websocket websocket) {
+        addWebsocket(uri, () -> websocket);
+    }
+
+    public void addWebsocket(String uri, Supplier<Websocket> websocket) {
         if (websockets.containsKey(uri)) {
             throw new IllegalArgumentException("there is already a websocket registered for " + uri);
         }
@@ -198,7 +204,9 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
 
     private void handleWebsocketUpgrade(ChannelHandlerContext ctx, HttpRequest request, String upgradeHeader) {
         if (HttpHeaderValues.WEBSOCKET.contentEqualsIgnoreCase(upgradeHeader)) {
-            Websocket ws = websockets.get(request.uri());
+            Websocket ws = Optional.ofNullable(websockets.get(request.uri()))
+                    .map(Supplier::get)
+                    .orElse(null);
             if (ws != null) {
                 // add the websocket handler to the end of the processing pipeline
                 ctx.pipeline().removeLast();
@@ -237,8 +245,8 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
         sb.append("Handler: ").append(handler).append("\n");
         if (!websockets.isEmpty()) {
             sb.append("Websockets:\n");
-            for (Map.Entry<String, Websocket> entry : websockets.entrySet()) {
-                sb.append("  ").append(entry.getKey()).append(" -> ").append(entry.getValue()).append("\n");
+            for (Map.Entry<String, Supplier<Websocket>> entry : websockets.entrySet()) {
+                sb.append("  ").append(entry.getKey()).append(" -> ").append(entry.getValue().get()).append("\n");
             }
         }
         sb.append("ExceptionHandler: ").append(exceptionHandler);

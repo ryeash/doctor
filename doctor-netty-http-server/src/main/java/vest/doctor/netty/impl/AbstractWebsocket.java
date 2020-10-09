@@ -45,7 +45,7 @@ public abstract class AbstractWebsocket implements Websocket {
      * @see #onBinaryMessage(ChannelHandlerContext, BinaryWebSocketFrame)
      */
     @Override
-    public void onMessage(ChannelHandlerContext ctx, WebSocketFrame frame) throws Exception {
+    public final void onMessage(ChannelHandlerContext ctx, WebSocketFrame frame) throws Exception {
         if (frame instanceof TextWebSocketFrame) {
             onTextMessage(ctx, ((TextWebSocketFrame) frame));
         } else if (frame instanceof BinaryWebSocketFrame) {
@@ -116,7 +116,7 @@ public abstract class AbstractWebsocket implements Websocket {
      * Called when a close frame is received from a connection. The default implementation
      * responds with a close frame and closes the connection.
      *
-     * @param ctx   the connectiton that received the message
+     * @param ctx   the connection that received the message
      * @param frame the close frame
      */
     protected void onCloseMessage(ChannelHandlerContext ctx, CloseWebSocketFrame frame) {
@@ -213,7 +213,11 @@ public abstract class AbstractWebsocket implements Websocket {
     public void close(ChannelHandlerContext ctx, int status, String message) {
         if (ctx != null && ctx.channel() != null && ctx.channel().isOpen()) {
             WebSocketServerHandshaker handshaker = ctx.channel().attr(WS_HANDSHAKER).get();
-            handshaker.close(ctx.channel(), new CloseWebSocketFrame(status, message));
+            if (handshaker != null) {
+                handshaker.close(ctx.channel(), new CloseWebSocketFrame(status, message));
+            } else {
+                ctx.channel().close();
+            }
         }
     }
 

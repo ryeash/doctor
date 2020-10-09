@@ -60,7 +60,7 @@ public class NettyLoader implements AppLoader {
                         throw new IllegalArgumentException("websockets must have a @Path annotation: " + ws.type());
                     }
                     for (String p : path.value()) {
-                        server.addWebsocket(p, ws.get());
+                        server.addWebsocket(p, ws::get);
                     }
                 });
 
