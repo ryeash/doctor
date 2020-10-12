@@ -73,12 +73,15 @@ public class Router implements Handler {
     }
 
     @Override
-    public CompletionStage<Response> handle(Request request) {
+    public CompletionStage<Response> handle(Request request) throws Exception {
         CompletableFuture<Response> parent = new CompletableFuture<>();
         CompletionStage<Response> temp = parent;
 
         for (Filter filter : filters) {
             temp = filter.filter(request, temp);
+            if (temp.toCompletableFuture().isDone()) {
+                return temp;
+            }
         }
 
         CompletionStage<Response> response = selectHandler(request).handle(request);
@@ -86,7 +89,7 @@ public class Router implements Handler {
         return temp;
     }
 
-    private Handler selectHandler(Request request) {
+    protected Handler selectHandler(Request request) {
         for (Route route : routes.getOrDefault(request.method(), Collections.emptyList())) {
             Map<String, String> pathParams = route.getPathSpec().matchAndCollect(request.path());
             if (pathParams != null) {

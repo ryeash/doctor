@@ -14,7 +14,7 @@ public interface Handler {
      * @param request the request
      * @return an asynchronously produced response
      */
-    CompletionStage<Response> handle(Request request);
+    CompletionStage<Response> handle(Request request) throws Exception;
 
     /**
      * Create a synchronous handler.

@@ -13,10 +13,12 @@ import vest.doctor.netty.HeaderParam;
 import vest.doctor.netty.POST;
 import vest.doctor.netty.Path;
 import vest.doctor.netty.PathParam;
+import vest.doctor.netty.Provided;
 import vest.doctor.netty.QueryParam;
 import vest.doctor.netty.R;
 import vest.doctor.netty.Request;
 
+import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -110,8 +112,11 @@ public class TCNettyEndpoint {
     @GET
     @Path("/paramtest/{normal}/{custom:\\d+}")
     public String paramtest(@PathParam("normal") String normal,
-                            @PathParam("custom") int custom) {
-        return normal + " " + custom;
+                            @PathParam("custom") int custom,
+                            @Provided @Named("pourOver") CoffeeMaker pourOver) {
+        return normal + " " + custom + " " + pourOver.brew();
 
     }
+
+
 }

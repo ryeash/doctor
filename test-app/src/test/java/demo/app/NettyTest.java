@@ -188,7 +188,7 @@ public class NettyTest extends BaseDoctorTest {
         req().get("/netty/paramtest/str/42")
                 .then()
                 .statusCode(200)
-                .body(is("str 42"));
+                .body(is("str 42 pouring over"));
     }
 
     @Test
