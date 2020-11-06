@@ -1,6 +1,6 @@
 package vest.doctor;
 
-import vest.doctor.event.EventManager;
+import vest.doctor.event.EventBus;
 import vest.doctor.event.EventProducer;
 
 import java.util.Arrays;
@@ -8,7 +8,7 @@ import java.util.Properties;
 
 public class BuiltInAppLoader implements AppLoader {
 
-    public static final String LOAD_BUILD_INS = "doctor.load.builtins";
+    public static final String LOAD_BUILT_INS = "doctor.load.builtins";
     public static final String DEFAULT_EXECUTOR_NAME = "default";
     public static final String DEFAULT_SCHEDULED_EXECUTOR_NAME = "defaultScheduled";
 
@@ -18,22 +18,9 @@ public class BuiltInAppLoader implements AppLoader {
         providerRegistry.register(new AdHocProvider<>(Properties.class, providerRegistry.configuration().toProperties(), null));
 
         if (loadBuiltIns(providerRegistry)) {
-            providerRegistry.register(new AdHocProvider<>(EventManager.class, new EventManagerImpl(), null, Arrays.asList(EventProducer.class, EventManager.class)));
             providerRegistry.register(new SingletonScopedProvider<>(new ConfigurationDrivenExecutorServiceProvider(providerRegistry, DEFAULT_EXECUTOR_NAME, null)));
             providerRegistry.register(new SingletonScopedProvider<>(new ConfigurationDrivenExecutorServiceProvider(providerRegistry, DEFAULT_SCHEDULED_EXECUTOR_NAME, ConfigurationDrivenExecutorServiceProvider.ThreadPoolType.scheduled)));
-        }
-    }
-
-    @Override
-    public void load(ProviderRegistry providerRegistry) {
-    }
-
-    @Override
-    public void postProcess(ProviderRegistry providerRegistry) {
-        if (loadBuiltIns(providerRegistry)) {
-            EventManager instance = providerRegistry.getInstance(EventManager.class);
-            instance.initialize(providerRegistry);
-            instance.register(new ConfigurationReloadEventListener(providerRegistry));
+            providerRegistry.register(new AdHocProvider<>(EventBus.class, new EventBus(), null, Arrays.asList(EventBus.class, EventProducer.class)));
         }
     }
 
@@ -48,6 +35,7 @@ public class BuiltInAppLoader implements AppLoader {
     }
 
     private boolean loadBuiltIns(ProviderRegistry providerRegistry) {
-        return providerRegistry.configuration().get(LOAD_BUILD_INS, true, Boolean::valueOf);
+        return providerRegistry.configuration().get(LOAD_BUILT_INS, true, Boolean::valueOf);
     }
+
 }

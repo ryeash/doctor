@@ -1,7 +1,7 @@
 package vest.doctor.event;
 
 /**
- * Handle to the event system. Used to publish events to {@link EventListener} methods.
+ * Handle to the event system. Used to publish events to {@link EventConsumer}s.
  */
 public interface EventProducer {
 

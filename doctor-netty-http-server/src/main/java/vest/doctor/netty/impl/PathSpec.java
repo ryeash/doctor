@@ -56,6 +56,10 @@ public final class PathSpec implements Comparable<PathSpec> {
         return path;
     }
 
+    public Pattern getPattern() {
+        return pattern;
+    }
+
     public Map<String, String> matchAndCollect(String requestUri) {
         // short circuit: if no parameters were found in the route path, just do a string compare
         if (paramNames.isEmpty()) {

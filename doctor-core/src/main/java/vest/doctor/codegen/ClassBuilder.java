@@ -45,10 +45,13 @@ public class ClassBuilder {
         return this;
     }
 
+    public String getFullyQualifiedClassName() {
+        return fullyQualifiedClassName;
+    }
+
     public ClassBuilder setExtendsClass(Class<?> type) {
         addImportClass(type);
         this.extendsClass = type.getSimpleName();
-//        this.packageName = type.getPackage().toString();
         return this;
     }
 

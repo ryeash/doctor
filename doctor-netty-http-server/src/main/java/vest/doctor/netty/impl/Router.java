@@ -61,6 +61,11 @@ public class Router implements Handler {
 
     public Router addRoute(HttpMethod method, String path, Handler handler) {
         List<Route> routes = this.routes.computeIfAbsent(method, v -> new ArrayList<>());
+        Route newRoute = new Route(path, caseInsensitiveMatch, handler);
+
+        if (routes.stream().anyMatch(r -> r.getPathSpec().getPattern().toString().equals(newRoute.getPathSpec().getPattern().toString()))) {
+            throw new IllegalArgumentException("attempted to register duplicate path for " + method + " " + path);
+        }
         routes.add(new Route(path, caseInsensitiveMatch, handler));
         routes.sort(Comparator.comparing(Route::getPathSpec));
         return this;

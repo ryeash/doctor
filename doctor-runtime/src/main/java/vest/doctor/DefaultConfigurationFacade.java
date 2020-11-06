@@ -28,9 +28,9 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
 
     /**
      * Creates a new configuration facade and automatically adds configuration sources (in query order):
-     * - environment (via {@link System#getenv(String)})
-     * - system properties (via {@link System#getProperty(String)}
-     * - external properties files based on the value of 'doctor.app.properties' (using {@link StructuredConfigurationSource})
+     * <br>- environment (via {@link System#getenv(String)})
+     * <br>- system properties (via {@link System#getProperty(String)}
+     * <br>- external properties files based on the value of 'doctor.app.properties' (using {@link StructuredConfigurationSource})
      *
      * @return a new configuration facade
      */

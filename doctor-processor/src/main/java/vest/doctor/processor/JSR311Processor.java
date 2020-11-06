@@ -20,7 +20,6 @@ import vest.doctor.ScopeWriter;
 import vest.doctor.ShutdownContainer;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
-import vest.doctor.event.EventManager;
 import vest.doctor.event.EventProducer;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -80,6 +79,8 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     private ClassBuilder cb;
     private final MethodBuilder load = new MethodBuilder("public void load({} {})", ProviderRegistry.class, PROVIDER_REGISTRY);
 
+    private final Map<Class<?>, Collection<String>> serviceImplementations = new HashMap<>();
+
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
         this.start = System.currentTimeMillis();
@@ -99,7 +100,6 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
         addSatisfiedDependency(ProviderRegistry.class, null);
         addSatisfiedDependency(ConfigurationFacade.class, null);
         addSatisfiedDependency(EventProducer.class, null);
-        addSatisfiedDependency(EventManager.class, null);
 
         this.cb = new ClassBuilder()
                 .setClassName(generatedPackage + ".AppLoaderImpl")
@@ -165,6 +165,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
             customizationPoints.forEach(c -> c.finish(this));
             cb.addMethod(load.finish())
                     .writeClass(filer());
+            addServiceImplementation(AppLoader.class, cb.getFullyQualifiedClassName());
             writeServicesResource();
             compileTimeDependencyCheck();
             infoMessage("took " + (System.currentTimeMillis() - start) + "ms");
@@ -252,6 +253,12 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public void addServiceImplementation(Class<?> serviceInterface, String appLoaderFullyQualifiedClass) {
+        serviceImplementations.computeIfAbsent(serviceInterface, v -> new HashSet<>())
+                .add(appLoaderFullyQualifiedClass);
+    }
+
     private void errorChecking(ProviderDefinition providerDefinition) {
         for (VariableElement variableElement : ProcessorUtils.allFields(this, providerDefinition.providedType())) {
             if (variableElement.getAnnotation(Inject.class) != null) {
@@ -321,9 +328,13 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
 
     private void writeServicesResource() {
         try {
-            FileObject sourceFile = filer().createResource(StandardLocation.CLASS_OUTPUT, "", "META-INF/services/vest.doctor.AppLoader");
-            try (PrintWriter out = new PrintWriter(sourceFile.openWriter())) {
-                out.println(generatedPackage + ".AppLoaderImpl");
+            for (Map.Entry<Class<?>, Collection<String>> entry : serviceImplementations.entrySet()) {
+                FileObject sourceFile = filer().createResource(StandardLocation.CLASS_OUTPUT, "", "META-INF/services/" + entry.getKey().getCanonicalName());
+                try (PrintWriter out = new PrintWriter(sourceFile.openWriter())) {
+                    for (String implementation : entry.getValue()) {
+                        out.println(implementation);
+                    }
+                }
             }
         } catch (IOException e) {
             errorMessage("error writing services resources");

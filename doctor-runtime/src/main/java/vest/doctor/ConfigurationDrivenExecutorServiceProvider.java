@@ -82,7 +82,7 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
         String uncaughtExceptionHandlerQualifier = configurationFacade.get(propertyPrefix + ".uncaughtExceptionHandler");
         Thread.UncaughtExceptionHandler uncaughtExceptionHandler = providerRegistry.getProviderOpt(Thread.UncaughtExceptionHandler.class, uncaughtExceptionHandlerQualifier)
                 .map(Provider::get)
-                .orElse(Thread.getDefaultUncaughtExceptionHandler());
+                .orElse(LoggingUncaughtExceptionHandler.INSTANCE);
 
         threadFactory = new CustomThreadFactory(
                 configurationFacade.get(propertyPrefix + ".daemonize", true, Boolean::valueOf),

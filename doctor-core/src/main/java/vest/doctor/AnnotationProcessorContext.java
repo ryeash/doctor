@@ -180,4 +180,6 @@ public interface AnnotationProcessorContext {
             return null;
         }
     }
+
+    void addServiceImplementation(Class<?> serviceInterface, String appLoaderFullyQualifiedClass);
 }
