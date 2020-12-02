@@ -47,7 +47,7 @@ public class BookDao {
 
 ### Scoping
 These are the built-in scopes supported:
-- @Prototype : each all to Provider.get() creates a new instance
+- @Prototype : each call to Provider.get() creates a new instance
 - @Singleton : one and only one instance is created per jvm
 - @ThreadLocal : one instance is created per thread
 - @Cached : an instance is created and shared for a configurable length of time
