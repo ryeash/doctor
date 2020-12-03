@@ -11,14 +11,14 @@ import java.util.regex.Pattern;
  * The format for an interval string is 'magnitude[unit alias]'
  * The magnitude is an integer
  * <p>
- * Supported units are: Days, Hours, Minutes, Seconds, Milliseconds (default), Microseconds, and Nanoseconds
- * Shorthand strings for the units are supported:
- * Days: d, day, days
- * Hours: h, hour, hours
- * Minutes: m, min, minute, minutes
- * Seconds: s, sec, second, seconds
- * Microseconds: u, us, microsecond, microseconds
- * Nanoseconds: ns, nanosecond, nanoseconds
+ * Supported units are: Days, Hours, Minutes, Seconds, Milliseconds (default), Microseconds, and Nanoseconds<br/>
+ * Shorthand strings for the units are supported:<br/>
+ * Days: d, day, days<br/>
+ * Hours: h, hour, hours<br/>
+ * Minutes: m, min, minute, minutes<br/>
+ * Seconds: s, sec, second, seconds<br/>
+ * Microseconds: u, us, microsecond, microseconds<br/>
+ * Nanoseconds: ns, nanosecond, nanoseconds<br/>
  * <p>
  * Examples:
  * 10s -> 10 seconds
