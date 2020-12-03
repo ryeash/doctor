@@ -1,7 +1,7 @@
 package vest.doctor.event;
 
 /**
- * An event sent to indicate a specific service has started.
+ * An event indicating a specific service has started.
  */
 public class ServiceStarted {
     private final String name;

@@ -4,7 +4,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
-public class EventBus implements EventProducer {
+/**
+ * Primary class for supporting event publish and delivery.
+ */
+public final class EventBus implements EventProducer {
 
     private final List<EventConsumer> consumers = new LinkedList<>();
 
