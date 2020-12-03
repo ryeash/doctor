@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -18,7 +17,7 @@ final class ProviderIndex {
 
     private final Lock writeLock = new ReentrantLock();
     private final Map<ClassKey, Map<String, DoctorProvider<?>>> primary = new HashMap<>();
-    private final Map<ClassKey, Map<String, List<DoctorProvider<?>>>> secondary = new HashMap<>();
+    private final Map<ClassKey, Map<String, Collection<DoctorProvider<?>>>> secondary = new HashMap<>();
     private final Map<ClassKey, Collection<DoctorProvider<?>>> annotationTypeToProvider = new HashMap<>(128);
 
     void setProvider(DoctorProvider<?> provider) {
@@ -35,7 +34,7 @@ final class ProviderIndex {
 
             // secondary
             for (Class<?> type : provider.allProvidedTypes()) {
-                Map<String, List<DoctorProvider<?>>> sub = secondary.computeIfAbsent(new ClassKey(type), t -> new HashMap<>());
+                Map<String, Collection<DoctorProvider<?>>> sub = secondary.computeIfAbsent(new ClassKey(type), t -> new HashMap<>());
                 sub.computeIfAbsent(provider.qualifier(), q -> new ArrayList<>()).add(provider);
             }
 

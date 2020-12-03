@@ -1,4 +1,4 @@
- # doctor
+# doctor
 Compile time dependency injection provider.
 
 ### Core Functionality
@@ -122,5 +122,39 @@ public class SomethingPeriodic {
 ```
 
 ### Limitations
-Field injection is not supported. It requires reflective access to fields and requires changing access levels at runtime.
-Neither of which is allowed for this project.
+
+Field injection is not supported. It requires reflective access to fields and requires changing access levels at
+runtime. Neither of which is allowed for this project.
+
+### EventBus
+
+Messages can be published and consumed via the EventBus.
+
+Basics of event produce and consume:
+
+```java
+
+@Singleton
+public class EventExample {
+
+    private final EventProducer producer;
+
+    @Inject
+    public TCEvent(EventProducer producer) {
+        this.producer = producer;
+    }
+
+    @Inject
+    @Async
+    public void message() {
+        // publish a string event when this class is instantiated 
+        producer.publish("test");
+    }
+
+    // create a consumer of string events
+    @EventListener
+    public void stringMessages(String message) {
+        System.out.println("message received: " + message);
+    }
+}
+```

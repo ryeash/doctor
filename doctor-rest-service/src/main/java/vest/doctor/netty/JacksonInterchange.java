@@ -48,7 +48,7 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
 
     private CompletableFuture<?> asyncRead(Request request, TypeInfo typeInfo) {
         if (!typeInfo.hasParameterizedTypes() || typeInfo.getParameterTypes().size() != 1) {
-            throw new IllegalArgumentException("asynchronous bodies must have exactly one parameterized type: " + typeInfo);
+            throw new IllegalArgumentException("asynchronous bodies must be CompletableFutures with exactly one parameterized type: " + typeInfo);
         }
         TypeInfo paramType = typeInfo.getParameterTypes().get(0);
 

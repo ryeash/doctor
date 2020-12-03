@@ -11,6 +11,8 @@ import vest.doctor.ProviderRegistry;
 import vest.doctor.StringConversionGenerator;
 import vest.doctor.TypeInfo;
 import vest.doctor.codegen.ClassBuilder;
+import vest.doctor.codegen.MethodBuilder;
+import vest.doctor.netty.impl.Router;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -32,6 +34,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class EndpointWriter implements ProviderDefinitionListener {
@@ -43,10 +46,47 @@ public class EndpointWriter implements ProviderDefinitionListener {
         if (providerDefinition.annotationSource().getAnnotation(Path.class) == null) {
             return;
         }
+
+        String className = "EndpointConfig_" + providerDefinition.providedType().getSimpleName() + "_" + context.nextId();
+        String qualifiedClassName = context.generatedPackage() + "." + className;
+
+        ClassBuilder config = new ClassBuilder()
+                .setClassName(qualifiedClassName)
+                .addImplementsInterface(EndpointConfiguration.class)
+                .addImportClass(Request.class)
+                .addImportClass(Router.class)
+                .addImportClass(ProviderRegistry.class)
+                .addImportClass(BodyInterchange.class)
+                .addImportClass(TypeInfo.class)
+                .addImportClass(EndpointConfiguration.class)
+                .addImportClass(Inject.class)
+                .addImportClass(Singleton.class)
+                .addImportClass(Named.class)
+                .addImportClass(ExplicitProvidedTypes.class)
+                .addImportClass(Provider.class)
+                .addClassAnnotation("@Singleton")
+                .addClassAnnotation("@Named(\"" + className + "\")")
+                .addClassAnnotation("@ExplicitProvidedTypes({EndpointConfiguration.class})")
+                .addField("private final ProviderRegistry providerRegistry")
+                .addField("private final BodyInterchange bodyInterchange")
+                .addField("private final Router router")
+                .addField("private final Provider<" + providerDefinition.providedType() + "> endpoint");
+
+        config.setConstructor("@Inject public " + className + "(ProviderRegistry " + Constants.PROVIDER_REGISTRY + ")", b -> {
+//            String typeInfo = buildTypeInfoCode(method);
+            b.line("this.{} = {};", Constants.PROVIDER_REGISTRY, Constants.PROVIDER_REGISTRY);
+            b.line("this.endpoint = {}.getProvider({}.class, {});", Constants.PROVIDER_REGISTRY, providerDefinition.providedType(), providerDefinition.qualifier());
+            b.line("this.router = {}.getInstance(Router.class);", Constants.PROVIDER_REGISTRY);
+            b.line("this.bodyInterchange = {}.getInstance(BodyInterchange.class);", Constants.PROVIDER_REGISTRY);
+        });
+
+        MethodBuilder initialize = new MethodBuilder("@Inject public void initialize()");
+
         String[] roots = Optional.ofNullable(providerDefinition.annotationSource().getAnnotation(Path.class))
                 .map(Path::value)
                 .orElse(new String[]{"/"});
 
+        AtomicBoolean methodAdded = new AtomicBoolean(false);
         ProcessorUtils.allMethods(context, providerDefinition.providedType())
                 .stream()
                 .filter(m -> m.getModifiers().contains(Modifier.PUBLIC))
@@ -59,11 +99,16 @@ public class EndpointWriter implements ProviderDefinitionListener {
 
                         for (String httMethod : methods) {
                             for (String fullPath : fullPaths) {
-                                writeEndpoint(context, httMethod, fullPath, providerDefinition, method);
+                                addRoute(initialize, context, httMethod, fullPath, method);
+                                methodAdded.set(true);
                             }
                         }
                     }
                 });
+        if (methodAdded.get()) {
+            config.addMethod(initialize.finish());
+            config.writeClass(context.filer());
+        }
     }
 
     private static List<String> getHttpMethods(ExecutableElement method) {
@@ -87,54 +132,36 @@ public class EndpointWriter implements ProviderDefinitionListener {
         return allPaths;
     }
 
-    private static void writeEndpoint(AnnotationProcessorContext context,
-                                      String httpMethod, String path,
-                                      ProviderDefinition serviceProvider, ExecutableElement method) {
-        String className = "Endpoint_" + httpMethod + "_" + method.getSimpleName() + "_" + context.nextId();
-        String qualifiedClassName = context.generatedPackage() + "." + className;
+    private static void addRoute(MethodBuilder initialize,
+                                 AnnotationProcessorContext context,
+                                 String httpMethod,
+                                 String path,
+                                 ExecutableElement method) {
 
-        ClassBuilder endpoint = new ClassBuilder()
-                .setClassName(qualifiedClassName)
-                .setExtendsClass(Endpoint.class)
-                .addImportClass(Request.class)
-                .addImportClass(ProviderRegistry.class)
-                .addImportClass(BodyInterchange.class)
-                .addImportClass(TypeInfo.class)
-                .addImportClass(Inject.class)
-                .addImportClass(Singleton.class)
-                .addImportClass(Named.class)
-                .addImportClass(ExplicitProvidedTypes.class)
-                .addImportClass(Provider.class)
-                .addClassAnnotation("@Singleton")
-                .addClassAnnotation("@Named(\"" + ProcessorUtils.escapeStringForCode(serviceProvider.providedType().getSimpleName() + ":" + method.getSimpleName()) + "\")")
-                .addClassAnnotation("@ExplicitProvidedTypes({Endpoint.class})")
-                .addField("private final Provider<" + serviceProvider.providedType() + "> provider");
+        String parameters = method.getParameters().stream()
+                .map(p -> parameterWriting(context, p, "request"))
+                .collect(Collectors.joining(", ", "(", ")"));
 
-        endpoint.setConstructor("@Inject public " + className + "(ProviderRegistry " + Constants.PROVIDER_REGISTRY + ")", b -> {
-            String typeInfo = buildTypeInfoCode(method);
-            b.line("super({}, \"{}\", \"{}\", {});", Constants.PROVIDER_REGISTRY, httpMethod, ProcessorUtils.escapeStringForCode(path), typeInfo);
-            b.line("this.provider = " + Constants.PROVIDER_REGISTRY + ".getProvider(" + serviceProvider.providedType() + ".class, " + serviceProvider.qualifier() + ");");
-        });
+        boolean isVoid = method.getReturnType().getKind() == TypeKind.VOID;
 
-        endpoint.addMethod("protected Object executeMethod(Request request) throws Exception", b -> {
-            b.line("{} instance = provider.get();", serviceProvider.providedType());
+        String callMethod = "endpoint.get()." + method.getSimpleName() + parameters + ";";
 
-            String parameters = method.getParameters().stream()
-                    .map(p -> parameterWriting(context, p, "request"))
-                    .collect(Collectors.joining(", ", "(", ")"));
-
-            boolean isVoid = method.getReturnType().getKind() == TypeKind.VOID;
-            if (isVoid) {
-                b.line("instance.{}{};", method.getSimpleName(), parameters);
-                b.line("return null;");
-            } else {
-                b.line("return instance.{}{};", method.getSimpleName(), parameters);
-            }
-        });
-
-        endpoint.writeClass(context.filer());
+        StringBuilder sb = new StringBuilder();
+        sb.append("request -> {");
+        sb.append("TypeInfo typeInfo = ").append(buildTypeInfoCode(method)).append(';');
+        if (isVoid) {
+            sb.append(callMethod).append("\n");
+            sb.append("return convertResponse(request, null, bodyInterchange);");
+        } else {
+            sb.append("Object result = ").append(callMethod).append("\n");
+            sb.append("return convertResponse(request, result, bodyInterchange);");
+        }
+        sb.append("}");
+        initialize.line("router.addRoute(\"{}\", \"{}\", {});",
+                ProcessorUtils.escapeStringForCode(httpMethod),
+                ProcessorUtils.escapeStringForCode(path),
+                sb.toString());
     }
-
 
     private static final List<Class<? extends Annotation>> SUPPORTED_PARAMS = Arrays.asList(Body.class, Attribute.class, PathParam.class, QueryParam.class, HeaderParam.class, CookieParam.class, BeanParam.class);
     private static final List<Class<?>> SUPPORTED_CLASSES = Arrays.asList(Request.class, URI.class);
@@ -143,18 +170,21 @@ public class EndpointWriter implements ProviderDefinitionListener {
         return parameterWriting(context, parameter, parameter, contextRef);
     }
 
+    @Inject
     private static String parameterWriting(AnnotationProcessorContext context, VariableElement parameter, Element annotationSource, String contextRef) {
         if (parameter.asType().toString().equals(Request.class.getCanonicalName())) {
             return contextRef;
         } else if (parameter.asType().toString().equals(URI.class.getCanonicalName())) {
             return contextRef + ".uri()";
         } else if (annotationSource.getAnnotation(Body.class) != null) {
-            return "(" + parameter.asType() + ") readBody(" + contextRef + ")";
+            return "(" + parameter.asType() + ") readBody(" + contextRef + ", typeInfo, bodyInterchange)";
         } else if (annotationSource.getAnnotation(Attribute.class) != null) {
             String name = annotationSource.getAnnotation(Attribute.class).value();
             return "(" + parameter.asType() + ") " + contextRef + ".attribute(\"" + name + "\")";
         } else if (annotationSource.getAnnotation(BeanParam.class) != null) {
             return beanParameterCode(context, parameter, contextRef);
+        } else if (annotationSource.getAnnotation(Provided.class) != null) {
+            return ProcessorUtils.providerLookupCode(context, parameter, Constants.PROVIDER_REGISTRY);
         }
 
         TypeMirror target = parameter.asType();

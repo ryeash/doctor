@@ -38,13 +38,14 @@ public class NettyLoader implements AppLoader {
         providerRegistry.register(new AdHocProvider<>(BodyInterchange.class, bodyInterchange, null));
 
         Router router = new Router(conf.getCaseInsensitiveMatching());
+        providerRegistry.register(new AdHocProvider<>(Router.class, router, null));
+
         providerRegistry.getProviders(Filter.class)
                 .map(Provider::get)
                 .forEach(router::addFilter);
 
-        providerRegistry.getProviders(Endpoint.class)
-                .map(Provider::get)
-                .forEach(endpoint -> router.addRoute(endpoint.method(), endpoint.path(), endpoint));
+        providerRegistry.getProviders(EndpointConfiguration.class)
+                .forEach(Provider::get);
 
         CompositeExceptionHandler compositeExceptionHandler = new CompositeExceptionHandler();
         providerRegistry.getProviders(ExceptionHandler.class)
@@ -60,11 +61,10 @@ public class NettyLoader implements AppLoader {
                         throw new IllegalArgumentException("websockets must have a @Path annotation: " + ws.type());
                     }
                     for (String p : path.value()) {
-                        server.addWebsocket(p, ws.get());
+                        server.addWebsocket(p, ws::get);
                     }
                 });
 
-        providerRegistry.register(new AdHocProvider<>(Router.class, router, null));
         providerRegistry.register(new AdHocProvider<>(HttpServer.class, this.server, null));
         providerRegistry.getInstance(EventProducer.class).publish(new ServiceStarted("netty-http", server));
     }

@@ -1,7 +1,7 @@
 package vest.doctor.event;
 
 /**
- * An event sent to indicate a specific service has stopped.
+ * An event indicating a specific service has stopped.
  */
 public class ServiceStopped {
     private final String name;

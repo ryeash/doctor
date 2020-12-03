@@ -8,6 +8,7 @@ import java.util.Comparator;
  */
 public interface Prioritized {
 
+    int DEFAULT_PRIORITY = 1000;
     Comparator<Prioritized> COMPARATOR = Comparator.comparingInt(Prioritized::priority);
 
     /**
@@ -16,6 +17,6 @@ public interface Prioritized {
      * @default 1000
      */
     default int priority() {
-        return 1000;
+        return DEFAULT_PRIORITY;
     }
 }

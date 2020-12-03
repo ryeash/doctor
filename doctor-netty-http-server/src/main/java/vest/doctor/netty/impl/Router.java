@@ -61,6 +61,11 @@ public class Router implements Handler {
 
     public Router addRoute(HttpMethod method, String path, Handler handler) {
         List<Route> routes = this.routes.computeIfAbsent(method, v -> new ArrayList<>());
+        Route newRoute = new Route(path, caseInsensitiveMatch, handler);
+
+        if (routes.stream().anyMatch(r -> r.getPathSpec().getPattern().toString().equals(newRoute.getPathSpec().getPattern().toString()))) {
+            throw new IllegalArgumentException("attempted to register duplicate path for " + method + " " + path);
+        }
         routes.add(new Route(path, caseInsensitiveMatch, handler));
         routes.sort(Comparator.comparing(Route::getPathSpec));
         return this;
@@ -73,12 +78,15 @@ public class Router implements Handler {
     }
 
     @Override
-    public CompletionStage<Response> handle(Request request) {
+    public CompletionStage<Response> handle(Request request) throws Exception {
         CompletableFuture<Response> parent = new CompletableFuture<>();
         CompletionStage<Response> temp = parent;
 
         for (Filter filter : filters) {
             temp = filter.filter(request, temp);
+            if (temp.toCompletableFuture().isDone()) {
+                return temp;
+            }
         }
 
         CompletionStage<Response> response = selectHandler(request).handle(request);
@@ -86,7 +94,7 @@ public class Router implements Handler {
         return temp;
     }
 
-    private Handler selectHandler(Request request) {
+    protected Handler selectHandler(Request request) {
         for (Route route : routes.getOrDefault(request.method(), Collections.emptyList())) {
             Map<String, String> pathParams = route.getPathSpec().matchAndCollect(request.path());
             if (pathParams != null) {
