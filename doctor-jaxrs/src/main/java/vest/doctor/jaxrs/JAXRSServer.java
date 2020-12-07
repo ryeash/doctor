@@ -1,10 +1,5 @@
 package vest.doctor.jaxrs;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -19,52 +14,25 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
-import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJaxbJsonProvider;
-import org.glassfish.jersey.server.ResourceConfig;
-import org.glassfish.jersey.servlet.ServletContainer;
+import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import vest.doctor.ProviderRegistry;
 
-import javax.inject.Provider;
 import javax.ws.rs.Path;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.ContainerResponseFilter;
-import javax.ws.rs.ext.ContextResolver;
-import javax.ws.rs.ext.ExceptionMapper;
-import javax.ws.rs.ext.InterceptorContext;
-import javax.ws.rs.ext.MessageBodyReader;
-import javax.ws.rs.ext.MessageBodyWriter;
-import javax.ws.rs.ext.ParamConverter;
-import javax.ws.rs.ext.ParamConverterProvider;
-import javax.ws.rs.ext.ReaderInterceptor;
-import javax.ws.rs.ext.WriterInterceptor;
 import java.net.InetSocketAddress;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 class JAXRSServer extends WebSocketServlet implements WebSocketCreator, AutoCloseable {
-
-    private static final List<Class<?>> JAX_RS_TYPES = Arrays.asList(
-            ContainerRequestFilter.class,
-            ContainerResponseFilter.class,
-            ExceptionMapper.class,
-            MessageBodyWriter.class,
-            MessageBodyReader.class,
-            ReaderInterceptor.class,
-            WriterInterceptor.class,
-            InterceptorContext.class,
-            Provider.class,
-            ParamConverter.class,
-            ParamConverterProvider.class,
-            ContextResolver.class);
-
     private final JaxrsConfiguration jaxrsConfiguration;
     private final Map<String, Object> pathToWebsocket;
 
     private final Server server;
 
+    static ProviderRegistry providerRegistry;
+
     public JAXRSServer(ProviderRegistry providerRegistry) {
+        JAXRSServer.providerRegistry = providerRegistry;
         this.jaxrsConfiguration = new JaxrsConfiguration(providerRegistry.configuration());
         this.pathToWebsocket = new HashMap<>();
         this.server = startServer(providerRegistry);
@@ -94,7 +62,7 @@ class JAXRSServer extends WebSocketServlet implements WebSocketCreator, AutoClos
             return null;
         }
 
-        ServletContextHandler context = new ServletContextHandler();
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         context.setContextPath(jaxrsConfiguration.rootPath());
 
         QueuedThreadPool qtp = new QueuedThreadPool(jaxrsConfiguration.maxRequestThreads(), jaxrsConfiguration.minRequestThreads());
@@ -127,39 +95,11 @@ class JAXRSServer extends WebSocketServlet implements WebSocketCreator, AutoClos
             connector.setIdleTimeout(jaxrsConfiguration.socketIdleTimeout());
             server.addConnector(connector);
         }
-
-        ResourceConfig resourceConfig = new ResourceConfig();
-        jaxrsConfiguration.jerseyProperties().forEach(resourceConfig::property);
-
-        ObjectMapper mapper = providerRegistry.getProviderOpt(ObjectMapper.class)
-                .map(Provider::get)
-                .orElseGet(() -> new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
-                        .configure(JsonGenerator.Feature.IGNORE_UNKNOWN, true)
-                        .configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false)
-                        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                        .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)
-                        .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-                        .setDefaultMergeable(true)
-                        .registerModules(ObjectMapper.findModules()));
-
-        resourceConfig.register(new JacksonJaxbJsonProvider(mapper, JacksonJaxbJsonProvider.DEFAULT_ANNOTATIONS));
-        resourceConfig.register(new GZipDecoder());
-        resourceConfig.register(new ProviderRegistryFactory(providerRegistry));
-
-        JAX_RS_TYPES.stream()
-                .flatMap(providerRegistry::getProviders)
-                .map(Provider::get)
-                .distinct()
-                .forEach(resourceConfig::register);
-
-        providerRegistry.getProvidersWithAnnotation(Path.class)
-                .map(Provider::get)
-                .forEach(resourceConfig::registerInstances);
-
         providerRegistry.getProvidersWithAnnotation(WebSocket.class).forEach(this::addWebsocket);
 
-        ServletHolder jerseyServlet = new ServletHolder(new ServletContainer(resourceConfig));
-        context.addServlet(jerseyServlet, "/*");
+        ServletHolder restEasyServlet = context.addServlet(HttpServletDispatcher.class, "/");
+        restEasyServlet.setInitParameter("javax.ws.rs.Application", RESTEasyAppConfig.class.getCanonicalName());
+        context.addServlet(restEasyServlet, "/*");
 
         ServletHolder websocketServlet = new ServletHolder(this);
         context.addServlet(websocketServlet, jaxrsConfiguration.websocketRootPath() + "/*");
