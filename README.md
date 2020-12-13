@@ -9,8 +9,8 @@ use. Then create a main method that loads the doctor with the desired configurat
 
 ```java
 public static void main(String[]args){
-        Doctor.load(DefaultConfigurationFacade.defaultConfigurationFacade());
-        }
+    Doctor.load(DefaultConfigurationFacade.defaultConfigurationFacade());
+}
 ```
 
 ### Core Functionality
