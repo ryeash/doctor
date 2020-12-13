@@ -14,16 +14,20 @@ public class JAXRSLoader implements AppLoader {
     public void postProcess(ProviderRegistry providerRegistry) {
         this.providerRegistry = providerRegistry;
         server = new JAXRSServer(providerRegistry);
-        providerRegistry.getInstance(EventProducer.class).publish(new ServiceStarted("jetty-jaxrs", server));
+        if (server.isStarted()) {
+            providerRegistry.getInstance(EventProducer.class).publish(new ServiceStarted("jetty-jaxrs", server));
+        } else {
+            server = null;
+        }
     }
 
     @Override
     public void close() throws Exception {
         if (server != null) {
             server.close();
-        }
-        if (providerRegistry != null) {
-            providerRegistry.getInstance(EventProducer.class).publish(new ServiceStopped("jetty-jaxrs", server));
+            if (providerRegistry != null) {
+                providerRegistry.getInstance(EventProducer.class).publish(new ServiceStopped("jetty-jaxrs", server));
+            }
         }
     }
 

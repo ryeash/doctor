@@ -24,7 +24,7 @@ public interface Filter extends Prioritized {
     CompletionStage<Response> filter(Request request, CompletionStage<Response> response);
 
     /**
-     * Create a filter that operates on the request before it is sent to a {@link vest.doctor.netty.impl.Route}.
+     * Create a filter that operates on the request before it is sent to a {@link Handler}.
      *
      * @param consumer the action to take on the request
      * @return a new before {@link Filter}
@@ -37,7 +37,7 @@ public interface Filter extends Prioritized {
     }
 
     /**
-     * Create a filter that operates on the response after it has been returned from a {@link vest.doctor.netty.impl.Route}.
+     * Create a filter that operates on the response after it has been returned from a {@link Handler}.
      *
      * @param function the function that will operate on (and return) the response object
      * @return a new after {@link Filter}

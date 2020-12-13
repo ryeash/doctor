@@ -45,7 +45,7 @@ public interface RequestBody {
     Optional<HttpHeaders> trailingHeaders();
 
     /**
-     * Read the body data into a string.
+     * Read the body data into a utf8 string.
      */
     default CompletableFuture<String> asString() {
         StringBuilder sb = new StringBuilder();

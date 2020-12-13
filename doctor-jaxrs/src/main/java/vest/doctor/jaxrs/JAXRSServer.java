@@ -38,6 +38,10 @@ class JAXRSServer extends WebSocketServlet implements WebSocketCreator, AutoClos
         this.server = startServer(providerRegistry);
     }
 
+    public boolean isStarted() {
+        return server != null && server.isStarted();
+    }
+
     @Override
     public void close() throws Exception {
         if (server != null) {

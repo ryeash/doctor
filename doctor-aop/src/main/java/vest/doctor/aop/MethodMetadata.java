@@ -15,6 +15,14 @@ public class MethodMetadata {
     private final List<TypeInfo> methodParameters;
     private final TypeInfo returnType;
 
+    /**
+     * Internal use only.
+     *
+     * @param containingInstance the object instance that the method is being called on
+     * @param methodName         the nam eof the method being called
+     * @param methodParameters   the parameter types for the method
+     * @param returnType         the return type info for the method
+     */
     public MethodMetadata(Object containingInstance, String methodName, List<TypeInfo> methodParameters, TypeInfo returnType) {
         this.containingInstance = containingInstance;
         this.methodName = methodName;
@@ -49,6 +57,11 @@ public class MethodMetadata {
         return methodParameters;
     }
 
+    /**
+     * Information about the return type of the method.
+     *
+     * @return the {@link TypeInfo} for the return type, or null if the method is a void type
+     */
     public TypeInfo getReturnType() {
         return returnType;
     }

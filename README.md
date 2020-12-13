@@ -2,9 +2,20 @@
 
 Compile time dependency injection provider.
 
+### Getting Started
+
+Include the `doctor-processor` and `doctor-runtime` libraries in your build as well as any other plugins that you will
+use. Then create a main method that loads the doctor with the desired configuration.
+
+```java
+public static void main(String[]args){
+        Doctor.load(DefaultConfigurationFacade.defaultConfigurationFacade());
+        }
+```
+
 ### Core Functionality
 
-Pseudo-support for `javax.inject`. During compile, `@Scope` annotations (and others) are analyzed and the boilerplate
+Pseudo-support for `javax.inject`. During compile, `@Scope` annotations (and others) are analyzed, and the boilerplate
 code to generate instances for the types is generated and wired into an infrastructure that relies on `ServiceProvider`
 to load/initialize the application.
 
@@ -67,11 +78,10 @@ These are the built-in scopes supported:
 
 ### @Modules
 
-Providers can be optionally enabled only for a specific set of modules. Modules are set during bootstrap of the
+Providers can be optionally enabled only for a specific set of modules. Modules are set during startup of the
 application.
 
 ```java
-
 @Singleton
 @Modules({"dev", "test"}) // this class will only be available when either the "dev" or "test" modules is active.
 public class MockDao implements Dao {
@@ -97,11 +107,10 @@ list. Providers without modules will _always_ be active.
 
 ### @Eager
 
-By default, providers will not instantiate an instance when they are initialized, i.e. they're lazy. If you want an
-instance automatically created on startup, you can mark the class or factory method with `@Eager`.
+By default, providers will not instantiate an instance when they are initialized; they're lazy. If you want an instance
+automatically created on startup, you can mark the class or factory method with `@Eager`.
 
 ```java
-
 @Eager
 @Singleton
 public class Heater {
@@ -119,7 +128,6 @@ A qualified provider definition can be marked with @Primary to register the prov
 the `null` qualifier; effectively making the provider the default provider for the type.
 
 ```java
-
 @Singleton
 public class AppConfig {
     @Singleton
@@ -140,11 +148,9 @@ doctor.getInstance(DataSource.class)==doctor.getInstance(DataSource.class,"prima
 ### @SkipInjection
 
 There are rare occasions where it may be necessary to skip the post-instantiation injection phase for a provided
-instance
-(Skip calling `@Inject` marked methods and similar processing). In these cases use `@SkipInjection`.
+instance (Skip calling `@Inject` marked methods and similar processing). In these cases use `@SkipInjection`.
 
 ```java
-
 @SkipInjectin
 @Prototype
 public class NoInject {
@@ -160,7 +166,6 @@ public class NoInject {
 Methods in provided objects can be scheduled for periodic execution using the `@Scheduled` annotation.
 
 ```java
-
 @Singleton
 public class SomethingPeriodic {
     @Scheduled(interval = "10ms")
@@ -182,7 +187,6 @@ Messages can be published and consumed via the EventBus.
 Basics of event produce and consume:
 
 ```java
-
 @Singleton
 public class EventExample {
 
@@ -213,19 +217,18 @@ public class EventExample {
 The @Async annotation can be used to perform certain actions on a background threads.
 
 ```java
-
 @Singleton
 public class AsyncDemo {
     @Inject
     @Async // this method will be called asynchronously when this class is instantiated
     public void injectAsync() {
-        // ...
+        ...
     }
 
     @EventListener
     @Async // when a compatible message is published, this method will be called in a background thread
     public void asyncListener(Object message) {
-        // ...
+        ...
     }
 }
 ```
@@ -240,7 +243,6 @@ Properties from the ConfigurationFacade can be automatically injected into provi
 annotation.
 
 ```java
-
 @Prototype
 public class PropertiesDemo {
 
@@ -266,10 +268,9 @@ Additionally, using @Properties, a properties class can be auto generated to pro
 encapsulating the properties for an application.
 
 ```java
-
 @Singleton
 @Properties("db.") // all property names marked on this class will be prefixed with `db.`
-public interface DBProps {
+public interface DBProps { // must be an interface
     @Property("url")
         // this will use the property named `db.url`
     String url();

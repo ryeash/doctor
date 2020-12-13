@@ -6,7 +6,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Models an HTTP response
+ * Models a mutable HTTP response.
  */
 public interface Response {
 

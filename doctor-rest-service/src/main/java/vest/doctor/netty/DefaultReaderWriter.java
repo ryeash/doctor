@@ -103,7 +103,7 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
 
     @Override
     public int priority() {
-        return 0;
+        return Integer.MAX_VALUE;
     }
 
     private void setContentTypeIfAbsent(Response response, CharSequence contentType) {

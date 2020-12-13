@@ -5,7 +5,7 @@ import vest.doctor.Prioritized;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Responsible for serialized response bodies.
+ * Responsible for serializing response bodies.
  */
 public interface BodyWriter extends Prioritized {
 
@@ -18,5 +18,12 @@ public interface BodyWriter extends Prioritized {
      */
     boolean handles(Response response, Object responseData);
 
+    /**
+     * Write the response data into the response.
+     *
+     * @param response     the response object
+     * @param responseData the data to write
+     * @return a future indicating the asynchronous completion of the write operation
+     */
     CompletableFuture<ResponseBody> write(Response response, Object responseData);
 }
