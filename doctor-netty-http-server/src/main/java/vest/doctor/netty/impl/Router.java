@@ -66,7 +66,7 @@ public class Router implements Handler {
         if (routes.stream().anyMatch(r -> r.getPathSpec().getPattern().toString().equals(newRoute.getPathSpec().getPattern().toString()))) {
             throw new IllegalArgumentException("attempted to register duplicate path for " + method + " " + path);
         }
-        routes.add(new Route(path, caseInsensitiveMatch, handler));
+        routes.add(newRoute);
         routes.sort(Comparator.comparing(Route::getPathSpec));
         return this;
     }

@@ -49,7 +49,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
@@ -157,8 +156,8 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
         ServerRequest req = new ServerRequest(request, ctx, workerGroup, body);
 
         try {
-            CompletionStage<Response> handle = handler.handle(req);
-            handle.exceptionally(error -> handleError(req, error))
+            handler.handle(req)
+                    .exceptionally(error -> handleError(req, error))
                     .thenAccept(response -> writeResponse(response.request(), response));
         } catch (Throwable t) {
             Response errorResponse = handleError(req, t);
@@ -178,10 +177,9 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
     }
 
     private void handleBodyData(ChannelHandlerContext ctx, HttpContent content) {
-        HttpContent dup = content.retainedDuplicate();
         StreamingRequestBody streamingRequestBody = ctx.channel().attr(CONTEXT_BODY).get();
         if (streamingRequestBody != null) {
-            streamingRequestBody.append(dup);
+            streamingRequestBody.append(content.retainedDuplicate());
         }
     }
 

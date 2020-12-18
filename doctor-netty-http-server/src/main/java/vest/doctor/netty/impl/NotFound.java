@@ -7,7 +7,7 @@ import vest.doctor.netty.Response;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-public class NotFound implements Handler {
+final class NotFound implements Handler {
 
     @Override
     public CompletionStage<Response> handle(Request request) {

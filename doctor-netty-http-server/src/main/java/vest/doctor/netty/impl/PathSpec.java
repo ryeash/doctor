@@ -60,15 +60,20 @@ public final class PathSpec implements Comparable<PathSpec> {
         return pattern;
     }
 
+    /**
+     * Match the request uri to this patch spec, returning a non-null map if
+     * there is a match.
+     *
+     * @param requestUri the request uri to match
+     * @return a non-null map if the uri matched this spec, else null
+     */
     public Map<String, String> matchAndCollect(String requestUri) {
-        // short circuit: if no parameters were found in the route path, just do a string compare
-        if (paramNames.isEmpty()) {
-            return requestUri.equalsIgnoreCase(path) ? Collections.emptyMap() : null;
-        }
-
         Matcher matcher = pattern.matcher(requestUri);
         if (!matcher.matches()) {
             return null;
+        }
+        if (paramNames.isEmpty()) {
+            return Collections.emptyMap();
         }
         Map<String, String> params = new LinkedHashMap<>(matcher.groupCount(), 1.0F);
         for (int i = 1; i <= matcher.groupCount(); i++) {

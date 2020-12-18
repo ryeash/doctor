@@ -20,8 +20,6 @@ and create your service endpoints:
 @Singleton
 @Path("/netty")
 public class TCNettyEndpoint {
-    private static final Logger log = LoggerFactory.getLogger(TCNettyEndpoint.class);
-
     @GET
     @Path("/hello")
     public String basic(@QueryParam("q") Optional<String> q) {
@@ -30,7 +28,7 @@ public class TCNettyEndpoint {
 }
 ```
 
-### Configueration
+### Configuration
 
 | Property                                  | Description                                                                    | Default                                                                               |
 |-------------------------------------------|--------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
