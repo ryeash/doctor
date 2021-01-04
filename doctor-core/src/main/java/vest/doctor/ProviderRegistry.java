@@ -134,7 +134,7 @@ public interface ProviderRegistry {
      * Determine if the given type can be satisfied by a registered provider.
      *
      * @param type the type to check
-     * @return true if a provider exists that can satisfy the given type
+     * @return true if a provider exists that can satisfy the given type (and a null qualifier)
      */
     boolean hasProvider(Class<?> type);
 
@@ -153,6 +153,11 @@ public interface ProviderRegistry {
      * @return the configuration facade
      */
     ConfigurationFacade configuration();
+
+    /**
+     * Get the {@link ShutdownContainer} associated with this registry.
+     */
+    ShutdownContainer shutdownContainer();
 
     /**
      * Convenience method for <code>configuration().resolvePlaceholders()</code>.

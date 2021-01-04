@@ -7,6 +7,7 @@ import java.util.function.Consumer;
  */
 public class MethodBuilder {
 
+    private ClassBuilder classBuilder;
     private final Bindings bindings = Bindings.create();
     private final StringBuilder sb = new StringBuilder();
     private final Consumer<String> onFinish;
@@ -24,6 +25,13 @@ public class MethodBuilder {
         this.onFinish = onFinish;
     }
 
+    public void setClassBuilder(ClassBuilder classBuilder) {
+        if (this.classBuilder != null) {
+            throw new IllegalArgumentException("this method is already attached to a class");
+        }
+        this.classBuilder = classBuilder;
+    }
+
     public MethodBuilder line(String line) {
         sb.append(bindings.fill(line)).append("\n");
         return this;
@@ -36,6 +44,14 @@ public class MethodBuilder {
 
     public MethodBuilder var(String name, Object value) {
         bindings.var(name, value);
+        return this;
+    }
+
+    public MethodBuilder importClass(Class<?> type) {
+        if (classBuilder == null) {
+            throw new NullPointerException("method not attached to a class");
+        }
+        classBuilder.addImportClass(type);
         return this;
     }
 

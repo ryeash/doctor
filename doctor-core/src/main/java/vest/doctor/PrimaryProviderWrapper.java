@@ -1,7 +1,7 @@
 package vest.doctor;
 
 /**
- * Used internally to create a primary provider; i.e. always return 'null' for the qualifier.
+ * Used internally to create a primary provider; i.e. always returns 'null' for the qualifier.
  */
 public final class PrimaryProviderWrapper<T> extends DoctorProviderWrapper<T> {
 

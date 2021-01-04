@@ -169,6 +169,12 @@ public class R {
         return body;
     }
 
+    /**
+     * Internal use. Apply the status and headers from this object to the given response.
+     *
+     * @param response the response to apply the data to
+     * @return the response
+     */
     Response applyTo(Response response) {
         response.status(status);
         for (Map.Entry<String, String> entry : headers) {
@@ -177,6 +183,16 @@ public class R {
         return response;
     }
 
+    /**
+     * Create a new file response.
+     *
+     * @param request       the request object
+     * @param rootDirectory the root directory to search for the file in; the filePath
+     *                      will be validated against this root and traversal attacks will be
+     *                      prevented
+     * @param filePath      the path to the file (from the root directory)
+     * @return a new response object for the file
+     */
     public static R file(Request request, String rootDirectory, String filePath) {
         java.nio.file.Path rootPath = new File(rootDirectory).getAbsoluteFile().toPath();
 

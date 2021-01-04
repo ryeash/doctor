@@ -35,7 +35,7 @@ public final class ScheduledTaskWrapper<T> implements Runnable {
         T t = ref.get();
         if (t != null) {
             execute.accept(providerRegistry, t);
-            if (executionLimit != null && executionLimit.decrementAndGet() == 0) {
+            if (executionLimit != null && executionLimit.decrementAndGet() <= 0) {
                 ref.clear();
             }
         } else {

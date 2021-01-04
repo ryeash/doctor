@@ -76,8 +76,9 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
 
     private long start;
 
-    private ClassBuilder cb;
+    private ClassBuilder appLoader;
     private final MethodBuilder load = new MethodBuilder("public void load({} {})", ProviderRegistry.class, PROVIDER_REGISTRY);
+    private final MethodBuilder postProcess = new MethodBuilder("public void postProcess({} {})", ProviderRegistry.class, PROVIDER_REGISTRY);
 
     private final Map<Class<?>, Collection<String>> serviceImplementations = new HashMap<>();
 
@@ -101,7 +102,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
         addSatisfiedDependency(ConfigurationFacade.class, null);
         addSatisfiedDependency(EventProducer.class, null);
 
-        this.cb = new ClassBuilder()
+        this.appLoader = new ClassBuilder()
                 .setClassName(generatedPackage + ".AppLoaderImpl")
                 .addImplementsInterface(AppLoader.class)
                 .addImportClass(List.class)
@@ -114,10 +115,9 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 .addImportClass(ShutdownContainer.class)
                 .addField("private final {} {} = new {}()", ShutdownContainer.class, Constants.SHUTDOWN_CONTAINER_NAME, ShutdownContainer.class)
                 // call eager providers
-                .addMethod("public void postProcess({} {}) { eagerList.stream().filter(Objects::nonNull).forEach({}::get); }", ProviderRegistry.class, PROVIDER_REGISTRY, DoctorProvider.class)
                 .addMethod("public void close() { {}.close(); }", Constants.SHUTDOWN_CONTAINER_NAME)
                 .addField("private final List<{}<?>> eagerList = new ArrayList<>()", DoctorProvider.class);
-
+        this.load.setClassBuilder(appLoader);
     }
 
     private void loadConf(ProcessorConfiguration processorConfiguration) {
@@ -163,9 +163,11 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
 
         if (roundEnv.processingOver()) {
             customizationPoints.forEach(c -> c.finish(this));
-            cb.addMethod(load.finish())
+            postProcess.line("eagerList.stream().filter(Objects::nonNull).forEach({}::get);", Provider.class);
+            appLoader.addMethod(load.finish())
+                    .addMethod(postProcess.finish())
                     .writeClass(filer());
-            addServiceImplementation(AppLoader.class, cb.getFullyQualifiedClassName());
+            addServiceImplementation(AppLoader.class, appLoader.getFullyQualifiedClassName());
             writeServicesResource();
             compileTimeDependencyCheck();
             infoMessage("took " + (System.currentTimeMillis() - start) + "ms");
@@ -275,7 +277,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     }
 
     private void writeInProvider(ProviderDefinition providerDefinition) {
-        cb.addImportClass(providerDefinition.providedType().asType().toString());
+        appLoader.addImportClass(providerDefinition.providedType().asType().toString());
 
         String creator = line("new {}({})", providerDefinition.generatedClassName(), PROVIDER_REGISTRY);
 
@@ -304,7 +306,10 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
         }
         load.line("{}<{}> {} = {};", DoctorProvider.class, providerDefinition.providedType().getSimpleName(), providerDefinition.uniqueInstanceName(), creator);
         load.line("{}.register({});", PROVIDER_REGISTRY, providerDefinition.uniqueInstanceName());
-        if (providerDefinition.isPrimary() && providerDefinition.qualifier() != null) {
+        if (providerDefinition.isPrimary()) {
+            if (providerDefinition.qualifier() == null) {
+                throw new IllegalArgumentException("unqualified provider can not be marked @Primary: " + providerDefinition.toString());
+            }
             load.line("{}.register(new {}({}));", PROVIDER_REGISTRY, PrimaryProviderWrapper.class, providerDefinition.uniqueInstanceName());
         }
 

@@ -75,6 +75,9 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
         if (data instanceof byte[]) {
             setContentTypeIfAbsent(response, HttpHeaderValues.APPLICATION_OCTET_STREAM);
             return CompletableFuture.completedFuture(ResponseBody.of((byte[]) data));
+        } else if (data instanceof InputStream) {
+            setContentTypeIfAbsent(response, HttpHeaderValues.APPLICATION_OCTET_STREAM);
+            return CompletableFuture.completedFuture(ResponseBody.of((InputStream) data));
         } else if (data instanceof CharSequence) {
             setContentTypeIfAbsent(response, HttpHeaderValues.TEXT_PLAIN);
             return CompletableFuture.completedFuture(ResponseBody.of(data.toString(), response.request().requestCharset(StandardCharsets.UTF_8)));

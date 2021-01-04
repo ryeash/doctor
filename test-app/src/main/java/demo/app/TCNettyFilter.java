@@ -7,6 +7,7 @@ import vest.doctor.netty.ResponseBody;
 
 import javax.inject.Singleton;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 @Singleton
@@ -20,6 +21,9 @@ public class TCNettyFilter implements Filter {
                     .body(ResponseBody.of("halted"))
                     .wrapFuture();
         }
+
+        Optional.ofNullable(request.queryParam("attr"))
+                .ifPresent(a -> request.attribute("attr", a));
 
         request.headers().set("X-BEFORE-MATCH", true);
         request.headers().set("X-BEFORE-ROUTE", true);

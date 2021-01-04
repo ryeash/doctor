@@ -40,31 +40,43 @@ import java.util.stream.Stream;
 public class ProcessorUtils {
 
     public static AnnotationMirror getScope(AnnotationProcessorContext context, Element element) {
-        return getAnnotationExtends(context, element, Scope.class);
-    }
-
-    public static String getQualifier(AnnotationProcessorContext context, Element element) {
-        Named named = element.getAnnotation(Named.class);
-        if (named != null) {
-            return "\"" + escapeStringForCode(named.value()) + "\"";
+        List<AnnotationMirror> scopes = getAnnotationsExtends(context, element, Scope.class);
+        if (scopes.size() > 1) {
+            throw new IllegalArgumentException("only one scope is allowed for providers: " + debugString(element) + " has " + scopes.size() + ": " + scopes);
         }
-
-        AnnotationMirror annotationExtends = getAnnotationExtends(context, element, Qualifier.class);
-        if (annotationExtends != null) {
-            return annotationString(context, annotationExtends);
+        if (!scopes.isEmpty()) {
+            return scopes.get(0);
         } else {
             return null;
         }
     }
 
-    public static AnnotationMirror getAnnotationExtends(AnnotationProcessorContext context, Element element, Class<? extends Annotation> extended) {
+    public static String getQualifier(AnnotationProcessorContext context, Element element) {
+        List<AnnotationMirror> qualifiers = getAnnotationsExtends(context, element, Qualifier.class);
+        if (qualifiers.size() > 1) {
+            throw new IllegalArgumentException("only one qualifier is allowed for providers: " + debugString(element) + " has " + qualifiers.size() + ": " + qualifiers);
+        }
+        Named named = element.getAnnotation(Named.class);
+        if (named != null) {
+            return "\"" + escapeStringForCode(named.value()) + "\"";
+        }
+
+        if (!qualifiers.isEmpty()) {
+            return annotationString(context, qualifiers.get(0));
+        } else {
+            return null;
+        }
+    }
+
+    public static List<AnnotationMirror> getAnnotationsExtends(AnnotationProcessorContext context, Element element, Class<? extends Annotation> extended) {
+        List<AnnotationMirror> list = new LinkedList<>();
         for (AnnotationMirror am : context.processingEnvironment().getElementUtils().getAllAnnotationMirrors(element)) {
             Annotation annotation = am.getAnnotationType().asElement().getAnnotation(extended);
             if (annotation != null) {
-                return am;
+                list.add(am);
             }
         }
-        return null;
+        return list;
     }
 
     public static String annotationString(AnnotationProcessorContext context, AnnotationMirror annotationMirror) {

@@ -31,6 +31,7 @@ public class DoctorTest extends BaseDoctorTest {
         System.out.println(doctor);
         doctor.close();
         assertTrue(TCCloseable.closed);
+        assertTrue(TCCustomCloseable.closed);
     }
 
     @Test

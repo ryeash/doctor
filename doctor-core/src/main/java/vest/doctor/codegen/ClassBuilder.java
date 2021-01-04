@@ -126,6 +126,7 @@ public class ClassBuilder {
 
     public ClassBuilder addMethod(String definition, Consumer<MethodBuilder> builder) {
         MethodBuilder methodBuilder = new MethodBuilder(definition, this::addMethod);
+        methodBuilder.setClassBuilder(this);
         builder.accept(methodBuilder);
         methodBuilder.finish();
         return this;

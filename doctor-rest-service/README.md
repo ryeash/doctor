@@ -28,6 +28,26 @@ public class TCNettyEndpoint {
 }
 ```
 
+### Route parameters
+
+Parameters from requests can be automatically wired into route using annotations. Supported types:
+
+| Type      | Description                                                                                                               |
+|-----------|---------------------------------------------------------------------------------------------------------------------------|
+| Path      | Get the value from a path parameter                                                                                       |
+| Query     | Get the value from a query parameter                                                                                      |
+| Header    | Get the value of a header                                                                                                 |
+| Cookie    | Get the value of a cookie (from the request headers)                                                                      |
+| Body      | The parameter is wired from the request body; the body is converted to the desired type using a BodyReader implementation |
+| Provided  | Get a value from a Provider registered in the ProviderRegistry                                                            |
+| Attribute | Get the value of an attribute set on the request object; for example, an attribute set by a filter                        |
+| Bean      | Combine other route parameter types into a java bean that all get wired together                                          |
+
+Parameters wired from strings (Path, Query, Header, Cookie) will be automatically converted into the appropriate object
+type (e.g. integer, boolean, etc.).
+
+Also supported is wiring in the Request and URI objects, these don't require annotations.
+
 ### Configuration
 
 | Property                                  | Description                                                                    | Default                                                                               |
@@ -48,4 +68,4 @@ public class TCNettyEndpoint {
 | doctor.netty.http.validateHeaders         | Whether or not to have the netty http library validate headers                 | false                                                                                 |
 | doctor.netty.http.initialBufferSize       | The initial size of the request processing buffer                              | 8192                                                                                  |
 | doctor.netty.http.maxContentLength        | The maximum size allowed for request bodies                                    | 8388608 (8 megabytes)                                                                 |
-| doctor.netty.http.caseInsensitiveMatching | Whether or not to match routes with strict case-sensitivity                    | false (case matters on request uris)                                                      |
+| doctor.netty.http.caseInsensitiveMatching | Whether or not to match routes with strict case-sensitivity                    | false (case matters on request uris)                                                  |

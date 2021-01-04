@@ -192,6 +192,14 @@ public class NettyTest extends BaseDoctorTest {
     }
 
     @Test
+    public void attribute() {
+        req().get("/netty/attribute?attr=yes")
+                .then()
+                .statusCode(200)
+                .body(is("yes"));
+    }
+
+    @Test
     public void ws() throws Exception {
         String destUri = "ws://localhost:8081/grumpy";
         WebSocketClient client = new WebSocketClient();

@@ -115,8 +115,11 @@ public class TCNettyEndpoint {
                             @PathParam("custom") int custom,
                             @Provided @Named("pourOver") CoffeeMaker pourOver) {
         return normal + " " + custom + " " + pourOver.brew();
-
     }
 
-
+    @GET
+    @Path("/attribute")
+    public String attribute(@Attribute("attr") String attribute) {
+        return attribute;
+    }
 }

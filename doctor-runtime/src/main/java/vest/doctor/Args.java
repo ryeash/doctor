@@ -20,7 +20,7 @@ import java.util.stream.Stream;
  * <p>
  * Example:
  * java -jar app.jar -Fg --debug -e "dev"
- * F, g, and debug would all be flags (i.e. {@link  #flag(String)} would return true)
+ * F, g, and debug would all be flags (i.e. {@link #flag(String)} would return true)
  * e is an option (i.e {@link #option(String)} would return "dev" for "e")
  */
 public class Args implements Iterable<String> {
@@ -118,7 +118,6 @@ public class Args implements Iterable<String> {
     public int length() {
         return args.size();
     }
-
 
     /**
      * Check if the flag was set, for example: args like "-Aefl", flag('e') =&gt; true.

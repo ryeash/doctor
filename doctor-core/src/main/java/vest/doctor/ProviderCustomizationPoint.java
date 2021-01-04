@@ -1,8 +1,7 @@
 package vest.doctor;
 
 /**
- * Customization point used to wrap a provider with additional code. Useful for e.g. wrapping the provider with shutdown
- * hooks.
+ * Customization point used to wrap a provider with additional code.
  */
 public interface ProviderCustomizationPoint extends CustomizationPoint, Prioritized {
 

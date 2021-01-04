@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class CustomThreadFactory implements ThreadFactory, ForkJoinPool.ForkJoinWorkerThreadFactory {
 
-    private final ThreadFactory defaultThreadFactory = Executors.defaultThreadFactory();
+    private static final ThreadFactory defaultThreadFactory = Executors.defaultThreadFactory();
     private final AtomicInteger counter = new AtomicInteger(0);
     private final boolean daemonize;
     private final String threadPrefix;
@@ -22,7 +22,7 @@ public final class CustomThreadFactory implements ThreadFactory, ForkJoinPool.Fo
     /**
      * Create a new thread factory.
      *
-     * @param daemonize                whether the created threads will be deamons
+     * @param daemonize                whether the created threads will be deamons; see {@link Thread#setDaemon(boolean)}
      * @param threadPrefix             the prefix name to use for the threads, thread names will be set to the thread
      *                                 prefix appended with a unique thread id number
      * @param uncaughtExceptionHandler the {@link java.lang.Thread.UncaughtExceptionHandler} to use for the threads

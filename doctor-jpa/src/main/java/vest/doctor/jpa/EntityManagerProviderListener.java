@@ -2,6 +2,7 @@ package vest.doctor.jpa;
 
 import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.DestroyMethod;
 import vest.doctor.Factory;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionListener;
@@ -29,6 +30,9 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
 
     private final Set<String> processedPersistenceUnits = new HashSet<>();
 
+    private ClassBuilder jpaAppLoader;
+    private MethodBuilder preProcess;
+
     @Override
     public void process(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
         PersistenceContext[] persistenceContexts = providerDefinition.annotationSource().getAnnotationsByType(PersistenceContext.class);
@@ -40,6 +44,7 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
     }
 
     private void processAnnotation(AnnotationProcessorContext context, PersistenceContext persistenceContext) {
+        initAppLoader(context);
         String pcName = Objects.requireNonNull(persistenceContext.name(), "@PersistenceContext annotations must have a name defined that matches the persistence unit name in the xml");
 
         if (processedPersistenceUnits.contains(pcName)) {
@@ -55,6 +60,7 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
                 .addImportClass(Singleton.class)
                 .addImportClass(Named.class)
                 .addImportClass(Factory.class)
+                .addImportClass(DestroyMethod.class)
                 .addImportClass(EntityManager.class)
                 .addImportClass(EntityManagerFactory.class)
                 .addImportClass(Persistence.class)
@@ -67,23 +73,51 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
 
         entityManagerFactory.addField("private final static Logger log = LoggerFactory.getLogger(" + generatedClassName + ".class)");
 
-        MethodBuilder mb = new MethodBuilder("@Singleton @Factory @Named(\"" + ProcessorUtils.escapeStringForCode(pcName) + "\") " +
-                "public " + EntityManager.class.getSimpleName() + " entityManagerFactory" + context.nextId() + "(" + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY + ")");
-        mb.line("Map<String, String> properties = new LinkedHashMap<>();");
+        MethodBuilder emf = new MethodBuilder("@Singleton @Factory @DestroyMethod(\"close\") @Named(\"" + ProcessorUtils.escapeStringForCode(pcName) + "\") " +
+                "public " + EntityManagerFactory.class.getSimpleName() + " entityManagerFactoryFactory" + context.nextId() + "(" + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY + ")");
+        emf.line("Map<String, String> properties = new LinkedHashMap<>();");
         for (PersistenceProperty property : persistenceContext.properties()) {
-            mb.line("properties.put({}.resolvePlaceholders(\"{}\"), {}.resolvePlaceholders(\"{}\"));",
+            emf.line("properties.put({}.resolvePlaceholders(\"{}\"), {}.resolvePlaceholders(\"{}\"));",
                     PROVIDER_REGISTRY, property.name(), PROVIDER_REGISTRY, property.value());
         }
-        mb.line("EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory({}.resolvePlaceholders(\"{}\"), properties);",
+        emf.line("return Persistence.createEntityManagerFactory({}.resolvePlaceholders(\"{}\"), properties);",
                 PROVIDER_REGISTRY, pcName);
-        mb.line("try{");
-        mb.line("return entityManagerFactory.createEntityManager(SynchronizationType." + persistenceContext.synchronization() + ", properties);");
-        mb.line("} catch (" + IllegalStateException.class.getSimpleName() + " e) {");
-        mb.line("log.warn(\"could not create entity manager with explicit synchronization type, falling back; error message: {}\", e.getMessage());");
-        mb.line("log.debug(\"full error stack\", e);");
-        mb.line("return entityManagerFactory.createEntityManager(properties);");
-        mb.line("}");
-        entityManagerFactory.addMethod(mb.finish());
+        entityManagerFactory.addMethod(emf.finish());
+
+        MethodBuilder em = new MethodBuilder("@Singleton @Factory @DestroyMethod(\"close\") @Named(\"" + ProcessorUtils.escapeStringForCode(pcName) + "\") " +
+                "public " + EntityManager.class.getSimpleName() + " entityManagerFactory" + context.nextId() + "(" + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY + ", @Named(\"" + ProcessorUtils.escapeStringForCode(pcName) + "\") EntityManagerFactory entityManagerFactory)");
+        em.line("try{");
+        em.line("return entityManagerFactory.createEntityManager(SynchronizationType." + persistenceContext.synchronization() + ", entityManagerFactory.getProperties());");
+        em.line("} catch (" + IllegalStateException.class.getSimpleName() + " e) {");
+        em.line("log.warn(\"could not create entity manager with explicit synchronization type, falling back; error message: {}\", e.getMessage());");
+        em.line("log.debug(\"full error stack\", e);");
+        em.line("return entityManagerFactory.createEntityManager(entityManagerFactory.getProperties());");
+        em.line("}");
+        entityManagerFactory.addMethod(em.finish());
         entityManagerFactory.writeClass(context.filer());
+    }
+
+    private void initAppLoader(AnnotationProcessorContext context) {
+        if (jpaAppLoader != null) {
+            return;
+        }
+        String generatedClassName = context.generatedPackage() + ".JPAAppLoader__" + context.nextId();
+        jpaAppLoader = new ClassBuilder()
+                .setClassName(generatedClassName)
+                .addClassAnnotation("@Singleton")
+                .addImportClass(Singleton.class)
+                .addImportClass(Named.class)
+                .addImportClass(Factory.class)
+                .addImportClass(EntityManager.class)
+                .addImportClass(EntityManagerFactory.class)
+                .addImportClass(Persistence.class)
+                .addImportClass(SynchronizationType.class)
+                .addImportClass(ProviderRegistry.class)
+                .addImportClass(Map.class)
+                .addImportClass(LinkedHashMap.class)
+                .addImportClass("org.slf4j.Logger")
+                .addImportClass("org.slf4j.LoggerFactory");
+
+        preProcess = new MethodBuilder("public void preProcess({} {})", ProviderRegistry.class, PROVIDER_REGISTRY);
     }
 }

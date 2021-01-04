@@ -21,7 +21,6 @@ import java.io.OutputStream;
 public class TestAppConfig {
 
     @Factory
-    @Primary // this should be to a no-op since there is no qualifier on the factory
     public InputStream io() {
         return new ByteArrayInputStream(new byte[0]);
     }

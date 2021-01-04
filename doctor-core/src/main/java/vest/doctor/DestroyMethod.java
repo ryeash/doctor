@@ -7,14 +7,16 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Overrides the list of provided types for the marked provider source.
+ * Used to indicate that the instances of the provided type have a destroy method that must
+ * be called during shutdown.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
-public @interface ExplicitProvidedTypes {
+public @interface DestroyMethod {
+
     /**
-     * The types that the provider will be registered with.
+     * The name of the method to call to destroy the instances of the provided type.
      */
-    Class<?>[] value();
+    String value();
 }

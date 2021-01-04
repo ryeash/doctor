@@ -16,8 +16,8 @@ import java.util.stream.Stream;
 final class ProviderIndex {
 
     private final Lock writeLock = new ReentrantLock();
-    private final Map<ClassKey, Map<String, DoctorProvider<?>>> primary = new HashMap<>();
-    private final Map<ClassKey, Map<String, Collection<DoctorProvider<?>>>> secondary = new HashMap<>();
+    private final Map<ClassKey, Map<String, DoctorProvider<?>>> primary = new HashMap<>(64);
+    private final Map<ClassKey, Map<String, Collection<DoctorProvider<?>>>> secondary = new HashMap<>(128);
     private final Map<ClassKey, Collection<DoctorProvider<?>>> annotationTypeToProvider = new HashMap<>(128);
 
     void setProvider(DoctorProvider<?> provider) {

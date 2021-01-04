@@ -1,23 +1,34 @@
 package vest.doctor.processor;
 
-import doctor.processor.Constants;
+import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.ProviderCustomizationPoint;
+import vest.doctor.DestroyMethod;
+import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ProviderDefinition;
-import vest.doctor.ShutdownProviderWrapper;
+import vest.doctor.codegen.MethodBuilder;
 
-import java.util.Objects;
+public class ShutdownCustomizationPoint implements NewInstanceCustomizer {
 
-public class ShutdownCustomizationPoint implements ProviderCustomizationPoint {
     @Override
-    public String wrap(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String providerRef, String providerRegistryRef) {
-        boolean isCloseable = providerDefinition.getAllProvidedTypes()
-                .stream()
-                .anyMatch(c -> Objects.equals(c.getQualifiedName().toString(), AutoCloseable.class.getCanonicalName()));
-        if (isCloseable) {
-            return "new " + ShutdownProviderWrapper.class.getCanonicalName() + "<>(" + providerRef + ", " + Constants.SHUTDOWN_CONTAINER_NAME + ")";
+    public void customize(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef) {
+        if (providerDefinition.annotationSource().getAnnotation(DestroyMethod.class) != null) {
+            DestroyMethod destroy = providerDefinition.annotationSource().getAnnotation(DestroyMethod.class);
+            if (!validMethod(context, providerDefinition, destroy.value())) {
+                throw new IllegalArgumentException("invalid destroy method `" + providerDefinition.providedType() + "." + destroy.value() + "` is not valid for type; destroy methods must exist and have zero arguments");
+            }
+            String closer = instanceRef + "::" + destroy.value();
+            method.line("{}.shutdownContainer().register({});", providerRegistryRef, closer);
         } else {
-            return providerRef;
+            method.importClass(AutoCloseable.class);
+            method.line("if({} instanceof {}){", instanceRef, AutoCloseable.class);
+            method.line("{}.shutdownContainer().register(({}) {});", providerRegistryRef, AutoCloseable.class, instanceRef);
+            method.line("}");
         }
+    }
+
+    private static boolean validMethod(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String destroyMethod) {
+        return ProcessorUtils.allMethods(context, providerDefinition.providedType())
+                .stream()
+                .anyMatch(method -> method.getSimpleName().toString().equals(destroyMethod) && method.getParameters().size() == 0);
     }
 }

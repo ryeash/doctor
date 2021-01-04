@@ -17,6 +17,7 @@ import java.util.regex.Pattern;
  * Hours: h, hour, hours<br/>
  * Minutes: m, min, minute, minutes<br/>
  * Seconds: s, sec, second, seconds<br/>
+ * Milliseconds: ms, millis, millisecond, milliseconds<br/>
  * Microseconds: u, us, microsecond, microseconds<br/>
  * Nanoseconds: ns, nanosecond, nanoseconds<br/>
  * <p>

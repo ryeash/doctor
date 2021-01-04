@@ -7,6 +7,9 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+/**
+ * Internally used during endpoint annotation processing.
+ */
 public interface EndpointConfiguration {
     void initialize();
 

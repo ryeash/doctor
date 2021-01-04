@@ -37,7 +37,7 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
                     throw new IllegalArgumentException("cron or interval must be set for the @Scheduled annotation: " + ProcessorUtils.debugString(m));
                 }
                 if (!scheduled.interval().isEmpty() && !scheduled.cron().isEmpty()) {
-                    throw new IllegalArgumentException("can not set both cron or interval for the @Scheduled annotation: " + ProcessorUtils.debugString(m));
+                    throw new IllegalArgumentException("can not set both cron and interval for the @Scheduled annotation: " + ProcessorUtils.debugString(m));
                 }
                 if (!scheduled.interval().isEmpty()) {
                     processScheduled(context, providerDefinition, method, instanceRef, providerRegistryRef, m);

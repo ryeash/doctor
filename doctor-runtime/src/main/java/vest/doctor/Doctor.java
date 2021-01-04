@@ -88,6 +88,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
     private final List<AppLoader> loaders;
     private final ProviderIndex providerIndex;
     private final ConfigurationFacade configurationFacade;
+    private final ShutdownContainer shutdownContainer;
     private boolean closed = false;
 
     /**
@@ -101,6 +102,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         providerIndex.setProvider(new AdHocProvider<>(Doctor.class, this, null, Arrays.asList(Doctor.class, ProviderRegistry.class)));
         this.activeModules = activeModules;
         this.configurationFacade = configurationFacade;
+        this.shutdownContainer = new ShutdownContainer();
 
         this.loaders = new LinkedList<>();
         this.loaders.add(new BuiltInAppLoader());
@@ -198,6 +200,11 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
     @Override
     public ConfigurationFacade configuration() {
         return configurationFacade;
+    }
+
+    @Override
+    public ShutdownContainer shutdownContainer() {
+        return shutdownContainer;
     }
 
     @Override

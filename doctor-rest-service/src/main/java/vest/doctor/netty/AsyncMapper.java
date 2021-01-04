@@ -24,7 +24,7 @@ import java.util.Map;
  * Internally used to assist in asynchronous parsing of json objects with Jackson.
  */
 public class AsyncMapper<T> {
-    private static Logger log = LoggerFactory.getLogger(AsyncMapper.class);
+    private static final Logger log = LoggerFactory.getLogger(AsyncMapper.class);
 
     private final ObjectMapper mapper;
     private final JavaType type;
