@@ -47,6 +47,11 @@ public class CompositeExceptionHandler implements ExceptionHandler {
         return defaultWorkflow(request, error);
     }
 
+    @Override
+    public String toString() {
+        return "CompositeExceptionHandler" + handlers;
+    }
+
     private Response defaultWorkflow(Request request, Throwable error) {
         Objects.requireNonNull(error, "handle error was given a null error");
         log.warn("error during route execution; request uri: {}", request.uri(), error);

@@ -126,4 +126,9 @@ public class NettyLoader implements AppLoader {
         boolean debugRouting = cf.get("doctor.netty.http.debugRequestRouting", false, Boolean::valueOf);
         return conf;
     }
+
+    @Override
+    public int priority() {
+        return 10000;
+    }
 }

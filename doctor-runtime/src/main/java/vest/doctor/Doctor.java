@@ -1,5 +1,7 @@
 package vest.doctor;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import vest.doctor.event.ApplicationShutdown;
 import vest.doctor.event.ApplicationStarted;
 import vest.doctor.event.EventProducer;
@@ -15,6 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -22,6 +25,8 @@ import java.util.stream.Stream;
  * Initializes (and serves as) the {@link ProviderRegistry} for an application.
  */
 public class Doctor implements ProviderRegistry, AutoCloseable {
+
+    private static final Logger log = LoggerFactory.getLogger(Doctor.class);
 
     /**
      * Initialize the application with default configuration and no active modules.
@@ -98,11 +103,16 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
      * @param activeModules       the active modules
      */
     public Doctor(ConfigurationFacade configurationFacade, List<String> activeModules, AppLoader... additionalLoaders) {
+        log.debug("Doctor initializing...");
+        long start = System.currentTimeMillis();
         this.providerIndex = new ProviderIndex();
         providerIndex.setProvider(new AdHocProvider<>(Doctor.class, this, null, Arrays.asList(Doctor.class, ProviderRegistry.class)));
         this.activeModules = activeModules;
         this.configurationFacade = configurationFacade;
         this.shutdownContainer = new ShutdownContainer();
+
+        log.debug("Active modules: {}", this.activeModules);
+        log.debug("Configuration: {}", this.configurationFacade);
 
         this.loaders = new LinkedList<>();
         this.loaders.add(new BuiltInAppLoader());
@@ -113,6 +123,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
             loaders.addAll(Arrays.asList(additionalLoaders));
         }
         loaders.sort(Prioritized.COMPARATOR);
+        log.debug("Loaders (in order): {}", loaders.stream().map(l -> l + ":" + l.priority()).collect(Collectors.joining(", ")));
         for (AppLoader loader : loaders) {
             loader.preProcess(this);
         }
@@ -131,6 +142,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         if (configurationFacade.get("doctor.autoShutdown", true, Boolean::valueOf)) {
             Runtime.getRuntime().addShutdownHook(new Thread(this::close, "doctor-shutdown-" + this.hashCode()));
         }
+        log.info("Doctor initialized: {}ms", (System.currentTimeMillis() - start));
     }
 
     @Override

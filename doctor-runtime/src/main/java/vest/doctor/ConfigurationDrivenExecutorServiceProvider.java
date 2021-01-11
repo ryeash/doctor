@@ -140,8 +140,8 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
                 ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
                         minThreads,
                         maxThreads,
-                        Integer.MAX_VALUE,
-                        TimeUnit.DAYS,
+                        keepAliveSeconds,
+                        TimeUnit.SECONDS,
                         new LinkedBlockingQueue<>(),
                         threadFactory,
                         rejectedExecutionHandler);
@@ -150,6 +150,7 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
                 return Executors.unconfigurableExecutorService(threadPoolExecutor);
 
             case cached:
+                Executors.newCachedThreadPool();
                 ThreadPoolExecutor cached = new ThreadPoolExecutor(
                         minThreads,
                         maxThreads,

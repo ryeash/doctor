@@ -184,6 +184,20 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
         return new FacadeToProperties(this);
     }
 
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Sources (in order): ");
+        sb.append(sources);
+        sb.append("\nProperties:");
+        StreamSupport.stream(propertyNames().spliterator(), false)
+                .sorted()
+                .map(propertyName -> propertyName + '=' + get(propertyName))
+                .peek(l -> sb.append('\n'))
+                .forEach(sb::append);
+        return sb.toString();
+    }
+
     public static List<String> split(String str) {
         List<String> split = new ArrayList<>();
         int i = 0;
