@@ -43,9 +43,7 @@ public class NettyHttpTest {
                     response.headers().set("X-Filter", "true");
                     return response;
                 }))
-                .addFilter(Filter.before(request -> {
-                    request.headers().set("X-Before", true);
-                }))
+                .addFilter(Filter.before(request -> request.headers().set("X-Before", true)))
                 .addFilter(Filter.after(response -> {
                     response.headers().set("X-Filter2", new Date());
                     return response;
@@ -165,14 +163,12 @@ public class NettyHttpTest {
         long start = System.nanoTime();
         IntStream.range(0, 1000)
                 .parallel()
-                .forEach(i -> {
-                    req()
-                            .body(randomBytes())
-                            .post("/")
+                .forEach(i -> req()
+                        .body(randomBytes())
+                        .post("/")
 //                            .prettyPeek()
-                            .then()
-                            .statusCode(200);
-                });
+                        .then()
+                        .statusCode(200));
         System.out.println(TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + "ms");
     }
 
@@ -195,14 +191,9 @@ public class NettyHttpTest {
     }
 
     private byte[] uncompress(byte[] compressedData) {
-        ByteArrayInputStream bis = null;
-        ByteArrayOutputStream bos = null;
-        GZIPInputStream gzipIS = null;
-
-        try {
-            bis = new ByteArrayInputStream(compressedData);
-            bos = new ByteArrayOutputStream();
-            gzipIS = new GZIPInputStream(bis);
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(compressedData);
+             ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             GZIPInputStream gzipIS = new GZIPInputStream(bis)) {
 
             byte[] buffer = new byte[1024];
             int len;
@@ -212,14 +203,6 @@ public class NettyHttpTest {
             return bos.toByteArray();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
-        } finally {
-            try {
-                gzipIS.close();
-                bos.close();
-                bis.close();
-            } catch (Exception e) {
-                // ignored
-            }
         }
     }
 }

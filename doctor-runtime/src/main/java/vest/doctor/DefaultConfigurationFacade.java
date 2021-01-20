@@ -131,19 +131,6 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
         return spl(fullyQualifiedPropertyName, defaultValue, converter, LinkedHashSet::new);
     }
 
-    private <C extends Collection<T>, T> C spl(String fullyQualifiedPropertyName, C defaultValue, Function<String, T> converter, Supplier<C> collectionFactory) {
-        String value = get(fullyQualifiedPropertyName);
-        if (value == null) {
-            return defaultValue;
-        }
-        List<String> split = split(value);
-        return split.stream()
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(converter)
-                .collect(Collectors.toCollection(collectionFactory));
-    }
-
     @Override
     public String resolvePlaceholders(String value) {
         if (value == null || value.isEmpty()) {
@@ -196,6 +183,27 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
                 .peek(l -> sb.append('\n'))
                 .forEach(sb::append);
         return sb.toString();
+    }
+
+    public ConfigurationFacade copy() {
+        DefaultConfigurationFacade clone = new DefaultConfigurationFacade();
+        for (ConfigurationSource source : sources) {
+            clone.addSource(source);
+        }
+        return clone;
+    }
+
+    private <C extends Collection<T>, T> C spl(String fullyQualifiedPropertyName, C defaultValue, Function<String, T> converter, Supplier<C> collectionFactory) {
+        String value = get(fullyQualifiedPropertyName);
+        if (value == null) {
+            return defaultValue;
+        }
+        List<String> split = split(value);
+        return split.stream()
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(converter)
+                .collect(Collectors.toCollection(collectionFactory));
     }
 
     public static List<String> split(String str) {

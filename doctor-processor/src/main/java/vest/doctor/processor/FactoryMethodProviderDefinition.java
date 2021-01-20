@@ -39,11 +39,10 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
     public ClassBuilder getClassBuilder() {
         ClassBuilder classBuilder = super.getClassBuilder();
 
-        classBuilder.addMethod("public String toString()", b -> {
-            b.var("enclosing", factoryMethod.getEnclosingElement().getSimpleName())
-                    .var("method", factoryMethod.getSimpleName())
-                    .line("return \"FactoryProvider({enclosing}#{method}):\" + hashCode();");
-        });
+        classBuilder.addMethod("public String toString()", b ->
+                b.var("enclosing", factoryMethod.getEnclosingElement().getSimpleName())
+                        .var("method", factoryMethod.getSimpleName())
+                        .line("return \"FactoryProvider({enclosing}#{method}):\" + hashCode();"));
 
         classBuilder.addMethod(CodeLine.line("public void validateDependencies({} {})", ProviderRegistry.class, Constants.PROVIDER_REGISTRY), b -> {
             for (VariableElement parameter : factoryMethod.getParameters()) {

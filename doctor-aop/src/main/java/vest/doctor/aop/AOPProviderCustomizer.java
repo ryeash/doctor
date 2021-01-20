@@ -83,11 +83,12 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
                 .addImportClass(TypeInfo.class)
                 .addImportClass(typeElement.getQualifiedName().toString());
 
-        boolean isInterface = typeElement.getKind() == ElementKind.INTERFACE;
-        if (isInterface) {
+        if (typeElement.getKind() == ElementKind.INTERFACE) {
             classBuilder.addImplementsInterface(typeElement.getQualifiedName().toString());
-        } else {
+        } else if (canCreateExtension(typeElement)) {
             classBuilder.setExtendsClass(typeElement.getQualifiedName().toString());
+        } else {
+            throw new IllegalArgumentException("aspects can only be applied to interfaces and public non-final classes - invalid class: " + ProcessorUtils.debugString(typeElement));
         }
         classBuilder.addField("private final " + typeElement.getSimpleName() + " delegate");
         classBuilder.addField("private final " + ProviderRegistry.class.getSimpleName() + " beanProvider");
@@ -177,5 +178,11 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
                 .collect(Collectors.joining(", ", "(", ")"));
         sb.append(parameters).append(";");
         return sb.toString();
+    }
+
+    private static boolean canCreateExtension(TypeElement typeElement) {
+        Set<Modifier> modifiers = typeElement.getModifiers();
+        return modifiers.contains(Modifier.PUBLIC)
+                && !modifiers.contains(Modifier.FINAL);
     }
 }

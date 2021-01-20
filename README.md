@@ -134,7 +134,7 @@ public class AppConfig {
     @Primary
     @Named("primary")
     public DataSource primaryDataSource() {
-        return ...;
+        return ...
     }
 }
 ```

@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * Internally used to coordinate aspects and method invocations.
  */
-public class AspectCoordinator implements Around, Before, After {
+public class AspectCoordinator implements Before, Around, After {
     private final List<Before> befores = new LinkedList<>();
     private final List<Around> arounds = new LinkedList<>();
     private final List<After> afters = new LinkedList<>();

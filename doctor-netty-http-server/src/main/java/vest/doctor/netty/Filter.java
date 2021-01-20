@@ -19,7 +19,7 @@ public interface Filter extends Prioritized {
      * @param request  the request that was received
      * @param response the future response (will be completed by the selected {@link Handler}
      *                 in the {@link vest.doctor.netty.impl.Router})
-     * @return
+     * @return the response; possibly with new chained actions attached
      */
     CompletionStage<Response> filter(Request request, CompletionStage<Response> response);
 

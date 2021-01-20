@@ -53,17 +53,15 @@ public class NettyTest extends BaseDoctorTest {
                 .body(is("ok queryparam 42 42"));
     }
 
-//    @Test
-//    public void filters() {
-//        req().queryParam("number", 42)
-//                .queryParam("q", "queryparam")
-//                .get("/netty/hello")
-//                .prettyPeek()
-//                .then()
-//                .header("X-BEFORE-MATCH", is("true"))
-//                .header("X-BEFORE-ROUTE", is("true"))
-//                .header("X-AFTER-ROUTE", is("true"));
-//    }
+    @Test
+    public void filters() {
+        req().queryParam("number", 42)
+                .queryParam("q", "queryparam")
+                .get("/netty/hello")
+                .prettyPeek()
+                .then()
+                .header("X-AFTER-ROUTE", is("true"));
+    }
 
     @Test
     public void returnedBytes() {

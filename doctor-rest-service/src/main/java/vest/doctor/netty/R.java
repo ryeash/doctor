@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * A utility class for building a response body that additionally needs to set status code or header values.
+ * A utility class for building an endpoint response.
  */
 public class R {
 

@@ -31,7 +31,6 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
     private final Set<String> processedPersistenceUnits = new HashSet<>();
 
     private ClassBuilder jpaAppLoader;
-    private MethodBuilder preProcess;
 
     @Override
     public void process(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
@@ -117,7 +116,5 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
                 .addImportClass(LinkedHashMap.class)
                 .addImportClass("org.slf4j.Logger")
                 .addImportClass("org.slf4j.LoggerFactory");
-
-        preProcess = new MethodBuilder("public void preProcess({} {})", ProviderRegistry.class, PROVIDER_REGISTRY);
     }
 }

@@ -2,7 +2,7 @@ package demo.app;
 
 public class TCCustomQualifier {
 
-    private String designation;
+    private final String designation;
 
     public TCCustomQualifier(String designation) {
         this.designation = designation;

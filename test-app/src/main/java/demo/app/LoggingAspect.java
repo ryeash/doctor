@@ -12,7 +12,7 @@ import java.util.Arrays;
 
 @Singleton
 public class LoggingAspect implements Before, After {
-    private static Logger log = LoggerFactory.getLogger(LoggingAspect.class);
+    private static final Logger log = LoggerFactory.getLogger(LoggingAspect.class);
 
     @Override
     public void before(MethodInvocation methodInvocation) {

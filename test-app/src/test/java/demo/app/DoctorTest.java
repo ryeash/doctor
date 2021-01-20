@@ -51,30 +51,12 @@ public class DoctorTest extends BaseDoctorTest {
         assertTrue(TCEager.created);
     }
 
-    @Test(groups = "test")
+    @Test
     public void event() throws InterruptedException {
         TCEvent event = doctor.getInstance(TCEvent.class);
         assertTrue(event.eventListened);
         Thread.sleep(5);
         assertEquals(event.messageReceived, "test");
-
-//        // ad-hoc event consumer
-//        AtomicBoolean messageReceived = new AtomicBoolean(false);
-//        EventManager eventManager = doctor.getInstance(EventManager.class);
-//        eventManager.register(new EventConsumer() {
-//            @Override
-//            public boolean isCompatible(Object event) {
-//                return true;
-//            }
-//
-//            @Override
-//            public void accept(Object event) {
-//                messageReceived.set(true);
-//            }
-//        });
-//        eventManager.publish("anything");
-//        assertTrue(messageReceived.get());
-
     }
 
     @Test
