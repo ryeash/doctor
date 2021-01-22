@@ -1,4 +1,4 @@
-package vest.doctor.aop;
+package vest.doctor.processor;
 
 import doctor.processor.ProcessorUtils;
 import doctor.processor.UniqueMethod;
@@ -10,6 +10,14 @@ import vest.doctor.ProviderCustomizationPoint;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.TypeInfo;
+import vest.doctor.aop.AspectCoordinator;
+import vest.doctor.aop.AspectException;
+import vest.doctor.aop.AspectWrappingProvider;
+import vest.doctor.aop.Aspects;
+import vest.doctor.aop.MethodInvocation;
+import vest.doctor.aop.MethodInvocationImpl;
+import vest.doctor.aop.MethodMetadata;
+import vest.doctor.aop.MutableMethodArgument;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
 

@@ -16,7 +16,6 @@
         <module>doctor-netty-http-server</module>
         <module>doctor-rest-service</module>
         <module>doctor-jaxrs</module>
-        <module>doctor-aop</module>
         <module>doctor-jpa</module>
         <module>test-app</module>
     </modules>

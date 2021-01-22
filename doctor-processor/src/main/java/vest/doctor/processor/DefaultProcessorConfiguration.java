@@ -26,6 +26,7 @@ public class DefaultProcessorConfiguration implements ProcessorConfiguration {
                 new EventConsumersWriter(),
                 new ScheduledMethodCustomizer(),
                 new PropertyParameterCustomizer(),
+                new AOPProviderCustomizer(),
                 new ProviderParameterLookupCustomizer(),
                 new ShutdownCustomizationPoint(),
                 new StandardConversionGenerator(),

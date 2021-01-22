@@ -1,4 +1,4 @@
-package vest.doctor.aop;
+package vest.doctor.processor;
 
 import doctor.processor.ClassValueVisitor;
 import doctor.processor.Constants;
@@ -6,6 +6,9 @@ import doctor.processor.GenericInfo;
 import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ProviderDefinition;
+import vest.doctor.aop.Aspect;
+import vest.doctor.aop.AspectCoordinator;
+import vest.doctor.aop.Aspects;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
 

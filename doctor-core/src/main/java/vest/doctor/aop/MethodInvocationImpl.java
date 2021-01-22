@@ -47,18 +47,14 @@ public class MethodInvocationImpl implements MethodInvocation {
         return argumentList.size();
     }
 
-    public MutableMethodArgument getArgument(int i) {
-        return argumentList.get(i);
-    }
-
     @Override
     public <T> T getArgumentValue(int i) {
-        return getArgument(i).getValue();
+        return argumentList.get(i).getValue();
     }
 
     @Override
     public void setArgumentValue(int i, Object o) {
-        getArgument(i).setValue(o);
+        argumentList.get(i).setValue(o);
     }
 
     @Override
