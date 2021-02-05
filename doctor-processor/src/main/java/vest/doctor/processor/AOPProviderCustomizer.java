@@ -11,7 +11,6 @@ import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.TypeInfo;
 import vest.doctor.aop.AspectCoordinator;
-import vest.doctor.aop.AspectException;
 import vest.doctor.aop.AspectWrappingProvider;
 import vest.doctor.aop.Aspects;
 import vest.doctor.aop.MethodInvocation;
@@ -86,7 +85,6 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
                 .addImportClass(Collections.class)
                 .addImportClass(List.class)
                 .addImportClass(Callable.class)
-                .addImportClass(AspectException.class)
                 .addImportClass(AspectCoordinator.class)
                 .addImportClass(TypeInfo.class)
                 .addImportClass(typeElement.getQualifiedName().toString());

@@ -294,7 +294,7 @@ AOP is supported for any injected type that is either an interface or a public, 
 First, create an aspect class:
 
 ```java
-@Singleton // aspects must have a scope to be eligible for use
+@Prototype // aspects must have a scope to be eligible for use
 public class TimingAspect implements Around {
     @Override
     public void execute(MethodInvocation methodInvocation) {
@@ -324,7 +324,13 @@ Thing thing = doctor.getInstance(Thing.class);
 thing.doSomething() // <- method will be both timed and observed
 ```
 
-### Aspect Types
+#### A note on aspect scoping
+In the previous example, the TimingAspect class is marked as @Prototype, but each instance
+of the aspected class will call Provider.get() just once. So for the lifetime of the
+aspected Thing class, only one instance of the TimingAspect will be created and used.
+
+
+### Aspect Stages
 
 There are three stages of aspect injection: before, around, and after; each aspect can implement any or all of them.
 
