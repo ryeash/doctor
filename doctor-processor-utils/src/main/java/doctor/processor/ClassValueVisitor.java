@@ -11,16 +11,23 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * {@link AnnotationValueVisitor} that extracts the class names from an annotation value.
+ */
 public final class ClassValueVisitor implements AnnotationValueVisitor<List<String>, Void> {
+
+    public static List<String> getValues(AnnotationValue val) {
+        return val.accept(new ClassValueVisitor(), null);
+    }
 
     @Override
     public List<String> visit(AnnotationValue av, Void aVoid) {
-        return null;
+        return getValues(av);
     }
 
     @Override
     public List<String> visit(AnnotationValue av) {
-        return null;
+        return getValues(av);
     }
 
     @Override
@@ -86,7 +93,7 @@ public final class ClassValueVisitor implements AnnotationValueVisitor<List<Stri
     @Override
     public List<String> visitArray(List<? extends AnnotationValue> vals, Void aVoid) {
         return vals.stream()
-                .map(v -> v.accept(new ClassValueVisitor(), null))
+                .map(ClassValueVisitor::getValues)
                 .filter(Objects::nonNull)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());

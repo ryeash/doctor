@@ -105,14 +105,11 @@ public final class PathSpec implements Comparable<PathSpec> {
     }
 
     private static int charSortValue(int c) {
-        switch (c) {
-            case '{':
-                return 10000;
-            case '*':
-                return 100000;
-            default:
-                // default to sorting alphabetically
-                return c;
-        }
+        return switch (c) {
+            case '{' -> 10000;
+            case '*' -> 100000;
+            // default to sorting alphabetically
+            default -> c;
+        };
     }
 }

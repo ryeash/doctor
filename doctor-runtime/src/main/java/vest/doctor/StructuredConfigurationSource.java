@@ -93,18 +93,13 @@ public class StructuredConfigurationSource implements ConfigurationSource {
             String previous = null;
             while (tokenizer.nextToken() != TT_EOF) {
                 switch (tokenizer.ttype) {
-                    case '{':
-                        stack.addLast(previous);
-                        break;
-                    case '=':
-                    case ':':
+                    case '{' -> stack.addLast(previous);
+                    case '=', ':' -> {
                         stack.addLast(previous);
                         map.put(String.join(levelDelimiter, stack), readValue(tokenizer));
                         stack.removeLast();
-                        break;
-                    case '}':
-                        stack.removeLast();
-                        break;
+                    }
+                    case '}' -> stack.removeLast();
                 }
                 previous = tokenizer.sval;
             }

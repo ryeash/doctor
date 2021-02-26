@@ -120,7 +120,7 @@ public class Args implements Iterable<String> {
     }
 
     /**
-     * Check if the flag was set, for example: args like "-Aefl", flag('e') =&gt; true.
+     * Check if the flag was set, for example: args like "-Aefl", flag('e') == true.
      *
      * @param c the flag to search for
      * @return true if the flag is present in the arguments, else false
@@ -130,7 +130,7 @@ public class Args implements Iterable<String> {
     }
 
     /**
-     * Check if the flag was set, for example: args like "--extra", flag("extra") =&gt; true.
+     * Check if the flag was set, for example: args like "--extra", flag("extra") == true.
      *
      * @param flag the flag to search for
      * @return true if the flag is present in the arguments, else false
@@ -178,7 +178,7 @@ public class Args implements Iterable<String> {
 
     /**
      * Get the value of an option;
-     * e.g. args like "-e dev", option('e') =&gt; "dev"
+     * e.g. args like "-e dev", option('e') == "dev"
      *
      * @param c the short name for the option
      * @return the value of the option, or null if not set
@@ -189,7 +189,7 @@ public class Args implements Iterable<String> {
 
     /**
      * Get the value of an option;
-     * e.g. args like "--environment dev", option("environment") =&gt; "dev"
+     * e.g. args like "--environment dev", option("environment") == "dev"
      *
      * @param name the name of the option
      * @return the value of the option, or null if not set

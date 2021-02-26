@@ -293,19 +293,13 @@ public class Cron {
     }
 
     private static String translateMacro(String expression) {
-        switch (expression.trim()) {
-            case "@yearly":
-                return "0 0 0 1 JAN *";
-            case "@monthly":
-                return "0 0 0 1 * *";
-            case "@weekly":
-                return "0 0 0 * * SUN";
-            case "@hourly":
-                return "0 0 * * * *";
-            case "@midnight":
-                return "0 0 0 * * *";
-            default:
-                return expression;
-        }
+        return switch (expression.trim()) {
+            case "@yearly" -> "0 0 0 1 JAN *";
+            case "@monthly" -> "0 0 0 1 * *";
+            case "@weekly" -> "0 0 0 * * SUN";
+            case "@hourly" -> "0 0 * * * *";
+            case "@midnight" -> "0 0 0 * * *";
+            default -> expression;
+        };
     }
 }

@@ -1,6 +1,7 @@
 package vest.doctor.processor;
 
 import doctor.processor.ProcessorUtils;
+import jakarta.inject.Inject;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.Async;
 import vest.doctor.InjectionException;
@@ -8,7 +9,6 @@ import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.codegen.MethodBuilder;
 
-import javax.inject.Inject;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.ElementFilter;
@@ -27,6 +27,7 @@ public class InjectMethodsCustomizer implements NewInstanceCustomizer {
         List<Class<? extends Annotation>> temp = new ArrayList<>();
         temp.add(Inject.class);
         ProcessorUtils.<Annotation>ifClassExists("javax.annotation.PostConstruct", temp::add);
+        ProcessorUtils.<Annotation>ifClassExists("jakarta.annotation.PostConstruct", temp::add);
         targetAnnotations = Collections.unmodifiableList(temp);
     }
 

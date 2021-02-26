@@ -1,12 +1,11 @@
 package demo.app;
 
+import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vest.doctor.aop.Around;
 import vest.doctor.aop.AspectException;
 import vest.doctor.aop.MethodInvocation;
-
-import javax.inject.Singleton;
 
 @Singleton
 public class TimingAspect implements Around {

@@ -1,5 +1,7 @@
 package demo.app;
 
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import org.testng.Assert;
 import vest.doctor.Cached;
 import vest.doctor.Factory;
@@ -10,8 +12,6 @@ import vest.doctor.SkipInjection;
 import vest.doctor.ThreadLocal;
 import vest.doctor.aop.Aspects;
 
-import javax.inject.Named;
-import javax.inject.Singleton;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;

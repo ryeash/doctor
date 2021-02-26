@@ -9,7 +9,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marks a method to be injected asynchronously during processing. Applies to {@link javax.inject.Inject}
+ * Marks a method to be injected asynchronously during processing. Applies to {@link jakarta.inject.Inject}
  * and {@link EventListener} methods.
  */
 @Documented

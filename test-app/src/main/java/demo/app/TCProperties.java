@@ -1,11 +1,11 @@
 package demo.app;
 
 import demo.app.dao.DBProps;
+import jakarta.inject.Inject;
 import org.testng.Assert;
 import vest.doctor.Property;
 import vest.doctor.Prototype;
 
-import javax.inject.Inject;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collection;

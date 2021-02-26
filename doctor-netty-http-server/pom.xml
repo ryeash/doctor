@@ -12,7 +12,7 @@
     <artifactId>doctor-netty-http-server</artifactId>
 
     <properties>
-        <netty.version>4.1.50.Final</netty.version>
+        <netty.version>4.1.59.Final</netty.version>
     </properties>
 
     <dependencies>
@@ -46,13 +46,11 @@
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-            <version>7.1.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
-            <version>4.3.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

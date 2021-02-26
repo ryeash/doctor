@@ -1,9 +1,8 @@
 package demo.app;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import vest.doctor.Async;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 @Singleton
 public class TCInjectedMethodsC {

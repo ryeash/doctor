@@ -1,11 +1,10 @@
 package vest.doctor;
 
+import jakarta.inject.Provider;
 import vest.doctor.codegen.MethodBuilder;
 
-import javax.inject.Provider;
-
 /**
- * Used to customize the instances created by providers. For example, can be used to call methods marked with {@link javax.inject.Inject}.
+ * Used to customize the instances created by providers. For example, can be used to call methods marked with {@link jakarta.inject.Inject}.
  */
 public interface NewInstanceCustomizer extends CustomizationPoint, Prioritized {
 

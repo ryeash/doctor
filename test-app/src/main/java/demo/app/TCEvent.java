@@ -1,5 +1,7 @@
 package demo.app;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -9,9 +11,6 @@ import vest.doctor.event.EventListener;
 import vest.doctor.event.EventProducer;
 import vest.doctor.event.ServiceStarted;
 import vest.doctor.event.ServiceStopped;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 @Singleton
 public class TCEvent {

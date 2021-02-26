@@ -70,42 +70,15 @@ public class Interval {
         if (unit == null) {
             return TimeUnit.MILLISECONDS;
         }
-        switch (unit.trim().toLowerCase()) {
-            case "d":
-            case "day":
-            case "days":
-                return TimeUnit.DAYS;
-            case "h":
-            case "hour":
-            case "hours":
-                return TimeUnit.HOURS;
-            case "m":
-            case "min":
-            case "minute":
-            case "minutes":
-                return TimeUnit.MINUTES;
-            case "s":
-            case "sec":
-            case "second":
-            case "seconds":
-                return TimeUnit.SECONDS;
-            case "ms":
-            case "millis":
-            case "millisecond":
-            case "milliseconds":
-            case "":
-                return TimeUnit.MILLISECONDS;
-            case "u":
-            case "us":
-            case "microsecond":
-            case "microseconds":
-                return TimeUnit.MICROSECONDS;
-            case "ns":
-            case "nanosecond":
-            case "nanoseconds":
-                return TimeUnit.NANOSECONDS;
-            default:
-                throw new IllegalArgumentException("unknown duration unit: " + unit);
-        }
+        return switch (unit.trim().toLowerCase()) {
+            case "d", "day", "days" -> TimeUnit.DAYS;
+            case "h", "hour", "hours" -> TimeUnit.HOURS;
+            case "m", "min", "minute", "minutes" -> TimeUnit.MINUTES;
+            case "s", "sec", "second", "seconds" -> TimeUnit.SECONDS;
+            case "ms", "millis", "millisecond", "milliseconds", "" -> TimeUnit.MILLISECONDS;
+            case "u", "us", "microsecond", "microseconds" -> TimeUnit.MICROSECONDS;
+            case "ns", "nanosecond", "nanoseconds" -> TimeUnit.NANOSECONDS;
+            default -> throw new IllegalArgumentException("unknown duration unit: " + unit);
+        };
     }
 }

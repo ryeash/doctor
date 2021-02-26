@@ -1,6 +1,7 @@
 package vest.doctor;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
+
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.List;

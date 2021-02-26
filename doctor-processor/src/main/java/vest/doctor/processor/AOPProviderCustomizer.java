@@ -1,7 +1,6 @@
 package vest.doctor.processor;
 
 import doctor.processor.ProcessorUtils;
-import doctor.processor.UniqueMethod;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.CustomizationPoint;
 import vest.doctor.Factory;
@@ -103,14 +102,10 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
         constructor.line("this.delegate = delegate;");
         constructor.line("this.beanProvider = beanProvider;");
 
-        ProcessorUtils.allMethods(context, providerDefinition.providedType())
-                .stream()
-                .map(UniqueMethod::new)
-                .distinct()
-                .map(UniqueMethod::unwrap)
+        ProcessorUtils.allUniqueMethods(context, providerDefinition.providedType())
                 .forEach(method -> {
                     Set<Modifier> modifiers = method.getModifiers();
-                    // nothing we can do for final, private, and static methods
+                    // nothing we can do for final, private, or static methods
                     if (modifiers.contains(Modifier.FINAL) || modifiers.contains(Modifier.PRIVATE) || modifiers.contains(Modifier.STATIC)) {
                         return;
                     }

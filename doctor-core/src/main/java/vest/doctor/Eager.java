@@ -1,6 +1,7 @@
 package vest.doctor;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

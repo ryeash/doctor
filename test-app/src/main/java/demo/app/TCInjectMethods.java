@@ -1,9 +1,9 @@
 package demo.app;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import org.testng.Assert;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.io.InputStream;
 
 @Singleton

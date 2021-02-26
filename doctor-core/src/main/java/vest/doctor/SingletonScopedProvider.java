@@ -1,7 +1,7 @@
 package vest.doctor;
 
 /**
- * Provider wrapper that supports the {@link javax.inject.Singleton} scope.
+ * Provider wrapper that supports the {@link jakarta.inject.Singleton} scope.
  */
 public class SingletonScopedProvider<T> extends DoctorProviderWrapper<T> {
 

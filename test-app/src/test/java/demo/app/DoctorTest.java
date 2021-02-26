@@ -2,7 +2,7 @@ package demo.app;
 
 import demo.app.dao.DAO;
 import demo.app.dao.User;
-import io.restassured.RestAssured;
+import jakarta.inject.Provider;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.Test;
 import vest.doctor.ConfigurationFacade;
@@ -10,7 +10,6 @@ import vest.doctor.Doctor;
 import vest.doctor.event.EventProducer;
 import vest.doctor.event.ReloadConfiguration;
 
-import javax.inject.Provider;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
@@ -21,8 +20,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import static org.hamcrest.Matchers.is;
 
 public class DoctorTest extends BaseDoctorTest {
 
@@ -183,30 +180,6 @@ public class DoctorTest extends BaseDoctorTest {
         TCInjectedMethodsM instance1 = doctor.getInstance(TCInjectedMethodsM.class);
         assertNotNull(instance1.coffeeMaker);
         assertTrue(instance1.injectedEmpty);
-    }
-
-    @Test
-    public void restRequest() {
-        RestAssured.baseURI = "http://localhost:8080/";
-        RestAssured.given()
-                .accept("application/json")
-                .contentType("application/json")
-                .get("/rest/goodbye")
-                .then()
-                .statusCode(200)
-                .body("message", is("goodbye"))
-                .header("X-Before", is("true"))
-                .header("X-After", is("true"));
-
-        RestAssured.given()
-                .accept("application/json")
-                .contentType("application/json")
-                .get("/rest/admin/ok")
-                .then()
-                .statusCode(200)
-                .body("message", is("ok"))
-                .header("X-Before", is("true"))
-                .header("X-After", is("true"));
     }
 
     @Test

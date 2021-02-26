@@ -1,9 +1,8 @@
 package demo.app;
 
+import jakarta.inject.Singleton;
 import vest.doctor.aop.After;
 import vest.doctor.aop.MethodInvocation;
-
-import javax.inject.Singleton;
 
 @Singleton
 public class StringModificationAspect implements After {

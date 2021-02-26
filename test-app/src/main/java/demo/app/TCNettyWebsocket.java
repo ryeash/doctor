@@ -3,10 +3,10 @@ package demo.app;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import jakarta.inject.Singleton;
 import vest.doctor.netty.Path;
 import vest.doctor.netty.impl.AbstractWebsocket;
 
-import javax.inject.Singleton;
 import java.nio.charset.StandardCharsets;
 
 @Singleton

@@ -1,13 +1,13 @@
 package doctor.processor;
 
+import jakarta.inject.Named;
+import jakarta.inject.Provider;
+import jakarta.inject.Qualifier;
+import jakarta.inject.Scope;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDependency;
 
-import javax.inject.Named;
-import javax.inject.Provider;
-import javax.inject.Qualifier;
-import javax.inject.Scope;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
@@ -128,29 +128,14 @@ public class ProcessorUtils {
         for (int i = 0; i < str.length(); i++) {
             char c = str.charAt(i);
             switch (c) {
-                case '\"':
-                    sb.append("\\\"");
-                    break;
-                case '\b':
-                    sb.append("\\b");
-                    break;
-                case '\n':
-                    sb.append("\\n");
-                    break;
-                case '\r':
-                    sb.append("\\r");
-                    break;
-                case '\f':
-                    sb.append("\\f");
-                    break;
-                case '\t':
-                    sb.append("\\t");
-                    break;
-                case '\\':
-                    sb.append("\\\\");
-                    break;
-                default:
-                    sb.append(c);
+                case '\"' -> sb.append("\\\"");
+                case '\b' -> sb.append("\\b");
+                case '\n' -> sb.append("\\n");
+                case '\r' -> sb.append("\\r");
+                case '\f' -> sb.append("\\f");
+                case '\t' -> sb.append("\\t");
+                case '\\' -> sb.append("\\\\");
+                default -> sb.append(c);
             }
         }
         return sb.toString();
@@ -191,6 +176,15 @@ public class ProcessorUtils {
         return ElementFilter.methodsIn(context.processingEnvironment().getElementUtils().getAllMembers(type))
                 .stream()
                 .filter(method -> !method.getEnclosingElement().asType().toString().equals(Object.class.getCanonicalName()))
+                .collect(Collectors.toList());
+    }
+
+    public static List<ExecutableElement> allUniqueMethods(AnnotationProcessorContext context, TypeElement type) {
+        return allMethods(context, type)
+                .stream()
+                .map(UniqueMethod::new)
+                .distinct()
+                .map(UniqueMethod::unwrap)
                 .collect(Collectors.toList());
     }
 
@@ -241,11 +235,15 @@ public class ProcessorUtils {
     }
 
     public static String getProviderCode(ProviderDependency providerDependency) {
-        return Constants.PROVIDER_REGISTRY + ".getProvider(" + providerDependency.type() + ".class, " + providerDependency.qualifier() + ")";
+        return getProviderCode(providerDependency.type().toString(), providerDependency.qualifier());
     }
 
     public static String getProviderCode(AnnotationProcessorContext context, TypeElement injectableType) {
-        return Constants.PROVIDER_REGISTRY + ".getProvider(" + injectableType.getQualifiedName() + ".class" + ", " + getQualifier(context, injectableType) + ")";
+        return getProviderCode(injectableType.getQualifiedName().toString(), getQualifier(context, injectableType));
+    }
+
+    public static String getProviderCode(String type, String qualifier) {
+        return Constants.PROVIDER_REGISTRY + ".getProvider(" + type + ".class" + ", " + qualifier + ")";
     }
 
     public static String uniqueHash() {
@@ -259,10 +257,16 @@ public class ProcessorUtils {
     }
 
     public static <T> void ifClassExists(String fullyQualifiedClassName, Consumer<Class<? extends T>> action) {
+        ifClassesExists(Collections.singletonList(fullyQualifiedClassName), action);
+    }
+
+    public static <T> void ifClassesExists(Collection<String> fullyQualifiedClassNames, Consumer<Class<? extends T>> action) {
         try {
-            @SuppressWarnings("unchecked")
-            Class<? extends T> c = (Class<? extends T>) Class.forName(fullyQualifiedClassName);
-            action.accept(c);
+            for (String fullyQualifiedClassName : fullyQualifiedClassNames) {
+                @SuppressWarnings("unchecked")
+                Class<? extends T> c = (Class<? extends T>) Class.forName(fullyQualifiedClassName);
+                action.accept(c);
+            }
         } catch (ClassNotFoundException e) {
             // ignored
         }
@@ -370,26 +374,17 @@ public class ProcessorUtils {
         if (!mirror.getKind().isPrimitive()) {
             throw new IllegalArgumentException("expected a primitive type");
         }
-        switch (mirror.getKind()) {
-            case BOOLEAN:
-                return Boolean.class.getCanonicalName() + ".TYPE";
-            case BYTE:
-                return Byte.class.getCanonicalName() + ".TYPE";
-            case SHORT:
-                return Short.class.getCanonicalName() + ".TYPE";
-            case INT:
-                return Integer.class.getCanonicalName() + ".TYPE";
-            case LONG:
-                return Long.class.getCanonicalName() + ".TYPE";
-            case CHAR:
-                return Character.class.getCanonicalName() + ".TYPE";
-            case FLOAT:
-                return Float.class.getCanonicalName() + ".TYPE";
-            case DOUBLE:
-                return Double.class.getCanonicalName() + ".TYPE";
-            default:
-                throw new IllegalArgumentException("unhandled primitive type: " + mirror);
-        }
+        return switch (mirror.getKind()) {
+            case BOOLEAN -> Boolean.class.getCanonicalName() + ".TYPE";
+            case BYTE -> Byte.class.getCanonicalName() + ".TYPE";
+            case SHORT -> Short.class.getCanonicalName() + ".TYPE";
+            case INT -> Integer.class.getCanonicalName() + ".TYPE";
+            case LONG -> Long.class.getCanonicalName() + ".TYPE";
+            case CHAR -> Character.class.getCanonicalName() + ".TYPE";
+            case FLOAT -> Float.class.getCanonicalName() + ".TYPE";
+            case DOUBLE -> Double.class.getCanonicalName() + ".TYPE";
+            default -> throw new IllegalArgumentException("unhandled primitive type: " + mirror);
+        };
     }
 
     private static TypeMirror rawClass(TypeMirror mirror) {

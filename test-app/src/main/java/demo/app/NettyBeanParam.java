@@ -1,10 +1,10 @@
 package demo.app;
 
+import jakarta.inject.Inject;
 import org.testng.Assert;
 import vest.doctor.netty.QueryParam;
 import vest.doctor.netty.Request;
 
-import javax.inject.Inject;
 import java.util.Optional;
 
 public class NettyBeanParam<T> {

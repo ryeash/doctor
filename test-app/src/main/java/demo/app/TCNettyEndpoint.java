@@ -2,6 +2,8 @@ package demo.app;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -18,8 +20,6 @@ import vest.doctor.netty.QueryParam;
 import vest.doctor.netty.R;
 import vest.doctor.netty.Request;
 
-import javax.inject.Named;
-import javax.inject.Singleton;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.List;

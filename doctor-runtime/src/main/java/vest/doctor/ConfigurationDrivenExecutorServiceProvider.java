@@ -1,6 +1,7 @@
 package vest.doctor;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
+
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.List;
@@ -60,20 +61,11 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
         } else {
             this.type = configurationFacade.get(propertyPrefix + ".type", ThreadPoolType.fixed, ThreadPoolType::valueOf);
         }
-        switch (type) {
-            case cached:
-            case fixed:
-                this.providedTypes = Arrays.asList(Executor.class, ExecutorService.class);
-                break;
-            case scheduled:
-                this.providedTypes = Arrays.asList(Executor.class, ExecutorService.class, ScheduledExecutorService.class);
-                break;
-            case forkjoin:
-                this.providedTypes = Arrays.asList(Executor.class, ExecutorService.class, ForkJoinPool.class);
-                break;
-            default:
-                throw new IllegalArgumentException("unknown executor service type: " + type);
-        }
+        this.providedTypes = switch (type) {
+            case cached, fixed -> Arrays.asList(Executor.class, ExecutorService.class);
+            case scheduled -> Arrays.asList(Executor.class, ExecutorService.class, ScheduledExecutorService.class);
+            case forkjoin -> Arrays.asList(Executor.class, ExecutorService.class, ForkJoinPool.class);
+        };
 
         minThreads = configurationFacade.get(propertyPrefix + ".minThreads", DEFAULT_MIN_THREADS, Integer::valueOf);
         maxThreads = configurationFacade.get(propertyPrefix + ".maxThreads", DEFAULT_MAX_THREADS, Integer::valueOf);
@@ -94,19 +86,13 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
 
         this.rejectedExecutionHandler = providerRegistry.getProviderOpt(RejectedExecutionHandler.class, rejectedExecutionHandlerQualifier)
                 .map(DoctorProvider::get)
-                .orElseGet(() -> {
-                    switch (RejectedExecutionType.valueOrDefault(rejectedExecutionHandlerQualifier)) {
-                        case discard:
-                            return new ThreadPoolExecutor.DiscardPolicy();
-                        case discardOldest:
-                            return new ThreadPoolExecutor.DiscardOldestPolicy();
-                        case callerRuns:
-                            return new ThreadPoolExecutor.CallerRunsPolicy();
-                        case abort:
-                        default:
-                            return new ThreadPoolExecutor.AbortPolicy();
-                    }
-                });
+                .orElseGet(() ->
+                        switch (RejectedExecutionType.valueOrDefault(rejectedExecutionHandlerQualifier)) {
+                            case discard -> new ThreadPoolExecutor.DiscardPolicy();
+                            case discardOldest -> new ThreadPoolExecutor.DiscardOldestPolicy();
+                            case callerRuns -> new ThreadPoolExecutor.CallerRunsPolicy();
+                            default -> new ThreadPoolExecutor.AbortPolicy();
+                        });
     }
 
     @Override

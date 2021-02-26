@@ -3,6 +3,7 @@ package vest.doctor.netty;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
+import jakarta.inject.Provider;
 import vest.doctor.AdHocProvider;
 import vest.doctor.AppLoader;
 import vest.doctor.ConfigurationFacade;
@@ -13,7 +14,6 @@ import vest.doctor.event.ServiceStopped;
 import vest.doctor.netty.impl.CompositeExceptionHandler;
 import vest.doctor.netty.impl.Router;
 
-import javax.inject.Provider;
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.List;

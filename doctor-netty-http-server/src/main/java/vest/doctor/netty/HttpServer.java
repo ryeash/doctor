@@ -87,7 +87,7 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
                 .option(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator())
                 .option(ChannelOption.SO_BACKLOG, config.getSocketBacklog())
                 .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, WriteBufferWaterMark.DEFAULT)
-                .childHandler(new NettyChannelInit(this));
+                .childHandler(new NettyChannelInit(this, config));
 
         this.serverChannels = new LinkedList<>();
         for (InetSocketAddress inetSocketAddress : config.getBindAddresses()) {
@@ -259,9 +259,11 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
     private final class NettyChannelInit extends ChannelInitializer<SocketChannel> {
 
         private final HttpServer server;
+        private final NettyConfiguration config;
 
-        private NettyChannelInit(HttpServer server) {
+        private NettyChannelInit(HttpServer server, NettyConfiguration config) {
             this.server = server;
+            this.config = config;
         }
 
         @Override

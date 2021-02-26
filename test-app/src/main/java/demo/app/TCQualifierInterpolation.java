@@ -1,8 +1,7 @@
 package demo.app;
 
+import jakarta.inject.Named;
 import vest.doctor.Prototype;
-
-import javax.inject.Named;
 
 @Prototype
 @Named("name-${qualifierInterpolation}")

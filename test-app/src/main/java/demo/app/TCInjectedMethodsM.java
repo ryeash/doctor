@@ -1,8 +1,7 @@
 package demo.app;
 
+import jakarta.inject.Inject;
 import vest.doctor.ThreadLocal;
-
-import javax.inject.Inject;
 
 @ThreadLocal
 public class TCInjectedMethodsM {

@@ -43,7 +43,10 @@ public class NettyHttpTest {
                     response.headers().set("X-Filter", "true");
                     return response;
                 }))
-                .addFilter(Filter.before(request -> request.headers().set("X-Before", true)))
+                .addFilter(Filter.before(request -> {
+                    request.attribute(Router.PATH_OVERRIDE, request.path().toLowerCase());
+                    request.headers().set("X-Before", true);
+                }))
                 .addFilter(Filter.after(response -> {
                     response.headers().set("X-Filter2", new Date());
                     return response;

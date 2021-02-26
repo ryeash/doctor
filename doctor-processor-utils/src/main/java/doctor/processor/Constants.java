@@ -1,5 +1,7 @@
 package doctor.processor;
 
+import jakarta.inject.Named;
+
 /**
  * Constants used during class generation.
  */
@@ -16,7 +18,7 @@ public final class Constants {
     public static final String SHUTDOWN_CONTAINER_NAME = "shutdownContainer";
 
     /**
-     * The name for the default method in annotations; e.g. {@link javax.inject.Named}.
+     * The name for the default method in annotations; e.g. {@link Named#value()}.
      */
     public static final String ANNOTATION_VALUE = "value";
 

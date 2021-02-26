@@ -2,6 +2,7 @@ package vest.doctor.processor;
 
 import doctor.processor.Constants;
 import doctor.processor.ProcessorUtils;
+import jakarta.inject.Provider;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.AppLoader;
 import vest.doctor.Async;
@@ -14,7 +15,6 @@ import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.EventListener;
 
-import javax.inject.Provider;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -52,7 +52,7 @@ public class EventConsumersWriter implements ProviderDefinitionListener {
         String container = ProcessorUtils.typeWithoutParameters(providerDefinition.providedType().asType());
         events.addImportClass(container);
         String instanceName = "prov" + context.nextId();
-        publish.line("Provider<{}> {} = {}.getProvider({}.class, {});", container, instanceName, Constants.PROVIDER_REGISTRY, container, providerDefinition.qualifier());
+        publish.line("Provider<{}> {} = {};", container, instanceName, ProcessorUtils.getProviderCode(providerDefinition));
         for (ExecutableElement listener : listeners) {
             VariableElement message = listener.getParameters().get(0);
             TypeElement messageType = context.toTypeElement(message.asType());

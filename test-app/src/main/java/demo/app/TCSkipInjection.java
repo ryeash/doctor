@@ -1,6 +1,6 @@
 package demo.app;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 public class TCSkipInjection {
     public boolean injected = false;

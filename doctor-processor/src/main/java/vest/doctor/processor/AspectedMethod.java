@@ -150,7 +150,7 @@ final class AspectedMethod {
                 .flatMap(am -> am.getElementValues().entrySet().stream())
                 .filter(e -> e.getKey().getSimpleName().toString().equals(Constants.ANNOTATION_VALUE))
                 .map(Map.Entry::getValue)
-                .map(val -> val.accept(new ClassValueVisitor(), null))
+                .map(ClassValueVisitor::getValues)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
     }

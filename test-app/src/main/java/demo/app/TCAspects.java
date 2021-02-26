@@ -1,8 +1,8 @@
 package demo.app;
 
+import jakarta.inject.Singleton;
 import vest.doctor.aop.Aspects;
 
-import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;

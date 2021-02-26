@@ -13,11 +13,13 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 public class Router implements Handler {
+    public static final String PATH_OVERRIDE = "doctor.netty.router.pathOverride";
     public static final String PATH_PARAMS = "doctor.netty.router.pathparams";
     public static final Handler NOT_FOUND = new NotFound();
 
@@ -96,7 +98,8 @@ public class Router implements Handler {
 
     protected Handler selectHandler(Request request) {
         for (Route route : routes.getOrDefault(request.method(), Collections.emptyList())) {
-            Map<String, String> pathParams = route.getPathSpec().matchAndCollect(request.path());
+            String path = Optional.ofNullable(request.<String>attribute(PATH_OVERRIDE)).orElse(request.path());
+            Map<String, String> pathParams = route.getPathSpec().matchAndCollect(path);
             if (pathParams != null) {
                 request.attribute(PATH_PARAMS, pathParams);
                 return route.getHandler();

@@ -1,11 +1,11 @@
 package demo.app;
 
+import jakarta.inject.Singleton;
 import vest.doctor.netty.Filter;
 import vest.doctor.netty.Request;
 import vest.doctor.netty.Response;
 import vest.doctor.netty.ResponseBody;
 
-import javax.inject.Singleton;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;

@@ -4,7 +4,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Synchronized version of the {@link Handler} interface.
+ * Synchronous version of the {@link Handler} interface.
  */
 @FunctionalInterface
 public interface SynchronousHandler extends Handler {

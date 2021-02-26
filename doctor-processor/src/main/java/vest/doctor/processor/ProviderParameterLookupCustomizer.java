@@ -1,11 +1,11 @@
 package vest.doctor.processor;
 
 import doctor.processor.ProcessorUtils;
+import jakarta.inject.Provider;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ParameterLookupCustomizer;
 import vest.doctor.ProviderDependency;
 
-import javax.inject.Provider;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
@@ -35,14 +35,13 @@ public class ProviderParameterLookupCustomizer implements ParameterLookupCustomi
                 || ProcessorUtils.isCompatibleWith(context, typeElement, Stream.class)
         ) {
             TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
-            return providerRegistryRef + ".getProvider(" + typeMirror + ".class, " + qualifier + ");";
+            return ProcessorUtils.getProviderCode(typeMirror.toString(), qualifier) + ";";
         }
 
         if (variableElement.asType().getKind() == TypeKind.ARRAY) {
-            String type = typeElement.getQualifiedName().toString();
-            return providerRegistryRef + ".getProvider(" + type + ".class, " + qualifier + ");";
+            return ProcessorUtils.getProviderCode(typeElement.getQualifiedName().toString(), qualifier) + ";";
         }
-        return providerRegistryRef + ".getProvider(" + variableElement.asType() + ".class, " + qualifier + ");";
+        return ProcessorUtils.getProviderCode(variableElement.asType().toString(), qualifier) + ";";
     }
 
     @Override

@@ -1,5 +1,6 @@
 package vest.doctor.processor;
 
+import jakarta.inject.Singleton;
 import vest.doctor.Cached;
 import vest.doctor.CustomizationPoint;
 import vest.doctor.Factory;
@@ -7,7 +8,6 @@ import vest.doctor.ProcessorConfiguration;
 import vest.doctor.Prototype;
 import vest.doctor.ThreadLocal;
 
-import javax.inject.Singleton;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.List;

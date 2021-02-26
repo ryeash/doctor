@@ -29,7 +29,7 @@ public abstract class AbstractWebsocket implements Websocket {
 
     private static final AttributeKey<WebSocketServerHandshaker> WS_HANDSHAKER = AttributeKey.valueOf("doctor.websocket.handshaker");
     private static final AttributeKey<String> WS_PATH = AttributeKey.valueOf("doctor.websocket.path");
-    private static final WebSocketServerHandshakerFactory protected_HANDSHAKER_FACTORY = new WebSocketServerHandshakerFactory("/*", null, false);
+    private static final WebSocketServerHandshakerFactory HANDSHAKER_FACTORY = new WebSocketServerHandshakerFactory("/*", null, false);
 
     @Override
     public void connect(ChannelHandlerContext ctx, String path) {
@@ -190,10 +190,13 @@ public abstract class AbstractWebsocket implements Websocket {
      *
      * @param ctx   The context to send the message to
      * @param frame The frame to send
+     * @return a future represented the eventual completed send of data
      */
     protected CompletableFuture<Void> send(ChannelHandlerContext ctx, WebSocketFrame frame) {
         CompletableFuture<Future<?>> future = new CompletableFuture<>();
-        ctx.channel().eventLoop().submit(() -> ctx.writeAndFlush(frame))
+        ctx.channel()
+                .eventLoop()
+                .submit(() -> ctx.writeAndFlush(frame))
                 .addListener(future::complete);
         return future.thenApply(f -> null);
     }
@@ -223,7 +226,7 @@ public abstract class AbstractWebsocket implements Websocket {
 
     @Override
     public final void handshake(ChannelHandlerContext ctx, HttpRequest request, String path) {
-        WebSocketServerHandshaker handshaker = protected_HANDSHAKER_FACTORY.newHandshaker(request);
+        WebSocketServerHandshaker handshaker = HANDSHAKER_FACTORY.newHandshaker(request);
         if (handshaker == null) {
             WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
         } else {

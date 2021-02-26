@@ -1,9 +1,9 @@
 package demo.app;
 
+import jakarta.inject.Singleton;
 import vest.doctor.Properties;
 import vest.doctor.Property;
 
-import javax.inject.Singleton;
 import java.util.List;
 import java.util.Optional;
 

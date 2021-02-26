@@ -71,7 +71,7 @@ public interface AnnotationProcessorContext {
     }
 
     /**
-     * Determine if there is a {@link javax.inject.Provider} registered that can satisfy the given dependency.
+     * Determine if there is a {@link jakarta.inject.Provider} registered that can satisfy the given dependency.
      *
      * @param dependency the dependency to check
      * @return true if there is provider registered for the given dependency

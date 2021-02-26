@@ -75,11 +75,6 @@ public class ServerRequest implements Request {
     }
 
     @Override
-    public void rewritePath(String path) {
-        this.path = path;
-    }
-
-    @Override
     public HttpHeaders headers() {
         return request.headers();
     }

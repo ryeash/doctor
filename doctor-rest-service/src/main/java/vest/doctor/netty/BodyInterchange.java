@@ -1,11 +1,12 @@
 package vest.doctor.netty;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.inject.Provider;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.TypeInfo;
 
-import javax.inject.Provider;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -49,14 +50,16 @@ public final class BodyInterchange {
     }
 
     public CompletableFuture<Response> write(Request request, Object data) {
-        if (data instanceof CompletableFuture) {
+        if (data == null) {
+            return request.createResponse().body(ResponseBody.empty()).wrapFuture();
+        } else if (data instanceof CompletableFuture) {
             return ((CompletableFuture<?>) data).thenCompose(d -> write(request, d));
         } else if (data instanceof Response) {
             return ((Response) data).wrapFuture();
         } else if (data instanceof ResponseBody) {
             return request.createResponse().body((ResponseBody) data).wrapFuture();
-        } else if (data == null) {
-            return request.createResponse().body(ResponseBody.empty()).wrapFuture();
+        } else if (data instanceof File) {
+            return request.createResponse().body(ResponseBody.sendFile((File) data)).wrapFuture();
         } else if (data instanceof R) {
             R r = (R) data;
             return write(request, r.body()).thenApply(r::applyTo);

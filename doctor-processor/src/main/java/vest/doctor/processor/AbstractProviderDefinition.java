@@ -3,6 +3,7 @@ package vest.doctor.processor;
 import doctor.processor.ClassValueVisitor;
 import doctor.processor.Constants;
 import doctor.processor.ProcessorUtils;
+import jakarta.inject.Provider;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.DoctorProvider;
 import vest.doctor.ExplicitProvidedTypes;
@@ -12,7 +13,6 @@ import vest.doctor.ProviderDependency;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.ClassBuilder;
 
-import javax.inject.Provider;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -207,7 +207,7 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                 .flatMap(am -> am.getElementValues().entrySet().stream())
                 .filter(e -> e.getKey().getSimpleName().toString().equals(Constants.ANNOTATION_VALUE))
                 .map(Map.Entry::getValue)
-                .map(val -> val.accept(new ClassValueVisitor(), null))
+                .map(ClassValueVisitor::getValues)
                 .flatMap(Collection::stream)
                 .map(context.processingEnvironment().getElementUtils()::getTypeElement)
                 .collect(Collectors.toList());

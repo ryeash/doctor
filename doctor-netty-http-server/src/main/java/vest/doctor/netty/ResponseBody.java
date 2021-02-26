@@ -17,6 +17,7 @@ import java.io.InputStream;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 /**
  * Defines an object that can be sent as an HTTP response body.
@@ -118,6 +119,10 @@ public interface ResponseBody {
      * @return a new response body
      */
     static ResponseBody sendFile(File file) {
+        Objects.requireNonNull(file);
+        if (!file.exists() || file.isDirectory()) {
+            throw new IllegalArgumentException("file is not valid for return");
+        }
         return new SendFileResponseBody(file);
     }
 

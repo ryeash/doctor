@@ -1,9 +1,8 @@
 package demo.app;
 
+import jakarta.inject.Inject;
 import org.testng.Assert;
 import vest.doctor.ThreadLocal;
-
-import javax.inject.Inject;
 
 import static demo.app.CustomQualifier.Color.BLACK;
 import static demo.app.CustomQualifier.Color.RED;

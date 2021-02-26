@@ -207,6 +207,9 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
     }
 
     public static List<String> split(String str) {
+        if (str == null || str.isEmpty()) {
+            return Collections.emptyList();
+        }
         List<String> split = new ArrayList<>();
         int i = 0;
         int next;

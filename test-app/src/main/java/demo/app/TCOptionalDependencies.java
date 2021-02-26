@@ -1,9 +1,9 @@
 package demo.app;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import vest.doctor.Prototype;
 
-import javax.inject.Inject;
-import javax.inject.Named;
 import java.util.Optional;
 
 import static org.testng.Assert.assertEquals;

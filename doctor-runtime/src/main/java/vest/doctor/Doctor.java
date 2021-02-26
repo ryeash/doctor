@@ -1,12 +1,12 @@
 package vest.doctor;
 
+import jakarta.inject.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vest.doctor.event.ApplicationShutdown;
 import vest.doctor.event.ApplicationStarted;
 import vest.doctor.event.EventProducer;
 
-import javax.inject.Provider;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,10 +21,17 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * The entrypoint for applications to access generated {@link javax.inject.Provider}s.
+ * The entrypoint for applications to access generated {@link jakarta.inject.Provider}s.
  * Initializes (and serves as) the {@link ProviderRegistry} for an application.
  */
 public class Doctor implements ProviderRegistry, AutoCloseable {
+
+    private static final String ASCII_ART = """
+                             
+              _             
+             / | _  _ _/__  __
+            /_.'/_//_ / /_//
+            """;
 
     private static final Logger log = LoggerFactory.getLogger(Doctor.class);
 
@@ -137,12 +144,12 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         if (!configurationFacade.get("doctor.skip.validation", false, Boolean::valueOf)) {
             providerIndex.allProviders().forEach(np -> np.validateDependencies(this));
         }
-        getInstance(EventProducer.class).publish(new ApplicationStarted(this));
 
         if (configurationFacade.get("doctor.autoShutdown", true, Boolean::valueOf)) {
             Runtime.getRuntime().addShutdownHook(new Thread(this::close, "doctor-shutdown-" + this.hashCode()));
         }
-        log.info("Doctor initialized: {}ms", (System.currentTimeMillis() - start));
+        getInstance(EventProducer.class).publish(new ApplicationStarted(this));
+        log.info(ASCII_ART + "\ninitialized in {}ms", (System.currentTimeMillis() - start));
     }
 
     @Override

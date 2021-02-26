@@ -18,7 +18,7 @@ public final class Main {
 
     public static void main(String[] args) {
         Args a = new Args(args);
-        String modules = a.option("modules", 'm', "");
+        String modules = a.option("modules", 'm');
         doctor = new Doctor(mainConfig(a), DefaultConfigurationFacade.split(modules), new ArgsLoader(a));
     }
 
@@ -52,21 +52,4 @@ public final class Main {
         return facade;
     }
 
-    private static final class ArgsLoader implements AppLoader {
-        private final Args args;
-
-        private ArgsLoader(Args args) {
-            this.args = args;
-        }
-
-        @Override
-        public void preProcess(ProviderRegistry providerRegistry) {
-            providerRegistry.register(new AdHocProvider<>(Args.class, args, null));
-        }
-
-        @Override
-        public int priority() {
-            return Integer.MIN_VALUE;
-        }
-    }
 }

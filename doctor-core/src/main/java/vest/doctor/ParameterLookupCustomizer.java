@@ -3,7 +3,7 @@ package vest.doctor;
 import javax.lang.model.element.VariableElement;
 
 /**
- * Used to customize the value that is injected into factory methods and injected constructors, as well as {@link javax.inject.Inject}
+ * Used to customize the value that is injected into factory methods and injected constructors, as well as {@link jakarta.inject.Inject}
  * marked methods (for post construction injection).
  */
 public interface ParameterLookupCustomizer extends CustomizationPoint, Prioritized {

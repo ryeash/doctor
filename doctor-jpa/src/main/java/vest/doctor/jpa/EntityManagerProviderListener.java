@@ -1,6 +1,8 @@
 package vest.doctor.jpa;
 
 import doctor.processor.ProcessorUtils;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.DestroyMethod;
 import vest.doctor.Factory;
@@ -10,8 +12,6 @@ import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
 
-import javax.inject.Named;
-import javax.inject.Singleton;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;

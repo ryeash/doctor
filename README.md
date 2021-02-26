@@ -19,7 +19,7 @@ Pseudo-support for `javax.inject`. During compile, `@Scope` annotations (and oth
 code to generate instances for the types is generated and wired into an infrastructure that relies on `ServiceProvider`
 to load/initialize the application.
 
-To say it in another way, the source code is analyzed to generate implementations of `javax.inject.Provider` and the
+To say it in another way, the source code is analyzed to generate implementations of `jakarta.inject.Provider` and the
 providers are automatically wired together to support dependency injection.
 
 ### Defining providers
@@ -325,10 +325,10 @@ thing.doSomething() // <- method will be both timed and observed
 ```
 
 #### A note on aspect scoping
-In the previous example, the TimingAspect class is marked as @Prototype, but each instance
-of the aspected class will call Provider.get() just once. So for the lifetime of the
-aspected Thing class, only one instance of the TimingAspect will be created and used.
 
+In the previous example, the TimingAspect class is marked as @Prototype, but each instance of the aspected class will
+call Provider.get() just once. So for the lifetime of the aspected Thing class, only one instance of the TimingAspect
+will be created and used.
 
 ### Aspect Stages
 

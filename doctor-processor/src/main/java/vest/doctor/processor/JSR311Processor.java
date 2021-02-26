@@ -2,6 +2,8 @@ package vest.doctor.processor;
 
 import doctor.processor.Constants;
 import doctor.processor.ProcessorUtils;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.AppLoader;
 import vest.doctor.ConfigurationFacade;
@@ -27,8 +29,6 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedOptions;
 import javax.annotation.processing.SupportedSourceVersion;
-import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
@@ -58,7 +58,7 @@ import java.util.stream.Stream;
 import static doctor.processor.Constants.PROVIDER_REGISTRY;
 import static vest.doctor.codegen.CodeLine.line;
 
-@SupportedSourceVersion(SourceVersion.RELEASE_8)
+@SupportedSourceVersion(SourceVersion.RELEASE_15)
 @SupportedOptions({JSR311Processor.PACKAGE_NAME_OPTION})
 public class JSR311Processor extends AbstractProcessor implements AnnotationProcessorContext {
 

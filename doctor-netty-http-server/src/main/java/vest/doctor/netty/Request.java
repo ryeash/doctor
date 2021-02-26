@@ -48,11 +48,6 @@ public interface Request {
     String path();
 
     /**
-     * Rewrite the request path so that it may be routed to a different handler.
-     */
-    void rewritePath(String path);
-
-    /**
      * Get the request headers.
      */
     HttpHeaders headers();

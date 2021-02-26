@@ -24,12 +24,11 @@ public class CompositeExceptionHandler implements ExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(CompositeExceptionHandler.class);
     private final List<ExceptionHandler> handlers = new LinkedList<>();
 
-    public CompositeExceptionHandler addHandler(ExceptionHandler exceptionHandler) {
+    public void addHandler(ExceptionHandler exceptionHandler) {
         if (!handlers.contains(exceptionHandler)) {
             handlers.add(exceptionHandler);
             handlers.sort(Prioritized.COMPARATOR);
         }
-        return this;
     }
 
     @Override
