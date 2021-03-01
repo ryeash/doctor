@@ -1,10 +1,10 @@
 package vest.doctor.processor;
 
-import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ParameterLookupCustomizer;
 import vest.doctor.Property;
 import vest.doctor.ProviderDependency;
+import vest.doctor.codegen.ProcessorUtils;
 
 import javax.lang.model.element.VariableElement;
 import java.util.Objects;

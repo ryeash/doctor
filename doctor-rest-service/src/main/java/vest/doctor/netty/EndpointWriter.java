@@ -1,8 +1,5 @@
 package vest.doctor.netty;
 
-import doctor.processor.Constants;
-import doctor.processor.GenericInfo;
-import doctor.processor.ProcessorUtils;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import jakarta.inject.Provider;
@@ -15,7 +12,10 @@ import vest.doctor.ProviderRegistry;
 import vest.doctor.StringConversionGenerator;
 import vest.doctor.TypeInfo;
 import vest.doctor.codegen.ClassBuilder;
+import vest.doctor.codegen.Constants;
+import vest.doctor.codegen.GenericInfo;
 import vest.doctor.codegen.MethodBuilder;
+import vest.doctor.codegen.ProcessorUtils;
 import vest.doctor.netty.impl.Router;
 
 import javax.lang.model.element.Element;

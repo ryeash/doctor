@@ -1,4 +1,4 @@
-package doctor.processor;
+package vest.doctor.codegen;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;

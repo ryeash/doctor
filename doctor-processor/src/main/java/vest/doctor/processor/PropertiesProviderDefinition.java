@@ -1,6 +1,5 @@
 package vest.doctor.processor;
 
-import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.Properties;
 import vest.doctor.Property;
@@ -8,6 +7,7 @@ import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.CodeLine;
 import vest.doctor.codegen.MethodBuilder;
+import vest.doctor.codegen.ProcessorUtils;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
@@ -16,7 +16,7 @@ import javax.lang.model.util.ElementFilter;
 import java.util.Objects;
 import java.util.Optional;
 
-import static doctor.processor.Constants.PROVIDER_REGISTRY;
+import static vest.doctor.codegen.Constants.PROVIDER_REGISTRY;
 
 public class PropertiesProviderDefinition extends AbstractProviderDefinition {
 

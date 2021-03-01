@@ -1,16 +1,16 @@
 package vest.doctor.processor;
 
-import doctor.processor.ClassValueVisitor;
-import doctor.processor.Constants;
-import doctor.processor.GenericInfo;
-import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.aop.Aspect;
 import vest.doctor.aop.AspectCoordinator;
 import vest.doctor.aop.Aspects;
+import vest.doctor.codegen.AnnotationClassValueVisitor;
 import vest.doctor.codegen.ClassBuilder;
+import vest.doctor.codegen.Constants;
+import vest.doctor.codegen.GenericInfo;
 import vest.doctor.codegen.MethodBuilder;
+import vest.doctor.codegen.ProcessorUtils;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
@@ -150,7 +150,7 @@ final class AspectedMethod {
                 .flatMap(am -> am.getElementValues().entrySet().stream())
                 .filter(e -> e.getKey().getSimpleName().toString().equals(Constants.ANNOTATION_VALUE))
                 .map(Map.Entry::getValue)
-                .map(ClassValueVisitor::getValues)
+                .map(AnnotationClassValueVisitor::getValues)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
     }

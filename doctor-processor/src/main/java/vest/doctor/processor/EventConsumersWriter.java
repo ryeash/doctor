@@ -1,7 +1,5 @@
 package vest.doctor.processor;
 
-import doctor.processor.Constants;
-import doctor.processor.ProcessorUtils;
 import jakarta.inject.Provider;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.AppLoader;
@@ -11,7 +9,9 @@ import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionListener;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.ClassBuilder;
+import vest.doctor.codegen.Constants;
 import vest.doctor.codegen.MethodBuilder;
+import vest.doctor.codegen.ProcessorUtils;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.EventListener;
 

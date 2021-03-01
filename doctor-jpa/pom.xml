@@ -17,18 +17,14 @@
             <groupId>${project.groupId}</groupId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <artifactId>doctor-processor-utils</artifactId>
-            <groupId>${project.groupId}</groupId>
-            <version>${project.version}</version>
-        </dependency>
 
         <dependency>
-            <groupId>javax.persistence</groupId>
-            <artifactId>javax.persistence-api</artifactId>
-            <version>2.2</version>
+            <groupId>jakarta.persistence</groupId>
+            <artifactId>jakarta.persistence-api</artifactId>
+            <version>2.2.3</version>
             <scope>provided</scope>
         </dependency>
+
     </dependencies>
 
 </project>

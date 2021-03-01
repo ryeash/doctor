@@ -1,4 +1,4 @@
-package doctor.processor;
+package vest.doctor.codegen;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
@@ -12,12 +12,12 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * {@link AnnotationValueVisitor} that extracts the class names from an annotation value.
+ * {@link AnnotationValueVisitor} that extracts the class names (as strings) from an annotation value.
  */
-public final class ClassValueVisitor implements AnnotationValueVisitor<List<String>, Void> {
+public final class AnnotationClassValueVisitor implements AnnotationValueVisitor<List<String>, Void> {
 
     public static List<String> getValues(AnnotationValue val) {
-        return val.accept(new ClassValueVisitor(), null);
+        return val.accept(new AnnotationClassValueVisitor(), null);
     }
 
     @Override
@@ -93,7 +93,7 @@ public final class ClassValueVisitor implements AnnotationValueVisitor<List<Stri
     @Override
     public List<String> visitArray(List<? extends AnnotationValue> vals, Void aVoid) {
         return vals.stream()
-                .map(ClassValueVisitor::getValues)
+                .map(AnnotationClassValueVisitor::getValues)
                 .filter(Objects::nonNull)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());

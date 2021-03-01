@@ -1,10 +1,10 @@
 package vest.doctor.processor;
 
-import doctor.processor.ProcessorUtils;
 import jakarta.inject.Provider;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ParameterLookupCustomizer;
 import vest.doctor.ProviderDependency;
+import vest.doctor.codegen.ProcessorUtils;
 
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -13,7 +13,7 @@ import javax.lang.model.type.TypeMirror;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static doctor.processor.ProcessorUtils.unwrapJustOne;
+import static vest.doctor.codegen.ProcessorUtils.unwrapJustOne;
 
 public class ProviderParameterLookupCustomizer implements ParameterLookupCustomizer {
 

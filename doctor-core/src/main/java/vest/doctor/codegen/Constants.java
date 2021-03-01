@@ -1,4 +1,4 @@
-package doctor.processor;
+package vest.doctor.codegen;
 
 import jakarta.inject.Named;
 

@@ -1,11 +1,11 @@
 package vest.doctor.processor;
 
-import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.DestroyMethod;
 import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.codegen.MethodBuilder;
+import vest.doctor.codegen.ProcessorUtils;
 
 public class ShutdownCustomizationPoint implements NewInstanceCustomizer {
 

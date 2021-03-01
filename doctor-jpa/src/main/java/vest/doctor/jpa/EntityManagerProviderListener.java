@@ -1,6 +1,5 @@
 package vest.doctor.jpa;
 
-import doctor.processor.ProcessorUtils;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import vest.doctor.AnnotationProcessorContext;
@@ -11,6 +10,7 @@ import vest.doctor.ProviderDefinitionListener;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
+import vest.doctor.codegen.ProcessorUtils;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import static doctor.processor.Constants.PROVIDER_REGISTRY;
+import static vest.doctor.codegen.Constants.PROVIDER_REGISTRY;
 
 public class EntityManagerProviderListener implements ProviderDefinitionListener {
 
@@ -73,7 +73,7 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
         entityManagerFactory.addField("private final static Logger log = LoggerFactory.getLogger(" + generatedClassName + ".class)");
 
         MethodBuilder emf = new MethodBuilder("@Singleton @Factory @DestroyMethod(\"close\") @Named(\"" + ProcessorUtils.escapeStringForCode(pcName) + "\") " +
-                "public " + EntityManagerFactory.class.getSimpleName() + " entityManagerFactoryFactory" + context.nextId() + "(" + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY + ")");
+                "public " + EntityManagerFactory.class.getSimpleName() + " entityManagerFactory" + context.nextId() + "(" + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY + ")");
         emf.line("Map<String, String> properties = new LinkedHashMap<>();");
         for (PersistenceProperty property : persistenceContext.properties()) {
             emf.line("properties.put({}.resolvePlaceholders(\"{}\"), {}.resolvePlaceholders(\"{}\"));",
@@ -84,7 +84,7 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
         entityManagerFactory.addMethod(emf.finish());
 
         MethodBuilder em = new MethodBuilder("@Singleton @Factory @DestroyMethod(\"close\") @Named(\"" + ProcessorUtils.escapeStringForCode(pcName) + "\") " +
-                "public " + EntityManager.class.getSimpleName() + " entityManagerFactory" + context.nextId() + "(" + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY + ", @Named(\"" + ProcessorUtils.escapeStringForCode(pcName) + "\") EntityManagerFactory entityManagerFactory)");
+                "public " + EntityManager.class.getSimpleName() + " entityManager" + context.nextId() + "(" + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY + ", @Named(\"" + ProcessorUtils.escapeStringForCode(pcName) + "\") EntityManagerFactory entityManagerFactory)");
         em.line("try{");
         em.line("return entityManagerFactory.createEntityManager(SynchronizationType." + persistenceContext.synchronization() + ", entityManagerFactory.getProperties());");
         em.line("} catch (" + IllegalStateException.class.getSimpleName() + " e) {");

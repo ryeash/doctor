@@ -1,4 +1,4 @@
-package doctor.processor;
+package vest.doctor.codegen;
 
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
@@ -122,7 +122,7 @@ public class GenericInfo {
                 TypeMirror typeMirror = ((IntersectionType) upperBound).getBounds().get(0);
                 return Collections.singletonList(new GenericInfo(typeMirror));
             } else {
-                return Collections.singletonList(new GenericInfo(t.getUpperBound()));
+                return Collections.singletonList(new GenericInfo(upperBound));
             }
         }
 

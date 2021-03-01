@@ -1,6 +1,5 @@
 package vest.doctor.processor;
 
-import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.CustomizationPoint;
 import vest.doctor.Factory;
@@ -18,6 +17,7 @@ import vest.doctor.aop.MethodMetadata;
 import vest.doctor.aop.MutableMethodArgument;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
+import vest.doctor.codegen.ProcessorUtils;
 
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;

@@ -1,12 +1,12 @@
 package vest.doctor.processor;
 
-import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.InjectionException;
 import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.MethodBuilder;
+import vest.doctor.codegen.ProcessorUtils;
 import vest.doctor.scheduled.Cron;
 import vest.doctor.scheduled.Interval;
 import vest.doctor.scheduled.Scheduled;

@@ -1,7 +1,5 @@
 package vest.doctor.processor;
 
-import doctor.processor.Constants;
-import doctor.processor.ProcessorUtils;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
 import vest.doctor.AnnotationProcessorContext;
@@ -21,7 +19,9 @@ import vest.doctor.ProviderRegistry;
 import vest.doctor.ScopeWriter;
 import vest.doctor.ShutdownContainer;
 import vest.doctor.codegen.ClassBuilder;
+import vest.doctor.codegen.Constants;
 import vest.doctor.codegen.MethodBuilder;
+import vest.doctor.codegen.ProcessorUtils;
 import vest.doctor.event.EventProducer;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -55,8 +55,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static doctor.processor.Constants.PROVIDER_REGISTRY;
 import static vest.doctor.codegen.CodeLine.line;
+import static vest.doctor.codegen.Constants.PROVIDER_REGISTRY;
 
 @SupportedSourceVersion(SourceVersion.RELEASE_15)
 @SupportedOptions({JSR311Processor.PACKAGE_NAME_OPTION})

@@ -1,7 +1,5 @@
 package vest.doctor.processor;
 
-import doctor.processor.Constants;
-import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.InjectionException;
 import vest.doctor.NewInstanceCustomizer;
@@ -9,6 +7,8 @@ import vest.doctor.ParameterLookupCustomizer;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.CodeLine;
+import vest.doctor.codegen.Constants;
+import vest.doctor.codegen.ProcessorUtils;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
