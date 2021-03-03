@@ -17,11 +17,11 @@ public class ShutdownCustomizationPoint implements NewInstanceCustomizer {
                 throw new IllegalArgumentException("invalid destroy method `" + providerDefinition.providedType() + "." + destroy.value() + "` is not valid for type; destroy methods must exist and have zero arguments");
             }
             String closer = instanceRef + "::" + destroy.value();
-            method.line("{}.shutdownContainer().register({});", providerRegistryRef, closer);
+            method.line("{{providerRegistry}}.shutdownContainer().register(", closer, ");");
         } else {
-            method.importClass(AutoCloseable.class);
-            method.line("if({} instanceof {}){", instanceRef, AutoCloseable.class);
-            method.line("{}.shutdownContainer().register(({}) {});", providerRegistryRef, AutoCloseable.class, instanceRef);
+            method.addImportClass(AutoCloseable.class);
+            method.line("if(", instanceRef, " instanceof ", AutoCloseable.class, "){");
+            method.line("{{providerRegistry}}.shutdownContainer().register((", AutoCloseable.class, ") ", instanceRef, ");");
             method.line("}");
         }
     }

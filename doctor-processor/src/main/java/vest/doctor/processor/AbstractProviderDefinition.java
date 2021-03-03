@@ -11,6 +11,7 @@ import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.AnnotationClassValueVisitor;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.Constants;
+import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
 
 import javax.lang.model.element.AnnotationMirror;
@@ -138,24 +139,23 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                 .addImportClass(providedType().getQualifiedName().toString())
                 .addImportClass(DoctorProvider.class)
                 .addImplementsInterface(DoctorProvider.class.getSimpleName() + "<" + providedType().getSimpleName() + ">")
-                .addField("private final " + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY)
+                .addField("private final " + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY);
 
-                .setConstructor("public {}({} {}) { this.{} = {}; }",
-                        generatedClassName().substring(generatedClassName().lastIndexOf('.') + 1), ProviderRegistry.class, PROVIDER_REGISTRY, PROVIDER_REGISTRY, PROVIDER_REGISTRY)
+        MethodBuilder constructor = classBuilder.newMethod("public ", generatedClassName().substring(generatedClassName().lastIndexOf('.') + 1), "(", ProviderRegistry.class, " {{providerRegistry}})");
+        constructor.line("this.{{providerRegistry}} = {{providerRegistry}};");
 
-                .addMethod("public Class<" + providedType().getSimpleName() + "> type() { " +
-                        "return " + providedType().getSimpleName() + ".class; }")
+        MethodBuilder type = classBuilder.newMethod("public Class<", providedType().getSimpleName(), "> type()");
+        type.line("return " + providedType().getSimpleName() + ".class;");
 
-                .addMethod("public String qualifier() { return " +
-                        Optional.ofNullable(qualifier()).map(q -> PROVIDER_REGISTRY + ".resolvePlaceholders(" + q + ")").orElse(null) + "; }")
+        MethodBuilder qualifier = classBuilder.newMethod("public String qualifier()");
+        qualifier.line("return ", Optional.ofNullable(qualifier()).map(q -> PROVIDER_REGISTRY + ".resolvePlaceholders(" + q + ")").orElse(null) + ";");
 
-                .addMethod("public Class<? extends Annotation> scope()", b -> {
-                    String scopeString = Optional.ofNullable(scope())
-                            .map(AnnotationMirror::getAnnotationType)
-                            .map(c -> c.asElement().toString() + ".class")
-                            .orElse("null");
-                    b.line("return " + scopeString + ";");
-                });
+        MethodBuilder scope = classBuilder.newMethod("public Class<? extends Annotation> scope()");
+        String scopeString = Optional.ofNullable(scope())
+                .map(AnnotationMirror::getAnnotationType)
+                .map(c -> c.asElement().toString() + ".class")
+                .orElse("null");
+        scope.line("return ", scopeString, ";");
 
         List<TypeElement> allProvidedTypes = getAllProvidedTypes();
         if (!allProvidedTypes.isEmpty()) {
@@ -163,20 +163,19 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                     .map(TypeElement::getQualifiedName)
                     .map(n -> n + ".class")
                     .collect(AS_LIST))
-                    .addMethod("public List<Class<?>> allProvidedTypes() { return allTypes; }");
+                    .addMethod("public List<Class<?>> allProvidedTypes()", b -> b.line("return allTypes;"));
         } else {
             context().errorMessage("all providers must provide at least one type: " + this);
         }
 
         List<? extends AnnotationMirror> annotationMirrors = annotationSource().getAnnotationMirrors();
         if (!annotationMirrors.isEmpty()) {
-            classBuilder
-                    .addField("private final List<Class<? extends Annotation>> allAnnotations = " + annotationMirrors.stream()
-                            .map(AnnotationMirror::getAnnotationType)
-                            .map(DeclaredType::toString)
-                            .map(n -> n + ".class")
-                            .collect(AS_LIST))
-                    .addMethod("public List<Class<? extends Annotation>> allAnnotationTypes() { return allAnnotations; }");
+            classBuilder.addField("private final List<Class<? extends Annotation>> allAnnotations = " + annotationMirrors.stream()
+                    .map(AnnotationMirror::getAnnotationType)
+                    .map(DeclaredType::toString)
+                    .map(n -> n + ".class")
+                    .collect(AS_LIST))
+                    .addMethod("public List<Class<? extends Annotation>> allAnnotationTypes()", b -> b.line("return allAnnotations;"));
         }
 
         List<String> modules = modules();
@@ -188,7 +187,7 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                     .distinct()
                     .map(m -> '"' + m + '"')
                     .collect(AS_LIST))
-                    .addMethod("public List<String> modules() { return modules; }");
+                    .addMethod("public List<String> modules()", b -> b.line("return modules;"));
         }
 
         // must define the .get() method

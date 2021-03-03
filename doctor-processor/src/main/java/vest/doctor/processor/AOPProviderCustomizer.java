@@ -98,7 +98,7 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
         classBuilder.addField("private final " + typeElement.getSimpleName() + " delegate");
         classBuilder.addField("private final " + ProviderRegistry.class.getSimpleName() + " beanProvider");
 
-        MethodBuilder constructor = new MethodBuilder("public " + delegateClassName + "(" + typeElement.getSimpleName() + " delegate, " + ProviderRegistry.class.getSimpleName() + " beanProvider)");
+        MethodBuilder constructor = classBuilder.newMethod("public " + delegateClassName + "(" + typeElement.getSimpleName() + " delegate, " + ProviderRegistry.class.getSimpleName() + " beanProvider)");
         constructor.line("this.delegate = delegate;");
         constructor.line("this.beanProvider = beanProvider;");
 
@@ -123,7 +123,6 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
                     }
                     classBuilder.addMethod(buildMethodDeclaration(method), mb -> mb.line(methodBody));
                 });
-        classBuilder.setConstructor(constructor.finish());
         classBuilder.writeClass(context.filer());
 
         AspectedMethod.clearCache();

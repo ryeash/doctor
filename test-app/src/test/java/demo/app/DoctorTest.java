@@ -133,7 +133,7 @@ public class DoctorTest extends BaseDoctorTest {
     @Test
     public void scheduled() throws InterruptedException {
         TCScheduled instance = doctor.getInstance(TCScheduled.class);
-        TimeUnit.MILLISECONDS.sleep(105);
+        TimeUnit.MILLISECONDS.sleep(110);
         assertTrue(instance.every10Milliseconds.get() >= 10);
         assertTrue(instance.every50Milliseconds.get() >= 2);
         TimeUnit.MILLISECONDS.sleep(900);

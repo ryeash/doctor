@@ -5,7 +5,6 @@ import vest.doctor.Properties;
 import vest.doctor.Property;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.ClassBuilder;
-import vest.doctor.codegen.CodeLine;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
 
@@ -42,15 +41,15 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
 
         impl.addImportClass(ProviderRegistry.class);
         impl.addField("private final " + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY);
-        impl.setConstructor("public {}({} {}){ this.{} = {}; }",
-                implClass, ProviderRegistry.class, PROVIDER_REGISTRY, PROVIDER_REGISTRY, PROVIDER_REGISTRY);
+        MethodBuilder constructor = impl.newMethod("public ", implClass, "(", ProviderRegistry.class, " {{providerRegistry}})");
+        constructor.line("this.{{providerRegistry}} = {{providerRegistry}};");
 
         for (ExecutableElement method : ProcessorUtils.allMethods(context, providedType())) {
             if (method.getAnnotation(Property.class) != null) {
                 if (method.getParameters().size() > 0) {
                     context.errorMessage("@Property methods in @Properties definition interfaces must not have parameters: " + ProcessorUtils.debugString(method));
                 }
-                MethodBuilder mb = new MethodBuilder("@Override public " + method.getReturnType() + " " + method.getSimpleName() + "()");
+                MethodBuilder mb = impl.newMethod("@Override public " + method.getReturnType() + " " + method.getSimpleName() + "()");
                 TypeMirror returnType = method.getReturnType();
                 try {
                     String propertyName = propertyPrefix + method.getAnnotation(Property.class).value();
@@ -60,7 +59,6 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
                     e.printStackTrace();
                     context.errorMessage(e.getMessage() + ": " + ProcessorUtils.debugString(method));
                 }
-                impl.addMethod(mb.finish());
             } else if (!method.isDefault()) {
                 context.errorMessage("all non-default methods defined in a @Properties interface must have a @Property annotation: " + type + " " + method);
             }
@@ -79,15 +77,15 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
         ClassBuilder classBuilder = super.getClassBuilder()
                 .addImportClass(Objects.class);
 
-        classBuilder.addMethod(CodeLine.line("public void validateDependencies({} {})", ProviderRegistry.class, PROVIDER_REGISTRY), b -> {
+        classBuilder.addMethod("public void validateDependencies(" + ProviderRegistry.class.getSimpleName() + " {{providerRegistry}})", b -> {
             for (TypeElement typeElement : hierarchy) {
                 for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements())) {
                     if (!ProcessorUtils.isCompatibleWith(context, method.getReturnType(), Optional.class)) {
                         Property property = method.getAnnotation(Property.class);
                         if (property != null) {
                             String propertyName = propertyPrefix + property.value();
-                            b.line("{}.requireNonNull({}.configuration().get({}.resolvePlaceholders(\"{}\")), \"missing required property '{}'\");",
-                                    Objects.class, PROVIDER_REGISTRY, PROVIDER_REGISTRY, propertyName, propertyName);
+                            b.line(Objects.class, ".requireNonNull({{providerRegistry}}.configuration().get({{providerRegistry}}.resolvePlaceholders(\"",
+                                    propertyName, "\")), \"missing required property '", propertyName, "'\");");
                         }
                     }
                 }
@@ -95,7 +93,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
         });
 
         classBuilder.addMethod("public " + providedType().getSimpleName() + " get()",
-                b -> b.line("return new {}({});", implClass, PROVIDER_REGISTRY));
+                b -> b.line("return new ", implClass, "({{providerRegistry}});"));
         return classBuilder;
     }
 

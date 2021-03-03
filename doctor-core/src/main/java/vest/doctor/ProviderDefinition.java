@@ -86,6 +86,8 @@ public interface ProviderDefinition {
 
     /**
      * Get the class builder that will write the provider instance.
+     *
+     * @return
      */
     ClassBuilder getClassBuilder();
 

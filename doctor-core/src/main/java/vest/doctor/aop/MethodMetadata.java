@@ -4,6 +4,7 @@ import vest.doctor.TypeInfo;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Static metadata about an invoked method.
@@ -64,5 +65,25 @@ public class MethodMetadata {
      */
     public TypeInfo getReturnType() {
         return returnType;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        MethodMetadata that = (MethodMetadata) o;
+        return Objects.equals(containingInstance, that.containingInstance)
+                && Objects.equals(methodName, that.methodName)
+                && Objects.equals(methodParameters, that.methodParameters)
+                && Objects.equals(returnType, that.returnType);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(containingInstance, methodName, methodParameters, returnType);
     }
 }

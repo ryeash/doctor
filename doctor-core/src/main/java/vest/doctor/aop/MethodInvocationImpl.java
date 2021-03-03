@@ -5,6 +5,7 @@ import vest.doctor.TypeInfo;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 
 public class MethodInvocationImpl implements MethodInvocation {
@@ -86,11 +87,26 @@ public class MethodInvocationImpl implements MethodInvocation {
 
     @Override
     public Method getMethod() throws NoSuchMethodException {
-        return methodMetadata.getContainingInstance().getClass().getMethod(methodMetadata.getMethodName(),
-                methodMetadata.getMethodParameters().stream().map(TypeInfo::getRawType).toArray(Class<?>[]::new));
+        return methodMetadata.getContainingInstance()
+                .getClass()
+                .getMethod(methodMetadata.getMethodName(), methodMetadata.getMethodParameters().stream().map(TypeInfo::getRawType).toArray(Class<?>[]::new));
     }
 
     public void setInvokable(boolean invokable) {
         this.invokable = invokable;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MethodInvocationImpl that = (MethodInvocationImpl) o;
+        return Objects.equals(methodMetadata, that.methodMetadata)
+                && Objects.equals(argumentList, that.argumentList);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(methodMetadata, argumentList);
     }
 }

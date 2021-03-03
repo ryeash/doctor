@@ -72,15 +72,14 @@ public class EndpointWriter implements ProviderDefinitionListener {
                 .addField("private final Router router")
                 .addField("private final Provider<" + providerDefinition.providedType() + "> endpoint");
 
-        config.setConstructor("@Inject public " + className + "(ProviderRegistry " + Constants.PROVIDER_REGISTRY + ")", b -> {
-//            String typeInfo = buildTypeInfoCode(method);
-            b.line("this.{} = {};", Constants.PROVIDER_REGISTRY, Constants.PROVIDER_REGISTRY);
-            b.line("this.endpoint = {}.getProvider({}.class, {});", Constants.PROVIDER_REGISTRY, providerDefinition.providedType(), providerDefinition.qualifier());
-            b.line("this.router = {}.getInstance(Router.class);", Constants.PROVIDER_REGISTRY);
-            b.line("this.bodyInterchange = {}.getInstance(BodyInterchange.class);", Constants.PROVIDER_REGISTRY);
+        config.addMethod("@Inject public " + className + "(ProviderRegistry {{providerRegistry}})", b -> {
+            b.line("this.{{providerRegistry}} = {{providerRegistry}};");
+            b.line("this.endpoint = {{providerRegistry}}.getProvider(", providerDefinition.providedType(), ".class, ", providerDefinition.qualifier(), ");");
+            b.line("this.router = {{providerRegistry}}.getInstance(Router.class);");
+            b.line("this.bodyInterchange = {{providerRegistry}}.getInstance(BodyInterchange.class);");
         });
 
-        MethodBuilder initialize = new MethodBuilder("@Inject public void initialize()");
+        MethodBuilder initialize = config.newMethod("@Inject public void initialize()");
 
         String[] roots = Optional.ofNullable(providerDefinition.annotationSource().getAnnotation(Path.class))
                 .map(Path::value)
@@ -106,7 +105,6 @@ public class EndpointWriter implements ProviderDefinitionListener {
                     }
                 });
         if (methodAdded.get()) {
-            config.addMethod(initialize.finish());
             config.writeClass(context.filer());
         }
     }
@@ -157,10 +155,9 @@ public class EndpointWriter implements ProviderDefinitionListener {
             sb.append("return convertResponse(request, result, bodyInterchange);");
         }
         sb.append("}");
-        initialize.line("router.addRoute(\"{}\", \"{}\", {});",
-                ProcessorUtils.escapeStringForCode(httpMethod),
-                ProcessorUtils.escapeStringForCode(path),
-                sb.toString());
+        initialize.line("router.addRoute(\"", ProcessorUtils.escapeStringForCode(httpMethod),
+                "\", \"", ProcessorUtils.escapeStringForCode(path)
+                , "\", ", sb.toString(), ");");
     }
 
     private static final List<Class<? extends Annotation>> SUPPORTED_PARAMS = Arrays.asList(Body.class, Attribute.class, PathParam.class, QueryParam.class, HeaderParam.class, CookieParam.class, BeanParam.class);

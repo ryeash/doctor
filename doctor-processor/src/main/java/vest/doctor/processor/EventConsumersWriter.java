@@ -52,13 +52,13 @@ public class EventConsumersWriter implements ProviderDefinitionListener {
         String container = ProcessorUtils.typeWithoutParameters(providerDefinition.providedType().asType());
         events.addImportClass(container);
         String instanceName = "prov" + context.nextId();
-        publish.line("Provider<{}> {} = {};", container, instanceName, ProcessorUtils.getProviderCode(providerDefinition));
+        publish.line("Provider<", container, "> ", instanceName, " = ", ProcessorUtils.getProviderCode(providerDefinition), ";");
         for (ExecutableElement listener : listeners) {
             VariableElement message = listener.getParameters().get(0);
             TypeElement messageType = context.toTypeElement(message.asType());
 
             publish.line("bus.addConsumer(event -> {");
-            publish.line("if(event instanceof {}){", messageType);
+            publish.line("if(event instanceof ", messageType, "){");
 
             String call = instanceName + ".get()." + listener.getSimpleName() + "((" + ProcessorUtils.typeWithoutParameters(messageType.asType()) + ")event)";
             if (listener.getAnnotation(Async.class) != null) {
@@ -76,7 +76,6 @@ public class EventConsumersWriter implements ProviderDefinitionListener {
 
     @Override
     public void finish(AnnotationProcessorContext context) {
-        events.addMethod(publish.finish());
         events.writeClass(context.filer());
     }
 
@@ -93,7 +92,7 @@ public class EventConsumersWriter implements ProviderDefinitionListener {
                 .addImportClass(ExecutorService.class)
                 .addImplementsInterface(AppLoader.class)
                 .setClassName(context.generatedPackage() + "." + className);
-        publish = new MethodBuilder("public void postProcess(ProviderRegistry providerRegistry)");
+        publish = events.newMethod("public void postProcess(", ProviderRegistry.class, " {{providerRegistry}})");
         publish.line("ExecutorService executor = " + Constants.PROVIDER_REGISTRY + ".getInstance(" + ExecutorService.class.getCanonicalName() + ".class, \"default\");");
         publish.line("EventBus bus = " + Constants.PROVIDER_REGISTRY + ".getInstance(" + EventBus.class.getCanonicalName() + ".class, null);");
         context.addServiceImplementation(AppLoader.class, events.getFullyQualifiedClassName());

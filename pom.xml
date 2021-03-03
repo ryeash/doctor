@@ -63,7 +63,7 @@
                     <compilerArgs>
                         <arg>-parameters</arg>
                     </compilerArgs>
-<!--                    <meminitial>2g</meminitial>-->
+                    <!--                    <meminitial>2g</meminitial>-->
                     <maxmem>2g</maxmem>
                 </configuration>
             </plugin>

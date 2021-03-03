@@ -7,7 +7,6 @@ import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ParameterLookupCustomizer;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.ClassBuilder;
-import vest.doctor.codegen.CodeLine;
 import vest.doctor.codegen.Constants;
 import vest.doctor.codegen.ProcessorUtils;
 
@@ -55,11 +54,13 @@ public class ConstructorProviderDefinition extends AbstractProviderDefinition {
     public ClassBuilder getClassBuilder() {
         ClassBuilder classBuilder = super.getClassBuilder();
 
-        classBuilder.addMethod("public String toString() { return \"ConstructorProvider("
-                + providedType.getSimpleName()
-                + "):\" + hashCode(); }");
+        classBuilder.addMethod("public String toString()", b -> {
+            b.line("{ return \"ConstructorProvider("
+                    + providedType.getSimpleName()
+                    + "):\" + hashCode(); }");
+        });
 
-        classBuilder.addMethod(CodeLine.line("public void validateDependencies({} {})", ProviderRegistry.class, Constants.PROVIDER_REGISTRY), b -> {
+        classBuilder.addMethod("public void validateDependencies(" + ProviderRegistry.class.getSimpleName() + " {{providerRegistry}})", b -> {
             for (VariableElement parameter : injectableConstructor.getParameters()) {
                 for (ParameterLookupCustomizer parameterLookupCustomizer : context.customizations(ParameterLookupCustomizer.class)) {
                     String checkCode = parameterLookupCustomizer.dependencyCheckCode(context, parameter, Constants.PROVIDER_REGISTRY);

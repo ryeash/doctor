@@ -5,16 +5,14 @@ import javax.tools.JavaFileObject;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
+import java.lang.annotation.Annotation;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
-/**
- * Helper class used internally to create generated classes.
- */
-public class ClassBuilder {
+public class ClassBuilder extends AbstractCodeBuilder<ClassBuilder> {
 
     private String packageName = "";
     private String className;
@@ -24,17 +22,20 @@ public class ClassBuilder {
     private Set<String> importClasses;
     private Set<String> classAnnotations;
     private List<String> fields;
-    private String constructor;
-    private List<String> methods;
+    private List<MethodBuilder> methods;
     private List<ClassBuilder> nestedClasses;
+
+    public ClassBuilder() {
+        super();
+    }
 
     public ClassBuilder setPackage(String packageName) {
         this.packageName = packageName;
         return this;
     }
 
-    public ClassBuilder setClassName(String fullyQualifiedClassName) {
-        this.fullyQualifiedClassName = fullyQualifiedClassName;
+    public ClassBuilder setClassName(Object... className) {
+        this.fullyQualifiedClassName = join(className);
         int i = fullyQualifiedClassName.lastIndexOf(".");
         if (i < 0) {
             this.className = fullyQualifiedClassName;
@@ -80,55 +81,56 @@ public class ClassBuilder {
         return addImportClass(type.getCanonicalName());
     }
 
-    public ClassBuilder addImportClass(String className) {
+    public ClassBuilder addImportClass(Object... type) {
         if (importClasses == null) {
             importClasses = new LinkedHashSet<>();
         }
-        importClasses.add(className);
+        importClasses.add(join(type));
         return this;
     }
 
-    public ClassBuilder addClassAnnotation(String annotation) {
+    public ClassBuilder addClassAnnotation(Class<? extends Annotation> annotation) {
+        addImportClass(annotation);
+        addClassAnnotation(annotation.getSimpleName());
+        return this;
+    }
+
+    public ClassBuilder addClassAnnotation(Object... annotation) {
         if (classAnnotations == null) {
             this.classAnnotations = new LinkedHashSet<>();
         }
-        this.classAnnotations.add(annotation);
+        this.classAnnotations.add(join(annotation));
         return this;
     }
 
-    public ClassBuilder addField(String field, Object... args) {
+    public ClassBuilder addField(Object... field) {
         if (fields == null) {
             fields = new LinkedList<>();
         }
-        fields.add(CodeLine.line(field, args));
+        fields.add(join(field));
         return this;
     }
 
-    public ClassBuilder setConstructor(String definition, Consumer<MethodBuilder> builder) {
-        MethodBuilder methodBuilder = new MethodBuilder(definition, this::setConstructor);
-        builder.accept(methodBuilder);
-        methodBuilder.finish();
-        return this;
-    }
-
-    public ClassBuilder setConstructor(String constructor, Object... args) {
-        this.constructor = CodeLine.line(constructor, args);
-        return this;
-    }
-
-    public ClassBuilder addMethod(String method, Object... args) {
+    public MethodBuilder newMethod() {
         if (methods == null) {
             methods = new LinkedList<>();
         }
-        methods.add(CodeLine.line(method, args));
+        MethodBuilder methodBuilder = new MethodBuilder(this);
+        this.methods.add(methodBuilder);
+        return methodBuilder;
+    }
+
+    public MethodBuilder newMethod(Object... declaration) {
+        return newMethod().declaration(declaration);
+    }
+
+    public ClassBuilder addMethod(Consumer<MethodBuilder> builder) {
+        builder.accept(newMethod());
         return this;
     }
 
-    public ClassBuilder addMethod(String definition, Consumer<MethodBuilder> builder) {
-        MethodBuilder methodBuilder = new MethodBuilder(definition, this::addMethod);
-        methodBuilder.setClassBuilder(this);
-        builder.accept(methodBuilder);
-        methodBuilder.finish();
+    public ClassBuilder addMethod(String declaration, Consumer<MethodBuilder> builder) {
+        builder.accept(newMethod(declaration));
         return this;
     }
 
@@ -193,18 +195,13 @@ public class ClassBuilder {
     private static void writeClassBody(ClassBuilder builder, PrintWriter out) {
         if (builder.fields != null && !builder.fields.isEmpty()) {
             for (String field : builder.fields) {
-                out.println(field + ';');
+                out.println(builder.fill(field) + ';');
             }
         }
 
-        if (builder.constructor != null) {
-            out.println(builder.constructor);
-            out.println();
-        }
-
         if (builder.methods != null && !builder.methods.isEmpty()) {
-            for (String method : builder.methods) {
-                out.println(method);
+            for (MethodBuilder method : builder.methods) {
+                method.writeTo(out);
                 out.println();
             }
         }
@@ -231,4 +228,5 @@ public class ClassBuilder {
         writeClassBody(nested, out);
         out.println("}");
     }
+
 }
