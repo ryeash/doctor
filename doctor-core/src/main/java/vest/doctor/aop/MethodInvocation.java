@@ -4,6 +4,7 @@ import vest.doctor.TypeInfo;
 
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Represents an invocation of a method. Providing details about the method that was called as well as the arguments the
@@ -55,7 +56,7 @@ public interface MethodInvocation {
     <T> T getArgumentValue(int i);
 
     /**
-     * Set the value of an argument at a specific postiion.
+     * Set the value of an argument at a specific position.
      *
      * @param i the position of the argument to set
      * @param o the argument
@@ -73,7 +74,7 @@ public interface MethodInvocation {
     /**
      * Check if the underlying method has been invoked.
      *
-     * @return true if {@link #invoke()} has been called
+     * @return true if {@link #invoke()} has been called one or more times
      */
     boolean invoked();
 
@@ -93,9 +94,19 @@ public interface MethodInvocation {
 
     /**
      * Get the {@link Method} that was invoked.
+     * <p>
+     * Note: One of the main reasons to use a code generation library like Doctor is to avoid
+     * reflection; use of this method may indicate a problem in design.
      *
      * @return the invoked method
      * @throws NoSuchMethodException if the generated code is not able to determine the invoked method
      */
     Method getMethod() throws NoSuchMethodException;
+
+    /**
+     * Get the attributes attached to the method via {@link Attributes}.
+     *
+     * @return the aspect attributes
+     */
+    Map<String, String> attributes();
 }

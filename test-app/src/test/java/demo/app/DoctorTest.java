@@ -186,10 +186,10 @@ public class DoctorTest extends BaseDoctorTest {
     public void aspects() throws IOException {
         TCAspects instance = doctor.getInstance(TCAspects.class);
         instance.execute("name", Arrays.asList("a", "b"));
-        assertEquals(instance.parrot("hi"), "hi altered");
+        assertEquals(instance.parrot("hi"), "hi altered42");
 
         CoffeeMaker aspect = doctor.getInstance(CoffeeMaker.class, "coffee-aspect");
-        assertEquals(aspect.brew(), "french pressing altered");
+        assertEquals(aspect.brew(), "french pressing altered1");
     }
 
     @Test

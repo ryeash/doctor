@@ -1,7 +1,7 @@
 package vest.doctor.aop;
 
 /**
- * Customized a method to add pre-invoke workflows.
+ * Customizes a method to add pre-invoke workflows.
  */
 public interface Before extends Aspect {
 

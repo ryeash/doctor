@@ -151,7 +151,15 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
                 throw new IllegalArgumentException("unclosed macro statement in " + value);
             }
             String subName = value.substring(prev, i);
-            String subValue = get(subName);
+            String defaultValue = null;
+
+            int colon = subName.indexOf(':');
+            if (colon >= 0) {
+                subName = subName.substring(0, colon);
+                defaultValue = subName.substring(colon);
+            }
+
+            String subValue = get(subName, defaultValue);
             if (subValue == null) {
                 throw new IllegalArgumentException("missing interpolation value for property [" + subName + "] while trying to resolvePlaceholders in [" + value + "]");
             }

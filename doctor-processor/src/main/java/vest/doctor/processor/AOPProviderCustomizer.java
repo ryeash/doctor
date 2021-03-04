@@ -15,6 +15,7 @@ import vest.doctor.aop.MethodInvocation;
 import vest.doctor.aop.MethodInvocationImpl;
 import vest.doctor.aop.MethodMetadata;
 import vest.doctor.aop.MutableMethodArgument;
+import vest.doctor.aop.ThrowingFunction;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
@@ -29,9 +30,10 @@ import javax.lang.model.type.TypeMirror;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 /**
@@ -82,8 +84,10 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
                 .addImportClass(MutableMethodArgument.class)
                 .addImportClass(Arrays.class)
                 .addImportClass(Collections.class)
+                .addImportClass(Map.class)
+                .addImportClass(LinkedHashMap.class)
                 .addImportClass(List.class)
-                .addImportClass(Callable.class)
+                .addImportClass(ThrowingFunction.class)
                 .addImportClass(AspectCoordinator.class)
                 .addImportClass(TypeInfo.class)
                 .addImportClass(typeElement.getQualifiedName().toString());

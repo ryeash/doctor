@@ -5,7 +5,6 @@ import javax.tools.JavaFileObject;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
-import java.lang.annotation.Annotation;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -89,12 +88,6 @@ public class ClassBuilder extends AbstractCodeBuilder<ClassBuilder> {
         return this;
     }
 
-    public ClassBuilder addClassAnnotation(Class<? extends Annotation> annotation) {
-        addImportClass(annotation);
-        addClassAnnotation(annotation.getSimpleName());
-        return this;
-    }
-
     public ClassBuilder addClassAnnotation(Object... annotation) {
         if (classAnnotations == null) {
             this.classAnnotations = new LinkedHashSet<>();
@@ -122,11 +115,6 @@ public class ClassBuilder extends AbstractCodeBuilder<ClassBuilder> {
 
     public MethodBuilder newMethod(Object... declaration) {
         return newMethod().declaration(declaration);
-    }
-
-    public ClassBuilder addMethod(Consumer<MethodBuilder> builder) {
-        builder.accept(newMethod());
-        return this;
     }
 
     public ClassBuilder addMethod(String declaration, Consumer<MethodBuilder> builder) {
@@ -160,7 +148,7 @@ public class ClassBuilder extends AbstractCodeBuilder<ClassBuilder> {
                     }
                 }
                 if (importClasses != null) {
-                    for (String importClass : importClasses) {
+                    for (String importClass : new LinkedHashSet<>(importClasses)) {
                         out.println("import " + importClass + ";");
                     }
                 }

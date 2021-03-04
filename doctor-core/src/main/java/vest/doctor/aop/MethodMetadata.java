@@ -4,6 +4,7 @@ import vest.doctor.TypeInfo;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -15,6 +16,7 @@ public class MethodMetadata {
     private final String methodName;
     private final List<TypeInfo> methodParameters;
     private final TypeInfo returnType;
+    private final Map<String, String> attributes;
 
     /**
      * Internal use only.
@@ -23,12 +25,14 @@ public class MethodMetadata {
      * @param methodName         the nam eof the method being called
      * @param methodParameters   the parameter types for the method
      * @param returnType         the return type info for the method
+     * @param attributes
      */
-    public MethodMetadata(Object containingInstance, String methodName, List<TypeInfo> methodParameters, TypeInfo returnType) {
+    public MethodMetadata(Object containingInstance, String methodName, List<TypeInfo> methodParameters, TypeInfo returnType, Map<String, String> attributes) {
         this.containingInstance = containingInstance;
         this.methodName = methodName;
         this.methodParameters = Collections.unmodifiableList(methodParameters);
         this.returnType = returnType;
+        this.attributes = Collections.unmodifiableMap(attributes);
     }
 
     /**
@@ -65,6 +69,15 @@ public class MethodMetadata {
      */
     public TypeInfo getReturnType() {
         return returnType;
+    }
+
+    /**
+     * Get the attributes attached to the method via {@link Attributes}.
+     *
+     * @return the aspect attributes
+     */
+    public Map<String, String> getAttributes() {
+        return attributes;
     }
 
     @Override

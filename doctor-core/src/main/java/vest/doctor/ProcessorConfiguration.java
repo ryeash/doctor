@@ -4,7 +4,7 @@ import java.lang.annotation.Annotation;
 import java.util.List;
 
 /**
- * Used to add configurations, processors, and customization points to the {@link AnnotationProcessorContext} instance.
+ * Used to add customization points to the {@link AnnotationProcessorContext} instance.
  */
 public interface ProcessorConfiguration {
 

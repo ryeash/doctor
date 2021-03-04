@@ -7,7 +7,7 @@ public class MethodBuilder extends AbstractCodeBuilder<MethodBuilder> {
     private final ClassBuilder classBuilder;
     public String declaration;
 
-    public MethodBuilder(ClassBuilder classBuilder) {
+    MethodBuilder(ClassBuilder classBuilder) {
         super(classBuilder);
         this.classBuilder = classBuilder;
     }

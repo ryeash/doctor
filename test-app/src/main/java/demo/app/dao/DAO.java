@@ -15,7 +15,7 @@ import javax.persistence.SynchronizationType;
 @Eager
 @PersistenceContext(name = "default",
         properties = {
-                @PersistenceProperty(name = "javax.persistence.jdbc.url", value = "${db.url}"),
+                @PersistenceProperty(name = "javax.persistence.jdbc.url", value = "${db.url:_missingurl_}"),
                 @PersistenceProperty(name = "hibernate.hbm2ddl.auto", value = "create")
         },
         synchronization = SynchronizationType.UNSYNCHRONIZED)
