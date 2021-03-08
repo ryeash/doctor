@@ -15,4 +15,11 @@ db {
     password=nothing
 }
 
-configurableInterval=10 ms
+configurableInterval=9 ms
+
+executors {
+    scheduled {
+        maxThreads: 8
+        minThreads: 8
+    }
+}

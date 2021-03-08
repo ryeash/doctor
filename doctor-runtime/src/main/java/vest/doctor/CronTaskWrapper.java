@@ -14,6 +14,12 @@ import java.util.function.BiConsumer;
  * Used internally to support running scheduled methods.
  */
 public final class CronTaskWrapper<T> implements Runnable {
+
+    public static <T> void run(ProviderRegistry providerRegistry, T val, Cron cron, int executions, ScheduledExecutorService scheduledExecutorService, BiConsumer<ProviderRegistry, T> execute) {
+        CronTaskWrapper<T> wrapper = new CronTaskWrapper<>(providerRegistry, val, cron, executions, scheduledExecutorService, execute);
+        wrapper.scheduleNext();
+    }
+
     private static final Logger log = LoggerFactory.getLogger(CronTaskWrapper.class);
     private final ProviderRegistry providerRegistry;
     private final WeakReference<T> ref;
@@ -22,14 +28,13 @@ public final class CronTaskWrapper<T> implements Runnable {
     private final ScheduledExecutorService scheduledExecutorService;
     private final BiConsumer<ProviderRegistry, T> execute;
 
-    public CronTaskWrapper(ProviderRegistry providerRegistry, T val, Cron cron, int executions, ScheduledExecutorService scheduledExecutorService, BiConsumer<ProviderRegistry, T> execute) {
+    private CronTaskWrapper(ProviderRegistry providerRegistry, T val, Cron cron, int executions, ScheduledExecutorService scheduledExecutorService, BiConsumer<ProviderRegistry, T> execute) {
         this.providerRegistry = providerRegistry;
         this.ref = new WeakReference<>(val);
         this.cron = cron;
         this.executionLimit = executions > 0 ? new AtomicInteger(executions) : null;
         this.scheduledExecutorService = scheduledExecutorService;
         this.execute = execute;
-        scheduleNext();
     }
 
     @Override

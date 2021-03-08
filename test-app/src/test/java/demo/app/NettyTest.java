@@ -13,7 +13,6 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.testng.annotations.Test;
-import vest.doctor.netty.impl.Router;
 
 import java.net.URI;
 import java.util.Collections;
@@ -39,15 +38,11 @@ public class NettyTest extends BaseDoctorTest {
     }
 
     @Test
-    public void routerToString() {
-        System.out.println(doctor.getProvider(Router.class));
-    }
-
-    @Test
     public void basicGetWithQueryParams() {
         req().queryParam("number", 42)
                 .queryParam("q", "queryparam")
                 .get("/netty/hello")
+                .prettyPeek()
                 .then()
                 .statusCode(200)
                 .body(is("ok queryparam 42 42"));
@@ -208,7 +203,7 @@ public class NettyTest extends BaseDoctorTest {
             SimpleEchoSocket socket = new SimpleEchoSocket();
             ClientUpgradeRequest request = new ClientUpgradeRequest();
             client.connect(socket, echoUri, request);
-            socket.connectLatch.await(5, TimeUnit.SECONDS);
+            assertTrue(socket.connectLatch.await(5, TimeUnit.SECONDS));
             assertTrue(socket.awaitClose(5, TimeUnit.SECONDS));
             assertEquals(socket.messagesReceived.get(0), "go away I'm a test");
         } finally {
@@ -217,7 +212,6 @@ public class NettyTest extends BaseDoctorTest {
     }
 
     @WebSocket(maxTextMessageSize = 64 * 1024)
-    @SuppressWarnings("unused")
     public static class SimpleEchoSocket {
         final CountDownLatch connectLatch;
         final CountDownLatch closeLatch;

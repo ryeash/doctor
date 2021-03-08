@@ -16,8 +16,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
 
-    public static final String STW_CLASS = "vest.doctor.ScheduledTaskWrapper";
-    public static final String CTW_CLASS = "vest.doctor.CronTaskWrapper";
     private static final AtomicInteger count = new AtomicInteger(0);
 
     @Override
@@ -51,7 +49,6 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
     private void processScheduled(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef, ExecutableElement scheduledMethod) {
         Scheduled scheduled = scheduledMethod.getAnnotation(Scheduled.class);
         method.bind("providerRegistry", providerRegistryRef)
-                .bind("stw", STW_CLASS)
                 .bind("wrapper", "wrapper" + count.incrementAndGet())
                 .bind("instance", instanceRef)
                 .bind("executionLimit", String.valueOf(scheduled.executionLimit()))
@@ -63,7 +60,8 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
                 .bind("InjectionException", InjectionException.class.getCanonicalName())
                 .bind("method", ProcessorUtils.debugString(scheduledMethod))
 
-                .line("new {{stw}}<{{providedType}}>({{providerRegistry}}, {{instance}}, {{executionLimit}}, new {{Interval}}({{providerRegistry}}.resolvePlaceholders(\"", ProcessorUtils.escapeStringForCode(scheduled.interval()), "\")), ses, {{fixedRate}}, (provRegistry, val) -> {")
+                .addImportClass("vest.doctor.ScheduledTaskWrapper")
+                .line("ScheduledTaskWrapper.run({{providerRegistry}}, {{instance}}, {{executionLimit}}, new {{Interval}}({{providerRegistry}}.resolvePlaceholders(\"", ProcessorUtils.escapeStringForCode(scheduled.interval()), "\")), ses, {{fixedRate}}, (provRegistry, val) -> {")
                 .line("try {")
                 .line(context.executableCall(providerDefinition, scheduledMethod, "val", "provRegistry") + ";")
                 .line("} catch(Throwable t) {")
@@ -75,7 +73,6 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
     private void processCron(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef, ExecutableElement scheduledMethod) {
         Scheduled scheduled = scheduledMethod.getAnnotation(Scheduled.class);
         method.bind("wrapper", "wrapper" + count.incrementAndGet())
-                .bind("ctw", CTW_CLASS)
                 .bind("ProviderRegistry", ProviderRegistry.class.getSimpleName())
                 .bind("providerRegistry", providerRegistryRef)
                 .bind("providedType", providerDefinition.providedType().getSimpleName())
@@ -87,7 +84,8 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
                 .bind("InjectionException", InjectionException.class.getCanonicalName())
                 .bind("method", ProcessorUtils.debugString(scheduledMethod))
 
-                .line("new {{ctw}}<{{providedType}}>({{providerRegistry}}, {{instance}}, {{cron}}, {{executionLimit}}, ses, (provRegistry, val) -> {")
+                .addImportClass("vest.doctor.CronTaskWrapper")
+                .line("CronTaskWrapper.run({{providerRegistry}}, {{instance}}, {{cron}}, {{executionLimit}}, ses, (provRegistry, val) -> {")
                 .line("try {")
                 .line(context.executableCall(providerDefinition, scheduledMethod, instanceRef, providerRegistryRef) + ";")
                 .line("} catch(Throwable t) {")

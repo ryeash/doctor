@@ -2,8 +2,8 @@ package demo.app;
 
 import jakarta.inject.Inject;
 import org.testng.Assert;
-import vest.doctor.netty.QueryParam;
-import vest.doctor.netty.Request;
+import vest.doctor.http.server.Request;
+import vest.doctor.http.server.rest.QueryParam;
 
 import java.util.Optional;
 

@@ -12,8 +12,8 @@
         <module>doctor-core</module>
         <module>doctor-processor</module>
         <module>doctor-runtime</module>
-        <module>doctor-netty-http-server</module>
-        <module>doctor-rest-service</module>
+        <module>doctor-http-server</module>
+        <module>doctor-http-server-jackson</module>
         <module>doctor-jpa</module>
         <module>test-app</module>
     </modules>
@@ -44,6 +44,14 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
