@@ -26,7 +26,6 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
         if (providedType().getTypeParameters().size() != 0) {
             context.errorMessage("factory methods may not return parameterized types: " + ProcessorUtils.debugString(factoryMethod));
         }
-//        this.generatedClass = providedType().getSimpleName() + "__factoryProvider" + context.nextId();
         this.generatedClass = context.generatedPackage() + "." + providedType().getSimpleName() + "__factoryProvider" + context.nextId();
     }
 

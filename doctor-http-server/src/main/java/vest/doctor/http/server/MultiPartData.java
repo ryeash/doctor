@@ -28,7 +28,7 @@ public interface MultiPartData {
     interface Part {
 
         /**
-         * The type of the part, one of: FileUpload, Attribute, InternalAttribute.
+         * The type of the part, one of: FileUpload, Attribute, or InternalAttribute.
          */
         String getType();
 

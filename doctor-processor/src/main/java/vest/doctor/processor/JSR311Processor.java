@@ -277,7 +277,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     private void writeInProvider(ProviderDefinition providerDefinition) {
         appLoader.addImportClass(providerDefinition.providedType().asType().toString());
 
-        String creator = "new " + providerDefinition.generatedClassName() + "(" + PROVIDER_REGISTRY + ")";
+        String creator = "new " + providerDefinition.generatedClassName() + "({{providerRegistry}})";
 
         for (ProviderCustomizationPoint providerCustomizationPoint : customizations(ProviderCustomizationPoint.class)) {
             creator = providerCustomizationPoint.wrap(this, providerDefinition, creator, PROVIDER_REGISTRY);

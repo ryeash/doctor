@@ -3,7 +3,7 @@ package vest.doctor;
 import java.util.List;
 
 /**
- * Loaded by the {@link AnnotationProcessorContext} implementation to boot the application. All AppLoaders configured
+ * Loaded by the {@link ProviderRegistry} to boot the application. All AppLoaders configured
  * (via service loading) will be instantiated and the three stages will be called in groups: preProcess, load, postProcess.
  */
 public interface AppLoader extends Prioritized, AutoCloseable {
@@ -27,7 +27,7 @@ public interface AppLoader extends Prioritized, AutoCloseable {
     }
 
     /**
-     * Exeucte any code required during post-processing.
+     * Execute any code required during post-processing.
      *
      * @param providerRegistry the common instance of {@link ProviderRegistry}
      */

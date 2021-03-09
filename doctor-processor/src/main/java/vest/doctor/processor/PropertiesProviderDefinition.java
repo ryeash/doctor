@@ -40,7 +40,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
                 .orElse("");
 
         impl.addImportClass(ProviderRegistry.class);
-        impl.addField("private final " + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY);
+        impl.addField("private final ", ProviderRegistry.class.getSimpleName(), " {{providerRegistry}}");
         MethodBuilder constructor = impl.newMethod("public ", implClass, "(", ProviderRegistry.class, " {{providerRegistry}})");
         constructor.line("this.{{providerRegistry}} = {{providerRegistry}};");
 

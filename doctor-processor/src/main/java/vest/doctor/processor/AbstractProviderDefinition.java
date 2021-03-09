@@ -31,8 +31,6 @@ import java.util.Optional;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-import static vest.doctor.codegen.Constants.PROVIDER_REGISTRY;
-
 public abstract class AbstractProviderDefinition implements ProviderDefinition {
 
     private static final Collector<CharSequence, ?, String> AS_LIST = Collectors.joining(", ", "Collections.unmodifiableList(java.util.Arrays.asList(", "))");
@@ -139,7 +137,7 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                 .addImportClass(providedType().getQualifiedName().toString())
                 .addImportClass(DoctorProvider.class)
                 .addImplementsInterface(DoctorProvider.class.getSimpleName() + "<" + providedType().getSimpleName() + ">")
-                .addField("private final " + ProviderRegistry.class.getSimpleName() + " " + PROVIDER_REGISTRY);
+                .addField("private final ", ProviderRegistry.class.getSimpleName(), " {{providerRegistry}}");
 
         MethodBuilder constructor = classBuilder.newMethod("public ", generatedClassName().substring(generatedClassName().lastIndexOf('.') + 1), "(", ProviderRegistry.class, " {{providerRegistry}})");
         constructor.line("this.{{providerRegistry}} = {{providerRegistry}};");
@@ -148,7 +146,7 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
         type.line("return " + providedType().getSimpleName() + ".class;");
 
         MethodBuilder qualifier = classBuilder.newMethod("public String qualifier()");
-        qualifier.line("return ", Optional.ofNullable(qualifier()).map(q -> PROVIDER_REGISTRY + ".resolvePlaceholders(" + q + ")").orElse(null) + ";");
+        qualifier.line("return ", Optional.ofNullable(qualifier()).map(q -> "{{providerRegistry}}.resolvePlaceholders(" + q + ")").orElse(null) + ";");
 
         MethodBuilder scope = classBuilder.newMethod("public Class<? extends Annotation> scope()");
         String scopeString = Optional.ofNullable(scope())
