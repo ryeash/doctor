@@ -30,6 +30,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -325,7 +326,8 @@ public class ProcessorUtils {
 
             if (ProcessorUtils.isCompatibleWith(context, typeElement, Iterable.class)) {
                 TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
-                String preamble = providerRegistryRef + ".getProviders(" + typeMirror + ".class, " + qualifier + ")"
+                String methodCall = getProvidersCode(typeMirror, qualifier, providerRegistryRef);
+                String preamble = methodCall
                         + ".map(" + Provider.class.getCanonicalName() + "::get)"
                         + ".collect(" + Collectors.class.getCanonicalName();
 
@@ -343,12 +345,12 @@ public class ProcessorUtils {
 
             if (ProcessorUtils.isCompatibleWith(context, typeElement, Stream.class)) {
                 TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
-                return providerRegistryRef + ".getProviders(" + typeMirror + ".class, " + qualifier + ")";
+                return getProvidersCode(typeMirror, qualifier, providerRegistryRef);
             }
 
             if (variableElement.asType().getKind() == TypeKind.ARRAY) {
-                String type = typeElement.getQualifiedName().toString();
-                return providerRegistryRef + ".getProviders(" + type + ".class, " + qualifier + ").map(" + Provider.class.getCanonicalName() + "::get)" + ".toArray(" + type + "[]::new)";
+                TypeMirror typeMirror = typeElement.asType();
+                return getProvidersCode(typeMirror, qualifier, providerRegistryRef) + ".map(" + Provider.class.getCanonicalName() + "::get)" + ".toArray(" + typeMirror + "[]::new)";
             }
 
             return providerRegistryRef + ".getInstance(" + variableElement.asType() + ".class, " + qualifier + ")";
@@ -356,6 +358,12 @@ public class ProcessorUtils {
             context.errorMessage("error wiring parameter: " + e.getMessage() + ": " + ProcessorUtils.debugString(variableElement));
             throw e;
         }
+    }
+
+    private static String getProvidersCode(TypeMirror typeMirror, String qualifier, String providerRegistryRef) {
+        return Objects.equals(qualifier, null)
+                ? providerRegistryRef + ".getProviders(" + typeMirror + ".class)"
+                : providerRegistryRef + ".getProviders(" + typeMirror + ".class, " + qualifier + ")";
     }
 
     public static TypeMirror unwrapJustOne(TypeMirror mirror) {
