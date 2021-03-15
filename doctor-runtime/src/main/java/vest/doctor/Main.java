@@ -23,7 +23,7 @@ public final class Main {
     }
 
     /**
-     * If Main was used das the main class get the initialized doctor instance, else throw a {@link NullPointerException}.
+     * If Main was used as the main class get the initialized doctor instance, else throw a {@link NullPointerException}.
      *
      * @return the {@link Doctor}
      */

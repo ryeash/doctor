@@ -16,7 +16,8 @@ import java.util.stream.Stream;
 /**
  * An immutable wrapper around the arguments passed into the main method.
  * Options (named arguments that are followed by a value)
- * and Flags (named arguments that are interpreted as boolean true) are supported.
+ * and Flags (named arguments that are interpreted as boolean true/false) are supported
+ * in addition to simple position arguments.
  * <p>
  * Example:
  * java -jar app.jar -Fg --debug -e "dev"

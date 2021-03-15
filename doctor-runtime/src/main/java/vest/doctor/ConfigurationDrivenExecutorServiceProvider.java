@@ -19,6 +19,18 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Provider implementation that provides instances of {@link ExecutorService}s based on configuration properties.
+ * <p>
+ * Supported properties:
+ * executors.[name].type - the type of the executor - allowed value is one of {@link ThreadPoolType}
+ * executors.[name].minThreads - the minimum number of threads in the pool; not valid for forkjoin type
+ * executors.[name].maxThreads - the maximum number of threads in the pool
+ * executors.[name].keepAliveSeconds - the number of seconds to keep idle threads in the pool alive before allowing them to be destroyed; not valid for forkjoin type
+ * executors.[name].uncaughtExceptionHandler - the qualifier for a provided {@link java.lang.Thread.UncaughtExceptionHandler} to use in the thread pool
+ * executors.[name].daemonize - sets whether threads created by the executor will be daemons; {@link Thread#setDaemon(boolean)}
+ * executors.[name].nameFormat - format of the thread names; e.g. "background-%d"
+ * executors.[name].rejectedExecutionHandler - either the qualifier for a provided {@link RejectedExecutionHandler} or the name of one of the built in handlers: discard, discardOldest, callerRuns, abort
+ * <p>
+ * There are two executors provided automatically, their names are {@link BuiltInAppLoader#DEFAULT_EXECUTOR_NAME} and {@link BuiltInAppLoader#DEFAULT_SCHEDULED_EXECUTOR_NAME}
  */
 public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvider<ExecutorService> {
 
@@ -69,7 +81,16 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
 
         minThreads = configurationFacade.get(propertyPrefix + ".minThreads", DEFAULT_MIN_THREADS, Integer::valueOf);
         maxThreads = configurationFacade.get(propertyPrefix + ".maxThreads", DEFAULT_MAX_THREADS, Integer::valueOf);
+        if (minThreads < 0) {
+            throw new IllegalArgumentException("invalid minThreads for executor " + name + ": must be greater than 0");
+        }
+        if (maxThreads < minThreads) {
+            throw new IllegalArgumentException("invalid maxThreads for executor " + name + ": must be greater than minThreads");
+        }
         keepAliveSeconds = configurationFacade.get(propertyPrefix + ".keepAliveSeconds", DEFAULT_KEEP_ALIVE, Integer::valueOf);
+        if (keepAliveSeconds < 0) {
+            throw new IllegalArgumentException("invalid keepAliveSecond for executor " + name + ": must be greater than 0");
+        }
 
         String uncaughtExceptionHandlerQualifier = configurationFacade.get(propertyPrefix + ".uncaughtExceptionHandler");
         Thread.UncaughtExceptionHandler uncaughtExceptionHandler = providerRegistry.getProviderOpt(Thread.UncaughtExceptionHandler.class, uncaughtExceptionHandlerQualifier)
@@ -78,7 +99,7 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
 
         threadFactory = new CustomThreadFactory(
                 configurationFacade.get(propertyPrefix + ".daemonize", true, Boolean::valueOf),
-                configurationFacade.get(propertyPrefix + ".threadPrefix", propertyPrefix),
+                configurationFacade.get(propertyPrefix + ".nameFormat", propertyPrefix + "-%d"),
                 uncaughtExceptionHandler,
                 null);
 

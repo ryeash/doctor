@@ -15,7 +15,7 @@ public final class CustomThreadFactory implements ThreadFactory, ForkJoinPool.Fo
     private static final ThreadFactory defaultThreadFactory = Executors.defaultThreadFactory();
     private final AtomicInteger counter = new AtomicInteger(0);
     private final boolean daemonize;
-    private final String threadPrefix;
+    private final String nameFormat;
     private final Thread.UncaughtExceptionHandler uncaughtExceptionHandler;
     private final ClassLoader classLoader;
 
@@ -23,14 +23,14 @@ public final class CustomThreadFactory implements ThreadFactory, ForkJoinPool.Fo
      * Create a new thread factory.
      *
      * @param daemonize                whether the created threads will be deamons; see {@link Thread#setDaemon(boolean)}
-     * @param threadPrefix             the prefix name to use for the threads, thread names will be set to the thread
+     * @param nameFormat               the prefix name to use for the threads, thread names will be set to the thread
      *                                 prefix appended with a unique thread id number
      * @param uncaughtExceptionHandler the {@link java.lang.Thread.UncaughtExceptionHandler} to use for the threads
      * @param classLoader              the {@link ClassLoader} to use for the threads
      */
-    public CustomThreadFactory(boolean daemonize, String threadPrefix, Thread.UncaughtExceptionHandler uncaughtExceptionHandler, ClassLoader classLoader) {
+    public CustomThreadFactory(boolean daemonize, String nameFormat, Thread.UncaughtExceptionHandler uncaughtExceptionHandler, ClassLoader classLoader) {
         this.daemonize = daemonize;
-        this.threadPrefix = threadPrefix;
+        this.nameFormat = nameFormat;
         this.uncaughtExceptionHandler = uncaughtExceptionHandler;
         this.classLoader = classLoader != null ? classLoader : ClassLoader.getSystemClassLoader();
     }
@@ -51,7 +51,7 @@ public final class CustomThreadFactory implements ThreadFactory, ForkJoinPool.Fo
 
     protected <T extends Thread> T configure(T thread) {
         thread.setDaemon(daemonize);
-        thread.setName(threadPrefix + counter.incrementAndGet());
+        thread.setName(String.format(nameFormat, counter.incrementAndGet()));
         thread.setUncaughtExceptionHandler(uncaughtExceptionHandler);
         thread.setContextClassLoader(classLoader);
         return thread;

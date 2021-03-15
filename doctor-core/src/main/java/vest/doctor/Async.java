@@ -1,5 +1,6 @@
 package vest.doctor;
 
+import jakarta.inject.Inject;
 import vest.doctor.event.EventListener;
 
 import java.lang.annotation.Documented;
@@ -9,7 +10,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marks a method to be injected asynchronously during processing. Applies to {@link jakarta.inject.Inject}
+ * Marks a method to be injected asynchronously during processing. Applies to {@link Inject}
  * and {@link EventListener} methods.
  */
 @Documented

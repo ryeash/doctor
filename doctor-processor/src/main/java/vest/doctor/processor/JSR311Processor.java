@@ -245,8 +245,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
 
     @Override
     public <T extends CustomizationPoint> List<T> customizations(Class<T> type) {
-        return Stream.of(customizationPoints)
-                .flatMap(Collection::stream)
+        return customizationPoints.stream()
                 .filter(type::isInstance)
                 .distinct()
                 .map(type::cast)
