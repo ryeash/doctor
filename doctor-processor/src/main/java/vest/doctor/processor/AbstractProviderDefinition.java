@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 
 public abstract class AbstractProviderDefinition implements ProviderDefinition {
 
-    private static final Collector<CharSequence, ?, String> AS_LIST = Collectors.joining(", ", "Collections.unmodifiableList(java.util.Arrays.asList(", "))");
+    private static final Collector<CharSequence, ?, String> AS_LIST = Collectors.joining(", ", "List.of(", ")");
 
     protected final AnnotationProcessorContext context;
     protected final TypeElement providedType;
@@ -133,7 +133,6 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                 .addImportClass(ProviderRegistry.class)
                 .addImportClass(Provider.class)
                 .addImportClass(List.class)
-                .addImportClass(Collections.class)
                 .addImportClass(providedType().getQualifiedName().toString())
                 .addImportClass(DoctorProvider.class)
                 .addImplementsInterface(DoctorProvider.class.getSimpleName() + "<" + providedType().getSimpleName() + ">")

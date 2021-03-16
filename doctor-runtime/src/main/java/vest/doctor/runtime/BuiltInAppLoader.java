@@ -9,7 +9,7 @@ import vest.doctor.event.EventBus;
 import vest.doctor.event.EventProducer;
 import vest.doctor.event.ReloadConfiguration;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
@@ -31,7 +31,7 @@ public class BuiltInAppLoader implements AppLoader {
             providerRegistry.register(new SingletonScopedProvider<>(new ConfigurationDrivenExecutorServiceProvider(providerRegistry, DEFAULT_EXECUTOR_NAME, null)));
             providerRegistry.register(new SingletonScopedProvider<>(new ConfigurationDrivenExecutorServiceProvider(providerRegistry, DEFAULT_SCHEDULED_EXECUTOR_NAME, ConfigurationDrivenExecutorServiceProvider.ThreadPoolType.scheduled)));
             EventBus eventBus = new EventBus();
-            providerRegistry.register(new AdHocProvider<>(EventBus.class, eventBus, null, Arrays.asList(EventBus.class, EventProducer.class)));
+            providerRegistry.register(new AdHocProvider<>(EventBus.class, eventBus, null, List.of(EventBus.class, EventProducer.class)));
             eventBus.addConsumer(obj -> {
                 if (obj instanceof ReloadConfiguration) {
                     providerRegistry.configuration().reload();

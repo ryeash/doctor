@@ -287,11 +287,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                     .filter(Objects::nonNull)
                     .map(m -> '"' + m + '"')
                     .collect(Collectors.joining(", "));
-            if (providerDefinition.modules().size() == 1) {
-                load.line("if(isActive({{providerRegistry}}, java.util.Collections.singletonList(", modules, "))){");
-            } else {
-                load.line("if(isActive({{providerRegistry}}, java.util.Arrays.asList(", modules, "))){");
-            }
+            load.line("if(isActive({{providerRegistry}}, List.of(", modules, "))){");
         }
 
         if (providerDefinition.scope() != null) {

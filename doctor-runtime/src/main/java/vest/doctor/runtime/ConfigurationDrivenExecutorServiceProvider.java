@@ -7,7 +7,6 @@ import vest.doctor.DoctorProvider;
 import vest.doctor.ProviderRegistry;
 
 import java.lang.annotation.Annotation;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -27,7 +26,7 @@ import java.util.concurrent.TimeUnit;
  * Supported properties:
  * executors.[name].type - the type of the executor - allowed value is one of {@link ThreadPoolType}
  * executors.[name].minThreads - the minimum number of threads in the pool; not valid for forkjoin type
- * executors.[name].maxThreads - the maximum number of threads in the pool
+ * executors.[name].maxThreads - the maximum number of threads in the pool; not valid for cached type
  * executors.[name].keepAliveSeconds - the number of seconds to keep idle threads in the pool alive before allowing them to be destroyed; not valid for forkjoin type
  * executors.[name].uncaughtExceptionHandler - the qualifier for a provided {@link java.lang.Thread.UncaughtExceptionHandler} to use in the thread pool
  * executors.[name].daemonize - sets whether threads created by the executor will be daemons; {@link Thread#setDaemon(boolean)}
@@ -40,7 +39,7 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
 
     public static final int DEFAULT_MIN_THREADS = 1;
     public static final int DEFAULT_MAX_THREADS = Math.max(8, Runtime.getRuntime().availableProcessors() * 2);
-    public static final int DEFAULT_KEEP_ALIVE = 600;
+    public static final int DEFAULT_KEEP_ALIVE = 60;
 
     public enum ThreadPoolType {
         cached, fixed, scheduled, forkjoin
@@ -78,9 +77,9 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
             this.type = configurationFacade.get(propertyPrefix + ".type", ThreadPoolType.fixed, ThreadPoolType::valueOf);
         }
         this.providedTypes = switch (type) {
-            case cached, fixed -> Arrays.asList(Executor.class, ExecutorService.class);
-            case scheduled -> Arrays.asList(Executor.class, ExecutorService.class, ScheduledExecutorService.class);
-            case forkjoin -> Arrays.asList(Executor.class, ExecutorService.class, ForkJoinPool.class);
+            case cached, fixed -> List.of(Executor.class, ExecutorService.class);
+            case scheduled -> List.of(Executor.class, ExecutorService.class, ScheduledExecutorService.class);
+            case forkjoin -> List.of(Executor.class, ExecutorService.class, ForkJoinPool.class);
         };
 
         minThreads = configurationFacade.get(propertyPrefix + ".minThreads", DEFAULT_MIN_THREADS, Integer::valueOf);
@@ -92,7 +91,7 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
             throw new IllegalArgumentException("invalid maxThreads for executor " + name + ": must be greater than minThreads");
         }
         keepAliveSeconds = configurationFacade.get(propertyPrefix + ".keepAliveSeconds", DEFAULT_KEEP_ALIVE, Integer::valueOf);
-        if (keepAliveSeconds < 0) {
+        if (keepAliveSeconds <= 0) {
             throw new IllegalArgumentException("invalid keepAliveSecond for executor " + name + ": must be greater than 0");
         }
 
@@ -161,10 +160,9 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
                 return Executors.unconfigurableExecutorService(threadPoolExecutor);
 
             case cached:
-                Executors.newCachedThreadPool();
                 ThreadPoolExecutor cached = new ThreadPoolExecutor(
                         minThreads,
-                        maxThreads,
+                        Integer.MAX_VALUE,
                         keepAliveSeconds,
                         TimeUnit.SECONDS,
                         new SynchronousQueue<>(),

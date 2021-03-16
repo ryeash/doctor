@@ -6,14 +6,13 @@ import vest.doctor.ProcessorConfiguration;
 import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceContexts;
 import java.lang.annotation.Annotation;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 public class JPAProcessorConfiguration implements ProcessorConfiguration {
     @Override
     public List<Class<? extends Annotation>> supportedAnnotations() {
-        return Arrays.asList(PersistenceContext.class, PersistenceContexts.class);
+        return List.of(PersistenceContext.class, PersistenceContexts.class);
     }
 
     @Override

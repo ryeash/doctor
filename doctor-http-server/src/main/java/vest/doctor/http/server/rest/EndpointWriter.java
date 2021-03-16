@@ -29,7 +29,6 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import java.lang.annotation.Annotation;
 import java.net.URI;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -161,8 +160,8 @@ public class EndpointWriter implements ProviderDefinitionListener {
                 , "\", ", sb.toString(), ");");
     }
 
-    private static final List<Class<? extends Annotation>> SUPPORTED_PARAMS = Arrays.asList(Body.class, Attribute.class, PathParam.class, QueryParam.class, HeaderParam.class, CookieParam.class, BeanParam.class);
-    private static final List<Class<?>> SUPPORTED_CLASSES = Arrays.asList(Request.class, URI.class);
+    private static final List<Class<? extends Annotation>> SUPPORTED_PARAMS = List.of(Body.class, Attribute.class, PathParam.class, QueryParam.class, HeaderParam.class, CookieParam.class, BeanParam.class);
+    private static final List<Class<?>> SUPPORTED_CLASSES = List.of(Request.class, URI.class);
 
     public static String parameterWriting(AnnotationProcessorContext context, VariableElement parameter, String contextRef) {
         return parameterWriting(context, parameter, parameter, contextRef);

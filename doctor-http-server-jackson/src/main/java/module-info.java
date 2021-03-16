@@ -1,9 +1,10 @@
 module doctor.http.server.jackson {
-    requires doctor.http.server;
     requires com.fasterxml.jackson.databind;
-    requires io.netty.codec.http;
-    requires org.slf4j;
+    requires doctor.http.server;
     requires io.netty.buffer;
+    requires io.netty.codec.http;
+    requires jakarta.inject;
+    requires org.slf4j;
 
     exports vest.doctor.http.jackson;
 }

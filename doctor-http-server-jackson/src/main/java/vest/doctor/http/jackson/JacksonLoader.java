@@ -8,7 +8,7 @@ import vest.doctor.ProviderRegistry;
 import vest.doctor.http.server.rest.BodyReader;
 import vest.doctor.http.server.rest.BodyWriter;
 
-import java.util.Arrays;
+import java.util.List;
 
 public class JacksonLoader implements AppLoader {
 
@@ -19,6 +19,6 @@ public class JacksonLoader implements AppLoader {
                 .map(JacksonInterchange::new)
                 .orElseGet(() -> new JacksonInterchange(JacksonInterchange.defaultConfig()));
 
-        providerRegistry.register(new AdHocProvider<>(JacksonInterchange.class, jacksonInterchange, null, Arrays.asList(JacksonInterchange.class, BodyReader.class, BodyWriter.class)));
+        providerRegistry.register(new AdHocProvider<>(JacksonInterchange.class, jacksonInterchange, null, List.of(JacksonInterchange.class, BodyReader.class, BodyWriter.class)));
     }
 }

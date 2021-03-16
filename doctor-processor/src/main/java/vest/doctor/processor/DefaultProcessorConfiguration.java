@@ -9,19 +9,18 @@ import vest.doctor.Prototype;
 import vest.doctor.ThreadLocal;
 
 import java.lang.annotation.Annotation;
-import java.util.Arrays;
 import java.util.List;
 
 public class DefaultProcessorConfiguration implements ProcessorConfiguration {
 
     @Override
     public List<Class<? extends Annotation>> supportedAnnotations() {
-        return Arrays.asList(Singleton.class, ThreadLocal.class, Prototype.class, Cached.class, Factory.class);
+        return List.of(Singleton.class, ThreadLocal.class, Prototype.class, Cached.class, Factory.class);
     }
 
     @Override
     public List<CustomizationPoint> customizationPoints() {
-        return Arrays.asList(
+        return List.of(
                 new InjectMethodsCustomizer(),
                 new EventConsumersWriter(),
                 new ScheduledMethodCustomizer(),

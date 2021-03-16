@@ -7,7 +7,6 @@ import vest.doctor.Property;
 import vest.doctor.Prototype;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -35,9 +34,9 @@ public class TCProperties {
     public void injectProperties(@Property("list") List<String> stringList,
                                  @Property("list") Collection<Integer> numberList,
                                  @Property("set") Set<String> set) {
-        Assert.assertEquals(stringList, Arrays.asList("42", "12", "97"));
-        Assert.assertEquals(numberList, Arrays.asList(42, 12, 97));
-        Assert.assertEquals(set, Arrays.asList("one", "two", "three"));
+        Assert.assertEquals(stringList, List.of("42", "12", "97"));
+        Assert.assertEquals(numberList, List.of(42, 12, 97));
+        Assert.assertEquals(set, List.of("one", "two", "three"));
     }
 
     @Inject
@@ -54,8 +53,8 @@ public class TCProperties {
         Assert.assertEquals(props.stringPropOpt().orElse(null), "value");
         Assert.assertFalse(props.otherThing().isPresent());
         Assert.assertEquals(props.number().intValue(), 42);
-        Assert.assertEquals(props.stringList(), Arrays.asList("42", "12", "97"));
-        Assert.assertEquals(props.numberList(), Arrays.asList(42, 12, 97));
+        Assert.assertEquals(props.stringList(), List.of("42", "12", "97"));
+        Assert.assertEquals(props.numberList(), List.of(42, 12, 97));
     }
 
     @Inject

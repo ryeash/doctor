@@ -84,7 +84,7 @@ final class AspectedMethod {
         } else {
             paramTypes = method.getParameters().stream()
                     .map(ProcessorUtils::newTypeInfo)
-                    .collect(Collectors.joining(", ", "Arrays.asList(", ")"));
+                    .collect(Collectors.joining(", ", "List.of(", ")"));
         }
         String returnType;
         if (method.getReturnType().getKind() == TypeKind.VOID) {
@@ -131,7 +131,7 @@ final class AspectedMethod {
         } else {
             arguments = method.getParameters().stream()
                     .map(p -> "new MutableMethodArgument(" + p.getSimpleName() + ")")
-                    .collect(Collectors.joining(", ", "Arrays.asList(", ")"));
+                    .collect(Collectors.joining(", ", "List.of(", ")"));
         }
         StringBuilder invoker = new StringBuilder();
         String invokerParams = IntStream.range(0, method.getParameters().size())

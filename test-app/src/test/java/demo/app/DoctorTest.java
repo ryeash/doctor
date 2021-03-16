@@ -12,7 +12,6 @@ import vest.doctor.runtime.Doctor;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -185,7 +184,7 @@ public class DoctorTest extends BaseDoctorTest {
     @Test
     public void aspects() throws IOException {
         TCAspects instance = doctor.getInstance(TCAspects.class);
-        instance.execute("name", Arrays.asList("a", "b"));
+        instance.execute("name", List.of("a", "b"));
         assertEquals(instance.parrot("hi"), "hi altered42");
 
         CoffeeMaker aspect = doctor.getInstance(CoffeeMaker.class, "coffee-aspect");

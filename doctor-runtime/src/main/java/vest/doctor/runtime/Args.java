@@ -1,8 +1,6 @@
 package vest.doctor.runtime;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -39,7 +37,7 @@ public class Args implements Iterable<String> {
                 .flatMap(Args::expandCharFlags)
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toCollection(ArrayList::new));
-        this.args = Collections.unmodifiableList(Arrays.asList(args));
+        this.args = List.of(args);
 
         this.flags = new HashSet<>();
         this.options = new LinkedHashMap<>();

@@ -15,7 +15,6 @@ import vest.doctor.event.ApplicationStarted;
 import vest.doctor.event.EventProducer;
 
 import java.lang.annotation.Annotation;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -68,7 +67,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
      * @return a new Doctor instance
      */
     public static Doctor load(String... modules) {
-        return new Doctor(DefaultConfigurationFacade.defaultConfigurationFacade(), Arrays.asList(modules));
+        return new Doctor(DefaultConfigurationFacade.defaultConfigurationFacade(), List.of(modules));
     }
 
     /**
@@ -89,7 +88,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
      * @return a new Doctor instance
      */
     public static Doctor load(ConfigurationFacade configurationFacade, String... modules) {
-        return new Doctor(configurationFacade, Arrays.asList(modules));
+        return new Doctor(configurationFacade, List.of(modules));
     }
 
     /**
@@ -120,7 +119,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         log.debug("Doctor initializing...");
         long start = System.currentTimeMillis();
         this.providerIndex = new ProviderIndex();
-        providerIndex.setProvider(new AdHocProvider<>(Doctor.class, this, null, Arrays.asList(Doctor.class, ProviderRegistry.class)));
+        providerIndex.setProvider(new AdHocProvider<>(Doctor.class, this, null, List.of(Doctor.class, ProviderRegistry.class)));
         this.activeModules = activeModules;
         this.configurationFacade = configurationFacade;
         this.shutdownContainer = new ShutdownContainer();
@@ -134,7 +133,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
             loaders.add(appLoader);
         }
         if (additionalLoaders != null) {
-            loaders.addAll(Arrays.asList(additionalLoaders));
+            loaders.addAll(List.of(additionalLoaders));
         }
         loaders.sort(Prioritized.COMPARATOR);
         log.debug("Loaders (in order): {}", loaders.stream().map(l -> l + ":" + l.priority()).collect(Collectors.joining(", ")));

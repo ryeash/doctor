@@ -3,7 +3,6 @@ package vest.doctor.scheduled;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -113,7 +112,7 @@ public class Cron {
             }
         },
 
-        MONTH(1, 12, Arrays.asList("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")) {
+        MONTH(1, 12, List.of("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")) {
             @Override
             public ZonedDateTime adjust(ZonedDateTime date, int[] allowedValues) {
                 int adjustment = calculateAdjustment(allowedValues, date.getMonth().getValue(), 12);
@@ -129,7 +128,7 @@ public class Cron {
             }
         },
 
-        DAY_OF_WEEK(1, 7, Arrays.asList("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")) {
+        DAY_OF_WEEK(1, 7, List.of("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")) {
             @Override
             public ZonedDateTime adjust(ZonedDateTime date, int[] allowedValues) {
                 int adjustment = calculateAdjustment(allowedValues, date.getDayOfWeek().getValue(), 7);
