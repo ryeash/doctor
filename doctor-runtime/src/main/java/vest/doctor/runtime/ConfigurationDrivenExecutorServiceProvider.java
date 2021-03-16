@@ -1,6 +1,10 @@
-package vest.doctor;
+package vest.doctor.runtime;
 
 import jakarta.inject.Provider;
+import vest.doctor.ConfigurationFacade;
+import vest.doctor.CustomThreadFactory;
+import vest.doctor.DoctorProvider;
+import vest.doctor.ProviderRegistry;
 
 import java.lang.annotation.Annotation;
 import java.util.Arrays;

@@ -1,4 +1,8 @@
-package vest.doctor;
+package vest.doctor.runtime;
+
+import vest.doctor.AdHocProvider;
+import vest.doctor.AppLoader;
+import vest.doctor.ProviderRegistry;
 
 final class ArgsLoader implements AppLoader {
     private final Args args;

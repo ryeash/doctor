@@ -112,9 +112,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 .addImportClass(PrimaryProviderWrapper.class)
                 .addImportClass(ShutdownContainer.class)
                 .addField("private final ", ShutdownContainer.class, " {{shutdownContainer}} = new ", ShutdownContainer.class, "()")
-                .addMethod("public void close()", b -> {
-                    b.line("{{shutdownContainer}}.close();");
-                })
+                .addMethod("public void close()", b -> b.line("{{shutdownContainer}}.close();"))
                 .addField("private final List<", DoctorProvider.class, "<?>> eagerList = new ArrayList<>()");
         this.load = appLoader.newMethod("public void load(", ProviderRegistry.class, " {{providerRegistry}})");
         this.postProcess = appLoader.newMethod("public void postProcess(", ProviderRegistry.class, " {{providerRegistry}})");

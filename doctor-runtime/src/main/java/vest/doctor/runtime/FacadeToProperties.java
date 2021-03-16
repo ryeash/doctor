@@ -1,4 +1,6 @@
-package vest.doctor;
+package vest.doctor.runtime;
+
+import vest.doctor.ConfigurationFacade;
 
 import java.util.Map;
 import java.util.Properties;

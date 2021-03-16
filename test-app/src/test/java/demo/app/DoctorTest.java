@@ -6,9 +6,9 @@ import jakarta.inject.Provider;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.Test;
 import vest.doctor.ConfigurationFacade;
-import vest.doctor.Doctor;
 import vest.doctor.event.EventProducer;
 import vest.doctor.event.ReloadConfiguration;
+import vest.doctor.runtime.Doctor;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -211,5 +211,11 @@ public class DoctorTest extends BaseDoctorTest {
         EventProducer instance = doctor.getInstance(EventProducer.class);
         instance.publish(new ReloadConfiguration());
         assertTrue(TCConfigReload.reloaded);
+    }
+
+    @Test
+    public void staticFactory() {
+        Object str = doctor.getInstance(Object.class, "static");
+        assertEquals(str, "static");
     }
 }

@@ -32,7 +32,6 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
-import io.netty.handler.codec.http.multipart.HttpPostMultipartRequestDecoder;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.DefaultThreadFactory;
@@ -92,10 +91,6 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
             log.info("netty http server binding to {}", inetSocketAddress);
             serverChannels.add(b.bind(inetSocketAddress).syncUninterruptibly().channel());
         }
-    }
-
-    public void addWebsocket(String uri, Websocket websocket) {
-        addWebsocket(uri, () -> websocket);
     }
 
     public void addWebsocket(String uri, Supplier<Websocket> websocket) {
@@ -276,7 +271,6 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
                     config.getMaxChunkSize(),
                     config.isValidateHeaders(),
                     config.getInitialBufferSize()));
-            HttpPostMultipartRequestDecoder dec;
             p.addLast(new HttpContentDecompressor());
             p.addLast(new HttpContentCompressor(6, 15, 8, 812));
             p.addLast(new ChunkedWriteHandler());

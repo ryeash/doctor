@@ -2,9 +2,9 @@ package demo.app;
 
 import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
-import vest.doctor.DefaultConfigurationFacade;
-import vest.doctor.Doctor;
-import vest.doctor.MapConfigurationSource;
+import vest.doctor.runtime.DefaultConfigurationFacade;
+import vest.doctor.runtime.Doctor;
+import vest.doctor.runtime.MapConfigurationSource;
 
 public abstract class BaseDoctorTest extends Assert {
 

@@ -1,6 +1,7 @@
 package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.ConfigurationFacade;
 import vest.doctor.Properties;
 import vest.doctor.Property;
 import vest.doctor.ProviderRegistry;
@@ -33,6 +34,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
         this.implClass = type.getSimpleName() + "__impl" + context.nextId();
         ClassBuilder impl = new ClassBuilder()
                 .setClassName(context.generatedPackage() + "." + implClass)
+                .addImportClass(ConfigurationFacade.class)
                 .addImplementsInterface(type.toString());
 
         this.propertyPrefix = Optional.ofNullable(type.getAnnotation(Properties.class))
@@ -41,8 +43,10 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
 
         impl.addImportClass(ProviderRegistry.class);
         impl.addField("private final ", ProviderRegistry.class.getSimpleName(), " {{providerRegistry}}");
+        impl.addField("private final ", ConfigurationFacade.class.getSimpleName(), " configurationFacade");
         MethodBuilder constructor = impl.newMethod("public ", implClass, "(", ProviderRegistry.class, " {{providerRegistry}})");
         constructor.line("this.{{providerRegistry}} = {{providerRegistry}};");
+        constructor.line("this.configurationFacade = {{providerRegistry}}.configuration();");
 
         for (ExecutableElement method : ProcessorUtils.allMethods(context, providedType())) {
             if (method.getAnnotation(Property.class) != null) {

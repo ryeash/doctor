@@ -1,4 +1,6 @@
-package vest.doctor;
+package vest.doctor.runtime;
+
+import vest.doctor.ConfigurationSource;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

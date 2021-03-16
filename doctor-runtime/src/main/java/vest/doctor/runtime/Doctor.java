@@ -1,8 +1,15 @@
-package vest.doctor;
+package vest.doctor.runtime;
 
 import jakarta.inject.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import vest.doctor.AdHocProvider;
+import vest.doctor.AppLoader;
+import vest.doctor.ConfigurationFacade;
+import vest.doctor.DoctorProvider;
+import vest.doctor.Prioritized;
+import vest.doctor.ProviderRegistry;
+import vest.doctor.ShutdownContainer;
 import vest.doctor.event.ApplicationShutdown;
 import vest.doctor.event.ApplicationStarted;
 import vest.doctor.event.EventProducer;

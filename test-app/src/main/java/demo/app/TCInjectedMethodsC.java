@@ -22,7 +22,7 @@ public class TCInjectedMethodsC {
     }
 
     @Inject
-    @Async
+    @Async("background")
     public void injectAsync() {
         this.injectAsync = Thread.currentThread().getName();
     }

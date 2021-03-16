@@ -17,4 +17,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
 public @interface Async {
+
+    /**
+     * The name of the {@link java.util.concurrent.ExecutorService}
+     * that will be used to execute the method.
+     */
+    String value() default "default";
 }

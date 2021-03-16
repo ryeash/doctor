@@ -1,4 +1,7 @@
-package vest.doctor;
+package vest.doctor.runtime;
+
+import vest.doctor.ConfigurationFacade;
+import vest.doctor.ConfigurationSource;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,6 +11,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
@@ -88,6 +92,7 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
         return sources.stream()
                 .map(ConfigurationSource::propertyNames)
                 .flatMap(i -> StreamSupport.stream(i.spliterator(), false))
+                .filter(Objects::nonNull)
                 .distinct()::iterator;
     }
 

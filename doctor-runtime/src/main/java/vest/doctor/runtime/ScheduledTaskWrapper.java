@@ -1,5 +1,6 @@
-package vest.doctor;
+package vest.doctor.runtime;
 
+import vest.doctor.ProviderRegistry;
 import vest.doctor.scheduled.Interval;
 
 import java.lang.ref.WeakReference;

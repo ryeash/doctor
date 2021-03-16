@@ -1,4 +1,6 @@
-package vest.doctor;
+package vest.doctor.runtime;
+
+import vest.doctor.DoctorProvider;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;

@@ -1,7 +1,8 @@
-package vest.doctor;
+package vest.doctor.runtime;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import vest.doctor.ProviderRegistry;
 import vest.doctor.scheduled.Cron;
 
 import java.lang.ref.WeakReference;

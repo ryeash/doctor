@@ -22,4 +22,9 @@ executors {
         maxThreads: 8
         minThreads: 8
     }
+
+    background {
+        minThreads: 2
+        maxThreads: 32
+    }
 }

@@ -54,11 +54,8 @@ public class ConstructorProviderDefinition extends AbstractProviderDefinition {
     public ClassBuilder getClassBuilder() {
         ClassBuilder classBuilder = super.getClassBuilder();
 
-        classBuilder.addMethod("public String toString()", b -> {
-            b.line("{ return \"ConstructorProvider("
-                    + providedType.getSimpleName()
-                    + "):\" + hashCode(); }");
-        });
+        classBuilder.addMethod("public String toString()", b ->
+                b.line(" return \"ConstructorProvider(" + providedType.getSimpleName() + "):\" + hashCode();"));
 
         classBuilder.addMethod("public void validateDependencies(" + ProviderRegistry.class.getSimpleName() + " {{providerRegistry}})", b -> {
             for (VariableElement parameter : injectableConstructor.getParameters()) {

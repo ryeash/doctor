@@ -15,7 +15,9 @@ import javax.lang.model.util.ElementFilter;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 
@@ -38,20 +40,22 @@ public class InjectMethodsCustomizer implements NewInstanceCustomizer {
         }
         TypeElement typeElement = providerDefinition.providedType();
 
-        boolean executorRef = false;
+        Map<String, String> executorNameToInstance = new HashMap<>();
+
         for (ExecutableElement executableElement : ElementFilter.methodsIn(context.processingEnvironment().getElementUtils().getAllMembers(typeElement))) {
             if (targetAnnotations.stream().map(executableElement::getAnnotation).anyMatch(Objects::nonNull)) {
 
                 String call = context.executableCall(providerDefinition, executableElement, instanceRef, providerRegistryRef);
 
                 if (executableElement.getAnnotation(Async.class) != null) {
-                    if (!executorRef) {
-                        executorRef = true;
-                        method.line(ExecutorService.class.getCanonicalName() + " executor = " + providerRegistryRef + ".getInstance(" + ExecutorService.class.getCanonicalName() + ".class, \"default\");");
-                    }
+                    String executorName = executableElement.getAnnotation(Async.class).value();
+                    String executorInstance = executorNameToInstance.computeIfAbsent(executorName, name -> {
+                        String n = "executor" + context.nextId();
+                        method.line(ExecutorService.class.getCanonicalName() + " ", n, " = " + providerRegistryRef + ".getInstance(" + ExecutorService.class.getCanonicalName() + ".class, \"", ProcessorUtils.escapeStringForCode(name), "\");");
+                        return n;
+                    });
                     method.bind("InjectionException", InjectionException.class.getCanonicalName())
-
-                            .line("executor.submit(() -> {")
+                            .line(executorInstance, ".submit(() -> {")
                             .line("try {")
                             .line(call, ";")
                             .line("} catch(Throwable t) {")

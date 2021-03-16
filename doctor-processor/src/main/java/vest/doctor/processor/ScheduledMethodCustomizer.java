@@ -27,7 +27,7 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
         for (ExecutableElement m : ProcessorUtils.allMethods(context, providerDefinition.providedType())) {
             if (m.getAnnotation(Scheduled.class) != null) {
                 if (!executorInitialized) {
-                    method.line("java.util.concurrent.ScheduledExecutorService ses = " + providerRegistryRef + ".getInstance(java.util.concurrent.ScheduledExecutorService.class, \"defaultScheduled\");\n");
+                    method.line("java.util.concurrent.ScheduledExecutorService ses = " + providerRegistryRef + ".getInstance(java.util.concurrent.ScheduledExecutorService.class, \"scheduled\");\n");
                     executorInitialized = true;
                 }
                 Scheduled scheduled = m.getAnnotation(Scheduled.class);
@@ -60,7 +60,7 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
                 .bind("InjectionException", InjectionException.class.getCanonicalName())
                 .bind("method", ProcessorUtils.debugString(scheduledMethod))
 
-                .addImportClass("vest.doctor.ScheduledTaskWrapper")
+                .addImportClass("vest.doctor.runtime.ScheduledTaskWrapper")
                 .line("ScheduledTaskWrapper.run({{providerRegistry}}, {{instance}}, {{executionLimit}}, new {{Interval}}({{providerRegistry}}.resolvePlaceholders(\"", ProcessorUtils.escapeStringForCode(scheduled.interval()), "\")), ses, {{fixedRate}}, (provRegistry, val) -> {")
                 .line("try {")
                 .line(context.executableCall(providerDefinition, scheduledMethod, "val", "provRegistry") + ";")
@@ -84,7 +84,7 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
                 .bind("InjectionException", InjectionException.class.getCanonicalName())
                 .bind("method", ProcessorUtils.debugString(scheduledMethod))
 
-                .addImportClass("vest.doctor.CronTaskWrapper")
+                .addImportClass("vest.doctor.runtime.CronTaskWrapper")
                 .line("CronTaskWrapper.run({{providerRegistry}}, {{instance}}, {{cron}}, {{executionLimit}}, ses, (provRegistry, val) -> {")
                 .line("try {")
                 .line(context.executableCall(providerDefinition, scheduledMethod, instanceRef, providerRegistryRef) + ";")

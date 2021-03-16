@@ -27,7 +27,7 @@ public class TCEvent {
     }
 
     @Inject
-    @Async
+    @Async("background")
     public void message() {
         producer.publish("test");
     }

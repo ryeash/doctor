@@ -1,4 +1,6 @@
-package vest.doctor;
+package vest.doctor.runtime;
+
+import vest.doctor.ConfigurationSource;
 
 import java.io.BufferedReader;
 import java.io.IOException;

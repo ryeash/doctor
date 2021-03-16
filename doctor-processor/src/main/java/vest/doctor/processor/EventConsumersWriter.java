@@ -18,14 +18,18 @@ import vest.doctor.event.EventListener;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 public class EventConsumersWriter implements ProviderDefinitionListener {
 
     private ClassBuilder events;
-    private MethodBuilder publish;
+    private MethodBuilder preProcess;
+    private MethodBuilder postProcess;
+    private final Map<String, String> executorNameToInstance = new HashMap<>();
 
     @Override
     public void process(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
@@ -52,24 +56,31 @@ public class EventConsumersWriter implements ProviderDefinitionListener {
         String container = ProcessorUtils.typeWithoutParameters(providerDefinition.providedType().asType());
         events.addImportClass(container);
         String instanceName = "prov" + context.nextId();
-        publish.line("Provider<", container, "> ", instanceName, " = ", ProcessorUtils.getProviderCode(providerDefinition), ";");
+        postProcess.line("Provider<", container, "> ", instanceName, " = ", ProcessorUtils.getProviderCode(providerDefinition), ";");
         for (ExecutableElement listener : listeners) {
             VariableElement message = listener.getParameters().get(0);
             TypeElement messageType = context.toTypeElement(message.asType());
 
-            publish.line("bus.addConsumer(event -> {");
-            publish.line("if(event instanceof ", messageType, "){");
+            postProcess.line("bus.addConsumer(event -> {");
+            postProcess.line("if(event instanceof ", messageType, "){");
 
             String call = instanceName + ".get()." + listener.getSimpleName() + "((" + ProcessorUtils.typeWithoutParameters(messageType.asType()) + ")event)";
             if (listener.getAnnotation(Async.class) != null) {
-                publish.line("executor.submit(() -> {")
+                String executorName = listener.getAnnotation(Async.class).value();
+                String executor = executorNameToInstance.computeIfAbsent(executorName, name -> {
+                    String execInst = "executor" + context.nextId();
+                    events.addField("private ExecutorService ", execInst, " = null");
+                    preProcess.line(execInst, " = {{providerRegistry}}.getInstance(", ExecutorService.class.getCanonicalName(), ".class, \"", ProcessorUtils.escapeStringForCode(executorName), "\");");
+                    return execInst;
+                });
+                postProcess.line(executor, ".submit(() -> {")
                         .line(call + ";")
                         .line("});");
             } else {
-                publish.line(call + ";");
+                postProcess.line(call + ";");
             }
-            publish.line("}");
-            publish.line("});");
+            postProcess.line("}");
+            postProcess.line("});");
 
         }
     }
@@ -92,9 +103,11 @@ public class EventConsumersWriter implements ProviderDefinitionListener {
                 .addImportClass(ExecutorService.class)
                 .addImplementsInterface(AppLoader.class)
                 .setClassName(context.generatedPackage() + "." + className);
-        publish = events.newMethod("public void postProcess(", ProviderRegistry.class, " {{providerRegistry}})");
-        publish.line("ExecutorService executor = " + Constants.PROVIDER_REGISTRY + ".getInstance(" + ExecutorService.class.getCanonicalName() + ".class, \"default\");");
-        publish.line("EventBus bus = " + Constants.PROVIDER_REGISTRY + ".getInstance(" + EventBus.class.getCanonicalName() + ".class, null);");
+        postProcess = events.newMethod("public void postProcess(", ProviderRegistry.class, " {{providerRegistry}})");
+        postProcess.line("EventBus bus = " + Constants.PROVIDER_REGISTRY + ".getInstance(" + EventBus.class.getCanonicalName() + ".class, null);");
+
+        preProcess = events.newMethod("public void preProcess(", ProviderRegistry.class, " {{providerRegistry}})");
+
         context.addServiceImplementation(AppLoader.class, events.getFullyQualifiedClassName());
     }
 }

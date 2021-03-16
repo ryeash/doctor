@@ -2,7 +2,7 @@ package demo.app.unit;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import vest.doctor.Args;
+import vest.doctor.runtime.Args;
 
 public class ArgsTest {
 

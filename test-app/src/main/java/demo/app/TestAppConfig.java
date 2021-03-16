@@ -127,4 +127,11 @@ public class TestAppConfig {
     public CoffeeMaker coffeeMakerAspect() {
         return new FrenchPress();
     }
+
+    @Factory
+    @Singleton
+    @Named("static")
+    public static Object staticFactory() {
+        return "static";
+    }
 }
