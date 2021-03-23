@@ -110,7 +110,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
     private boolean closed = false;
 
     /**
-     * Create a new Doctor instance. Loading all available generated services automatically.
+     * Create a new Doctor instance. Loading all available providers and services automatically.
      *
      * @param configurationFacade the configuration for the application
      * @param activeModules       the active modules

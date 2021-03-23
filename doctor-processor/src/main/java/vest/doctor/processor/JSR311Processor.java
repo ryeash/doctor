@@ -83,7 +83,6 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
         this.start = System.currentTimeMillis();
-
         super.init(processingEnv);
         this.processingEnv = processingEnv;
 
@@ -134,30 +133,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 .map(roundEnv::getElementsAnnotatedWith)
                 .flatMap(Collection::stream)
                 .filter(processedElements::add)
-                .forEach(annotatedElement -> {
-                    boolean claimed = false;
-                    for (ProviderDefinitionProcessor providerDefinitionProcessor : customizations(ProviderDefinitionProcessor.class)) {
-                        ProviderDefinition provDef = providerDefinitionProcessor.process(this, annotatedElement);
-                        if (provDef != null) {
-                            errorChecking(provDef);
-                            claimed = true;
-                            typesToDependencies.computeIfAbsent(provDef.asDependency(), d -> new HashSet<>());
-                            providerDefinitions.add(provDef);
-                            for (ProviderDefinitionListener providerDefinitionListener : customizations(ProviderDefinitionListener.class)) {
-                                providerDefinitionListener.process(this, provDef);
-                            }
-                            ClassBuilder classBuilder = provDef.getClassBuilder();
-                            if (classBuilder != null) {
-                                classBuilder.writeClass(filer());
-                            }
-                            writeInProvider(provDef);
-                            break;
-                        }
-                    }
-                    if (!claimed) {
-                        warnMessage("the annotated element " + ProcessorUtils.debugString(annotatedElement) + " was not claimed by a processor");
-                    }
-                });
+                .forEach(this::processElement);
 
         if (roundEnv.processingOver()) {
             customizationPoints.forEach(c -> c.finish(this));
@@ -169,6 +145,31 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
             infoMessage("took " + (System.currentTimeMillis() - start) + "ms");
         }
         return annotationsToProcess.containsAll(annotations);
+    }
+
+    private void processElement(Element annotatedElement) {
+        boolean claimed = false;
+        for (ProviderDefinitionProcessor providerDefinitionProcessor : customizations(ProviderDefinitionProcessor.class)) {
+            ProviderDefinition provDef = providerDefinitionProcessor.process(this, annotatedElement);
+            if (provDef != null) {
+                errorChecking(provDef);
+                claimed = true;
+                typesToDependencies.computeIfAbsent(provDef.asDependency(), d -> new HashSet<>());
+                providerDefinitions.add(provDef);
+                for (ProviderDefinitionListener providerDefinitionListener : customizations(ProviderDefinitionListener.class)) {
+                    providerDefinitionListener.process(this, provDef);
+                }
+                ClassBuilder classBuilder = provDef.getClassBuilder();
+                if (classBuilder != null) {
+                    classBuilder.writeClass(filer());
+                }
+                writeInProvider(provDef);
+                break;
+            }
+        }
+        if (!claimed) {
+            warnMessage("the annotated element " + ProcessorUtils.debugString(annotatedElement) + " was not claimed by a processor");
+        }
     }
 
     @Override

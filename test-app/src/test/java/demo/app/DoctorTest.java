@@ -24,7 +24,7 @@ public class DoctorTest extends BaseDoctorTest {
 
     @AfterSuite(alwaysRun = true)
     public void shutdown() {
-        System.out.println(doctor);
+        log.info("{}", doctor);
         doctor.close();
         assertTrue(TCCloseable.closed);
         assertTrue(TCCustomCloseable.closed);
@@ -60,15 +60,13 @@ public class DoctorTest extends BaseDoctorTest {
         try (Doctor doc = Doctor.load("dev")) {
             CoffeeMaker cm = doc.getInstance(CoffeeMaker.class, "modules-test");
             assertEquals(cm.brew(), "dev");
-        } catch (Exception e) {
-            fail("no exception expected", e);
         }
 
         try (Doctor doc = Doctor.load("test")) {
-            CoffeeMaker cm = doc.getInstance(CoffeeMaker.class, "modules-test");
-            assertEquals(cm.brew(), "test");
-        } catch (Exception e) {
-            fail("no exception expected", e);
+            assertEquals(doc.getInstance(CoffeeMaker.class, "modules-test").brew(), "test");
+            assertEquals(doc.getInstance(CoffeeMaker.class, "class-level-module").brew(), "module-qualified");
+            assertTrue(doctor.getProviderOpt(CoffeeMaker.class, "modules-test").isEmpty());
+            assertTrue(doctor.getProviderOpt(CoffeeMaker.class, "class-level-module").isEmpty());
         }
     }
 
@@ -170,7 +168,7 @@ public class DoctorTest extends BaseDoctorTest {
         }
     }
 
-    @Test
+    @Test(groups = "dev")
     public void injectedMethodsTest() {
         TCInjectedMethodsC instance = doctor.getInstance(TCInjectedMethodsC.class);
         assertNotNull(instance.coffeeMaker);

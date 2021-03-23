@@ -12,6 +12,7 @@ public class NettyBeanParam<T> {
     @QueryParam("q")
     private Optional<String> q;
     private int num;
+    private int numberViaMethod;
 
     @Inject
     public NettyBeanParam(@QueryParam("number") int num,
@@ -34,5 +35,15 @@ public class NettyBeanParam<T> {
 
     public void setNum(int num) {
         this.num = num;
+    }
+
+    public int getNumberViaMethod() {
+        return numberViaMethod;
+    }
+
+    @QueryParam("number")
+    public NettyBeanParam<T> setNumberViaMethod(int numberViaMethod) {
+        this.numberViaMethod = numberViaMethod;
+        return this;
     }
 }

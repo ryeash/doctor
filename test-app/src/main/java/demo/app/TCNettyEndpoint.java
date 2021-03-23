@@ -41,6 +41,7 @@ public class TCNettyEndpoint {
         Assert.assertNull(streams);
         Assert.assertEquals(q.get(), beanParam.getQ().get());
         Assert.assertEquals(num, beanParam.getNum());
+        Assert.assertEquals(beanParam.getNumberViaMethod(), num);
         return "ok " + q.orElse(null) + " " + num + " " + optNum.orElse(-1);
     }
 

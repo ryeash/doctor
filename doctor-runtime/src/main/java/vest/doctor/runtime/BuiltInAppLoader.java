@@ -9,11 +9,11 @@ import vest.doctor.event.EventBus;
 import vest.doctor.event.EventProducer;
 import vest.doctor.event.ReloadConfiguration;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class BuiltInAppLoader implements AppLoader {
@@ -27,9 +27,13 @@ public class BuiltInAppLoader implements AppLoader {
         providerRegistry.register(new AdHocProvider<>(ConfigurationFacade.class, providerRegistry.configuration(), null));
         providerRegistry.register(new AdHocProvider<>(Properties.class, providerRegistry.configuration().toProperties(), null));
 
+        Map<String, ConfigurationDrivenExecutorServiceProvider.ThreadPoolType> executors = new HashMap<>();
+        StreamSupport.stream(providerRegistry.configuration().propertyNames().spliterator(), false)
+                .filter(name -> name.startsWith("executors."))
+                .map(name -> getBetween(name, "executors.", "."))
+                .filter(Objects::nonNull)
+                .forEach(name -> executors.put(name, null));
         if (loadBuiltIns(providerRegistry)) {
-            providerRegistry.register(new SingletonScopedProvider<>(new ConfigurationDrivenExecutorServiceProvider(providerRegistry, DEFAULT_EXECUTOR_NAME, null)));
-            providerRegistry.register(new SingletonScopedProvider<>(new ConfigurationDrivenExecutorServiceProvider(providerRegistry, DEFAULT_SCHEDULED_EXECUTOR_NAME, ConfigurationDrivenExecutorServiceProvider.ThreadPoolType.scheduled)));
             EventBus eventBus = new EventBus();
             providerRegistry.register(new AdHocProvider<>(EventBus.class, eventBus, null, List.of(EventBus.class, EventProducer.class)));
             eventBus.addConsumer(obj -> {
@@ -37,18 +41,15 @@ public class BuiltInAppLoader implements AppLoader {
                     providerRegistry.configuration().reload();
                 }
             });
+            executors.put(DEFAULT_EXECUTOR_NAME, null);
+            executors.put(DEFAULT_SCHEDULED_EXECUTOR_NAME, ConfigurationDrivenExecutorServiceProvider.ThreadPoolType.scheduled);
         }
 
-        Set<String> executors = StreamSupport.stream(providerRegistry.configuration().propertyNames().spliterator(), false)
-                .filter(name -> name.startsWith("executors."))
-                .map(name -> getBetween(name, "executors.", "."))
-                .filter(Objects::nonNull)
-                .filter(n -> !(n.equals(DEFAULT_EXECUTOR_NAME) || n.equals(DEFAULT_SCHEDULED_EXECUTOR_NAME)))
-                .collect(Collectors.toSet());
-
-        for (String executor : executors) {
-            providerRegistry.register(new SingletonScopedProvider<>(new ConfigurationDrivenExecutorServiceProvider(providerRegistry, executor, null)));
-        }
+        executors.entrySet()
+                .stream()
+                .map(e -> new ConfigurationDrivenExecutorServiceProvider(providerRegistry, e.getKey(), e.getValue()))
+                .map(SingletonScopedProvider::new)
+                .forEach(providerRegistry::register);
     }
 
     @Override

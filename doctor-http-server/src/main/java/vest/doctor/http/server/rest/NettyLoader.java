@@ -14,10 +14,12 @@ import vest.doctor.event.ServiceStopped;
 import vest.doctor.http.server.ExceptionHandler;
 import vest.doctor.http.server.Filter;
 import vest.doctor.http.server.HttpServer;
-import vest.doctor.http.server.NettyConfiguration;
+import vest.doctor.http.server.HttpServerConfiguration;
 import vest.doctor.http.server.Websocket;
 import vest.doctor.http.server.impl.CompositeExceptionHandler;
+import vest.doctor.http.server.impl.NettyHttpServerChannelInitializer;
 import vest.doctor.http.server.impl.Router;
+import vest.doctor.http.server.impl.ServerSocketChannelInitializer;
 
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -35,7 +37,7 @@ public class NettyLoader implements AppLoader {
     public void postProcess(ProviderRegistry providerRegistry) {
         this.providerRegistry = providerRegistry;
 
-        NettyConfiguration conf = buildConf(providerRegistry);
+        HttpServerConfiguration conf = buildConf(providerRegistry);
         if (conf.getBindAddresses().isEmpty()) {
             return;
         }
@@ -57,7 +59,10 @@ public class NettyLoader implements AppLoader {
                 .map(Provider::get)
                 .forEach(compositeExceptionHandler::addHandler);
 
-        this.server = new HttpServer(conf, router, compositeExceptionHandler);
+        ServerSocketChannelInitializer channelInitializer = providerRegistry.getInstanceOpt(ServerSocketChannelInitializer.class)
+                .orElseGet(() -> new NettyHttpServerChannelInitializer(conf));
+
+        this.server = new HttpServer(conf, router, channelInitializer, compositeExceptionHandler);
 
         providerRegistry.getProviders(Websocket.class)
                 .forEach(ws -> {
@@ -84,10 +89,10 @@ public class NettyLoader implements AppLoader {
         }
     }
 
-    private NettyConfiguration buildConf(ProviderRegistry providerRegistry) {
+    private HttpServerConfiguration buildConf(ProviderRegistry providerRegistry) {
         ConfigurationFacade cf = providerRegistry.configuration();
 
-        NettyConfiguration conf = new NettyConfiguration();
+        HttpServerConfiguration conf = new HttpServerConfiguration();
         conf.setTcpManagementThreads(cf.get("doctor.netty.tcp.threads", 1, Integer::valueOf));
         conf.setTcpThreadPrefix(cf.get("doctor.netty.tcp.threadPrefix", "netty-tcp"));
         conf.setWorkerThreads(cf.get("doctor.netty.worker.threads", 16, Integer::valueOf));

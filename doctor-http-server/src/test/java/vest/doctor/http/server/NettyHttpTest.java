@@ -35,7 +35,7 @@ public class NettyHttpTest {
 
     @BeforeClass(alwaysRun = true)
     public void initServer() {
-        NettyConfiguration configuration = new NettyConfiguration();
+        HttpServerConfiguration configuration = new HttpServerConfiguration();
         configuration.addBindAddress(new InetSocketAddress("localhost", 61234));
 
         Router router = new Router()

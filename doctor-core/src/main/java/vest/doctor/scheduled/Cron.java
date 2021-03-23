@@ -18,7 +18,7 @@ import java.util.stream.Stream;
  * - second: the second of the minute, restricted to [0, 59]
  * - minute: the minute of the hour, restricted to [0, 59]
  * - hour: the hour of the day (24hr), restricted to [0, 23]
- * - day of month: the day of the month, restricted to [0, 28 29 30 or 31], varies with the month (and leap year)
+ * - day of month: the day of the month, restricted to [1, 28 29 30 or 31], varies with the month (and leap year)
  * - month: the month of the year, restricted to [1, 12], January is 1, December is 12
  * - day of week: the day of the week, restricted to [1, 7], the week runs Monday (1) to Sunday (7).
  * Example:

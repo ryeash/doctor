@@ -244,6 +244,16 @@ public class EndpointWriter implements ProviderDefinitionListener {
                 sb.append(".with(").append(beanType).append("::").append(setter.getSimpleName()).append(", ").append(parameterWriting(context, setterParameter, field, contextRef)).append(")");
             }
         }
+        // TODO: method wiring
+        for (ExecutableElement method : ElementFilter.methodsIn(beanType.getEnclosedElements())) {
+            if (supportedParam(method)) {
+                if (method.getParameters().size() != 1) {
+                    throw new IllegalArgumentException("setters in BeanParam objects must have one and only one parameter");
+                }
+                VariableElement setterParameter = method.getParameters().get(0);
+                sb.append(".with(").append(beanType).append("::").append(method.getSimpleName()).append(", ").append(parameterWriting(context, setterParameter, method, contextRef)).append(")");
+            }
+        }
         sb.append(".get()");
         return sb.toString();
     }
@@ -265,7 +275,7 @@ public class EndpointWriter implements ProviderDefinitionListener {
         return constructor;
     }
 
-    private static boolean supportedParam(VariableElement e) {
+    private static boolean supportedParam(Element e) {
         for (Class<? extends Annotation> supportedParam : SUPPORTED_PARAMS) {
             if (e.getAnnotation(supportedParam) != null) {
                 return true;

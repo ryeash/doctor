@@ -8,37 +8,32 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.HttpContentCompressor;
-import io.netty.handler.codec.http.HttpContentDecompressor;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
-import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vest.doctor.http.server.impl.CompositeExceptionHandler;
+import vest.doctor.http.server.impl.NettyHttpServerChannelInitializer;
 import vest.doctor.http.server.impl.ServerRequest;
+import vest.doctor.http.server.impl.ServerSocketChannelInitializer;
 import vest.doctor.http.server.impl.StreamingRequestBody;
 import vest.doctor.http.server.impl.WebsocketHandler;
 
@@ -57,26 +52,29 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
     private static final AttributeKey<StreamingRequestBody> CONTEXT_BODY = AttributeKey.newInstance("doctor.netty.contextBody");
     private static final Logger log = LoggerFactory.getLogger(HttpServer.class);
 
-    private final NettyConfiguration config;
+    private final HttpServerConfiguration config;
     private final EventLoopGroup bossGroup;
     private final EventLoopGroup workerGroup;
     private final List<Channel> serverChannels;
     private final Handler handler;
     private final Map<String, Supplier<Websocket>> websockets;
+    private final ServerSocketChannelInitializer channelInitializer;
     private final ExceptionHandler exceptionHandler;
 
-    public HttpServer(NettyConfiguration config, Handler handler) {
-        this(config, handler, new CompositeExceptionHandler());
+    public HttpServer(HttpServerConfiguration config, Handler handler) {
+        this(config, handler, new NettyHttpServerChannelInitializer(config), new CompositeExceptionHandler());
     }
 
-    public HttpServer(NettyConfiguration config, Handler handler, ExceptionHandler exceptionHandler) {
+    public HttpServer(HttpServerConfiguration config, Handler handler, ServerSocketChannelInitializer channelInitializer, ExceptionHandler exceptionHandler) {
         super();
         this.config = config;
         this.handler = handler;
+        this.channelInitializer = channelInitializer;
         this.websockets = new HashMap<>();
         this.exceptionHandler = exceptionHandler;
         this.bossGroup = new NioEventLoopGroup(config.getTcpManagementThreads(), new DefaultThreadFactory(config.getTcpThreadPrefix(), false));
         this.workerGroup = new NioEventLoopGroup(config.getWorkerThreads(), new DefaultThreadFactory(config.getWorkerThreadPrefix(), true));
+        channelInitializer.setServer(this);
         ServerBootstrap b = new ServerBootstrap()
                 .group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
@@ -84,7 +82,7 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
                 .option(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator())
                 .option(ChannelOption.SO_BACKLOG, config.getSocketBacklog())
                 .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, WriteBufferWaterMark.DEFAULT)
-                .childHandler(new NettyChannelInit(this, config));
+                .childHandler(channelInitializer);
 
         this.serverChannels = new LinkedList<>();
         for (InetSocketAddress inetSocketAddress : config.getBindAddresses()) {
@@ -249,32 +247,4 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
                 || request.headers().contains(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED, true);
     }
 
-    private static final class NettyChannelInit extends ChannelInitializer<SocketChannel> {
-
-        private final HttpServer server;
-        private final NettyConfiguration config;
-
-        NettyChannelInit(HttpServer server, NettyConfiguration config) {
-            this.server = server;
-            this.config = config;
-        }
-
-        @Override
-        protected void initChannel(SocketChannel ch) {
-            ChannelPipeline p = ch.pipeline();
-            if (config.getSslContext() != null) {
-                p.addLast(config.getSslContext().newHandler(ch.alloc()));
-            }
-            // the ordering of these handlers is very sensitive
-            p.addLast(new HttpServerCodec(config.getMaxInitialLineLength(),
-                    config.getMaxHeaderSize(),
-                    config.getMaxChunkSize(),
-                    config.isValidateHeaders(),
-                    config.getInitialBufferSize()));
-            p.addLast(new HttpContentDecompressor());
-            p.addLast(new HttpContentCompressor(6, 15, 8, 812));
-            p.addLast(new ChunkedWriteHandler());
-            p.addLast(server);
-        }
-    }
 }

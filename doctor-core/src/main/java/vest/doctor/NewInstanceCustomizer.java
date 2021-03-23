@@ -9,7 +9,7 @@ import vest.doctor.codegen.MethodBuilder;
 public interface NewInstanceCustomizer extends CustomizationPoint, Prioritized {
 
     /**
-     * Customize a provided instance just after its creation from a {@link Provider#get()} call.
+     * Customize a provided instance after its creation from a {@link Provider#get()} call.
      *
      * @param context             the processor context
      * @param providerDefinition  the provider definition for the provided type

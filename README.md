@@ -15,12 +15,12 @@ public static void main(String[]args){
 
 ### Core Functionality
 
-Pseudo-support for `javax.inject`. During compile, `@Scope` annotations (and others) are analyzed, and the boilerplate
+Pseudo-support for `jakarta.inject`. During compile, `@Scope` annotations (and others) are analyzed, and the boilerplate
 code to generate instances for the types is generated and wired into an infrastructure that relies on `ServiceProvider`
 to load/initialize the application.
 
 To say it in another way, the source code is analyzed to generate implementations of `jakarta.inject.Provider` and the
-providers are automatically wired together to support dependency injection.
+providers are automatically wired together for dependency injection.
 
 ### Defining providers
 
@@ -40,7 +40,8 @@ public class JdbcDao {
 
 ##### Factory
 
-This method in this class does a similar thing:
+This method in this class does a similar thing (though having both in your project will cause a compile time error, so
+just pick one):
 
 ```java
 
@@ -193,7 +194,7 @@ public class EventExample {
     private final EventProducer producer;
 
     @Inject
-    public TCEvent(EventProducer producer) {
+    public EventExample(EventProducer producer) {
         this.producer = producer;
     }
 
@@ -214,7 +215,7 @@ public class EventExample {
 
 ### @Async
 
-The @Async annotation can be used to perform certain actions on a background threads.
+The @Async annotation can be used to perform certain actions in a background thread.
 
 ```java
 @Singleton
@@ -264,12 +265,13 @@ public class PropertiesDemo {
 }
 ```
 
-Additionally, using @Properties, a properties class can be auto generated to provide a portable concrete class
-encapsulating the properties for an application.
+Additionally, using @Properties, a properties class can be auto generated to provide a concrete class encapsulating the
+properties for an application.
 
 ```java
+
 @Singleton
-@Properties("db.") // all property names marked on this class will be prefixed with `db.`
+@Properties("db.") // all property names marked on methods will be prefixed with `db.`
 public interface DBProps { // must be an interface
     @Property("url")
         // this will use the property named `db.url`
@@ -287,7 +289,7 @@ public interface DBProps { // must be an interface
 
 # Aspect Oriented Programming (AOP)
 
-AOP is supported for any injected type that is either an interface or a public, non-final concrete type.
+AOP is supported for any provided type that is either an interface or a public, non-final class.
 
 ### Basics
 
@@ -327,8 +329,8 @@ thing.doSomething() // <- method will be both timed and observed
 #### A note on aspect scoping
 
 In the previous example, the TimingAspect class is marked as @Prototype, but each instance of the aspected class will
-call Provider.get() just once. So for the lifetime of the aspected Thing class, only one instance of the TimingAspect
-will be created and used.
+call Provider.get() once. So for the lifetime of the aspected Thing class, only one instance of the TimingAspect will be
+created and used.
 
 ### Aspect Stages
 

@@ -66,10 +66,13 @@ class MultiPartDataImpl implements MultiPartData {
                 }
             }
         } catch (HttpPostRequestDecoder.EndOfDataDecoderException end) {
-            // ignored
+            finished = true;
         } catch (Throwable t) {
             finished = true;
+            parts.clear();
+            decoder.destroy();
             future.completeExceptionally(t);
+            return null;
         } finally {
             if (finished) {
                 decoder.destroy();

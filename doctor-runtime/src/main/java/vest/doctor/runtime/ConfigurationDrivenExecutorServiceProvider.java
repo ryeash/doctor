@@ -69,12 +69,12 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
 
     public ConfigurationDrivenExecutorServiceProvider(ProviderRegistry providerRegistry, String name, ThreadPoolType forceType) {
         ConfigurationFacade configurationFacade = providerRegistry.configuration();
-        String propertyPrefix = "executors." + name + ".";
+        String propertyPrefix = "executors." + name;
         this.qualifier = name;
         if (forceType != null) {
             this.type = forceType;
         } else {
-            this.type = configurationFacade.get(propertyPrefix + ".type", ThreadPoolType.fixed, ThreadPoolType::valueOf);
+            this.type = configurationFacade.get(propertyPrefix + ".type", ThreadPoolType.forkjoin, ThreadPoolType::valueOf);
         }
         this.providedTypes = switch (type) {
             case cached, fixed -> List.of(Executor.class, ExecutorService.class);
@@ -100,9 +100,9 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
                 .map(Provider::get)
                 .orElse(LoggingUncaughtExceptionHandler.INSTANCE);
 
-        threadFactory = new CustomThreadFactory(
+        this.threadFactory = new CustomThreadFactory(
                 configurationFacade.get(propertyPrefix + ".daemonize", true, Boolean::valueOf),
-                configurationFacade.get(propertyPrefix + ".nameFormat", propertyPrefix + "-%d"),
+                configurationFacade.get(propertyPrefix + ".nameFormat", name + "-%d"),
                 uncaughtExceptionHandler,
                 null);
 

@@ -1,7 +1,7 @@
 package vest.doctor;
 
 /**
- * General purpose exception used in generated classes.
+ * General purpose unchecked exception used in generated classes.
  */
 public class InjectionException extends RuntimeException {
 
