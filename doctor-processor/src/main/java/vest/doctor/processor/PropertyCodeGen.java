@@ -5,6 +5,7 @@ import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.StringConversionGenerator;
 import vest.doctor.codegen.ProcessorUtils;
 
+import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import java.util.Collection;
@@ -17,11 +18,15 @@ public final class PropertyCodeGen {
     private PropertyCodeGen() {
     }
 
-    public static String getPropertyCode(AnnotationProcessorContext context, String propertyName, TypeMirror typeMirror, String beanProviderRef) {
-        if (typeMirror.getKind().isPrimitive()) {
-            return getPrimitivePropertyCode(context, propertyName, typeMirror, beanProviderRef);
-        } else {
-            return getObjectPropertyCode(context, propertyName, typeMirror, beanProviderRef);
+    public static String getPropertyCode(AnnotationProcessorContext context, Element target, String propertyName, TypeMirror typeMirror, String beanProviderRef) {
+        try {
+            if (typeMirror.getKind().isPrimitive()) {
+                return getPrimitivePropertyCode(context, propertyName, typeMirror, beanProviderRef);
+            } else {
+                return getObjectPropertyCode(context, propertyName, typeMirror, beanProviderRef);
+            }
+        } catch (Throwable t) {
+            throw new IllegalArgumentException("unable to generate property code for " + ProcessorUtils.debugString(target), t);
         }
     }
 

@@ -38,6 +38,7 @@ import vest.doctor.http.server.impl.StreamingRequestBody;
 import vest.doctor.http.server.impl.WebsocketHandler;
 
 import java.net.InetSocketAddress;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -58,18 +59,16 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
     private final List<Channel> serverChannels;
     private final Handler handler;
     private final Map<String, Supplier<Websocket>> websockets;
-    private final ServerSocketChannelInitializer channelInitializer;
     private final ExceptionHandler exceptionHandler;
 
     public HttpServer(HttpServerConfiguration config, Handler handler) {
-        this(config, handler, new NettyHttpServerChannelInitializer(config), new CompositeExceptionHandler());
+        this(config, handler, new NettyHttpServerChannelInitializer(config, Collections.emptyList()), new CompositeExceptionHandler());
     }
 
     public HttpServer(HttpServerConfiguration config, Handler handler, ServerSocketChannelInitializer channelInitializer, ExceptionHandler exceptionHandler) {
         super();
         this.config = config;
         this.handler = handler;
-        this.channelInitializer = channelInitializer;
         this.websockets = new HashMap<>();
         this.exceptionHandler = exceptionHandler;
         this.bossGroup = new NioEventLoopGroup(config.getTcpManagementThreads(), new DefaultThreadFactory(config.getTcpThreadPrefix(), false));

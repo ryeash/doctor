@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import vest.doctor.http.server.Request;
+import vest.doctor.http.server.rest.ANY;
 import vest.doctor.http.server.rest.Attribute;
 import vest.doctor.http.server.rest.BeanParam;
 import vest.doctor.http.server.rest.Body;
@@ -122,5 +123,11 @@ public class TCNettyEndpoint {
     @Path("/attribute")
     public String attribute(@Attribute("attr") String attribute) {
         return attribute;
+    }
+
+    @ANY
+    @Path("/anything")
+    public String any(Request request) {
+        return request.method().toString();
     }
 }

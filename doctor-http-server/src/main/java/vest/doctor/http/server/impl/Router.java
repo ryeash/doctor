@@ -21,6 +21,7 @@ import java.util.concurrent.CompletionStage;
 public class Router implements Handler {
     public static final String PATH_OVERRIDE = "doctor.netty.router.pathOverride";
     public static final String PATH_PARAMS = "doctor.netty.router.pathparams";
+    public static final HttpMethod ANY = HttpMethod.valueOf("_ANY_");
     public static final Handler NOT_FOUND = new NotFound();
 
     private final List<Filter> filters = new LinkedList<>();
@@ -55,6 +56,10 @@ public class Router implements Handler {
 
     public Router options(String path, Handler handler) {
         return addRoute(HttpMethod.OPTIONS, path, handler);
+    }
+
+    public Router any(String path, Handler handler) {
+        return addRoute(ANY, path, handler);
     }
 
     public Router addRoute(String method, String path, Handler handler) {
@@ -97,7 +102,20 @@ public class Router implements Handler {
     }
 
     protected Handler selectHandler(Request request) {
-        for (Route route : routes.getOrDefault(request.method(), Collections.emptyList())) {
+        Handler handler = selectHandler(request, request.method());
+        if (handler != null) {
+            return handler;
+        }
+        handler = selectHandler(request, ANY);
+        if (handler != null) {
+            return handler;
+        }
+        // not found
+        return NOT_FOUND;
+    }
+
+    private Handler selectHandler(Request request, HttpMethod method) {
+        for (Route route : routes.getOrDefault(method, Collections.emptyList())) {
             String path = Optional.ofNullable(request.<String>attribute(PATH_OVERRIDE)).orElse(request.path());
             Map<String, String> pathParams = route.getPathSpec().matchAndCollect(path);
             if (pathParams != null) {
@@ -105,8 +123,7 @@ public class Router implements Handler {
                 return route.getHandler();
             }
         }
-        // not found
-        return NOT_FOUND;
+        return null;
     }
 
     private static <T> void forward(CompletionStage<T> source, CompletableFuture<T> receiver) {

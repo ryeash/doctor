@@ -55,14 +55,9 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
                 }
                 MethodBuilder mb = impl.newMethod("@Override public " + method.getReturnType() + " " + method.getSimpleName() + "()");
                 TypeMirror returnType = method.getReturnType();
-                try {
-                    String propertyName = propertyPrefix + method.getAnnotation(Property.class).value();
-                    String code = PropertyCodeGen.getPropertyCode(context, propertyName, returnType, PROVIDER_REGISTRY);
-                    mb.line("return " + code + ";");
-                } catch (IllegalArgumentException e) {
-                    e.printStackTrace();
-                    context.errorMessage(e.getMessage() + ": " + ProcessorUtils.debugString(method));
-                }
+                String propertyName = propertyPrefix + method.getAnnotation(Property.class).value();
+                String code = PropertyCodeGen.getPropertyCode(context, method, propertyName, returnType, PROVIDER_REGISTRY);
+                mb.line("return " + code + ";");
             } else if (!method.isDefault()) {
                 context.errorMessage("all non-default methods defined in a @Properties interface must have a @Property annotation: " + type + " " + method);
             }

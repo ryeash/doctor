@@ -193,6 +193,20 @@ public class NettyTest extends BaseDoctorTest {
     }
 
     @Test
+    public void anyMethod() {
+        req().get("/netty/anything")
+                .then()
+                .statusCode(200)
+                .body(is("GET"));
+
+        req().basePath("/netty/anything")
+                .request("JUNK")
+                .then()
+                .statusCode(200)
+                .body(is("JUNK"));
+    }
+
+    @Test
     public void ws() throws Exception {
         String destUri = "ws://localhost:8081/grumpy";
         WebSocketClient client = new WebSocketClient();

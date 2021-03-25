@@ -309,24 +309,38 @@ Then, apply the aspect to a provided type:
 
 ```java
 @Singleton
-@Aspects(TimingAspect.class) 
+@Aspects({TimingAspect.class})
 // ^ aspects at the class level apply to all methods
 // they can also be applied to individual methods 
 public class Thing {
-    public void doSomething(){
+    public void doSomething() {
         System.out.println("something");
     }
 }
 ```
 
+or if the type is provided via a factory method:
+
+```java
+@Factory
+@Singleton
+@Aspects({TimingAspect.class})
+public Thing coffeeMakerAspect(){
+        // in this case Thing must be a non-final class or an interface
+        // so that a delgating wrapper class can be generated to handle
+        // the aspects
+        return...create a thing...;
+        }
+```
+
 Now, when you get an instance of Thing, all method calls will use the TimingAspect:
 
 ```java
-Thing thing = doctor.getInstance(Thing.class);
-thing.doSomething() // <- method will be both timed and observed
+Thing thing=doctor.getInstance(Thing.class);
+        thing.doSomething() // <- method will be both timed and observed
 ```
 
-#### A note on aspect scoping
+#### A note on Aspect scoping
 
 In the previous example, the TimingAspect class is marked as @Prototype, but each instance of the aspected class will
 call Provider.get() once. So for the lifetime of the aspected Thing class, only one instance of the TimingAspect will be
@@ -348,6 +362,7 @@ public class AspectDemo implements Before, Around, After {
     @Override
     public void execute(MethodInvocation methodInvocation) {
         // should call methodInvocation.invoke()
+        // this is the only stage where invoke() can be called
     }
 
     @Override

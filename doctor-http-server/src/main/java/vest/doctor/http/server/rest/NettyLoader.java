@@ -13,6 +13,7 @@ import vest.doctor.event.ServiceStarted;
 import vest.doctor.event.ServiceStopped;
 import vest.doctor.http.server.ExceptionHandler;
 import vest.doctor.http.server.Filter;
+import vest.doctor.http.server.HttpListener;
 import vest.doctor.http.server.HttpServer;
 import vest.doctor.http.server.HttpServerConfiguration;
 import vest.doctor.http.server.Websocket;
@@ -60,7 +61,9 @@ public class NettyLoader implements AppLoader {
                 .forEach(compositeExceptionHandler::addHandler);
 
         ServerSocketChannelInitializer channelInitializer = providerRegistry.getInstanceOpt(ServerSocketChannelInitializer.class)
-                .orElseGet(() -> new NettyHttpServerChannelInitializer(conf));
+                .orElseGet(() -> new NettyHttpServerChannelInitializer(conf, providerRegistry.getProviders(HttpListener.class)
+                        .map(Provider::get)
+                        .collect(Collectors.toList())));
 
         this.server = new HttpServer(conf, router, channelInitializer, compositeExceptionHandler);
 

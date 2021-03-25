@@ -223,7 +223,7 @@ public class ProcessorUtils {
         if (element instanceof TypeElement) {
             return element.toString();
         } else if (element instanceof VariableElement) {
-            return element.asType() + " " + element.getSimpleName() + " contained in " + element.getEnclosingElement();
+            return element.asType() + " " + element.getSimpleName() + " contained in " + debugString(element.getEnclosingElement());
         } else if (element instanceof ExecutableElement) {
             return element + " contained in " + element.getEnclosingElement();
         } else {

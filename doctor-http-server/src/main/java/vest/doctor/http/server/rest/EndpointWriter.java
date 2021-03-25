@@ -213,7 +213,11 @@ public class EndpointWriter implements ProviderDefinitionListener {
         sb.append(")");
 
         sb.append(".map(");
-        sb.append(getStringConversion(context, target));
+        try {
+            sb.append(getStringConversion(context, target));
+        } catch (Throwable t) {
+            throw new IllegalArgumentException("unable to handle " + ProcessorUtils.debugString(parameter), t);
+        }
         sb.append(")");
 
         if (!isOptional) {
