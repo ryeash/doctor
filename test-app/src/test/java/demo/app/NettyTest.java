@@ -31,7 +31,7 @@ import static org.hamcrest.Matchers.is;
 public class NettyTest extends BaseDoctorTest {
 
     private RequestSpecification req() {
-        RestAssured.baseURI = "http://localhost:8081/";
+        RestAssured.baseURI = "http://localhost:61233/";
         return RestAssured.given()
                 .accept("application/json")
                 .contentType("application/json");
@@ -206,9 +206,14 @@ public class NettyTest extends BaseDoctorTest {
                 .body(is("JUNK"));
     }
 
+//    @Test
+//    public void waitAReallyLongTIme() throws InterruptedException {
+//        Thread.sleep(1000000);
+//    }
+
     @Test
     public void ws() throws Exception {
-        String destUri = "ws://localhost:8081/grumpy";
+        String destUri = "ws://localhost:61233/grumpy";
         WebSocketClient client = new WebSocketClient();
         try {
             client.start();

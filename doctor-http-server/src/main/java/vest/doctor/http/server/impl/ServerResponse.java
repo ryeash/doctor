@@ -1,6 +1,7 @@
 package vest.doctor.http.server.impl;
 
 import io.netty.handler.codec.http.DefaultHttpHeaders;
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import vest.doctor.http.server.Request;
@@ -17,6 +18,7 @@ public class ServerResponse implements Response {
 
     public ServerResponse(Request request) {
         this.request = request;
+        headers.set(HttpHeaderNames.SERVER, "doctor-netty");
     }
 
     @Override

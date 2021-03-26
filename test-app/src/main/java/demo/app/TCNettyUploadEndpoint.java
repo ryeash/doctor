@@ -21,13 +21,8 @@ public class TCNettyUploadEndpoint {
     @Path("/upload")
     public CompletableFuture<?> upload(Request request, @Body MultiPartData body) {
         log.info("{}", request);
-        return body.future().whenComplete((parts, err) -> {
-            if (err != null) {
-                log.error("error in upload", err);
-            }
-            for (MultiPartData.Part part : parts) {
-                log.info("{} {} {}", part.getType(), part.getName(), part.getData().toString(StandardCharsets.UTF_8));
-            }
+        return body.receive(part -> {
+            log.info("{} {} {}", part.getType(), part.getName(), part.getData().toString(StandardCharsets.UTF_8));
         });
     }
 

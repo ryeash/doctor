@@ -23,7 +23,6 @@ public class TCInjectedMethodsM {
     @Inject
     @Async
     public void asyncThrowsException() {
-        new Exception().printStackTrace();
         throw new RuntimeException("expected this");
     }
 }

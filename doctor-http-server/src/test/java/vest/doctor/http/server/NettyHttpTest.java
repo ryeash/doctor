@@ -175,6 +175,15 @@ public class NettyHttpTest {
         System.out.println(TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + "ms");
     }
 
+    @Test
+    public void connectionClose() {
+        req()
+                .header("Connection", "close")
+                .get("/")
+                .then()
+                .statusCode(200);
+    }
+
     private static byte[] randomBytes() {
         int size = ThreadLocalRandom.current().nextInt(1024, 1024 * 20);
         byte[] b = new byte[size];

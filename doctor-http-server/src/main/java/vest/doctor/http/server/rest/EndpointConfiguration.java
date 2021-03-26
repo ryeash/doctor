@@ -42,11 +42,7 @@ public interface EndpointConfiguration {
 
     default CompletionStage<Response> convertResponse(Request request, Object result, BodyInterchange bodyInterchange) {
         try {
-            if (result instanceof CompletableFuture) {
-                return ((CompletableFuture<?>) result).thenCompose(obj -> convertResponse(request, obj, bodyInterchange));
-            } else {
-                return bodyInterchange.write(request, result);
-            }
+            return bodyInterchange.write(request, result);
         } catch (Throwable t) {
             CompletableFuture<Response> future = new CompletableFuture<>();
             future.completeExceptionally(t);

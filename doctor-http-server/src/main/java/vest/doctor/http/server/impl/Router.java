@@ -13,18 +13,18 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 public class Router implements Handler {
     public static final String PATH_OVERRIDE = "doctor.netty.router.pathOverride";
+    public static final String METHOD_OVERRIDE = "doctor.netty.router.methodOverride";
     public static final String PATH_PARAMS = "doctor.netty.router.pathparams";
     public static final HttpMethod ANY = HttpMethod.valueOf("_ANY_");
     public static final Handler NOT_FOUND = new NotFound();
 
-    private final List<Filter> filters = new LinkedList<>();
+    private final List<FilterAndPath> filters = new LinkedList<>();
     private final Map<HttpMethod, List<Route>> routes = new TreeMap<>();
     private final boolean caseInsensitiveMatch;
 
@@ -79,7 +79,11 @@ public class Router implements Handler {
     }
 
     public Router addFilter(Filter filter) {
-        filters.add(filter);
+        return addFilter("/*", filter);
+    }
+
+    public Router addFilter(String path, Filter filter) {
+        filters.add(new FilterAndPath(new PathSpec(path, caseInsensitiveMatch), filter));
         filters.sort(Prioritized.COMPARATOR);
         return this;
     }
@@ -89,10 +93,18 @@ public class Router implements Handler {
         CompletableFuture<Response> parent = new CompletableFuture<>();
         CompletionStage<Response> temp = parent;
 
-        for (Filter filter : filters) {
-            temp = filter.filter(request, temp);
-            if (temp.toCompletableFuture().isDone()) {
-                return temp;
+        for (FilterAndPath filterAndPath : filters) {
+            PathSpec pathSpec = filterAndPath.pathSpec;
+            Filter filter = filterAndPath.filter;
+
+            String path = attributeOrElse(request, PATH_OVERRIDE, request.path());
+            Map<String, String> pathParams = pathSpec.matchAndCollect(path);
+            if (pathParams != null) {
+                request.attribute(PATH_PARAMS, pathParams);
+                temp = filter.filter(request, temp);
+                if (temp.toCompletableFuture().isDone()) {
+                    return temp;
+                }
             }
         }
 
@@ -102,7 +114,8 @@ public class Router implements Handler {
     }
 
     protected Handler selectHandler(Request request) {
-        Handler handler = selectHandler(request, request.method());
+        HttpMethod httpMethod = attributeOrElse(request, METHOD_OVERRIDE, request.method());
+        Handler handler = selectHandler(request, httpMethod);
         if (handler != null) {
             return handler;
         }
@@ -116,7 +129,7 @@ public class Router implements Handler {
 
     private Handler selectHandler(Request request, HttpMethod method) {
         for (Route route : routes.getOrDefault(method, Collections.emptyList())) {
-            String path = Optional.ofNullable(request.<String>attribute(PATH_OVERRIDE)).orElse(request.path());
+            String path = attributeOrElse(request, PATH_OVERRIDE, request.path());
             Map<String, String> pathParams = route.getPathSpec().matchAndCollect(path);
             if (pathParams != null) {
                 request.attribute(PATH_PARAMS, pathParams);
@@ -141,8 +154,10 @@ public class Router implements Handler {
         StringBuilder sb = new StringBuilder("Router:\n");
         if (!filters.isEmpty()) {
             sb.append(" Filters:\n");
-            for (Filter filter : filters) {
-                sb.append("  ").append(filter).append('\n');
+            for (FilterAndPath filterAndPath : filters) {
+                sb.append("  ")
+                        .append(filterAndPath.pathSpec).append(' ')
+                        .append(filterAndPath.filter).append('\n');
             }
         }
         sb.append(" Routes:\n");
@@ -158,5 +173,25 @@ public class Router implements Handler {
             }
         }
         return sb.toString();
+    }
+
+    private static <T> T attributeOrElse(Request request, String attribute, T orElse) {
+        T val = request.attribute(attribute);
+        return val != null ? val : orElse;
+    }
+
+    private static final class FilterAndPath implements Prioritized {
+        private final PathSpec pathSpec;
+        private final Filter filter;
+
+        private FilterAndPath(PathSpec pathSpec, Filter filter) {
+            this.pathSpec = pathSpec;
+            this.filter = filter;
+        }
+
+        @Override
+        public int priority() {
+            return filter.priority();
+        }
     }
 }

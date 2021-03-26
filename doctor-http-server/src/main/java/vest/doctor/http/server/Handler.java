@@ -3,7 +3,7 @@ package vest.doctor.http.server;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Handles a request.
+ * Handles an HTTP request.
  */
 @FunctionalInterface
 public interface Handler {

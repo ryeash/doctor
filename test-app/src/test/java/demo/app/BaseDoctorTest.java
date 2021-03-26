@@ -21,7 +21,7 @@ public abstract class BaseDoctorTest extends Assert {
 
             doctor = Doctor.load(DefaultConfigurationFacade.defaultConfigurationFacade()
                     .addSource(new MapConfigurationSource(
-                            "doctor.netty.bind", "localhost:8081"))
+                            "doctor.netty.bind", "localhost:61233"))
                     .addSource(new TCConfigReload()));
         }
     }

@@ -5,7 +5,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpContentCompressor;
 import io.netty.handler.codec.http.HttpContentDecompressor;
 import io.netty.handler.codec.http.HttpServerCodec;
-import io.netty.handler.codec.http.HttpServerKeepAliveHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import vest.doctor.http.server.HttpListener;
 import vest.doctor.http.server.HttpServerConfiguration;
@@ -34,7 +33,6 @@ public final class NettyHttpServerChannelInitializer extends ServerSocketChannel
                 config.isValidateHeaders(),
                 config.getInitialBufferSize()));
         p.addLast("httpListenerManager", httpListenerManager);
-        p.addLast("httpKeepAlive", new HttpServerKeepAliveHandler());
         p.addLast("httpContentDecompressor", new HttpContentDecompressor());
         p.addLast("httpContentCompressor", new HttpContentCompressor(6, 15, 8, 812));
         p.addLast("chunkedWriteHandler", new ChunkedWriteHandler());

@@ -72,6 +72,9 @@ public class StreamingRequestBody extends InputStream implements RequestBody {
                 }
             } catch (Throwable t) {
                 future.completeExceptionally(t);
+                if (asyncReadFuture != null) {
+                    asyncReadFuture.completeExceptionally(t);
+                }
             }
         }
     }
