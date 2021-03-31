@@ -12,7 +12,7 @@ public class CachedScopeProvider<T> extends DoctorProviderWrapper<T> {
     public CachedScopeProvider(DoctorProvider<T> delegate, long ttlNanos) {
         super(delegate);
         if (ttlNanos <= 0) {
-            throw new IllegalArgumentException("cached scope ttl must be greater than 0");
+            throw new IllegalArgumentException("cached scope ttl must be greater than 0; on provider: " + delegate);
         }
         this.ttlNanos = ttlNanos;
     }

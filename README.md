@@ -55,6 +55,24 @@ public class ApplicationBeanFactories {
 }
 ```
 
+> ##### Notes on factory return types
+>
+> Parameterized types are not allowed as factory return types, e.g.:
+> ```java
+> public List<String> stringsFactory(){
+>     return List.of("a", "b", "c");
+> }
+> ```
+> This will cause a compilation error.
+>
+> Multi-type type parameters, however, _are_ supported, e.g.:
+> ```java
+> public <T extends BookDao & PurchaseDao> T multiDaoFactory(){
+>     return ...
+> }
+> ```
+The resulting provider will satisfy either BookDao or PurchaseDao injection points.
+
 As a result in other classes you can inject the JdbcDao:
 
 ```java

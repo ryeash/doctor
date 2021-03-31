@@ -134,4 +134,24 @@ public class TestAppConfig {
     public static Object staticFactory() {
         return "static";
     }
+
+    @Factory
+    @Named("complex-return-type")
+    @SuppressWarnings("unchecked")
+    public <T extends CoffeeMaker & AutoCloseable> T crazy() {
+        return (T) new ClosableCoffeeMaker();
+    }
+
+    public static final class ClosableCoffeeMaker implements CoffeeMaker, AutoCloseable {
+
+        @Override
+        public String brew() {
+            return "closable";
+        }
+
+        @Override
+        public void close() throws Exception {
+
+        }
+    }
 }

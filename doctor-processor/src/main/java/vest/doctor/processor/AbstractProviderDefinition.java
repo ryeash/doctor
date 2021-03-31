@@ -2,6 +2,7 @@ package vest.doctor.processor;
 
 import jakarta.inject.Provider;
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.CodeProcessingException;
 import vest.doctor.DoctorProvider;
 import vest.doctor.ExplicitProvidedTypes;
 import vest.doctor.Modules;
@@ -23,11 +24,13 @@ import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -45,19 +48,33 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
     protected final String uniqueName;
 
     public AbstractProviderDefinition(AnnotationProcessorContext context, TypeElement providedType, Element annotationSource) {
+        this(context, Collections.singletonList(providedType), annotationSource);
+    }
+
+    public AbstractProviderDefinition(AnnotationProcessorContext context, List<TypeElement> providedTypes, Element annotationSource) {
         this.context = context;
         this.annotationSource = annotationSource;
 
-        this.providedType = providedType;
+        if (providedTypes.isEmpty()) {
+            throw new IllegalArgumentException("providedType may not be empty");
+        }
+
+        this.providedType = providedTypes.get(0);
         ExplicitProvidedTypes explicitProvidedTypes = annotationSource.getAnnotation(ExplicitProvidedTypes.class);
         if (explicitProvidedTypes != null) {
             List<TypeElement> types = explicitTypes(context, annotationSource);
             if (types.isEmpty()) {
-                throw new IllegalArgumentException("explicitly defined types must not be empty: " + ProcessorUtils.debugString(annotationSource));
+                throw new CodeProcessingException("explicitly defined types must not be empty", annotationSource);
             }
             this.hierarchy = types;
         } else {
-            this.hierarchy = ProcessorUtils.hierarchy(context, providedType);
+            Set<TypeElement> uniqueTypes = providedTypes.stream()
+                    .map(te -> ProcessorUtils.hierarchy(context, te))
+                    .reduce(new LinkedHashSet<>(), (a, b) -> {
+                        a.addAll(b);
+                        return a;
+                    });
+            this.hierarchy = new LinkedList<>(uniqueTypes);
         }
 
         this.scope = ProcessorUtils.getScope(context, annotationSource);

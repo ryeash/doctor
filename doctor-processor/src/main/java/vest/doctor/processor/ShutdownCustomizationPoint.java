@@ -1,6 +1,7 @@
 package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.CodeProcessingException;
 import vest.doctor.DestroyMethod;
 import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ProviderDefinition;
@@ -14,7 +15,7 @@ public class ShutdownCustomizationPoint implements NewInstanceCustomizer {
         if (providerDefinition.annotationSource().getAnnotation(DestroyMethod.class) != null) {
             DestroyMethod destroy = providerDefinition.annotationSource().getAnnotation(DestroyMethod.class);
             if (!validMethod(context, providerDefinition, destroy.value())) {
-                throw new IllegalArgumentException("invalid destroy method `" + providerDefinition.providedType() + "." + destroy.value() + "` is not valid for type; destroy methods must exist and have zero arguments");
+                throw new CodeProcessingException("invalid destroy method `" + providerDefinition.providedType() + "." + destroy.value() + "` is not valid; destroy methods must exist and have zero arguments");
             }
             String closer = instanceRef + "::" + destroy.value();
             method.line("{{providerRegistry}}.shutdownContainer().register(", closer, ");");

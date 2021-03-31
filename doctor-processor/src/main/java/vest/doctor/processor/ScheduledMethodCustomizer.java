@@ -1,6 +1,7 @@
 package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.CodeProcessingException;
 import vest.doctor.InjectionException;
 import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ProviderDefinition;
@@ -32,10 +33,10 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
                 }
                 Scheduled scheduled = m.getAnnotation(Scheduled.class);
                 if (scheduled.interval().isEmpty() && scheduled.cron().isEmpty()) {
-                    throw new IllegalArgumentException("cron or interval must be set for the @Scheduled annotation: " + ProcessorUtils.debugString(m));
+                    throw new CodeProcessingException("cron or interval must be set for the @Scheduled annotation", m);
                 }
                 if (!scheduled.interval().isEmpty() && !scheduled.cron().isEmpty()) {
-                    throw new IllegalArgumentException("can not set both cron and interval for the @Scheduled annotation: " + ProcessorUtils.debugString(m));
+                    throw new CodeProcessingException("can not set both cron and interval for the @Scheduled annotation", m);
                 }
                 if (!scheduled.interval().isEmpty()) {
                     processScheduled(context, providerDefinition, method, instanceRef, providerRegistryRef, m);

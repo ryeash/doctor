@@ -5,6 +5,7 @@ import jakarta.inject.Named;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.CodeProcessingException;
 import vest.doctor.ExplicitProvidedTypes;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionListener;
@@ -164,10 +165,13 @@ public class EndpointWriter implements ProviderDefinitionListener {
     private static final List<Class<?>> SUPPORTED_CLASSES = List.of(Request.class, URI.class);
 
     public static String parameterWriting(AnnotationProcessorContext context, VariableElement parameter, String contextRef) {
-        return parameterWriting(context, parameter, parameter, contextRef);
+        try {
+            return parameterWriting(context, parameter, parameter, contextRef);
+        } catch (Throwable t) {
+            throw new CodeProcessingException("error wiring endpoint parameter", parameter, t);
+        }
     }
 
-    @Inject
     private static String parameterWriting(AnnotationProcessorContext context, VariableElement parameter, Element annotationSource, String contextRef) {
         if (parameter.asType().toString().equals(Request.class.getCanonicalName())) {
             return contextRef;
@@ -216,7 +220,7 @@ public class EndpointWriter implements ProviderDefinitionListener {
         try {
             sb.append(getStringConversion(context, target));
         } catch (Throwable t) {
-            throw new IllegalArgumentException("unable to handle " + ProcessorUtils.debugString(parameter), t);
+            throw new CodeProcessingException("unable to handle endpoint parameter", parameter, t);
         }
         sb.append(")");
 
@@ -248,11 +252,10 @@ public class EndpointWriter implements ProviderDefinitionListener {
                 sb.append(".with(").append(beanType).append("::").append(setter.getSimpleName()).append(", ").append(parameterWriting(context, setterParameter, field, contextRef)).append(")");
             }
         }
-        // TODO: method wiring
         for (ExecutableElement method : ElementFilter.methodsIn(beanType.getEnclosedElements())) {
             if (supportedParam(method)) {
                 if (method.getParameters().size() != 1) {
-                    throw new IllegalArgumentException("setters in BeanParam objects must have one and only one parameter");
+                    throw new CodeProcessingException("setters in BeanParam objects must have one and only one parameter", method);
                 }
                 VariableElement setterParameter = method.getParameters().get(0);
                 sb.append(".with(").append(beanType).append("::").append(method.getSimpleName()).append(", ").append(parameterWriting(context, setterParameter, method, contextRef)).append(")");
@@ -274,7 +277,7 @@ public class EndpointWriter implements ProviderDefinitionListener {
             }
         }
         if (constructor == null) {
-            throw new IllegalArgumentException("failed to find injectable constructor for the BeanParam: " + typeElement);
+            throw new CodeProcessingException("failed to find injectable constructor for the BeanParam", typeElement);
         }
         return constructor;
     }
@@ -313,14 +316,14 @@ public class EndpointWriter implements ProviderDefinitionListener {
                     if (method.getSimpleName().toString().equalsIgnoreCase("set" + field.getSimpleName())
                             || method.getSimpleName().toString().equalsIgnoreCase("is" + field.getSimpleName())) {
                         if (method.getParameters().size() != 1) {
-                            throw new IllegalArgumentException("setters for BeanParam fields must have one and only one parameter");
+                            throw new CodeProcessingException("setters for BeanParam fields must have one and only one parameter", method);
                         }
                         return true;
                     }
                     return false;
                 })
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("missing setter method for BeanParam field: " + field + " in " + field.getEnclosingElement()));
+                .orElseThrow(() -> new CodeProcessingException("missing setter method for BeanParam field", field));
     }
 
     public static String buildTypeInfoCode(ExecutableElement method) {

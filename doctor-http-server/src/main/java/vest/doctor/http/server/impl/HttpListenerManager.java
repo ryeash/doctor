@@ -1,7 +1,7 @@
 package vest.doctor.http.server.impl;
 
 import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.HttpObject;
@@ -10,7 +10,7 @@ import vest.doctor.http.server.HttpListener;
 import java.net.SocketAddress;
 import java.util.List;
 
-@ChannelHandler.Sharable
+@Sharable
 public class HttpListenerManager extends ChannelDuplexHandler {
 
     private final List<HttpListener> listeners;
@@ -20,31 +20,38 @@ public class HttpListenerManager extends ChannelDuplexHandler {
     }
 
     @Override
-    public void bind(ChannelHandlerContext ctx, SocketAddress localAddress, ChannelPromise promise) throws Exception {
-        super.bind(ctx, localAddress, promise);
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        for (HttpListener listener : listeners) {
+            listener.connect(ctx, ctx.channel().remoteAddress(), ctx.channel().localAddress());
+        }
+        super.channelActive(ctx);
     }
 
     @Override
     public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) throws Exception {
-        super.connect(ctx, remoteAddress, localAddress, promise);
         for (HttpListener listener : listeners) {
             listener.connect(ctx, remoteAddress, localAddress);
         }
+        super.connect(ctx, remoteAddress, localAddress, promise);
     }
 
     @Override
     public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
-        for (HttpListener listener : listeners) {
-            listener.disconnect(ctx);
-        }
+        promise.addListener(f -> {
+            for (HttpListener listener : listeners) {
+                listener.disconnect(ctx);
+            }
+        });
         super.disconnect(ctx, promise);
     }
 
     @Override
     public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
-        for (HttpListener listener : listeners) {
-            listener.close(ctx);
-        }
+        promise.addListener(f -> {
+            for (HttpListener listener : listeners) {
+                listener.close(ctx);
+            }
+        });
         super.close(ctx, promise);
     }
 

@@ -44,7 +44,7 @@ public final class PropertyCodeGen {
         boolean isOptional = ProcessorUtils.isCompatibleWith(context, typeMirror, Optional.class);
         if (isOptional) {
             typeElement = ProcessorUtils.getParameterizedType(context, typeMirror)
-                    .orElseThrow(() -> new IllegalArgumentException("no parameterized type found on Optional property"));
+                    .orElseThrow(() -> new IllegalArgumentException("no parameterized type found on Optional property, trying to wire: " + propertyName));
         }
 
         boolean isCollection;
@@ -58,7 +58,7 @@ public final class PropertyCodeGen {
                     || ProcessorUtils.isCompatibleWith(context, typeElement, Collection.class)) {
                 confMethod = "getList";
             } else {
-                throw new IllegalArgumentException("can not inject collection property of type: " + typeElement);
+                throw new IllegalArgumentException("can not inject collection property of type: " + typeElement + ", for property: " + propertyName);
             }
         } else {
             confMethod = "get";

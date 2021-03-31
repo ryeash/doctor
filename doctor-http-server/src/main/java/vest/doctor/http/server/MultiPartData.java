@@ -16,10 +16,10 @@ public interface MultiPartData {
     boolean valid();
 
     /**
-     * Register a listener to consumer parts as they arrive.
+     * Register a listener to consume {@link Part}s as they arrive.
      *
-     * @param consumer the action to take on the part
-     * @return a future indicating when all the part data has been received
+     * @param consumer the action
+     * @return a future indicating when all parts have been received
      */
     CompletableFuture<Boolean> receive(Consumer<Part> consumer);
 

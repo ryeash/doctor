@@ -41,7 +41,7 @@ import static java.io.StreamTokenizer.TT_EOL;
  * '{' : used to nest a level deeper in the structure
  * '}' : used to close a nested structure
  * '=' & ':' : sets the value of a property, e.g. name = value OR name: value
- * ';' : can be used to signify the end of a line
+ * ';' : can be used to signify the end of a line (though it is not necessary)
  * <p>
  * Quoted strings using either ' or " can be used to escape reserved characters
  * e.g. name = "value contains { } = : and ;"

@@ -1,6 +1,7 @@
 package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.CodeProcessingException;
 import vest.doctor.CustomizationPoint;
 import vest.doctor.Factory;
 import vest.doctor.ProcessorConfiguration;
@@ -94,10 +95,10 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
 
         if (typeElement.getKind() == ElementKind.INTERFACE) {
             classBuilder.addImplementsInterface(typeElement.getQualifiedName().toString());
-        } else if (canCreateExtension(typeElement)) {
+        } else if (canExtend(typeElement)) {
             classBuilder.setExtendsClass(typeElement.getQualifiedName().toString());
         } else {
-            throw new IllegalArgumentException("aspects can only be applied to interfaces and public non-final classes - invalid class: " + ProcessorUtils.debugString(typeElement));
+            throw new CodeProcessingException("aspects can only be applied to interfaces and public non-final classes - invalid class", typeElement);
         }
         classBuilder.addField("private final " + typeElement.getSimpleName() + " delegate");
         classBuilder.addField("private final " + ProviderRegistry.class.getSimpleName() + " beanProvider");
@@ -184,7 +185,7 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
         return sb.toString();
     }
 
-    private static boolean canCreateExtension(TypeElement typeElement) {
+    private static boolean canExtend(TypeElement typeElement) {
         Set<Modifier> modifiers = typeElement.getModifiers();
         return modifiers.contains(Modifier.PUBLIC)
                 && !modifiers.contains(Modifier.FINAL);

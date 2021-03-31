@@ -169,7 +169,8 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
     private void handleBodyData(ChannelHandlerContext ctx, HttpContent content) {
         StreamingRequestBody streamingRequestBody = ctx.channel().attr(CONTEXT_BODY).get();
         if (streamingRequestBody != null) {
-            streamingRequestBody.append(content.retainedDuplicate());
+            HttpContent httpContent = content.retainedDuplicate();
+            ctx.executor().submit(() -> streamingRequestBody.append(httpContent));
         }
     }
 

@@ -12,7 +12,12 @@ import vest.doctor.codegen.ProcessorUtils;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeMirror;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class FactoryMethodProviderDefinition extends AbstractProviderDefinition {
     private final TypeElement container;
@@ -20,7 +25,7 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
     private final String generatedClass;
 
     public FactoryMethodProviderDefinition(AnnotationProcessorContext context, TypeElement container, ExecutableElement factoryMethod) {
-        super(context, context.toTypeElement(factoryMethod.getReturnType()), factoryMethod);
+        super(context, getReturnedTypes(context, factoryMethod), factoryMethod);
         this.container = container;
         this.factoryMethod = factoryMethod;
         if (providedType().getTypeParameters().size() != 0) {
@@ -79,5 +84,18 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "(" + ProcessorUtils.debugString(factoryMethod) + ")";
+    }
+
+    private static List<TypeElement> getReturnedTypes(AnnotationProcessorContext context, ExecutableElement executableElement) {
+        List<? extends TypeParameterElement> typeParameters = executableElement.getTypeParameters();
+        TypeMirror returnType = executableElement.getReturnType();
+        if (typeParameters.isEmpty()) {
+            return Collections.singletonList(context.toTypeElement(returnType));
+        } else {
+            return typeParameters.stream()
+                    .flatMap(tp -> tp.getBounds().stream())
+                    .map(context::toTypeElement)
+                    .collect(Collectors.toList());
+        }
     }
 }

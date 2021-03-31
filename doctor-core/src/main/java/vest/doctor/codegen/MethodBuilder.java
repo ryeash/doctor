@@ -32,7 +32,7 @@ public class MethodBuilder extends AbstractCodeBuilder<MethodBuilder> {
 
     void writeTo(PrintWriter out) {
         if (declaration == null || declaration.isEmpty()) {
-            throw new IllegalStateException("no declaration has been set for the method");
+            throw new IllegalStateException("no declaration has been set for this method");
         }
         out.println(fill(declaration));
         allLines().forEach(out::println);

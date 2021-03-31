@@ -4,6 +4,7 @@ import jakarta.inject.Inject;
 import jakarta.inject.Provider;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.AppLoader;
+import vest.doctor.CodeProcessingException;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.CustomizationPoint;
 import vest.doctor.DoctorProvider;
@@ -148,27 +149,31 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     }
 
     private void processElement(Element annotatedElement) {
-        boolean claimed = false;
-        for (ProviderDefinitionProcessor providerDefinitionProcessor : customizations(ProviderDefinitionProcessor.class)) {
-            ProviderDefinition provDef = providerDefinitionProcessor.process(this, annotatedElement);
-            if (provDef != null) {
-                errorChecking(provDef);
-                claimed = true;
-                typesToDependencies.computeIfAbsent(provDef.asDependency(), d -> new HashSet<>());
-                providerDefinitions.add(provDef);
-                for (ProviderDefinitionListener providerDefinitionListener : customizations(ProviderDefinitionListener.class)) {
-                    providerDefinitionListener.process(this, provDef);
+        try {
+            boolean claimed = false;
+            for (ProviderDefinitionProcessor providerDefinitionProcessor : customizations(ProviderDefinitionProcessor.class)) {
+                ProviderDefinition provDef = providerDefinitionProcessor.process(this, annotatedElement);
+                if (provDef != null) {
+                    errorChecking(provDef);
+                    claimed = true;
+                    typesToDependencies.computeIfAbsent(provDef.asDependency(), d -> new HashSet<>());
+                    providerDefinitions.add(provDef);
+                    for (ProviderDefinitionListener providerDefinitionListener : customizations(ProviderDefinitionListener.class)) {
+                        providerDefinitionListener.process(this, provDef);
+                    }
+                    ClassBuilder classBuilder = provDef.getClassBuilder();
+                    if (classBuilder != null) {
+                        classBuilder.writeClass(filer());
+                    }
+                    writeInProvider(provDef);
+                    break;
                 }
-                ClassBuilder classBuilder = provDef.getClassBuilder();
-                if (classBuilder != null) {
-                    classBuilder.writeClass(filer());
-                }
-                writeInProvider(provDef);
-                break;
             }
-        }
-        if (!claimed) {
-            warnMessage("the annotated element " + ProcessorUtils.debugString(annotatedElement) + " was not claimed by a processor");
+            if (!claimed) {
+                warnMessage("the annotated element " + ProcessorUtils.debugString(annotatedElement) + " was not claimed by a processor");
+            }
+        } catch (Throwable t) {
+            throw new CodeProcessingException("error processing", annotatedElement, t);
         }
     }
 

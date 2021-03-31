@@ -5,6 +5,7 @@ import jakarta.inject.Provider;
 import jakarta.inject.Qualifier;
 import jakarta.inject.Scope;
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.CodeProcessingException;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDependency;
 
@@ -43,7 +44,7 @@ public class ProcessorUtils {
     public static AnnotationMirror getScope(AnnotationProcessorContext context, Element element) {
         List<AnnotationMirror> scopes = getAnnotationsExtends(context, element, Scope.class);
         if (scopes.size() > 1) {
-            throw new IllegalArgumentException("only one scope is allowed for providers: " + debugString(element) + " has " + scopes.size() + ": " + scopes);
+            throw new CodeProcessingException("only one scope is allowed for providers: " + debugString(element) + " has " + scopes.size() + ": " + scopes);
         }
         if (!scopes.isEmpty()) {
             return scopes.get(0);
@@ -55,7 +56,7 @@ public class ProcessorUtils {
     public static String getQualifier(AnnotationProcessorContext context, Element element) {
         List<AnnotationMirror> qualifiers = getAnnotationsExtends(context, element, Qualifier.class);
         if (qualifiers.size() > 1) {
-            throw new IllegalArgumentException("only one qualifier is allowed for providers: " + debugString(element) + " has " + qualifiers.size() + ": " + qualifiers);
+            throw new CodeProcessingException("only one qualifier is allowed for providers: " + debugString(element) + " has " + qualifiers.size() + ": " + qualifiers);
         }
         Named named = element.getAnnotation(Named.class);
         if (named != null) {
@@ -142,14 +143,14 @@ public class ProcessorUtils {
         return sb.toString();
     }
 
-    private static final Map<TypeElement, List<TypeElement>> HIERARCHY_CACHE = new HashMap<>();
+    private static final Map<TypeElement, Set<TypeElement>> HIERARCHY_CACHE = new HashMap<>();
 
-    public static List<TypeElement> hierarchy(AnnotationProcessorContext context, TypeElement type) {
+    public static Set<TypeElement> hierarchy(AnnotationProcessorContext context, TypeElement type) {
         if (HIERARCHY_CACHE.containsKey(type)) {
             return HIERARCHY_CACHE.get(type);
         }
         if (type == null) {
-            return Collections.emptyList();
+            return Collections.emptySet();
         }
         Set<TypeElement> allClasses = new LinkedHashSet<>();
         List<TypeElement> allInterfaces = new LinkedList<>();
@@ -169,8 +170,9 @@ public class ProcessorUtils {
         allClasses.addAll(allInterfaces);
         List<TypeElement> list = new LinkedList<>(allClasses);
         Collections.reverse(list);
-        HIERARCHY_CACHE.put(type, list);
-        return list;
+        Set<TypeElement> set = new LinkedHashSet<>(list);
+        HIERARCHY_CACHE.put(type, set);
+        return set;
     }
 
     public static List<ExecutableElement> allMethods(AnnotationProcessorContext context, TypeElement type) {
@@ -354,7 +356,7 @@ public class ProcessorUtils {
             }
 
             return providerRegistryRef + ".getInstance(" + variableElement.asType() + ".class, " + qualifier + ")";
-        } catch (IllegalArgumentException e) {
+        } catch (CodeProcessingException e) {
             context.errorMessage("error wiring parameter: " + e.getMessage() + ": " + ProcessorUtils.debugString(variableElement));
             throw e;
         }
@@ -371,16 +373,16 @@ public class ProcessorUtils {
         if (info.hasTypeParameters() && info.parameterTypes().size() == 1) {
             GenericInfo genericInfo = info.parameterTypes().get(0);
             if (genericInfo.hasTypeParameters()) {
-                throw new IllegalArgumentException("can not inject nested parameterized type: " + mirror);
+                throw new CodeProcessingException("can not inject nested parameterized type: " + mirror);
             }
             return genericInfo.type();
         }
-        throw new IllegalArgumentException("can not inject type: " + mirror);
+        throw new CodeProcessingException("can not inject type: " + mirror);
     }
 
     private static String rawPrimitiveClass(TypeMirror mirror) {
         if (!mirror.getKind().isPrimitive()) {
-            throw new IllegalArgumentException("expected a primitive type");
+            throw new CodeProcessingException("expected a primitive type");
         }
         return switch (mirror.getKind()) {
             case BOOLEAN -> Boolean.class.getCanonicalName() + ".TYPE";
@@ -391,7 +393,7 @@ public class ProcessorUtils {
             case CHAR -> Character.class.getCanonicalName() + ".TYPE";
             case FLOAT -> Float.class.getCanonicalName() + ".TYPE";
             case DOUBLE -> Double.class.getCanonicalName() + ".TYPE";
-            default -> throw new IllegalArgumentException("unhandled primitive type: " + mirror);
+            default -> throw new CodeProcessingException("unhandled primitive type: " + mirror);
         };
     }
 
@@ -410,7 +412,7 @@ public class ProcessorUtils {
                 WildcardType wc = (WildcardType) mirror;
                 TypeMirror bound = Optional.ofNullable(wc.getSuperBound()).orElse(wc.getExtendsBound());
                 if (bound == null) {
-                    throw new IllegalArgumentException("unspecified bounds");
+                    throw new CodeProcessingException("unspecified bounds");
                 }
                 return rawClass(bound);
 
