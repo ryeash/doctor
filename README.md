@@ -185,11 +185,12 @@ public class NoInject {
 }
 ```
 
-### @Scheduled
+### [@Scheduled](doctor-core/src/main/java/vest/doctor/scheduled/Scheduled.java)
 
 Methods in provided objects can be scheduled for periodic execution using the `@Scheduled` annotation.
 
 ```java
+
 @Singleton
 public class SomethingPeriodic {
     @Scheduled(interval = "10ms")
@@ -198,6 +199,9 @@ public class SomethingPeriodic {
     }
 }
 ```
+
+Internally, the object instances for scheduled methods are tracked using weak references so scheduling method execution
+will _not_ prevent the provided object from being garbage collected.
 
 ### Limitations
 
