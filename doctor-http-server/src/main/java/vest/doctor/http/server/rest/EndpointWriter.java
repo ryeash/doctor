@@ -211,8 +211,7 @@ public class EndpointWriter implements ProviderDefinitionListener {
             String name = annotationSource.getAnnotation(CookieParam.class).value();
             sb.append(contextRef).append(".cookie(\"").append(name).append("\").value()");
         } else {
-            context.errorMessage("unsupported parameter");
-            throw new UnsupportedOperationException();
+            throw new CodeProcessingException("unsupported parameter - missing supported route parameter annotation", parameter);
         }
         sb.append(")");
 
@@ -303,8 +302,7 @@ public class EndpointWriter implements ProviderDefinitionListener {
                 return function;
             }
         }
-        context.errorMessage("no string conversion available for: " + target);
-        return null;
+        throw new CodeProcessingException("no string conversion available for: " + target);
     }
 
     private static ExecutableElement findCorrespondingSetter(AnnotationProcessorContext context, VariableElement field, TypeElement beanType) {

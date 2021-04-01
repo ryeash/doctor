@@ -1,6 +1,7 @@
 package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.CodeProcessingException;
 import vest.doctor.Factory;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionProcessor;
@@ -16,7 +17,7 @@ public class FactoryProviderDefinitionProcessor implements ProviderDefinitionPro
     public ProviderDefinition process(AnnotationProcessorContext context, Element element) {
         if (element.getKind() == ElementKind.METHOD && element.getAnnotation(Factory.class) != null) {
             if (ProcessorUtils.getScope(context, element.getEnclosingElement()) == null) {
-                context.errorMessage("classes with @Factory methods must have a scope; it is recommended to use @Singleton: " + ProcessorUtils.debugString(element.getEnclosingElement()));
+                throw new CodeProcessingException("classes with @Factory methods must have a scope; it is recommended to use @Singleton", element.getEnclosingElement());
             }
             return new FactoryMethodProviderDefinition(context, (TypeElement) element.getEnclosingElement(), (ExecutableElement) element);
         }

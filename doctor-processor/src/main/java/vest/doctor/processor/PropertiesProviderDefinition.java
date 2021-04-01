@@ -1,6 +1,7 @@
 package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.CodeProcessingException;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.Properties;
 import vest.doctor.Property;
@@ -51,7 +52,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
         for (ExecutableElement method : ProcessorUtils.allMethods(context, providedType())) {
             if (method.getAnnotation(Property.class) != null) {
                 if (method.getParameters().size() > 0) {
-                    context.errorMessage("@Property methods in @Properties definition interfaces must not have parameters: " + ProcessorUtils.debugString(method));
+                    throw new CodeProcessingException("@Property methods in @Properties definition interfaces may not have parameter", method);
                 }
                 MethodBuilder mb = impl.newMethod("@Override public " + method.getReturnType() + " " + method.getSimpleName() + "()");
                 TypeMirror returnType = method.getReturnType();
@@ -59,7 +60,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
                 String code = PropertyCodeGen.getPropertyCode(context, method, propertyName, returnType, PROVIDER_REGISTRY);
                 mb.line("return " + code + ";");
             } else if (!method.isDefault()) {
-                context.errorMessage("all non-default methods defined in a @Properties interface must have a @Property annotation: " + type + " " + method);
+                throw new CodeProcessingException("all non-default methods defined in a @Properties interface must have a @Property annotation", method);
             }
         }
         impl.writeClass(context.filer());

@@ -227,12 +227,10 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     @Override
     public void registerDependency(ProviderDependency target, ProviderDependency dependency) {
         if (target == null) {
-            errorMessage("cannot register dependency for null target");
-            return;
+            throw new CodeProcessingException("cannot register dependency for null target");
         }
         if (dependency == null) {
-            errorMessage("cannot register null dependency for " + target);
-            return;
+            throw new CodeProcessingException("cannot register null dependency for " + target);
         }
         typesToDependencies.computeIfAbsent(target, t -> new HashSet<>()).add(dependency);
     }
@@ -265,13 +263,13 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     private void errorChecking(ProviderDefinition providerDefinition) {
         for (VariableElement variableElement : ProcessorUtils.allFields(this, providerDefinition.providedType())) {
             if (variableElement.getAnnotation(Inject.class) != null) {
-                errorMessage("field injection is not supported: " + ProcessorUtils.debugString(variableElement));
+                throw new CodeProcessingException("field injection is not supported", variableElement);
             }
         }
         ProcessorUtils.<Annotation>ifClassExists("javax.annotation.PreDestroy", preDestroy -> {
             for (ExecutableElement method : ProcessorUtils.allMethods(this, providerDefinition.providedType())) {
                 if (method.getAnnotation(preDestroy) != null) {
-                    errorMessage("@PreDestroy is not supported (use the AutoCloseable interface instead): " + ProcessorUtils.debugString(method));
+                    throw new CodeProcessingException("@PreDestroy is not supported (use @DestroyMethod)", method);
                 }
             }
         });
@@ -339,8 +337,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 }
             }
         } catch (IOException e) {
-            errorMessage("error writing services resources");
-            e.printStackTrace();
+            throw new CodeProcessingException("error writing services resources", e);
         }
     }
 
@@ -348,8 +345,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
         try {
             return Class.forName(className);
         } catch (ClassNotFoundException e) {
-            errorMessage("error loading class: " + className);
-            throw new NullPointerException("unreachable");
+            throw new CodeProcessingException("error loading class: " + className);
         }
     }
 
@@ -360,8 +356,8 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 if (dependency != null && dependency.required() && !isProvided(dependency)) {
                     Stream<ProviderDependency> deps = providerDefinitions.stream().map(ProviderDefinition::asDependency);
                     Stream<ProviderDependency> add = additionalSatisfiedDependencies.stream();
-                    errorMessage("missing provider dependency for\ntarget:" + target + "\ndependency:" + dependency + "\nknown types:\n" +
-                            Stream.of(deps, add).flatMap(Function.identity()).map(String::valueOf).collect(Collectors.joining("\n")));
+                    throw new CodeProcessingException("missing provider dependency for\ntarget: " + target + "\ndependency: " + dependency + "\nknown types:\n  " +
+                            Stream.of(deps, add).flatMap(Function.identity()).map(String::valueOf).collect(Collectors.joining("\n  ")));
                 }
             }
         }

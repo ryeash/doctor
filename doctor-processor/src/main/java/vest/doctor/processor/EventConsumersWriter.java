@@ -4,6 +4,7 @@ import jakarta.inject.Provider;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.AppLoader;
 import vest.doctor.Async;
+import vest.doctor.CodeProcessingException;
 import vest.doctor.DoctorProvider;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionListener;
@@ -40,12 +41,10 @@ public class EventConsumersWriter implements ProviderDefinitionListener {
                 continue;
             }
             if (listener.getParameters().size() != 1) {
-                context.errorMessage("@EventListener methods must have only one parameter: " + ProcessorUtils.debugString(listener));
-                continue;
+                throw new CodeProcessingException("@EventListener methods must have only one parameter", listener);
             }
             if (!listener.getThrownTypes().isEmpty()) {
-                context.errorMessage("@EventListener methods may not throw any exceptions: " + ProcessorUtils.debugString(listener));
-                continue;
+                throw new CodeProcessingException("@EventListener methods may not throw checked exceptions", listener);
             }
             listeners.add(listener);
         }

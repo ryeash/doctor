@@ -21,9 +21,6 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
 
     @Override
     public void customize(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef) {
-        if (providerDefinition.isSkipInjection()) {
-            return;
-        }
         boolean executorInitialized = false;
         for (ExecutableElement m : ProcessorUtils.allMethods(context, providerDefinition.providedType())) {
             if (m.getAnnotation(Scheduled.class) != null) {
@@ -62,7 +59,7 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
                 .bind("method", ProcessorUtils.debugString(scheduledMethod))
 
                 .addImportClass("vest.doctor.runtime.ScheduledTaskWrapper")
-                .line("ScheduledTaskWrapper.run({{providerRegistry}}, {{instance}}, {{executionLimit}}, new {{Interval}}({{providerRegistry}}.resolvePlaceholders(\"", ProcessorUtils.escapeStringForCode(scheduled.interval()), "\")), ses, {{fixedRate}}, (provRegistry, val) -> {")
+                .line("ScheduledTaskWrapper.run({{providerRegistry}}, {{instance}}, {{executionLimit}}L, new {{Interval}}({{providerRegistry}}.resolvePlaceholders(\"", ProcessorUtils.escapeStringForCode(scheduled.interval()), "\")), ses, {{fixedRate}}, (provRegistry, val) -> {")
                 .line("try {")
                 .line(context.executableCall(providerDefinition, scheduledMethod, "val", "provRegistry") + ";")
                 .line("} catch(Throwable t) {")
@@ -86,7 +83,7 @@ public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
                 .bind("method", ProcessorUtils.debugString(scheduledMethod))
 
                 .addImportClass("vest.doctor.runtime.CronTaskWrapper")
-                .line("CronTaskWrapper.run({{providerRegistry}}, {{instance}}, {{cron}}, {{executionLimit}}, ses, (provRegistry, val) -> {")
+                .line("CronTaskWrapper.run({{providerRegistry}}, {{instance}}, {{cron}}, {{executionLimit}}L, ses, (provRegistry, val) -> {")
                 .line("try {")
                 .line(context.executableCall(providerDefinition, scheduledMethod, instanceRef, providerRegistryRef) + ";")
                 .line("} catch(Throwable t) {")

@@ -8,7 +8,7 @@ import vest.doctor.scheduled.Cron;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
 /**
@@ -16,7 +16,7 @@ import java.util.function.BiConsumer;
  */
 public final class CronTaskWrapper<T> implements Runnable {
 
-    public static <T> void run(ProviderRegistry providerRegistry, T val, Cron cron, int executions, ScheduledExecutorService scheduledExecutorService, BiConsumer<ProviderRegistry, T> execute) {
+    public static <T> void run(ProviderRegistry providerRegistry, T val, Cron cron, long executions, ScheduledExecutorService scheduledExecutorService, BiConsumer<ProviderRegistry, T> execute) {
         CronTaskWrapper<T> wrapper = new CronTaskWrapper<>(providerRegistry, val, cron, executions, scheduledExecutorService, execute);
         wrapper.scheduleNext();
     }
@@ -25,15 +25,15 @@ public final class CronTaskWrapper<T> implements Runnable {
     private final ProviderRegistry providerRegistry;
     private final WeakReference<T> ref;
     private final Cron cron;
-    private final AtomicInteger executionLimit;
+    private final AtomicLong executionLimit;
     private final ScheduledExecutorService scheduledExecutorService;
     private final BiConsumer<ProviderRegistry, T> execute;
 
-    private CronTaskWrapper(ProviderRegistry providerRegistry, T val, Cron cron, int executions, ScheduledExecutorService scheduledExecutorService, BiConsumer<ProviderRegistry, T> execute) {
+    private CronTaskWrapper(ProviderRegistry providerRegistry, T val, Cron cron, long executions, ScheduledExecutorService scheduledExecutorService, BiConsumer<ProviderRegistry, T> execute) {
         this.providerRegistry = providerRegistry;
         this.ref = new WeakReference<>(val);
         this.cron = cron;
-        this.executionLimit = executions > 0 ? new AtomicInteger(executions) : null;
+        this.executionLimit = executions > 0 ? new AtomicLong(executions) : null;
         this.scheduledExecutorService = scheduledExecutorService;
         this.execute = execute;
     }
@@ -44,7 +44,7 @@ public final class CronTaskWrapper<T> implements Runnable {
         if (t != null) {
             try {
                 execute.accept(providerRegistry, t);
-                if (executionLimit != null && executionLimit.decrementAndGet() == 0) {
+                if (executionLimit != null && executionLimit.decrementAndGet() <= 0) {
                     ref.clear();
                     return;
                 }

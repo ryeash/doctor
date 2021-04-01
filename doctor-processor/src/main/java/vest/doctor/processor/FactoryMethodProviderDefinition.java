@@ -1,6 +1,7 @@
 package vest.doctor.processor;
 
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.CodeProcessingException;
 import vest.doctor.InjectionException;
 import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ParameterLookupCustomizer;
@@ -29,7 +30,7 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
         this.container = container;
         this.factoryMethod = factoryMethod;
         if (providedType().getTypeParameters().size() != 0) {
-            context.errorMessage("factory methods may not return parameterized types: " + ProcessorUtils.debugString(factoryMethod));
+            throw new CodeProcessingException("factory methods may not return parameterized types", factoryMethod);
         }
         this.generatedClass = context.generatedPackage() + "." + providedType().getSimpleName() + "__factoryProvider" + context.nextId();
     }
@@ -72,8 +73,10 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
             b.line("try {")
                     .line("{{container}} container = {{getContainer}}.get();")
                     .line("{{providedType}} instance = {{call}};");
-            for (NewInstanceCustomizer customizer : context.customizations(NewInstanceCustomizer.class)) {
-                customizer.customize(context, this, b, "instance", Constants.PROVIDER_REGISTRY);
+            if (!isSkipInjection()) {
+                for (NewInstanceCustomizer customizer : context.customizations(NewInstanceCustomizer.class)) {
+                    customizer.customize(context, this, b, "instance", Constants.PROVIDER_REGISTRY);
+                }
             }
             b.line("return instance;");
             b.line("} catch(Throwable t) { throw new {{InjectionException}}(\"error instantiating provided type\", t); }");

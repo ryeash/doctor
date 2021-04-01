@@ -6,7 +6,7 @@ import vest.doctor.scheduled.Interval;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
 /**
@@ -14,7 +14,7 @@ import java.util.function.BiConsumer;
  */
 public final class ScheduledTaskWrapper<T> implements Runnable {
 
-    public static <T> void run(ProviderRegistry providerRegistry, T val, int executions, Interval interval, ScheduledExecutorService ses, boolean fixedRate, BiConsumer<ProviderRegistry, T> execute) {
+    public static <T> void run(ProviderRegistry providerRegistry, T val, long executions, Interval interval, ScheduledExecutorService ses, boolean fixedRate, BiConsumer<ProviderRegistry, T> execute) {
         ScheduledTaskWrapper<T> wrapper = new ScheduledTaskWrapper<>(providerRegistry, val, executions, execute);
         if (fixedRate) {
             wrapper.future = ses.scheduleAtFixedRate(wrapper, interval.getMagnitude(), interval.getMagnitude(), interval.getUnit());
@@ -25,15 +25,15 @@ public final class ScheduledTaskWrapper<T> implements Runnable {
 
     private final ProviderRegistry providerRegistry;
     private final WeakReference<T> ref;
-    private final AtomicInteger executionLimit;
+    private final AtomicLong executionLimit;
     private final BiConsumer<ProviderRegistry, T> execute;
     private ScheduledFuture<?> future;
 
-    private ScheduledTaskWrapper(ProviderRegistry providerRegistry, T val, int executions, BiConsumer<ProviderRegistry, T> execute) {
+    private ScheduledTaskWrapper(ProviderRegistry providerRegistry, T val, long executions, BiConsumer<ProviderRegistry, T> execute) {
         this.providerRegistry = providerRegistry;
         this.ref = new WeakReference<>(val);
         this.execute = execute;
-        this.executionLimit = executions > 0 ? new AtomicInteger(executions) : null;
+        this.executionLimit = executions > 0 ? new AtomicLong(executions) : null;
     }
 
     @Override

@@ -179,7 +179,7 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                     .collect(AS_LIST))
                     .addMethod("public List<Class<?>> allProvidedTypes()", b -> b.line("return allTypes;"));
         } else {
-            context().errorMessage("all providers must provide at least one type: " + this);
+            throw new CodeProcessingException("all providers must provide at least one type: " + this);
         }
 
         List<? extends AnnotationMirror> annotationMirrors = annotationSource().getAnnotationMirrors();

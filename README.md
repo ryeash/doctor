@@ -1,6 +1,6 @@
 # doctor
 
-Compile time dependency injection provider.
+Compile time dependency injection processor.
 
 ### Getting Started
 
@@ -16,13 +16,15 @@ public static void main(String[]args){
 ### Core Functionality
 
 Pseudo-support
-for [`jakarta.inject`](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/package-summary.html). During
-compile, `@Scope` annotations (and others) are analyzed, and the boilerplate code to generate instances for the types is
-generated and wired into an infrastructure that relies on `ServiceProvider`
+for [jakarta.inject](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/package-summary.html). During
+compile, [@Scope](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/scope) annotations (and others) are
+analyzed, and the boilerplate code to generate instances for the types is generated and wired into an infrastructure
+that relies on `ServiceProvider`
 to load/initialize the application.
 
-To say it in another way, the source code is analyzed to generate implementations of `jakarta.inject.Provider` and the
-providers are automatically wired together for dependency injection.
+To say it in another way, the source code is analyzed to generate implementations of
+[Provider](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/provider) and the providers are
+automatically wired together for dependency injection.
 
 ### Defining providers
 
@@ -349,13 +351,13 @@ public interface DBProps { // must be an interface
     // this will use the property named `db.url`
   String url();
 
-    @Property("username")
-    String username();
+  @Property("username")
+  String username();
 
-    @Property("password")
-    String password();
-    
-    ...
+  @Property("password")
+  String password();
+  
+  ...
 }
 ```
 

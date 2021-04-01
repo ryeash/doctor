@@ -62,15 +62,6 @@ public interface AnnotationProcessorContext {
     }
 
     /**
-     * Print a {@link Diagnostic.Kind#ERROR} message using the {@link Messager} associated with the {@link ProcessingEnvironment}.
-     *
-     * @param message the message to write
-     */
-    default void errorMessage(String message) {
-        messager().printMessage(Diagnostic.Kind.ERROR, message);
-    }
-
-    /**
      * Determine if there is a {@link jakarta.inject.Provider} registered that can satisfy the given dependency.
      *
      * @param dependency the dependency to check
@@ -167,8 +158,7 @@ public interface AnnotationProcessorContext {
                             return code;
                         }
                     }
-                    errorMessage("no lookups matched? how did this happen?");
-                    return null;
+                    throw new CodeProcessingException("unable to inject method parameter; no lookup matched", ve);
                 })
                 .collect(Collectors.joining(",\n\t", "(", ")"));
         if (executableElement.getKind() == ElementKind.METHOD) {
@@ -176,8 +166,7 @@ public interface AnnotationProcessorContext {
         } else if (executableElement.getKind() == ElementKind.CONSTRUCTOR) {
             return "new " + providerDefinition.providedType().getSimpleName() + parameters;
         } else {
-            errorMessage("failed to create calling code for " + executableElement);
-            return null;
+            throw new CodeProcessingException("failed to create calling code for ", executableElement);
         }
     }
 

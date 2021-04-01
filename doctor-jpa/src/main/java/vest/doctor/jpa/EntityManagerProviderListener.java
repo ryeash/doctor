@@ -3,6 +3,7 @@ package vest.doctor.jpa;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.CodeProcessingException;
 import vest.doctor.DestroyMethod;
 import vest.doctor.Factory;
 import vest.doctor.ProviderDefinition;
@@ -45,8 +46,7 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
         String pcName = Objects.requireNonNull(persistenceContext.name(), "@PersistenceContext annotations must have a name defined that matches the persistence unit name in the xml");
 
         if (processedPersistenceUnits.contains(pcName)) {
-            context.errorMessage("multiple @PersistenceContext annotations with the same name: " + pcName);
-            return;
+            throw new CodeProcessingException("multiple @PersistenceContext annotations with the same name: " + pcName);
         }
         processedPersistenceUnits.add(pcName);
 

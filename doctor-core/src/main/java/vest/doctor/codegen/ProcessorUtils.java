@@ -313,7 +313,7 @@ public class ProcessorUtils {
             String qualifier = ProcessorUtils.getQualifier(context, variableElement);
 
             if (variableElement.asType().getKind().isPrimitive()) {
-                context.errorMessage("provider injection is impossible for primitive type: " + ProcessorUtils.debugString(variableElement));
+                throw new CodeProcessingException("provider injection is impossible for primitive type", variableElement);
             }
 
             if (ProcessorUtils.isCompatibleWith(context, typeElement, Optional.class)) {
@@ -340,8 +340,7 @@ public class ProcessorUtils {
                 } else if (ProcessorUtils.isCompatibleWith(context, typeElement, Collection.class)) {
                     return preamble + ".toList())";
                 } else {
-                    context.errorMessage("unable to inject iterable type: " + typeElement);
-                    return null;
+                    throw new CodeProcessingException("unable to inject iterable type", typeElement);
                 }
             }
 
@@ -357,8 +356,7 @@ public class ProcessorUtils {
 
             return providerRegistryRef + ".getInstance(" + variableElement.asType() + ".class, " + qualifier + ")";
         } catch (CodeProcessingException e) {
-            context.errorMessage("error wiring parameter: " + e.getMessage() + ": " + ProcessorUtils.debugString(variableElement));
-            throw e;
+            throw new CodeProcessingException("error wiring parameter", variableElement, e);
         }
     }
 

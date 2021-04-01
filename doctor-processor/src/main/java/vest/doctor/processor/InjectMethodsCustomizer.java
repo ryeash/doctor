@@ -35,9 +35,6 @@ public class InjectMethodsCustomizer implements NewInstanceCustomizer {
 
     @Override
     public void customize(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef) {
-        if (providerDefinition.isSkipInjection()) {
-            return;
-        }
         TypeElement typeElement = providerDefinition.providedType();
 
         Map<String, String> executorNameToInstance = new HashMap<>();
