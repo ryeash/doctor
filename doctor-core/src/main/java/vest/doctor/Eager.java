@@ -9,9 +9,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Indicates that the provider generated from the marked element should be eagerly instantiated. Effectively causing
- * the {@link Provider#get()} method to be called a single time during startup of the application. Makes the most
- * sense for singletons.
+ * Indicates that the provider generated from the marked element should be eagerly instantiated. Causes
+ * the {@link Provider#get()} method to be called a single time during startup of the application.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

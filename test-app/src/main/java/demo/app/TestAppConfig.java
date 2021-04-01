@@ -138,7 +138,7 @@ public class TestAppConfig {
     @Factory
     @Named("complex-return-type")
     @SuppressWarnings("unchecked")
-    public <T extends CoffeeMaker & AutoCloseable> T crazy() {
+    public <T extends CoffeeMaker & AutoCloseable> T complexReturnType() {
         return (T) new ClosableCoffeeMaker();
     }
 
