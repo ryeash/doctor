@@ -19,8 +19,7 @@ Pseudo-support
 for [jakarta.inject](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/package-summary.html). During
 compile, [@Scope](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/scope) annotations (and others) are
 analyzed, and the boilerplate code to generate instances for the types is generated and wired into an infrastructure
-that relies on `ServiceProvider`
-to load/initialize the application.
+that relies on `ServiceProvider` to load/initialize the application.
 
 To say it in another way, the source code is analyzed to generate implementations of
 [Provider](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/provider) and the providers are
