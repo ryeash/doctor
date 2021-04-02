@@ -58,33 +58,9 @@ public class ApplicationBeanFactories {
 }
 ```
 
-> ##### Notes on factory return types
->
-> Parameterized types are not allowed as factory return types, e.g.:
-> ```java
-> @Factory
-> public List<String> stringsFactory(){
->     return List.of("a", "b", "c");
-> }
-> ```
-> This will cause a compilation error.
->
-> Multi-type type parameters, however, _are_ supported, e.g.:
-> ```java
-> @Factory
-> public <T extends BookDao & PurchaseDao> T multiDaoFactory(){
->     return ...
-> }
-> ```
-> The resulting provider will satisfy both BookDao and PurchaseDao dependencies. The main
-> type for the resulting provider will be the first listed type (in this case BookDao), with any additional
-> types (PurchaseDao) being treated as satisfied super types. This means for the purposes of verifying
-> duplicate providers only the first bound will be considered.
-
 As a result you can inject the JdbcDao:
 
 ```java
-
 @Singleton
 public class BookDao {
     @Inject // inject here tells the processor which constructor to use for dependency injection
@@ -94,16 +70,38 @@ public class BookDao {
 }
 ```
 
+> ##### Notes on factory return types
+>
+> Parameterized types are not allowed as factory return types, e.g.:
+> ```java
+> @Factory
+> public List<String> stringsFactory(){
+>   return List.of("a", "b", "c");
+> }
+> ```
+> This will cause a compilation error.
+>
+> Multi-type type parameters, however, _are_ supported, e.g.:
+> ```java
+> @Factory
+> public <T extends BookDao & PurchaseDao> T multiDaoFactory(){
+>   return ...
+> }
+> ```
+> The resulting provider will satisfy both BookDao and PurchaseDao dependencies. The main
+> type for the resulting provider will be the first listed type (in this case BookDao), with any additional
+> types (PurchaseDao) being treated as satisfied super types. This means for the purposes of verifying
+> duplicate providers only the first bound will be considered.
+> 
+
 ### Scoping
 
 These are the built-in scopes supported:
 
 - [@Prototype](doctor-core/src/main/java/vest/doctor/Prototype.java): each call to Provider.get() creates a new instance
-- [@Singleton](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/singleton): one and only one instance
-  is created per jvm
+- [@Singleton](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/singleton): one and only one instance is created per jvm
 - [@ThreadLocal](doctor-core/src/main/java/vest/doctor/ThreadLocal.java): one instance is created per thread
-- [@Cached](doctor-core/src/main/java/vest/doctor/Cached.java): an instance is created and shared for a configurable
-  length of time
+- [@Cached](doctor-core/src/main/java/vest/doctor/Cached.java): an instance is created and shared for a configurable length of time
 
 ### Qualifiers
 
@@ -212,7 +210,7 @@ public class AppConfig {
 The previous will allow the datasource to be retrieved either with the qualifier or without:
 
 ```java
-doctor.getInstance(DataSource.class)==doctor.getInstance(DataSource.class,"primary")
+doctor.getInstance(DataSource.class) == doctor.getInstance(DataSource.class, "primary")
 ```
 
 ### [@SkipInjection](doctor-core/src/main/java/vest/doctor/SkipInjection.java)
