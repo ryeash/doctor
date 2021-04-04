@@ -29,7 +29,7 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
     }
 
     @Override
-    public boolean handles(Request request, TypeInfo typeInfo) {
+    public boolean canRead(Request request, TypeInfo typeInfo) {
         return true;
     }
 
@@ -40,10 +40,10 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
             CompletableFuture<?> future;
             if (typeInfo.getRawType() == CompletableFuture.class) {
                 future = asyncRead(request, typeInfo);
-            } else if (!typeInfo.hasParameterizedTypes()) {
-                future = CompletableFuture.completedFuture(objectMapper.readValue(request.body().inputStream(), typeInfo.getRawType()));
-            } else {
+            } else if (typeInfo.hasParameterizedTypes()) {
                 future = CompletableFuture.completedFuture(objectMapper.readValue(request.body().inputStream(), jacksonType(objectMapper, typeInfo)));
+            } else {
+                future = CompletableFuture.completedFuture(objectMapper.readValue(request.body().inputStream(), typeInfo.getRawType()));
             }
             return (CompletableFuture<T>) future;
         } catch (IOException e) {
@@ -68,7 +68,7 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
     }
 
     @Override
-    public boolean handles(Response ctx, Object response) {
+    public boolean canWrite(Response ctx, Object response) {
         return true;
     }
 

@@ -49,6 +49,15 @@ public class NettyTest extends BaseDoctorTest {
     }
 
     @Test
+    public void head() {
+        req().head("/netty/hello2")
+                .prettyPeek()
+                .then()
+                .statusCode(200)
+                .body(is(""));
+    }
+
+    @Test
     public void filters() {
         req().queryParam("number", 42)
                 .queryParam("q", "queryparam")

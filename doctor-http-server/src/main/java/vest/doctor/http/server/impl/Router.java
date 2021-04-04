@@ -37,8 +37,6 @@ public class Router implements Handler {
     }
 
     public Router get(String path, Handler handler) {
-        // cross list all GETs as HEADs
-        addRoute(HttpMethod.HEAD, path, handler);
         return addRoute(HttpMethod.GET, path, handler);
     }
 
@@ -67,6 +65,10 @@ public class Router implements Handler {
     }
 
     public Router addRoute(HttpMethod method, String path, Handler handler) {
+        if (method.equals(HttpMethod.GET)) {
+            // cross list all GETs as HEADs
+            addRoute(HttpMethod.HEAD, path, handler);
+        }
         List<Route> routes = this.routes.computeIfAbsent(method, v -> new ArrayList<>());
         Route newRoute = new Route(path, caseInsensitiveMatch, handler);
 

@@ -26,7 +26,7 @@ import java.util.concurrent.CompletableFuture;
 public class DefaultReaderWriter implements BodyReader, BodyWriter {
 
     @Override
-    public boolean handles(Request request, TypeInfo typeInfo) {
+    public boolean canRead(Request request, TypeInfo typeInfo) {
         Class<?> rawType = typeInfo.getRawType();
         return ByteBuf.class.isAssignableFrom(rawType)
                 || RequestBody.class.isAssignableFrom(rawType)
@@ -40,17 +40,21 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
     @Override
     @SuppressWarnings("unchecked")
     public <T> CompletableFuture<T> read(Request request, TypeInfo typeInfo) {
+        return (CompletableFuture<T>) convertStandard(request, typeInfo);
+    }
+
+    private Object convertStandard(Request request, TypeInfo typeInfo) {
         Class<?> rawType = typeInfo.getRawType();
         if (ByteBuf.class.isAssignableFrom(rawType)) {
-            return (CompletableFuture<T>) request.body().completionFuture();
+            return request.body().completionFuture();
         } else if (RequestBody.class.isAssignableFrom(rawType)) {
-            return (CompletableFuture<T>) CompletableFuture.completedFuture(request.body());
+            return CompletableFuture.completedFuture(request.body());
         } else if (InputStream.class.isAssignableFrom(rawType)) {
-            return (CompletableFuture<T>) request.body()
+            return request.body()
                     .completionFuture()
                     .thenApply(ByteBufInputStream::new);
         } else if (byte[].class.isAssignableFrom(rawType)) {
-            return (CompletableFuture<T>) request.body()
+            return request.body()
                     .completionFuture()
                     .thenApply(buf -> {
                         byte[] bytes = new byte[buf.readableBytes()];
@@ -58,21 +62,20 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
                         return bytes;
                     });
         } else if (CharSequence.class.isAssignableFrom(rawType)) {
-            return (CompletableFuture<T>) request.body()
-                    .asString();
+            return request.body().asString();
         } else if (ByteBuffer.class.isAssignableFrom(rawType)) {
-            return (CompletableFuture<T>) request.body()
+            return request.body()
                     .completionFuture()
                     .thenApply(ByteBuf::nioBuffer);
         } else if (MultiPartData.class.isAssignableFrom(rawType)) {
-            return (CompletableFuture<T>) CompletableFuture.completedFuture(request.multiPartBody());
+            return CompletableFuture.completedFuture(request.multiPartBody());
         } else {
             throw new UnsupportedOperationException();
         }
     }
 
     @Override
-    public boolean handles(Response response, Object data) {
+    public boolean canWrite(Response response, Object data) {
         return data instanceof byte[]
                 || data instanceof InputStream
                 || data instanceof CharSequence
@@ -117,7 +120,7 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
 
     @Override
     public int priority() {
-        return Integer.MAX_VALUE / 2;
+        return 1_000_000;
     }
 
     private void setContentTypeIfAbsent(Response response, CharSequence contentType) {

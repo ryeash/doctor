@@ -10,6 +10,11 @@ import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 public interface Websocket {
 
     /**
+     * Comma delimited list of paths to bind this websocket to.
+     */
+    String path();
+
+    /**
      * Called when the HttpServer accepts a new websocket connection. Defaults to a no-op.
      *
      * @param ctx  The client connection context

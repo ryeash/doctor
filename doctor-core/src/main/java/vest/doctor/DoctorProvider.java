@@ -12,7 +12,7 @@ import java.util.List;
 public interface DoctorProvider<T> extends Provider<T> {
 
     /**
-     * The type provided.
+     * The main type provided.
      */
     Class<T> type();
 

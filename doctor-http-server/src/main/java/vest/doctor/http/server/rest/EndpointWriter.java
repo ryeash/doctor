@@ -66,12 +66,12 @@ public class EndpointWriter implements ProviderDefinitionListener {
                 .addImportClass(ExplicitProvidedTypes.class)
                 .addImportClass(Provider.class)
                 .addClassAnnotation("@Singleton")
-                .addClassAnnotation("@Named(\"" + className + "\")")
+                .addClassAnnotation("@Named(\"", className, "\")")
                 .addClassAnnotation("@ExplicitProvidedTypes({EndpointConfiguration.class})")
                 .addField("private final ProviderRegistry providerRegistry")
                 .addField("private final BodyInterchange bodyInterchange")
                 .addField("private final Router router")
-                .addField("private final Provider<" + providerDefinition.providedType() + "> endpoint");
+                .addField("private final Provider<", providerDefinition.providedType(), "> endpoint");
 
         config.addMethod("@Inject public " + className + "(ProviderRegistry {{providerRegistry}})", b -> {
             b.line("this.{{providerRegistry}} = {{providerRegistry}};");
@@ -145,20 +145,19 @@ public class EndpointWriter implements ProviderDefinitionListener {
 
         String callMethod = "endpoint.get()." + method.getSimpleName() + parameters + ";";
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("request -> {");
-        sb.append("TypeInfo typeInfo = ").append(buildTypeInfoCode(method)).append(';');
+        initialize.line("router.addRoute(\"",
+                ProcessorUtils.escapeStringForCode(httpMethod), '"',
+                ",\"", ProcessorUtils.escapeStringForCode(path), "\", request -> {");
+        initialize.line("TypeInfo typeInfo = ", buildTypeInfoCode(method), ';');
         if (isVoid) {
-            sb.append(callMethod).append("\n");
-            sb.append("return convertResponse(request, null, bodyInterchange);");
+            initialize.line(callMethod);
+            initialize.line("return convertResponse(request, null, bodyInterchange);");
         } else {
-            sb.append("Object result = ").append(callMethod).append("\n");
-            sb.append("return convertResponse(request, result, bodyInterchange);");
+            initialize.line("Object result = ", callMethod);
+            initialize.line("return convertResponse(request, result, bodyInterchange);");
         }
-        sb.append("}");
-        initialize.line("router.addRoute(\"", ProcessorUtils.escapeStringForCode(httpMethod),
-                "\", \"", ProcessorUtils.escapeStringForCode(path)
-                , "\", ", sb.toString(), ");");
+        initialize.line("}");
+        initialize.line(");");
     }
 
     private static final List<Class<? extends Annotation>> SUPPORTED_PARAMS = List.of(Body.class, Attribute.class, PathParam.class, QueryParam.class, HeaderParam.class, CookieParam.class, BeanParam.class);

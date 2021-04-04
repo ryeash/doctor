@@ -5,13 +5,16 @@ import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import jakarta.inject.Singleton;
 import vest.doctor.http.server.impl.AbstractWebsocket;
-import vest.doctor.http.server.rest.Path;
 
 import java.nio.charset.StandardCharsets;
 
 @Singleton
-@Path("/grumpy")
 public class TCNettyWebsocket extends AbstractWebsocket {
+
+    @Override
+    public String path() {
+        return "/grumpy";
+    }
 
     @Override
     public void connect(ChannelHandlerContext ctx, String path) {

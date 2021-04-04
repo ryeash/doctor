@@ -26,8 +26,10 @@ import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class NettyLoader implements AppLoader {
 
@@ -69,11 +71,22 @@ public class NettyLoader implements AppLoader {
 
         providerRegistry.getProviders(Websocket.class)
                 .forEach(ws -> {
-                    Path path = ws.type().getAnnotation(Path.class);
-                    if (path == null) {
-                        throw new IllegalArgumentException("websockets must have a @Path annotation: " + ws.type());
+                    Websocket websocket = ws.get();
+                    List<String> paths = Optional.ofNullable(websocket.path())
+                            .map(String::trim)
+                            .map(s -> s.split(","))
+                            .stream()
+                            .flatMap(Stream::of)
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty())
+                            .collect(Collectors.toList());
+                    if (paths.isEmpty()) {
+                        throw new IllegalArgumentException("empty websocket path " + ws.type());
                     }
-                    for (String p : path.value()) {
+                    for (String p : paths) {
+                        if (p == null || p.isEmpty()) {
+                            throw new IllegalArgumentException("empty websocket path " + ws.type());
+                        }
                         server.addWebsocket(p, ws::get);
                     }
                 });

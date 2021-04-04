@@ -28,6 +28,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.ElementFilter;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collections;
@@ -98,12 +99,12 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
         } else if (canExtend(typeElement)) {
             classBuilder.setExtendsClass(typeElement.getQualifiedName().toString());
         } else {
-            throw new CodeProcessingException("aspects can only be applied to interfaces and public non-final classes - invalid class", typeElement);
+            throw new CodeProcessingException("aspects can only be applied to interfaces and public non-final classes with an empty constructor - invalid class", typeElement);
         }
-        classBuilder.addField("private final " + typeElement.getSimpleName() + " delegate");
-        classBuilder.addField("private final " + ProviderRegistry.class.getSimpleName() + " beanProvider");
+        classBuilder.addField("private final ", typeElement.getSimpleName(), " delegate");
+        classBuilder.addField("private final ", ProviderRegistry.class.getSimpleName(), " beanProvider");
 
-        MethodBuilder constructor = classBuilder.newMethod("public " + delegateClassName + "(" + typeElement.getSimpleName() + " delegate, " + ProviderRegistry.class.getSimpleName() + " beanProvider)");
+        MethodBuilder constructor = classBuilder.newMethod("public ", delegateClassName, "(", typeElement.getSimpleName(), " delegate, ", ProviderRegistry.class.getSimpleName(), " beanProvider)");
         constructor.line("this.delegate = delegate;");
         constructor.line("this.beanProvider = beanProvider;");
 
@@ -187,7 +188,12 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
 
     private static boolean canExtend(TypeElement typeElement) {
         Set<Modifier> modifiers = typeElement.getModifiers();
-        return modifiers.contains(Modifier.PUBLIC)
+        boolean hasEmptyConstructor = ElementFilter.constructorsIn(typeElement.getEnclosedElements())
+                .stream()
+                .anyMatch(c -> (c.getModifiers().contains(Modifier.PUBLIC) || c.getModifiers().contains(Modifier.PROTECTED))
+                        && c.getParameters().isEmpty());
+        return hasEmptyConstructor
+                && modifiers.contains(Modifier.PUBLIC)
                 && !modifiers.contains(Modifier.FINAL);
     }
 }

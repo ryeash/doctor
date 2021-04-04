@@ -3,7 +3,6 @@ package vest.doctor.http.jackson;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.async.ByteArrayFeeder;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
@@ -34,10 +33,6 @@ class AsyncMapper<T> {
     private final Deque<Object> stack;
 
     public AsyncMapper(ObjectMapper mapper, Class<T> type) {
-        this(mapper, mapper.getTypeFactory().constructType(type));
-    }
-
-    public AsyncMapper(ObjectMapper mapper, TypeReference<T> type) {
         this(mapper, mapper.getTypeFactory().constructType(type));
     }
 

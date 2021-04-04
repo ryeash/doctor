@@ -37,7 +37,7 @@ public final class BodyInterchange {
 
     public <T> CompletableFuture<T> read(Request request, TypeInfo typeInfo) {
         for (BodyReader reader : readers) {
-            if (reader.handles(request, typeInfo)) {
+            if (reader.canRead(request, typeInfo)) {
                 return reader.read(request, typeInfo);
             }
         }
@@ -61,7 +61,7 @@ public final class BodyInterchange {
         } else {
             Response response = request.createResponse();
             for (BodyWriter writer : writers) {
-                if (writer.handles(response, data)) {
+                if (writer.canWrite(response, data)) {
                     return writer.write(response, data)
                             .thenApply(response::body);
                 }

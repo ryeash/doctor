@@ -24,7 +24,7 @@ public interface ProviderDefinition {
 
     /**
      * All types that the provided type should be able to satisfy, including the explicitly provided type. For example
-     * a class "Foo" that implements "Bar" should return two types from this method: Foo and Bar.
+     * a class "Foo" that implements "Bar" should return (Foo, Bar).
      */
     List<TypeElement> getAllProvidedTypes();
 

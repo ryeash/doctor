@@ -7,7 +7,7 @@ import vest.doctor.http.server.ResponseBody;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Responsible for serializing response bodies.
+ * Responsible for converting the result of endpoint methods into {@link ResponseBody response bodies}.
  */
 public interface BodyWriter extends Prioritized {
 
@@ -18,14 +18,14 @@ public interface BodyWriter extends Prioritized {
      * @param responseData the response object from the endpoint method
      * @return true if this body writer can handle writing the response object
      */
-    boolean handles(Response response, Object responseData);
+    boolean canWrite(Response response, Object responseData);
 
     /**
-     * Write the response data into the response.
+     * Convert the response data into a {@link ResponseBody}.
      *
      * @param response     the response object
      * @param responseData the data to write
-     * @return a future indicating the asynchronous completion of the write operation
+     * @return a future indicating the asynchronous creation of the response body
      */
     CompletableFuture<ResponseBody> write(Response response, Object responseData);
 }
