@@ -241,16 +241,16 @@ public class SomethingPeriodic {
     public void every10Milliseconds() {
         // do something every 10 milliseconds
     }
+
+    @Scheduled(cron = "0 0 * * * *")
+    public void everyHourOnTheHour() {
+        // do something every hour
+    }
 }
 ```
 
 Internally, the object instances for scheduled methods are tracked using weak references so scheduling method execution
 will _not_ prevent the provided object from being garbage collected.
-
-### Limitations
-
-Field injection is not supported. It requires reflective access to fields and requires changing access levels at
-runtime. Neither of which is allowed for this project.
 
 ### Event Bus
 
@@ -289,6 +289,7 @@ public class EventExample {
 The @Async annotation can be used to perform certain actions in a background thread.
 
 ```java
+
 @Singleton
 public class AsyncDemo {
     @Inject
@@ -298,7 +299,9 @@ public class AsyncDemo {
     }
 
     @EventListener
-    @Async // when a compatible message is published, this method will be called in a background thread
+    @Async("async-event")
+    // when a compatible message is published, this method will be called in a background thread
+    // from the executor service named 'async-event'
     public void asyncListener(Object message) {
         ...
     }
@@ -443,3 +446,8 @@ public class AspectDemo implements Before, Around, After {
     }
 }
 ```
+
+### Limitations
+
+Field injection is not supported. It requires reflective access to fields and requires changing access levels at
+runtime. Neither of which is allowed for this project.

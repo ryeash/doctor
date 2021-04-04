@@ -24,20 +24,10 @@ public interface EndpointConfiguration {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    default <T> T readBody(Request request, TypeInfo bodyType, BodyInterchange bodyInterchange) {
-        CompletableFuture<?> r;
-        if (bodyType == null) {
-            // ignore the data, but wait for the body to be read fully
-            r = request.body().ignored();
-        } else {
-            r = bodyInterchange.read(request, bodyType);
-        }
-        if (bodyType != null && bodyType.getRawType().isAssignableFrom(CompletableFuture.class)) {
-            return (T) r;
-        } else {
-            return (T) r.join();
-        }
+    default CompletableFuture<?> readFutureBody(Request request, TypeInfo bodyType, BodyInterchange bodyInterchange) {
+        return (bodyType == null)
+                ? request.body().ignored()
+                : bodyInterchange.read(request, bodyType);
     }
 
     default CompletionStage<Response> convertResponse(Request request, Object result, BodyInterchange bodyInterchange) {

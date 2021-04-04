@@ -35,6 +35,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -54,12 +55,13 @@ public class EndpointWriter implements ProviderDefinitionListener {
         ClassBuilder config = new ClassBuilder()
                 .setClassName(qualifiedClassName)
                 .addImplementsInterface(EndpointConfiguration.class)
+                .addImportClass(CompletableFuture.class)
+                .addImportClass(BodyInterchange.class)
+                .addImportClass(EndpointConfiguration.class)
+                .addImportClass(ProviderRegistry.class)
                 .addImportClass(Request.class)
                 .addImportClass(Router.class)
-                .addImportClass(ProviderRegistry.class)
-                .addImportClass(BodyInterchange.class)
                 .addImportClass(TypeInfo.class)
-                .addImportClass(EndpointConfiguration.class)
                 .addImportClass(Inject.class)
                 .addImportClass(Singleton.class)
                 .addImportClass(Named.class)
@@ -149,6 +151,14 @@ public class EndpointWriter implements ProviderDefinitionListener {
                 ProcessorUtils.escapeStringForCode(httpMethod), '"',
                 ",\"", ProcessorUtils.escapeStringForCode(path), "\", request -> {");
         initialize.line("TypeInfo typeInfo = ", buildTypeInfoCode(method), ';');
+
+        if (isBodyFuture(context, method)) {
+            initialize.line("CompletableFuture<?> body = readFutureBody(request, typeInfo, bodyInterchange);");
+        } else {
+            initialize.line("return readFutureBody(request, typeInfo, bodyInterchange)");
+            initialize.line(".thenCompose(body -> {");
+        }
+
         if (isVoid) {
             initialize.line(callMethod);
             initialize.line("return convertResponse(request, null, bodyInterchange);");
@@ -156,8 +166,23 @@ public class EndpointWriter implements ProviderDefinitionListener {
             initialize.line("Object result = ", callMethod);
             initialize.line("return convertResponse(request, result, bodyInterchange);");
         }
-        initialize.line("}");
-        initialize.line(");");
+
+        if (!isBodyFuture(context, method)) {
+            initialize.line("});");
+        }
+
+        initialize.line("});");
+    }
+
+    private static boolean isBodyFuture(AnnotationProcessorContext context, ExecutableElement method) {
+        for (VariableElement parameter : method.getParameters()) {
+            if (parameter.getAnnotation(Body.class) != null) {
+                if (ProcessorUtils.isCompatibleWith(context, parameter.asType(), CompletableFuture.class)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static final List<Class<? extends Annotation>> SUPPORTED_PARAMS = List.of(Body.class, Attribute.class, PathParam.class, QueryParam.class, HeaderParam.class, CookieParam.class, BeanParam.class);
@@ -177,7 +202,7 @@ public class EndpointWriter implements ProviderDefinitionListener {
         } else if (parameter.asType().toString().equals(URI.class.getCanonicalName())) {
             return contextRef + ".uri()";
         } else if (annotationSource.getAnnotation(Body.class) != null) {
-            return "(" + parameter.asType() + ") readBody(" + contextRef + ", typeInfo, bodyInterchange)";
+            return "(" + parameter.asType() + ") body";
         } else if (annotationSource.getAnnotation(Attribute.class) != null) {
             String name = annotationSource.getAnnotation(Attribute.class).value();
             return "(" + parameter.asType() + ") " + contextRef + ".attribute(\"" + name + "\")";
