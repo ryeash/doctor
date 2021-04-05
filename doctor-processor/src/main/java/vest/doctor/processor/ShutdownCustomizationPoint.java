@@ -28,8 +28,9 @@ public class ShutdownCustomizationPoint implements NewInstanceCustomizer {
     }
 
     private static boolean validMethod(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String destroyMethod) {
-        return ProcessorUtils.allMethods(context, providerDefinition.providedType())
+        return providerDefinition.getAllProvidedTypes()
                 .stream()
+                .flatMap(type -> ProcessorUtils.allMethods(context, type).stream())
                 .anyMatch(method -> method.getSimpleName().toString().equals(destroyMethod) && method.getParameters().size() == 0);
     }
 }

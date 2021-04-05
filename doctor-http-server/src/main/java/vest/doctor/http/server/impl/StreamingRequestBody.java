@@ -2,7 +2,7 @@ package vest.doctor.http.server.impl;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.Unpooled;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -19,7 +19,7 @@ import java.util.function.BiFunction;
  * A handle to the HTTP request body. Supports event driven reading of body data.
  */
 public class StreamingRequestBody extends InputStream implements RequestBody {
-    private final CompositeByteBuf composite = Unpooled.compositeBuffer(1024);
+    private final CompositeByteBuf composite = PooledByteBufAllocator.DEFAULT.compositeBuffer(1024);
     private final CompletableFuture<ByteBuf> future = new CompletableFuture<>();
     private final long maxLength;
     private long size;
@@ -52,6 +52,7 @@ public class StreamingRequestBody extends InputStream implements RequestBody {
             throw new IllegalStateException("there is already a data consumer attached to this body");
         }
         this.asyncReadFuture = new CompletableFuture<>();
+        asyncReadFuture.whenCompleteAsync((v, err) -> close());
         this.dataConsumer = reader;
         internalAsyncRead();
         return (CompletableFuture<T>) asyncReadFuture;

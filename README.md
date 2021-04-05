@@ -1,8 +1,8 @@
 # doctor
 
-Compile time dependency injection processor.
+Compile time dependency injection processor for JDK 15.
 
-### Getting Started
+## Getting Started
 
 Include the `doctor-processor` and `doctor-runtime` libraries in your build as well as any other plugins that you will
 use. Then create a main method that loads the doctor with the desired configuration.
@@ -13,7 +13,7 @@ public static void main(String[]args){
 }
 ```
 
-### Core Functionality
+## Core Functionality
 
 Pseudo-support
 for [jakarta.inject](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/package-summary.html). During
@@ -143,6 +143,10 @@ public class MorningRoutine {
 ```
 
 Only one qualifier is allowed per provided type.
+
+The [@Named](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/named) qualifier is
+the only qualifier included with doctor. To create qualifiers see example here: 
+[@Qualifier](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/qualifier).
 
 ### [@Modules](doctor-core/src/main/java/vest/doctor/Modules.java)
 
@@ -447,7 +451,7 @@ public class AspectDemo implements Before, Around, After {
 }
 ```
 
-### Limitations
+# Limitations
 
 Field injection is not supported. It requires reflective access to fields and requires changing access levels at
 runtime. Neither of which is allowed for this project.

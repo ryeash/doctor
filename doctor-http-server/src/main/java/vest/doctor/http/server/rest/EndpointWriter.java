@@ -144,6 +144,7 @@ public class EndpointWriter implements ProviderDefinitionListener {
                 .collect(Collectors.joining(", ", "(", ")"));
 
         boolean isVoid = method.getReturnType().getKind() == TypeKind.VOID;
+        boolean bodyFuture = isBodyFuture(context, method);
 
         String callMethod = "endpoint.get()." + method.getSimpleName() + parameters + ";";
 
@@ -152,7 +153,7 @@ public class EndpointWriter implements ProviderDefinitionListener {
                 ",\"", ProcessorUtils.escapeStringForCode(path), "\", request -> {");
         initialize.line("TypeInfo typeInfo = ", buildTypeInfoCode(method), ';');
 
-        if (isBodyFuture(context, method)) {
+        if (bodyFuture) {
             initialize.line("CompletableFuture<?> body = readFutureBody(request, typeInfo, bodyInterchange);");
         } else {
             initialize.line("return readFutureBody(request, typeInfo, bodyInterchange)");
@@ -167,7 +168,7 @@ public class EndpointWriter implements ProviderDefinitionListener {
             initialize.line("return convertResponse(request, result, bodyInterchange);");
         }
 
-        if (!isBodyFuture(context, method)) {
+        if (!bodyFuture) {
             initialize.line("});");
         }
 
