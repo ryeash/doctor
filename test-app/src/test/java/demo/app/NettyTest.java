@@ -163,17 +163,15 @@ public class NettyTest extends BaseDoctorTest {
                 .statusCode(404);
     }
 
-    @Test
+    @Test(invocationCount = 2)
     public void throughput() {
-        for (int i = 0; i < 5; i++) {
-            long start = System.nanoTime();
-            IntStream.range(0, 100)
-                    .parallel()
-                    .forEach(j -> req().get("/netty/hello2")
-                            .then()
-                            .statusCode(200));
-            System.out.println(TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + "ms");
-        }
+        long start = System.nanoTime();
+        IntStream.range(0, 100)
+                .parallel()
+                .forEach(j -> req().get("/netty/hello2")
+                        .then()
+                        .statusCode(200));
+        log.info(TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + "ms");
     }
 
     @Test

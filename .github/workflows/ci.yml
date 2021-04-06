@@ -5,12 +5,15 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [  '15', '16' ]
     steps:
       - uses: actions/checkout@v2
-      - name: Set up JDK 15
+      - name: Set up JDK ${{ matrix.Java }}
         uses: actions/setup-java@v2
         with:
-          java-version: '15'
+          java-version: ${{ matrix.java }}
           distribution: 'zulu'
       - name: Unit tests
         run: mvn --batch-mode --update-snapshots clean test

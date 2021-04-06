@@ -161,7 +161,7 @@ public class NettyHttpTest {
                 .body(is("shortcircuited"));
     }
 
-    @Test(invocationCount = 5)
+    @Test(invocationCount = 2)
     public void throughput() {
         long start = System.nanoTime();
         IntStream.range(0, 1000)
