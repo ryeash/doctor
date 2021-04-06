@@ -11,6 +11,10 @@
 
     <artifactId>doctor-runtime</artifactId>
 
+    <properties>
+        <maven.deploy.skip>false</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <artifactId>doctor-core</artifactId>

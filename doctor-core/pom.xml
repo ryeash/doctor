@@ -11,6 +11,10 @@
 
     <artifactId>doctor-core</artifactId>
 
+    <properties>
+        <maven.deploy.skip>false</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>jakarta.inject</groupId>
