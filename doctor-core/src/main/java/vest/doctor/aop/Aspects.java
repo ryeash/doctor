@@ -15,7 +15,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE, ElementType.METHOD})
 public @interface Aspects {
     /**
-     * The aspects to apply to the method, or class methods.
+     * The aspects to apply to the method or class methods; in the order they will be executed.
      */
     Class<? extends Aspect>[] value();
 }

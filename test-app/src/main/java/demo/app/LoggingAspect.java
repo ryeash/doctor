@@ -1,12 +1,12 @@
 package demo.app;
 
+import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vest.doctor.aop.After;
 import vest.doctor.aop.Before;
 import vest.doctor.aop.MethodInvocation;
 
-import javax.inject.Singleton;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 

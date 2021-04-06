@@ -2,18 +2,16 @@ package demo.app;
 
 import demo.app.dao.DAO;
 import demo.app.dao.User;
-import io.restassured.RestAssured;
+import jakarta.inject.Provider;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.Test;
 import vest.doctor.ConfigurationFacade;
-import vest.doctor.Doctor;
 import vest.doctor.event.EventProducer;
 import vest.doctor.event.ReloadConfiguration;
+import vest.doctor.runtime.Doctor;
 
-import javax.inject.Provider;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -22,13 +20,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.hamcrest.Matchers.is;
-
 public class DoctorTest extends BaseDoctorTest {
 
     @AfterSuite(alwaysRun = true)
     public void shutdown() {
-        System.out.println(doctor);
+        log.info("{}", doctor);
         doctor.close();
         assertTrue(TCCloseable.closed);
         assertTrue(TCCustomCloseable.closed);
@@ -64,15 +60,13 @@ public class DoctorTest extends BaseDoctorTest {
         try (Doctor doc = Doctor.load("dev")) {
             CoffeeMaker cm = doc.getInstance(CoffeeMaker.class, "modules-test");
             assertEquals(cm.brew(), "dev");
-        } catch (Exception e) {
-            fail("no exception expected", e);
         }
 
         try (Doctor doc = Doctor.load("test")) {
-            CoffeeMaker cm = doc.getInstance(CoffeeMaker.class, "modules-test");
-            assertEquals(cm.brew(), "test");
-        } catch (Exception e) {
-            fail("no exception expected", e);
+            assertEquals(doc.getInstance(CoffeeMaker.class, "modules-test").brew(), "test");
+            assertEquals(doc.getInstance(CoffeeMaker.class, "class-level-module").brew(), "module-qualified");
+            assertTrue(doctor.getProviderOpt(CoffeeMaker.class, "modules-test").isEmpty());
+            assertTrue(doctor.getProviderOpt(CoffeeMaker.class, "class-level-module").isEmpty());
         }
     }
 
@@ -136,11 +130,11 @@ public class DoctorTest extends BaseDoctorTest {
     @Test
     public void scheduled() throws InterruptedException {
         TCScheduled instance = doctor.getInstance(TCScheduled.class);
-        TimeUnit.MILLISECONDS.sleep(105);
-        assertTrue(instance.every10Milliseconds.get() >= 10);
-        assertTrue(instance.every50Milliseconds.get() >= 2);
+        TimeUnit.MILLISECONDS.sleep(110);
+        assertTrue(instance.every10Milliseconds.get() >= 10, "" + instance.every10Milliseconds);
+        assertTrue(instance.every50Milliseconds.get() >= 2, "" + instance.every50Milliseconds);
         TimeUnit.MILLISECONDS.sleep(900);
-        assertTrue(instance.cronEverySecond.get() >= 1);
+        assertTrue(instance.cronEverySecond.get() >= 1, "" + instance.cronEverySecond);
     }
 
     @Test
@@ -174,7 +168,7 @@ public class DoctorTest extends BaseDoctorTest {
         }
     }
 
-    @Test
+    @Test(groups = "dev")
     public void injectedMethodsTest() {
         TCInjectedMethodsC instance = doctor.getInstance(TCInjectedMethodsC.class);
         assertNotNull(instance.coffeeMaker);
@@ -186,37 +180,13 @@ public class DoctorTest extends BaseDoctorTest {
     }
 
     @Test
-    public void restRequest() {
-        RestAssured.baseURI = "http://localhost:8080/";
-        RestAssured.given()
-                .accept("application/json")
-                .contentType("application/json")
-                .get("/rest/goodbye")
-                .then()
-                .statusCode(200)
-                .body("message", is("goodbye"))
-                .header("X-Before", is("true"))
-                .header("X-After", is("true"));
-
-        RestAssured.given()
-                .accept("application/json")
-                .contentType("application/json")
-                .get("/rest/admin/ok")
-                .then()
-                .statusCode(200)
-                .body("message", is("ok"))
-                .header("X-Before", is("true"))
-                .header("X-After", is("true"));
-    }
-
-    @Test
     public void aspects() throws IOException {
         TCAspects instance = doctor.getInstance(TCAspects.class);
-        instance.execute("name", Arrays.asList("a", "b"));
-        assertEquals(instance.parrot("hi"), "hi altered");
+        instance.execute("name", List.of("a", "b"));
+        assertEquals(instance.parrot("hi"), "hi altered42");
 
         CoffeeMaker aspect = doctor.getInstance(CoffeeMaker.class, "coffee-aspect");
-        assertEquals(aspect.brew(), "french pressing altered");
+        assertEquals(aspect.brew(), "french pressing altered1");
     }
 
     @Test
@@ -238,5 +208,11 @@ public class DoctorTest extends BaseDoctorTest {
         EventProducer instance = doctor.getInstance(EventProducer.class);
         instance.publish(new ReloadConfiguration());
         assertTrue(TCConfigReload.reloaded);
+    }
+
+    @Test
+    public void staticFactory() {
+        Object str = doctor.getInstance(Object.class, "static");
+        assertEquals(str, "static");
     }
 }

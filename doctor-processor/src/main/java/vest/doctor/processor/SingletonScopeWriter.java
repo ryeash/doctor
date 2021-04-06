@@ -1,11 +1,11 @@
 package vest.doctor.processor;
 
+import jakarta.inject.Singleton;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ScopeWriter;
 import vest.doctor.SingletonScopedProvider;
 
-import javax.inject.Singleton;
 import java.lang.annotation.Annotation;
 
 public class SingletonScopeWriter implements ScopeWriter {

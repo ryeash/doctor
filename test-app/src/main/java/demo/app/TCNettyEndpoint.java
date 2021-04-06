@@ -2,24 +2,25 @@ package demo.app;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
-import vest.doctor.netty.Attribute;
-import vest.doctor.netty.BeanParam;
-import vest.doctor.netty.Body;
-import vest.doctor.netty.GET;
-import vest.doctor.netty.HeaderParam;
-import vest.doctor.netty.POST;
-import vest.doctor.netty.Path;
-import vest.doctor.netty.PathParam;
-import vest.doctor.netty.Provided;
-import vest.doctor.netty.QueryParam;
-import vest.doctor.netty.R;
-import vest.doctor.netty.Request;
+import vest.doctor.http.server.Request;
+import vest.doctor.http.server.rest.ANY;
+import vest.doctor.http.server.rest.Attribute;
+import vest.doctor.http.server.rest.BeanParam;
+import vest.doctor.http.server.rest.Body;
+import vest.doctor.http.server.rest.GET;
+import vest.doctor.http.server.rest.HeaderParam;
+import vest.doctor.http.server.rest.POST;
+import vest.doctor.http.server.rest.Path;
+import vest.doctor.http.server.rest.PathParam;
+import vest.doctor.http.server.rest.Provided;
+import vest.doctor.http.server.rest.QueryParam;
+import vest.doctor.http.server.rest.R;
 
-import javax.inject.Named;
-import javax.inject.Singleton;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.List;
@@ -41,6 +42,7 @@ public class TCNettyEndpoint {
         Assert.assertNull(streams);
         Assert.assertEquals(q.get(), beanParam.getQ().get());
         Assert.assertEquals(num, beanParam.getNum());
+        Assert.assertEquals(beanParam.getNumberViaMethod(), num);
         return "ok " + q.orElse(null) + " " + num + " " + optNum.orElse(-1);
     }
 
@@ -121,5 +123,11 @@ public class TCNettyEndpoint {
     @Path("/attribute")
     public String attribute(@Attribute("attr") String attribute) {
         return attribute;
+    }
+
+    @ANY
+    @Path("/anything")
+    public String any(Request request) {
+        return request.method().toString();
     }
 }

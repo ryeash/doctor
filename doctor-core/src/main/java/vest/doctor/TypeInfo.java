@@ -1,6 +1,5 @@
 package vest.doctor;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -13,7 +12,7 @@ public class TypeInfo {
     private final List<TypeInfo> parameterTypes;
 
     public TypeInfo(Class<?> rawType, TypeInfo... parameterTypes) {
-        this(rawType, parameterTypes != null ? Arrays.asList(parameterTypes) : Collections.emptyList());
+        this(rawType, List.of(parameterTypes));
     }
 
     public TypeInfo(Class<?> rawType, List<TypeInfo> parameterTypes) {

@@ -3,7 +3,6 @@ package vest.doctor.scheduled;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,7 +18,7 @@ import java.util.stream.Stream;
  * - second: the second of the minute, restricted to [0, 59]
  * - minute: the minute of the hour, restricted to [0, 59]
  * - hour: the hour of the day (24hr), restricted to [0, 23]
- * - day of month: the day of the month, restricted to [0, 28 29 30 or 31], varies with the month (and leap year)
+ * - day of month: the day of the month, restricted to [1, 28 29 30 or 31], varies with the month (and leap year)
  * - month: the month of the year, restricted to [1, 12], January is 1, December is 12
  * - day of week: the day of the week, restricted to [1, 7], the week runs Monday (1) to Sunday (7).
  * Example:
@@ -113,7 +112,7 @@ public class Cron {
             }
         },
 
-        MONTH(1, 12, Arrays.asList("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")) {
+        MONTH(1, 12, List.of("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")) {
             @Override
             public ZonedDateTime adjust(ZonedDateTime date, int[] allowedValues) {
                 int adjustment = calculateAdjustment(allowedValues, date.getMonth().getValue(), 12);
@@ -129,7 +128,7 @@ public class Cron {
             }
         },
 
-        DAY_OF_WEEK(1, 7, Arrays.asList("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")) {
+        DAY_OF_WEEK(1, 7, List.of("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")) {
             @Override
             public ZonedDateTime adjust(ZonedDateTime date, int[] allowedValues) {
                 int adjustment = calculateAdjustment(allowedValues, date.getDayOfWeek().getValue(), 7);
@@ -293,19 +292,13 @@ public class Cron {
     }
 
     private static String translateMacro(String expression) {
-        switch (expression.trim()) {
-            case "@yearly":
-                return "0 0 0 1 JAN *";
-            case "@monthly":
-                return "0 0 0 1 * *";
-            case "@weekly":
-                return "0 0 0 * * SUN";
-            case "@hourly":
-                return "0 0 * * * *";
-            case "@midnight":
-                return "0 0 0 * * *";
-            default:
-                return expression;
-        }
+        return switch (expression.trim()) {
+            case "@yearly" -> "0 0 0 1 JAN *";
+            case "@monthly" -> "0 0 0 1 * *";
+            case "@weekly" -> "0 0 0 * * SUN";
+            case "@hourly" -> "0 0 * * * *";
+            case "@midnight" -> "0 0 0 * * *";
+            default -> expression;
+        };
     }
 }

@@ -1,9 +1,8 @@
 package demo.app.dao;
 
+import jakarta.inject.Singleton;
 import vest.doctor.Properties;
 import vest.doctor.Property;
-
-import javax.inject.Singleton;
 
 @Singleton
 @Properties("db.")

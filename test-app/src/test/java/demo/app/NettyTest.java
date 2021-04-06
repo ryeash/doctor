@@ -13,7 +13,6 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.testng.annotations.Test;
-import vest.doctor.netty.impl.Router;
 
 import java.net.URI;
 import java.util.Collections;
@@ -32,15 +31,10 @@ import static org.hamcrest.Matchers.is;
 public class NettyTest extends BaseDoctorTest {
 
     private RequestSpecification req() {
-        RestAssured.baseURI = "http://localhost:8081/";
+        RestAssured.baseURI = "http://localhost:61233/";
         return RestAssured.given()
                 .accept("application/json")
                 .contentType("application/json");
-    }
-
-    @Test
-    public void routerToString() {
-        System.out.println(doctor.getProvider(Router.class));
     }
 
     @Test
@@ -48,9 +42,19 @@ public class NettyTest extends BaseDoctorTest {
         req().queryParam("number", 42)
                 .queryParam("q", "queryparam")
                 .get("/netty/hello")
+                .prettyPeek()
                 .then()
                 .statusCode(200)
                 .body(is("ok queryparam 42 42"));
+    }
+
+    @Test
+    public void head() {
+        req().head("/netty/hello2")
+                .prettyPeek()
+                .then()
+                .statusCode(200)
+                .body(is(""));
     }
 
     @Test
@@ -159,17 +163,15 @@ public class NettyTest extends BaseDoctorTest {
                 .statusCode(404);
     }
 
-    @Test
+    @Test(invocationCount = 2)
     public void throughput() {
-        for (int i = 0; i < 5; i++) {
-            long start = System.nanoTime();
-            IntStream.range(0, 100)
-                    .parallel()
-                    .forEach(j -> req().get("/netty/hello2")
-                            .then()
-                            .statusCode(200));
-            System.out.println(TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + "ms");
-        }
+        long start = System.nanoTime();
+        IntStream.range(0, 100)
+                .parallel()
+                .forEach(j -> req().get("/netty/hello2")
+                        .then()
+                        .statusCode(200));
+        log.info(TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + "ms");
     }
 
     @Test
@@ -198,8 +200,27 @@ public class NettyTest extends BaseDoctorTest {
     }
 
     @Test
+    public void anyMethod() {
+        req().get("/netty/anything")
+                .then()
+                .statusCode(200)
+                .body(is("GET"));
+
+        req().basePath("/netty/anything")
+                .request("JUNK")
+                .then()
+                .statusCode(200)
+                .body(is("JUNK"));
+    }
+
+//    @Test
+//    public void waitAReallyLongTIme() throws InterruptedException {
+//        Thread.sleep(1000000);
+//    }
+
+    @Test
     public void ws() throws Exception {
-        String destUri = "ws://localhost:8081/grumpy";
+        String destUri = "ws://localhost:61233/grumpy";
         WebSocketClient client = new WebSocketClient();
         try {
             client.start();
@@ -208,7 +229,7 @@ public class NettyTest extends BaseDoctorTest {
             SimpleEchoSocket socket = new SimpleEchoSocket();
             ClientUpgradeRequest request = new ClientUpgradeRequest();
             client.connect(socket, echoUri, request);
-            socket.connectLatch.await(5, TimeUnit.SECONDS);
+            assertTrue(socket.connectLatch.await(5, TimeUnit.SECONDS));
             assertTrue(socket.awaitClose(5, TimeUnit.SECONDS));
             assertEquals(socket.messagesReceived.get(0), "go away I'm a test");
         } finally {
@@ -217,7 +238,6 @@ public class NettyTest extends BaseDoctorTest {
     }
 
     @WebSocket(maxTextMessageSize = 64 * 1024)
-    @SuppressWarnings("unused")
     public static class SimpleEchoSocket {
         final CountDownLatch connectLatch;
         final CountDownLatch closeLatch;

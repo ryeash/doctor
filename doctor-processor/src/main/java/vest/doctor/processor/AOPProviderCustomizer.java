@@ -1,8 +1,7 @@
 package vest.doctor.processor;
 
-import doctor.processor.ProcessorUtils;
-import doctor.processor.UniqueMethod;
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.CodeProcessingException;
 import vest.doctor.CustomizationPoint;
 import vest.doctor.Factory;
 import vest.doctor.ProcessorConfiguration;
@@ -17,8 +16,10 @@ import vest.doctor.aop.MethodInvocation;
 import vest.doctor.aop.MethodInvocationImpl;
 import vest.doctor.aop.MethodMetadata;
 import vest.doctor.aop.MutableMethodArgument;
+import vest.doctor.aop.ThrowingFunction;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
+import vest.doctor.codegen.ProcessorUtils;
 
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
@@ -27,12 +28,14 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.ElementFilter;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 /**
@@ -83,34 +86,32 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
                 .addImportClass(MutableMethodArgument.class)
                 .addImportClass(Arrays.class)
                 .addImportClass(Collections.class)
+                .addImportClass(Map.class)
+                .addImportClass(LinkedHashMap.class)
                 .addImportClass(List.class)
-                .addImportClass(Callable.class)
+                .addImportClass(ThrowingFunction.class)
                 .addImportClass(AspectCoordinator.class)
                 .addImportClass(TypeInfo.class)
                 .addImportClass(typeElement.getQualifiedName().toString());
 
         if (typeElement.getKind() == ElementKind.INTERFACE) {
             classBuilder.addImplementsInterface(typeElement.getQualifiedName().toString());
-        } else if (canCreateExtension(typeElement)) {
+        } else if (canExtend(typeElement)) {
             classBuilder.setExtendsClass(typeElement.getQualifiedName().toString());
         } else {
-            throw new IllegalArgumentException("aspects can only be applied to interfaces and public non-final classes - invalid class: " + ProcessorUtils.debugString(typeElement));
+            throw new CodeProcessingException("aspects can only be applied to interfaces and public non-final classes with an empty constructor - invalid class", typeElement);
         }
-        classBuilder.addField("private final " + typeElement.getSimpleName() + " delegate");
-        classBuilder.addField("private final " + ProviderRegistry.class.getSimpleName() + " beanProvider");
+        classBuilder.addField("private final ", typeElement.getSimpleName(), " delegate");
+        classBuilder.addField("private final ", ProviderRegistry.class.getSimpleName(), " beanProvider");
 
-        MethodBuilder constructor = new MethodBuilder("public " + delegateClassName + "(" + typeElement.getSimpleName() + " delegate, " + ProviderRegistry.class.getSimpleName() + " beanProvider)");
+        MethodBuilder constructor = classBuilder.newMethod("public ", delegateClassName, "(", typeElement.getSimpleName(), " delegate, ", ProviderRegistry.class.getSimpleName(), " beanProvider)");
         constructor.line("this.delegate = delegate;");
         constructor.line("this.beanProvider = beanProvider;");
 
-        ProcessorUtils.allMethods(context, providerDefinition.providedType())
-                .stream()
-                .map(UniqueMethod::new)
-                .distinct()
-                .map(UniqueMethod::unwrap)
+        ProcessorUtils.allUniqueMethods(context, providerDefinition.providedType())
                 .forEach(method -> {
                     Set<Modifier> modifiers = method.getModifiers();
-                    // nothing we can do for final, private, and static methods
+                    // nothing we can do for final, private, or static methods
                     if (modifiers.contains(Modifier.FINAL) || modifiers.contains(Modifier.PRIVATE) || modifiers.contains(Modifier.STATIC)) {
                         return;
                     }
@@ -128,7 +129,6 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
                     }
                     classBuilder.addMethod(buildMethodDeclaration(method), mb -> mb.line(methodBody));
                 });
-        classBuilder.setConstructor(constructor.finish());
         classBuilder.writeClass(context.filer());
 
         AspectedMethod.clearCache();
@@ -186,9 +186,14 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
         return sb.toString();
     }
 
-    private static boolean canCreateExtension(TypeElement typeElement) {
+    private static boolean canExtend(TypeElement typeElement) {
         Set<Modifier> modifiers = typeElement.getModifiers();
-        return modifiers.contains(Modifier.PUBLIC)
+        boolean hasEmptyConstructor = ElementFilter.constructorsIn(typeElement.getEnclosedElements())
+                .stream()
+                .anyMatch(c -> (c.getModifiers().contains(Modifier.PUBLIC) || c.getModifiers().contains(Modifier.PROTECTED))
+                        && c.getParameters().isEmpty());
+        return hasEmptyConstructor
+                && modifiers.contains(Modifier.PUBLIC)
                 && !modifiers.contains(Modifier.FINAL);
     }
 }

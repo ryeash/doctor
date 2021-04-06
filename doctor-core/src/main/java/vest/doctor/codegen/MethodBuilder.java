@@ -1,66 +1,41 @@
 package vest.doctor.codegen;
 
-import java.util.function.Consumer;
+import java.io.PrintWriter;
 
-/**
- * Helper class used internally to create generated methods.
- */
-public class MethodBuilder {
+public class MethodBuilder extends AbstractCodeBuilder<MethodBuilder> {
 
-    private ClassBuilder classBuilder;
-    private final Bindings bindings = Bindings.create();
-    private final StringBuilder sb = new StringBuilder();
-    private final Consumer<String> onFinish;
+    private final ClassBuilder classBuilder;
+    public String declaration;
 
-    public MethodBuilder(String methodDefinition, Object... args) {
-        this(CodeLine.line(methodDefinition, args), (Consumer<String>) null);
-    }
-
-    public MethodBuilder(String methodDefinition, Consumer<String> onFinish) {
-        sb.append(methodDefinition).append("{\n");
-        this.onFinish = onFinish;
-    }
-
-    public MethodBuilder(Consumer<String> onFinish) {
-        this.onFinish = onFinish;
-    }
-
-    public void setClassBuilder(ClassBuilder classBuilder) {
-        if (this.classBuilder != null) {
-            throw new IllegalArgumentException("this method is already attached to a class");
-        }
+    MethodBuilder(ClassBuilder classBuilder) {
+        super(classBuilder);
         this.classBuilder = classBuilder;
     }
 
-    public MethodBuilder line(String line) {
-        sb.append(bindings.fill(line)).append("\n");
-        return this;
-    }
-
-    public MethodBuilder line(String line, Object... args) {
-        sb.append(CodeLine.line(line, args)).append("\n");
-        return this;
-    }
-
-    public MethodBuilder var(String name, Object value) {
-        bindings.var(name, value);
-        return this;
-    }
-
-    public MethodBuilder importClass(Class<?> type) {
-        if (classBuilder == null) {
-            throw new NullPointerException("method not attached to a class");
+    public MethodBuilder declaration(Object... declaration) {
+        this.declaration = join(declaration);
+        if (!this.declaration.endsWith("{")) {
+            this.declaration = this.declaration + " {";
         }
+        return this;
+    }
+
+    public MethodBuilder addImportClass(Class<?> type) {
         classBuilder.addImportClass(type);
         return this;
     }
 
-    public String finish() {
-        sb.append("}");
-        String s = sb.toString();
-        if (onFinish != null) {
-            onFinish.accept(s);
+    public MethodBuilder addImportClass(String className) {
+        classBuilder.addImportClass(className);
+        return this;
+    }
+
+    void writeTo(PrintWriter out) {
+        if (declaration == null || declaration.isEmpty()) {
+            throw new IllegalStateException("no declaration has been set for this method");
         }
-        return s;
+        out.println(fill(declaration));
+        allLines().forEach(out::println);
+        out.println("}");
     }
 }

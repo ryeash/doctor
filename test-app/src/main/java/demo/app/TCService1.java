@@ -1,6 +1,6 @@
 package demo.app;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 @Singleton
 @Service

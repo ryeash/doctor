@@ -5,18 +5,19 @@ import vest.doctor.TypeInfo;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.Map;
+import java.util.Objects;
 
 public class MethodInvocationImpl implements MethodInvocation {
 
     private final MethodMetadata methodMetadata;
     private final List<MutableMethodArgument> argumentList;
-    private final Callable<?> methodInvoker;
+    private final ThrowingFunction<MethodInvocation, ?> methodInvoker;
     private Object result;
     private boolean invoked = false;
     private boolean invokable = true;
 
-    public MethodInvocationImpl(MethodMetadata methodMetadata, List<MutableMethodArgument> argumentList, Callable<?> methodInvoker) {
+    public MethodInvocationImpl(MethodMetadata methodMetadata, List<MutableMethodArgument> argumentList, ThrowingFunction<MethodInvocation, ?> methodInvoker) {
         this.methodMetadata = methodMetadata;
         this.argumentList = Collections.unmodifiableList(argumentList);
         this.methodInvoker = methodInvoker;
@@ -64,7 +65,7 @@ public class MethodInvocationImpl implements MethodInvocation {
             throw new UnsupportedOperationException("method may not be invoked from this context");
         }
         invoked = true;
-        result = methodInvoker.call();
+        result = methodInvoker.apply(this);
         return (T) result;
     }
 
@@ -86,11 +87,31 @@ public class MethodInvocationImpl implements MethodInvocation {
 
     @Override
     public Method getMethod() throws NoSuchMethodException {
-        return methodMetadata.getContainingInstance().getClass().getMethod(methodMetadata.getMethodName(),
-                methodMetadata.getMethodParameters().stream().map(TypeInfo::getRawType).toArray(Class<?>[]::new));
+        return methodMetadata.getContainingInstance()
+                .getClass()
+                .getMethod(methodMetadata.getMethodName(), methodMetadata.getMethodParameters().stream().map(TypeInfo::getRawType).toArray(Class<?>[]::new));
+    }
+
+    @Override
+    public Map<String, String> attributes() {
+        return methodMetadata.getAttributes();
     }
 
     public void setInvokable(boolean invokable) {
         this.invokable = invokable;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MethodInvocationImpl that = (MethodInvocationImpl) o;
+        return Objects.equals(methodMetadata, that.methodMetadata)
+                && Objects.equals(argumentList, that.argumentList);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(methodMetadata, argumentList);
     }
 }

@@ -1,10 +1,10 @@
 package vest.doctor.processor;
 
-import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ParameterLookupCustomizer;
 import vest.doctor.Property;
 import vest.doctor.ProviderDependency;
+import vest.doctor.codegen.ProcessorUtils;
 
 import javax.lang.model.element.VariableElement;
 import java.util.Objects;
@@ -16,12 +16,7 @@ public class PropertyParameterCustomizer implements ParameterLookupCustomizer {
     public String lookupCode(AnnotationProcessorContext context, VariableElement variableElement, String providerRegistryRef) {
         Property property = variableElement.getAnnotation(Property.class);
         if (property != null) {
-            try {
-                return PropertyCodeGen.getPropertyCode(context, property.value(), variableElement.asType(), providerRegistryRef);
-            } catch (IllegalArgumentException e) {
-                e.printStackTrace();
-                context.errorMessage(e.getMessage() + ": " + ProcessorUtils.debugString(variableElement));
-            }
+            return PropertyCodeGen.getPropertyCode(context, variableElement, property.value(), variableElement.asType(), providerRegistryRef);
         }
         return null;
     }

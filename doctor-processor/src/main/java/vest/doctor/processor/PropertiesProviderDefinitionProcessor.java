@@ -1,7 +1,7 @@
 package vest.doctor.processor;
 
-import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.CodeProcessingException;
 import vest.doctor.Properties;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionProcessor;
@@ -15,7 +15,7 @@ public class PropertiesProviderDefinitionProcessor implements ProviderDefinition
     public ProviderDefinition process(AnnotationProcessorContext context, Element element) {
         if (element.getAnnotation(Properties.class) != null) {
             if (element.getKind() != ElementKind.INTERFACE) {
-                context.errorMessage("@Properties annotation is only supported on interfaces: " + ProcessorUtils.debugString(element));
+                throw new CodeProcessingException("@Properties annotation is only supported on interfaces", element);
             }
             return new PropertiesProviderDefinition(context, (TypeElement) element);
         }

@@ -1,5 +1,7 @@
 package demo.app;
 
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import org.testng.Assert;
 import vest.doctor.Cached;
 import vest.doctor.Factory;
@@ -10,8 +12,6 @@ import vest.doctor.SkipInjection;
 import vest.doctor.ThreadLocal;
 import vest.doctor.aop.Aspects;
 
-import javax.inject.Named;
-import javax.inject.Singleton;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -126,5 +126,32 @@ public class TestAppConfig {
     @Aspects({TimingAspect.class, LoggingAspect.class, StringModificationAspect.class})
     public CoffeeMaker coffeeMakerAspect() {
         return new FrenchPress();
+    }
+
+    @Factory
+    @Singleton
+    @Named("static")
+    public static Object staticFactory() {
+        return "static";
+    }
+
+    @Factory
+    @Named("complex-return-type")
+    @SuppressWarnings("unchecked")
+    public <T extends CoffeeMaker & AutoCloseable> T complexReturnType() {
+        return (T) new ClosableCoffeeMaker();
+    }
+
+    public static final class ClosableCoffeeMaker implements CoffeeMaker, AutoCloseable {
+
+        @Override
+        public String brew() {
+            return "closable";
+        }
+
+        @Override
+        public void close() throws Exception {
+
+        }
     }
 }

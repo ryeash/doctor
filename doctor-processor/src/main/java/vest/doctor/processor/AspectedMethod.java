@@ -1,16 +1,18 @@
 package vest.doctor.processor;
 
-import doctor.processor.ClassValueVisitor;
-import doctor.processor.Constants;
-import doctor.processor.GenericInfo;
-import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.aop.Aspect;
 import vest.doctor.aop.AspectCoordinator;
 import vest.doctor.aop.Aspects;
+import vest.doctor.aop.Attribute;
+import vest.doctor.aop.Attributes;
+import vest.doctor.codegen.AnnotationClassValueVisitor;
 import vest.doctor.codegen.ClassBuilder;
+import vest.doctor.codegen.Constants;
+import vest.doctor.codegen.GenericInfo;
 import vest.doctor.codegen.MethodBuilder;
+import vest.doctor.codegen.ProcessorUtils;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
@@ -22,20 +24,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 final class AspectedMethod {
-    private static final AtomicInteger i = new AtomicInteger(0);
     private static final Map<String, String> initializedAspectsMap = new HashMap<>();
 
     public static void clearCache() {
         initializedAspectsMap.clear();
-        i.set(0);
     }
 
+    private final AnnotationProcessorContext context;
     private final ExecutableElement method;
     private final List<TypeElement> aspectClasses;
     private final String aspectClassUniqueKey;
@@ -43,6 +43,7 @@ final class AspectedMethod {
     private final String uniqueFieldPrefix;
 
     public AspectedMethod(AnnotationProcessorContext context, ExecutableElement method, ProviderDefinition providerDefinition) {
+        this.context = context;
         this.method = method;
         this.aspectClasses = Stream.of(providerDefinition.annotationSource(), method.getEnclosingElement(), method)
                 .map(AspectedMethod::getAspects)
@@ -51,8 +52,7 @@ final class AspectedMethod {
                 .distinct()
                 .map(context.processingEnvironment().getElementUtils()::getTypeElement)
                 .collect(Collectors.toList());
-        this.uniqueFieldPrefix = "asp" + i.incrementAndGet();
-
+        this.uniqueFieldPrefix = "asp" + context.nextId();
         this.aspectClassUniqueKey = aspectClasses.stream().map(String::valueOf).collect(Collectors.joining("|"));
     }
 
@@ -84,7 +84,7 @@ final class AspectedMethod {
         } else {
             paramTypes = method.getParameters().stream()
                     .map(ProcessorUtils::newTypeInfo)
-                    .collect(Collectors.joining(", ", "Arrays.asList(", ")"));
+                    .collect(Collectors.joining(", ", "List.of(", ")"));
         }
         String returnType;
         if (method.getReturnType().getKind() == TypeKind.VOID) {
@@ -92,7 +92,22 @@ final class AspectedMethod {
         } else {
             returnType = ProcessorUtils.newTypeInfo(new GenericInfo(method.getReturnType()));
         }
-        constructor.line("this." + metadataName() + " =  new MethodMetadata(delegate, \"" + method.getSimpleName() + "\", " + paramTypes + ", " + returnType + ");");
+
+        String attributes = "attributes" + context.nextId();
+        if (method.getAnnotation(Attributes.class) == null) {
+            constructor.line("Map<String, String> ", attributes, " = Collections.emptyMap();");
+        } else {
+            constructor.line("Map<String, String> ", attributes, " = new LinkedHashMap<>();");
+            Attributes attrs = method.getAnnotation(Attributes.class);
+            for (Attribute attribute : attrs.value()) {
+                constructor.line(attributes + ".put(" +
+                        "beanProvider.resolvePlaceholders(\"", ProcessorUtils.escapeStringForCode(attribute.name()), "\"), " +
+                        "beanProvider.resolvePlaceholders(\"", ProcessorUtils.escapeStringForCode(attribute.value()), "\"));");
+            }
+
+        }
+
+        constructor.line("this." + metadataName() + " =  new MethodMetadata(delegate, \"" + method.getSimpleName() + "\", " + paramTypes + ", " + returnType + "," + attributes + ");");
 
         initializedAspectsMap.computeIfAbsent(aspectClassUniqueKey, s -> {
             String aspectName = uniqueFieldPrefix + "Aspect";
@@ -116,27 +131,23 @@ final class AspectedMethod {
         } else {
             arguments = method.getParameters().stream()
                     .map(p -> "new MutableMethodArgument(" + p.getSimpleName() + ")")
-                    .collect(Collectors.joining(", ", "Arrays.asList(", ")"));
+                    .collect(Collectors.joining(", ", "List.of(", ")"));
         }
-        sb.append("List<MutableMethodArgument> arguments = ").append(arguments).append(";\n");
-
         StringBuilder invoker = new StringBuilder();
         String invokerParams = IntStream.range(0, method.getParameters().size())
-                .mapToObj(i -> "arguments.get(" + i + ").getValue()")
+                .mapToObj(i -> "inv.getArgumentValue(" + i + ")")
                 .collect(Collectors.joining(", ", "(", ")"));
+        String execute = "((" + method.getEnclosingElement().asType() + ") inv.getContainingInstance())." + method.getSimpleName() + invokerParams + ";";
+        invoker.append("inv -> {");
         if (method.getReturnType().getKind() != TypeKind.VOID) {
-            invoker.append("Callable<?> invoker = () -> ");
-            invoker.append("delegate.").append(method.getSimpleName());
-            invoker.append(invokerParams).append(";\n");
+            invoker.append("return ").append(execute);
         } else {
-            invoker.append("Callable<?> invoker = () -> {");
-            invoker.append(" delegate.").append(method.getSimpleName());
-            invoker.append(invokerParams);
-            invoker.append("; return null; };\n");
+            invoker.append(execute)
+                    .append("return null;");
         }
+        invoker.append("}");
 
-        sb.append(invoker.toString());
-        sb.append("MethodInvocation invocation = new MethodInvocationImpl(").append(metadataName()).append(", arguments, invoker);\n");
+        sb.append("MethodInvocation invocation = new MethodInvocationImpl(").append(metadataName()).append(", " + arguments + ", ").append(invoker).append(");\n");
         if (method.getReturnType().getKind() != TypeKind.VOID) {
             sb.append("return ");
         }
@@ -150,7 +161,7 @@ final class AspectedMethod {
                 .flatMap(am -> am.getElementValues().entrySet().stream())
                 .filter(e -> e.getKey().getSimpleName().toString().equals(Constants.ANNOTATION_VALUE))
                 .map(Map.Entry::getValue)
-                .map(val -> val.accept(new ClassValueVisitor(), null))
+                .map(AnnotationClassValueVisitor::getValues)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
     }

@@ -1,10 +1,10 @@
 package demo.app.dao;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import vest.doctor.Eager;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
 import javax.persistence.PersistenceContext;
@@ -15,7 +15,7 @@ import javax.persistence.SynchronizationType;
 @Eager
 @PersistenceContext(name = "default",
         properties = {
-                @PersistenceProperty(name = "javax.persistence.jdbc.url", value = "${db.url}"),
+                @PersistenceProperty(name = "javax.persistence.jdbc.url", value = "${db.url:_missingurl_}"),
                 @PersistenceProperty(name = "hibernate.hbm2ddl.auto", value = "create")
         },
         synchronization = SynchronizationType.UNSYNCHRONIZED)

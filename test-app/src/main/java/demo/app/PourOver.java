@@ -1,8 +1,7 @@
 package demo.app;
 
+import jakarta.inject.Named;
 import vest.doctor.ThreadLocal;
-
-import javax.inject.Named;
 
 @ThreadLocal
 @Named("pourOver")

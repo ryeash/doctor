@@ -1,13 +1,16 @@
 package demo.app;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
-import vest.doctor.DefaultConfigurationFacade;
-import vest.doctor.Doctor;
-import vest.doctor.MapConfigurationSource;
+import vest.doctor.runtime.DefaultConfigurationFacade;
+import vest.doctor.runtime.Doctor;
+import vest.doctor.runtime.MapConfigurationSource;
 
 public abstract class BaseDoctorTest extends Assert {
 
+    protected final Logger log = LoggerFactory.getLogger(getClass());
     public static Doctor doctor;
 
     @BeforeSuite(alwaysRun = true)
@@ -18,8 +21,7 @@ public abstract class BaseDoctorTest extends Assert {
 
             doctor = Doctor.load(DefaultConfigurationFacade.defaultConfigurationFacade()
                     .addSource(new MapConfigurationSource(
-                            "jaxrs.bind", "localhost:8080",
-                            "doctor.netty.bind", "localhost:8081"))
+                            "doctor.netty.bind", "localhost:61233"))
                     .addSource(new TCConfigReload()));
         }
     }

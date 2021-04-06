@@ -1,6 +1,5 @@
 package vest.doctor.aop;
 
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -13,10 +12,6 @@ public class AspectCoordinator implements Before, Around, After {
     private final List<After> afters = new LinkedList<>();
 
     public AspectCoordinator(Aspect... delegates) {
-        this(Arrays.asList(delegates));
-    }
-
-    public AspectCoordinator(List<Aspect> delegates) {
         for (Aspect delegate : delegates) {
             if (delegate instanceof Before) {
                 befores.add((Before) delegate);

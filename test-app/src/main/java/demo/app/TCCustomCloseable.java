@@ -1,9 +1,8 @@
 package demo.app;
 
+import jakarta.inject.Singleton;
 import vest.doctor.DestroyMethod;
 import vest.doctor.Eager;
-
-import javax.inject.Singleton;
 
 @Eager
 @Singleton

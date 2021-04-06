@@ -1,9 +1,10 @@
 package vest.doctor.processor;
 
-import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.CodeProcessingException;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionProcessor;
+import vest.doctor.codegen.ProcessorUtils;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -15,7 +16,7 @@ public class ConstructorProviderDefinitionProcessor implements ProviderDefinitio
     public ProviderDefinition process(AnnotationProcessorContext context, Element element) {
         if (element.getKind() == ElementKind.CLASS && ProcessorUtils.getScope(context, element) != null) {
             if (!element.getModifiers().contains(Modifier.PUBLIC) || element.getModifiers().contains(Modifier.ABSTRACT)) {
-                context.errorMessage("injectable classes must be public and may not be abstract: " + ProcessorUtils.debugString(element));
+                throw new CodeProcessingException("injectable classes must be public and may not be abstract", element);
             }
             return new ConstructorProviderDefinition(context, (TypeElement) element);
         }

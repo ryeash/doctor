@@ -1,17 +1,20 @@
 package demo.app;
 
-import vest.doctor.netty.Filter;
-import vest.doctor.netty.Request;
-import vest.doctor.netty.Response;
-import vest.doctor.netty.ResponseBody;
+import jakarta.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import vest.doctor.http.server.Filter;
+import vest.doctor.http.server.Request;
+import vest.doctor.http.server.Response;
+import vest.doctor.http.server.ResponseBody;
 
-import javax.inject.Singleton;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 @Singleton
 public class TCNettyFilter implements Filter {
+    private static final Logger log = LoggerFactory.getLogger(TCNettyFilter.class);
 
     @Override
     public CompletionStage<Response> filter(Request request, CompletionStage<Response> response) {

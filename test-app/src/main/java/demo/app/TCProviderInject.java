@@ -1,15 +1,15 @@
 package demo.app;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.inject.Provider;
+import jakarta.inject.Singleton;
 import org.testng.Assert;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.DoctorProvider;
 import vest.doctor.ProviderRegistry;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Provider;
-import javax.inject.Singleton;
 import java.util.List;
 
 @Singleton
@@ -26,8 +26,8 @@ public class TCProviderInject {
         Assert.assertEquals(coffeeMakerDoctorProvider.get().brew(), "french pressing");
         Assert.assertEquals(pourOverProvider.get().brew(), "pouring over");
         Assert.assertEquals(pourOverDoctorProvider.get().brew(), "pouring over");
-        Assert.assertEquals(coffeeMakers.size(), 3);
-        Assert.assertEquals(coffeeMakersArr.length, 3);
+        Assert.assertEquals(coffeeMakers.size(), 4);
+        Assert.assertEquals(coffeeMakersArr.length, 4);
     }
 
     public boolean postConstructCalled = false;

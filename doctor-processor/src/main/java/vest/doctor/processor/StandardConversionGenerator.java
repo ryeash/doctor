@@ -1,8 +1,8 @@
 package vest.doctor.processor;
 
-import doctor.processor.ProcessorUtils;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.StringConversionGenerator;
+import vest.doctor.codegen.ProcessorUtils;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
@@ -10,6 +10,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -41,6 +42,7 @@ public class StandardConversionGenerator implements StringConversionGenerator {
         CLASS_TO_CONVERTER.put(BigInteger.class.getCanonicalName(), BigInteger.class.getCanonicalName() + "::new");
         CLASS_TO_CONVERTER.put(Number.class.getCanonicalName(), BigDecimal.class.getCanonicalName() + "::new");
         CLASS_TO_CONVERTER.put(UUID.class.getCanonicalName(), UUID.class.getCanonicalName() + "::fromString");
+        CLASS_TO_CONVERTER.put(URI.class.getCanonicalName(), URI.class.getCanonicalName() + "::create");
     }
 
     @Override
@@ -50,7 +52,7 @@ public class StandardConversionGenerator implements StringConversionGenerator {
             return targetType.toString() + "::new";
         }
         if (converterMethod == null) {
-            throw new IllegalArgumentException("unable to convert collection values for property parameter: " + targetType);
+            throw new IllegalArgumentException("no string conversion registered to handle: " + targetType);
         }
         return converterMethod;
     }
@@ -67,7 +69,9 @@ public class StandardConversionGenerator implements StringConversionGenerator {
     private static boolean hasStringConstructor(AnnotationProcessorContext context, TypeMirror targetType) {
         TypeElement typeElement = context.toTypeElement(targetType);
         for (ExecutableElement constructor : ElementFilter.constructorsIn(typeElement.getEnclosedElements())) {
-            if (constructor.getParameters().size() == 1 && ProcessorUtils.isCompatibleWith(context, context.toTypeElement(constructor.getParameters().get(0).asType()), String.class)) {
+            if (constructor.getParameters().size() == 1
+                    && ProcessorUtils.isCompatibleWith(context, context.toTypeElement(constructor.getParameters().get(0).asType()), String.class)
+                    && constructor.getThrownTypes().isEmpty()) {
                 return true;
             }
         }

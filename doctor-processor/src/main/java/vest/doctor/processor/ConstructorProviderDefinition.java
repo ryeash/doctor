@@ -1,16 +1,16 @@
 package vest.doctor.processor;
 
-import doctor.processor.Constants;
-import doctor.processor.ProcessorUtils;
+import jakarta.inject.Inject;
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.CodeProcessingException;
 import vest.doctor.InjectionException;
 import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ParameterLookupCustomizer;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.ClassBuilder;
-import vest.doctor.codegen.CodeLine;
+import vest.doctor.codegen.Constants;
+import vest.doctor.codegen.ProcessorUtils;
 
-import javax.inject.Inject;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -38,10 +38,10 @@ public class ConstructorProviderDefinition extends AbstractProviderDefinition {
         }
 
         if (injectMarked > 1) {
-            context.errorMessage("only one constructor may be marked with @Inject: " + ProcessorUtils.debugString(providedType));
+            throw new CodeProcessingException("only one constructor may be marked with @Inject", providedType);
         }
         if (injectable.isEmpty()) {
-            context.errorMessage("no injectable constructor: " + ProcessorUtils.debugString(providedType));
+            throw new CodeProcessingException("no injectable constructor", providedType);
         }
         this.injectableConstructor = injectable.get(0);
     }
@@ -55,11 +55,10 @@ public class ConstructorProviderDefinition extends AbstractProviderDefinition {
     public ClassBuilder getClassBuilder() {
         ClassBuilder classBuilder = super.getClassBuilder();
 
-        classBuilder.addMethod("public String toString() { return \"ConstructorProvider("
-                + providedType.getSimpleName()
-                + "):\" + hashCode(); }");
+        classBuilder.addMethod("public String toString()", b ->
+                b.line(" return \"ConstructorProvider(" + providedType.getSimpleName() + "):\" + hashCode();"));
 
-        classBuilder.addMethod(CodeLine.line("public void validateDependencies({} {})", ProviderRegistry.class, Constants.PROVIDER_REGISTRY), b -> {
+        classBuilder.addMethod("public void validateDependencies(" + ProviderRegistry.class.getSimpleName() + " {{providerRegistry}})", b -> {
             for (VariableElement parameter : injectableConstructor.getParameters()) {
                 for (ParameterLookupCustomizer parameterLookupCustomizer : context.customizations(ParameterLookupCustomizer.class)) {
                     String checkCode = parameterLookupCustomizer.dependencyCheckCode(context, parameter, Constants.PROVIDER_REGISTRY);
@@ -77,8 +76,10 @@ public class ConstructorProviderDefinition extends AbstractProviderDefinition {
         classBuilder.addMethod("public " + providedType.getSimpleName() + " get()", b -> {
             b.line("try {");
             b.line(providedType.getSimpleName() + " instance = " + context.constructorCall(this, injectableConstructor, Constants.PROVIDER_REGISTRY) + ";");
-            for (NewInstanceCustomizer customizer : context.customizations(NewInstanceCustomizer.class)) {
-                customizer.customize(context, this, b, "instance", Constants.PROVIDER_REGISTRY);
+            if (!isSkipInjection()) {
+                for (NewInstanceCustomizer customizer : context.customizations(NewInstanceCustomizer.class)) {
+                    customizer.customize(context, this, b, "instance", Constants.PROVIDER_REGISTRY);
+                }
             }
             b.line("return instance;");
             b.line("} catch(Throwable t) { throw new " + InjectionException.class.getCanonicalName() + "(\"error instantiating provided type\", t); }");

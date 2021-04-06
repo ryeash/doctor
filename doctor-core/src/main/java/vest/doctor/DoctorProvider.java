@@ -1,6 +1,7 @@
 package vest.doctor;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
+
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.List;
@@ -11,7 +12,7 @@ import java.util.List;
 public interface DoctorProvider<T> extends Provider<T> {
 
     /**
-     * The type provided.
+     * The main type provided.
      */
     Class<T> type();
 

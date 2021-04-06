@@ -1,9 +1,10 @@
 package vest.doctor.processor;
 
-import doctor.processor.Constants;
-import doctor.processor.ProcessorUtils;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.AppLoader;
+import vest.doctor.CodeProcessingException;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.CustomizationPoint;
 import vest.doctor.DoctorProvider;
@@ -20,6 +21,7 @@ import vest.doctor.ScopeWriter;
 import vest.doctor.ShutdownContainer;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
+import vest.doctor.codegen.ProcessorUtils;
 import vest.doctor.event.EventProducer;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -27,8 +29,6 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedOptions;
 import javax.annotation.processing.SupportedSourceVersion;
-import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
@@ -55,10 +55,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static doctor.processor.Constants.PROVIDER_REGISTRY;
-import static vest.doctor.codegen.CodeLine.line;
+import static vest.doctor.codegen.Constants.PROVIDER_REGISTRY;
 
-@SupportedSourceVersion(SourceVersion.RELEASE_8)
+@SupportedSourceVersion(SourceVersion.RELEASE_15)
 @SupportedOptions({JSR311Processor.PACKAGE_NAME_OPTION})
 public class JSR311Processor extends AbstractProcessor implements AnnotationProcessorContext {
 
@@ -77,15 +76,14 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     private long start;
 
     private ClassBuilder appLoader;
-    private final MethodBuilder load = new MethodBuilder("public void load({} {})", ProviderRegistry.class, PROVIDER_REGISTRY);
-    private final MethodBuilder postProcess = new MethodBuilder("public void postProcess({} {})", ProviderRegistry.class, PROVIDER_REGISTRY);
+    private MethodBuilder load;
+    private MethodBuilder postProcess;
 
     private final Map<Class<?>, Collection<String>> serviceImplementations = new HashMap<>();
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
         this.start = System.currentTimeMillis();
-
         super.init(processingEnv);
         this.processingEnv = processingEnv;
 
@@ -113,11 +111,11 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 .addImportClass(DoctorProvider.class)
                 .addImportClass(PrimaryProviderWrapper.class)
                 .addImportClass(ShutdownContainer.class)
-                .addField("private final {} {} = new {}()", ShutdownContainer.class, Constants.SHUTDOWN_CONTAINER_NAME, ShutdownContainer.class)
-                // call eager providers
-                .addMethod("public void close() { {}.close(); }", Constants.SHUTDOWN_CONTAINER_NAME)
-                .addField("private final List<{}<?>> eagerList = new ArrayList<>()", DoctorProvider.class);
-        this.load.setClassBuilder(appLoader);
+                .addField("private final ", ShutdownContainer.class, " {{shutdownContainer}} = new ", ShutdownContainer.class, "()")
+                .addMethod("public void close()", b -> b.line("{{shutdownContainer}}.close();"))
+                .addField("private final List<", DoctorProvider.class, "<?>> eagerList = new ArrayList<>()");
+        this.load = appLoader.newMethod("public void load(", ProviderRegistry.class, " {{providerRegistry}})");
+        this.postProcess = appLoader.newMethod("public void postProcess(", ProviderRegistry.class, " {{providerRegistry}})");
     }
 
     private void loadConf(ProcessorConfiguration processorConfiguration) {
@@ -136,43 +134,47 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 .map(roundEnv::getElementsAnnotatedWith)
                 .flatMap(Collection::stream)
                 .filter(processedElements::add)
-                .forEach(annotatedElement -> {
-                    boolean claimed = false;
-                    for (ProviderDefinitionProcessor providerDefinitionProcessor : customizations(ProviderDefinitionProcessor.class)) {
-                        ProviderDefinition provDef = providerDefinitionProcessor.process(this, annotatedElement);
-                        if (provDef != null) {
-                            errorChecking(provDef);
-                            claimed = true;
-                            typesToDependencies.computeIfAbsent(provDef.asDependency(), d -> new HashSet<>());
-                            providerDefinitions.add(provDef);
-                            for (ProviderDefinitionListener providerDefinitionListener : customizations(ProviderDefinitionListener.class)) {
-                                providerDefinitionListener.process(this, provDef);
-                            }
-                            ClassBuilder classBuilder = provDef.getClassBuilder();
-                            if (classBuilder != null) {
-                                classBuilder.writeClass(filer());
-                            }
-                            writeInProvider(provDef);
-                            break;
-                        }
-                    }
-                    if (!claimed) {
-                        warnMessage("the annotated element " + ProcessorUtils.debugString(annotatedElement) + " was not claimed by a processor");
-                    }
-                });
+                .forEach(this::processElement);
 
         if (roundEnv.processingOver()) {
             customizationPoints.forEach(c -> c.finish(this));
-            postProcess.line("eagerList.stream().filter(Objects::nonNull).forEach({}::get);", Provider.class);
-            appLoader.addMethod(load.finish())
-                    .addMethod(postProcess.finish())
-                    .writeClass(filer());
+            postProcess.line("eagerList.stream().filter(Objects::nonNull).forEach(", Provider.class, "::get);");
+            appLoader.writeClass(filer());
             addServiceImplementation(AppLoader.class, appLoader.getFullyQualifiedClassName());
             writeServicesResource();
             compileTimeDependencyCheck();
             infoMessage("took " + (System.currentTimeMillis() - start) + "ms");
         }
         return annotationsToProcess.containsAll(annotations);
+    }
+
+    private void processElement(Element annotatedElement) {
+        try {
+            boolean claimed = false;
+            for (ProviderDefinitionProcessor providerDefinitionProcessor : customizations(ProviderDefinitionProcessor.class)) {
+                ProviderDefinition provDef = providerDefinitionProcessor.process(this, annotatedElement);
+                if (provDef != null) {
+                    errorChecking(provDef);
+                    claimed = true;
+                    typesToDependencies.computeIfAbsent(provDef.asDependency(), d -> new HashSet<>());
+                    providerDefinitions.add(provDef);
+                    for (ProviderDefinitionListener providerDefinitionListener : customizations(ProviderDefinitionListener.class)) {
+                        providerDefinitionListener.process(this, provDef);
+                    }
+                    ClassBuilder classBuilder = provDef.getClassBuilder();
+                    if (classBuilder != null) {
+                        classBuilder.writeClass(filer());
+                    }
+                    writeInProvider(provDef);
+                    break;
+                }
+            }
+            if (!claimed) {
+                warnMessage("the annotated element " + ProcessorUtils.debugString(annotatedElement) + " was not claimed by a processor");
+            }
+        } catch (Throwable t) {
+            throw new CodeProcessingException("error processing", annotatedElement, t);
+        }
     }
 
     @Override
@@ -225,12 +227,10 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     @Override
     public void registerDependency(ProviderDependency target, ProviderDependency dependency) {
         if (target == null) {
-            errorMessage("cannot register dependency for null target");
-            return;
+            throw new CodeProcessingException("cannot register dependency for null target");
         }
         if (dependency == null) {
-            errorMessage("cannot register null dependency for " + target);
-            return;
+            throw new CodeProcessingException("cannot register null dependency for " + target);
         }
         typesToDependencies.computeIfAbsent(target, t -> new HashSet<>()).add(dependency);
     }
@@ -247,8 +247,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
 
     @Override
     public <T extends CustomizationPoint> List<T> customizations(Class<T> type) {
-        return Stream.of(customizationPoints)
-                .flatMap(Collection::stream)
+        return customizationPoints.stream()
                 .filter(type::isInstance)
                 .distinct()
                 .map(type::cast)
@@ -264,13 +263,13 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     private void errorChecking(ProviderDefinition providerDefinition) {
         for (VariableElement variableElement : ProcessorUtils.allFields(this, providerDefinition.providedType())) {
             if (variableElement.getAnnotation(Inject.class) != null) {
-                errorMessage("field injection is not supported: " + ProcessorUtils.debugString(variableElement));
+                throw new CodeProcessingException("field injection is not supported", variableElement);
             }
         }
         ProcessorUtils.<Annotation>ifClassExists("javax.annotation.PreDestroy", preDestroy -> {
             for (ExecutableElement method : ProcessorUtils.allMethods(this, providerDefinition.providedType())) {
                 if (method.getAnnotation(preDestroy) != null) {
-                    errorMessage("@PreDestroy is not supported (use the AutoCloseable interface instead): " + ProcessorUtils.debugString(method));
+                    throw new CodeProcessingException("@PreDestroy is not supported (use @DestroyMethod)", method);
                 }
             }
         });
@@ -279,7 +278,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     private void writeInProvider(ProviderDefinition providerDefinition) {
         appLoader.addImportClass(providerDefinition.providedType().asType().toString());
 
-        String creator = line("new {}({})", providerDefinition.generatedClassName(), PROVIDER_REGISTRY);
+        String creator = "new " + providerDefinition.generatedClassName() + "({{providerRegistry}})";
 
         for (ProviderCustomizationPoint providerCustomizationPoint : customizations(ProviderCustomizationPoint.class)) {
             creator = providerCustomizationPoint.wrap(this, providerDefinition, creator, PROVIDER_REGISTRY);
@@ -292,11 +291,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                     .filter(Objects::nonNull)
                     .map(m -> '"' + m + '"')
                     .collect(Collectors.joining(", "));
-            if (providerDefinition.modules().size() == 1) {
-                load.line("if(isActive({}, java.util.Collections.singletonList({}))){", PROVIDER_REGISTRY, modules);
-            } else {
-                load.line("if(isActive({}, java.util.Arrays.asList({}))){", PROVIDER_REGISTRY, modules);
-            }
+            load.line("if(isActive({{providerRegistry}}, List.of(", modules, "))){");
         }
 
         if (providerDefinition.scope() != null) {
@@ -304,17 +299,17 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
             ScopeWriter scopeWriter = getScopeWriter(scopeType);
             creator = scopeWriter.wrapScope(this, providerDefinition, creator);
         }
-        load.line("{}<{}> {} = {};", DoctorProvider.class, providerDefinition.providedType().getSimpleName(), providerDefinition.uniqueInstanceName(), creator);
-        load.line("{}.register({});", PROVIDER_REGISTRY, providerDefinition.uniqueInstanceName());
+        load.line(DoctorProvider.class, "<", providerDefinition.providedType().getSimpleName(), "> ", providerDefinition.uniqueInstanceName(), " = ", creator, ";");
+        load.line("{{providerRegistry}}.register(", providerDefinition.uniqueInstanceName(), ");");
         if (providerDefinition.isPrimary()) {
             if (providerDefinition.qualifier() == null) {
                 throw new IllegalArgumentException("unqualified provider can not be marked @Primary: " + providerDefinition.toString());
             }
-            load.line("{}.register(new {}({}));", PROVIDER_REGISTRY, PrimaryProviderWrapper.class, providerDefinition.uniqueInstanceName());
+            load.line("{{providerRegistry}}.register(new ", PrimaryProviderWrapper.class, "(", providerDefinition.uniqueInstanceName(), "));");
         }
 
         if (providerDefinition.isEager()) {
-            load.line("eagerList.add({});", providerDefinition.uniqueInstanceName());
+            load.line("eagerList.add(", providerDefinition.uniqueInstanceName(), ");");
         }
 
         if (hasModules) {
@@ -342,8 +337,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 }
             }
         } catch (IOException e) {
-            errorMessage("error writing services resources");
-            e.printStackTrace();
+            throw new CodeProcessingException("error writing services resources", e);
         }
     }
 
@@ -351,8 +345,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
         try {
             return Class.forName(className);
         } catch (ClassNotFoundException e) {
-            errorMessage("error loading class: " + className);
-            throw new NullPointerException("unreachable");
+            throw new CodeProcessingException("error loading class: " + className);
         }
     }
 
@@ -363,8 +356,8 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 if (dependency != null && dependency.required() && !isProvided(dependency)) {
                     Stream<ProviderDependency> deps = providerDefinitions.stream().map(ProviderDefinition::asDependency);
                     Stream<ProviderDependency> add = additionalSatisfiedDependencies.stream();
-                    errorMessage("missing provider dependency for\ntarget:" + target + "\ndependency:" + dependency + "\nknown types:\n" +
-                            Stream.of(deps, add).flatMap(Function.identity()).map(String::valueOf).collect(Collectors.joining("\n")));
+                    throw new CodeProcessingException("missing provider dependency for\ntarget: " + target + "\ndependency: " + dependency + "\nknown types:\n  " +
+                            Stream.of(deps, add).flatMap(Function.identity()).map(String::valueOf).collect(Collectors.joining("\n  ")));
                 }
             }
         }

@@ -1,16 +1,16 @@
 package demo.app;
 
+import jakarta.inject.Singleton;
 import vest.doctor.aop.After;
 import vest.doctor.aop.MethodInvocation;
-
-import javax.inject.Singleton;
 
 @Singleton
 public class StringModificationAspect implements After {
     @Override
     public void after(MethodInvocation invocation) {
         if (invocation.getResult() instanceof String) {
-            invocation.setResult(invocation.getResult() + " altered");
+            String number = invocation.attributes().getOrDefault("number", "1");
+            invocation.setResult(invocation.getResult() + " altered" + number);
         }
     }
 }
