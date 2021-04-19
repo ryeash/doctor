@@ -10,7 +10,8 @@ public class StringModificationAspect implements After {
     public void after(MethodInvocation invocation) {
         if (invocation.getResult() instanceof String) {
             String number = invocation.attributes().getOrDefault("number", "1");
-            invocation.setResult(invocation.getResult() + " altered" + number);
+            String letter = invocation.attributes().getOrDefault("letter", "L");
+            invocation.setResult(invocation.getResult() + " altered" + number + letter);
         }
     }
 }

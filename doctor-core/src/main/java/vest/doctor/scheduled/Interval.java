@@ -9,22 +9,26 @@ import java.util.regex.Pattern;
  * Represents a time interval, with magnitude and unit.
  * <p>
  * The format for an interval string is 'magnitude[unit alias]'
- * The magnitude is an integer
+ * The magnitude is an integer.
+ * Supported units are: Days, Hours, Minutes, Seconds, Milliseconds (default), Microseconds, and Nanoseconds
  * <p>
- * Supported units are: Days, Hours, Minutes, Seconds, Milliseconds (default), Microseconds, and Nanoseconds<br/>
- * Shorthand strings for the units are supported:<br/>
- * Days: d, day, days<br/>
- * Hours: h, hour, hours<br/>
- * Minutes: m, min, minute, minutes<br/>
- * Seconds: s, sec, second, seconds<br/>
- * Milliseconds: ms, millis, millisecond, milliseconds<br/>
- * Microseconds: u, us, microsecond, microseconds<br/>
- * Nanoseconds: ns, nanosecond, nanoseconds<br/>
+ * Shorthand strings for the units are supported:
+ * <pre>
+ * Days: d, day, days
+ * Hours: h, hour, hours
+ * Minutes: m, min, minute, minutes
+ * Seconds: s, sec, second, seconds
+ * Milliseconds: ms, millis, millisecond, milliseconds
+ * Microseconds: u, us, microsecond, microseconds
+ * Nanoseconds: ns, nanosecond, nanoseconds
+ * </pre>
  * <p>
  * Examples:
+ * <pre>
  * 10s -> 10 seconds
  * 50ms -> 50 milliseconds
  * 12345 us -> 12345 microseconds
+ * </pre>
  */
 public class Interval {
 

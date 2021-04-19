@@ -256,6 +256,12 @@ public class SomethingPeriodic {
 Internally, the object instances for scheduled methods are tracked using weak references so scheduling method execution
 will _not_ prevent the provided object from being garbage collected.
 
+> Aspect interactions:
+> Due to the initialization order for providers, scheduled methods will use the non-aspected instance
+> of provided objects. In effect, if a method is marked with @Scheduled and an aspect, the aspect will
+> be ignored during execution of the resulting scheduled task; however, any place where the class is
+> injected, calling the scheduled method explicitly will go through the aspect(s).
+
 ### Event Bus
 
 Messages can be published and consumed via the EventBus.

@@ -155,14 +155,10 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
             if (i < 0) {
                 throw new IllegalArgumentException("unclosed macro statement in " + value);
             }
-            String subName = value.substring(prev, i);
-            String defaultValue = null;
-
-            int colon = subName.indexOf(':');
-            if (colon >= 0) {
-                subName = subName.substring(0, colon);
-                defaultValue = subName.substring(colon);
-            }
+            String macro = value.substring(prev, i);
+            String[] split = splitColon(macro);
+            String subName = split[0];
+            String defaultValue = split[1];
 
             String subValue = get(subName, defaultValue);
             if (subValue == null) {
@@ -237,5 +233,14 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
         }
         split.add(str.substring(i).trim());
         return split;
+    }
+
+    private static String[] splitColon(String str) {
+        int i = str.indexOf(':');
+        if (i < 0) {
+            return new String[]{str, null};
+        } else {
+            return new String[]{str.substring(0, i), str.substring(i + 1)};
+        }
     }
 }

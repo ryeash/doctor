@@ -82,7 +82,7 @@ public class ConstructorProviderDefinition extends AbstractProviderDefinition {
                 }
             }
             b.line("return instance;");
-            b.line("} catch(Throwable t) { throw new " + InjectionException.class.getCanonicalName() + "(\"error instantiating provided type\", t); }");
+            b.line("} catch(Throwable t) { throw new ", InjectionException.class, "(\"error instantiating provided type: ", providedType(), "\", t); }");
         });
         return classBuilder;
     }

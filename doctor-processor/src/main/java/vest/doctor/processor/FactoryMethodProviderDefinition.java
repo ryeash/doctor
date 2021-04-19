@@ -67,8 +67,7 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
             b.bind("container", container.getQualifiedName())
                     .bind("getContainer", ProcessorUtils.getProviderCode(context, container))
                     .bind("providedType", providedType().getSimpleName())
-                    .bind("call", context.executableCall(this, factoryMethod, "container", Constants.PROVIDER_REGISTRY))
-                    .bind("InjectionException", InjectionException.class.getCanonicalName());
+                    .bind("call", context.executableCall(this, factoryMethod, "container", Constants.PROVIDER_REGISTRY));
 
             b.line("try {")
                     .line("{{container}} container = {{getContainer}}.get();")
@@ -79,7 +78,7 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
                 }
             }
             b.line("return instance;");
-            b.line("} catch(Throwable t) { throw new {{InjectionException}}(\"error instantiating provided type\", t); }");
+            b.line("} catch(Throwable t) { throw new ", InjectionException.class, "(\"error instantiating provided type: ", providedType(), "\", t); }");
         });
         return classBuilder;
     }
