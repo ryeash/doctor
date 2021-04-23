@@ -12,7 +12,12 @@ public final class EventBus implements EventProducer {
     private final List<EventConsumer> consumers = new LinkedList<>();
 
     public void addConsumer(EventConsumer consumer) {
-        consumers.add(Objects.requireNonNull(consumer));
+        synchronized (consumers) {
+            if (consumers.contains(consumer)) {
+                throw new IllegalArgumentException("event consumer " + consumer + " has already been registered");
+            }
+            consumers.add(Objects.requireNonNull(consumer));
+        }
     }
 
     @Override

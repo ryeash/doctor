@@ -670,7 +670,7 @@ public class StreamExt<T> implements Stream<T>, Iterable<T> {
     }
 
     /**
-     * @return a new {@link Stream2} where the first value in the tuple is an atomically increasing integer
+     * @return a new {@link Stream2} where the first value in the tuple is an atomically increasing integer.
      */
     public Stream2<Integer, T> withIndex() {
         AtomicInteger c = new AtomicInteger();
