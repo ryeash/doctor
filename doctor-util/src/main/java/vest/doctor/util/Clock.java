@@ -11,41 +11,6 @@ import java.util.concurrent.TimeUnit;
 public class Clock {
 
     /**
-     * Number of milliseconds in one second
-     */
-    public static final long ONE_SECOND = TimeUnit.SECONDS.toMillis(1);
-
-    /**
-     * Number of milliseconds in one minute
-     */
-    public static final long ONE_MINUTE = TimeUnit.MINUTES.toMillis(1);
-
-    /**
-     * Number of milliseconds in one hour
-     */
-    public static final long ONE_HOUR = TimeUnit.HOURS.toMillis(1);
-
-    /**
-     * Number of milliseconds in one standard day
-     */
-    public static final long ONE_DAY = TimeUnit.DAYS.toMillis(1);
-
-    /**
-     * Number of milliseconds in seven standard days
-     */
-    public static final long ONE_WEEK = ONE_DAY * 7;
-
-    /**
-     * Number of milliseconds in thirty standard days
-     */
-    public static final long ONE_MONTH = ONE_DAY * 30;
-
-    /**
-     * Number of milliseconds in 365 standard days
-     */
-    public static final long ONE_YEAR = ONE_DAY * 365;
-
-    /**
      * Alias for {@link System#currentTimeMillis()}
      */
     public static long epochMillis() {

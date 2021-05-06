@@ -1,83 +1,63 @@
 package vest.doctor.pipeline;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Flow;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.BiPredicate;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collector;
-import java.util.stream.Stream;
+import java.util.List;
+import java.util.function.Supplier;
 
-public interface Pipeline<IN, OUT> extends Flow.Subscription, Flow.Processor<IN, OUT> {
+public interface Pipeline<I, O> extends Stage<I, O> {
 
-    int id();
-
-    Pipeline<IN, OUT> publish(IN value);
-
-    default Pipeline<OUT, OUT> observe(Pipeline<OUT, OUT> pipeline) {
-        return observe(pipeline::publish);
+    static <START> PipelineBuilder<START, START, START> adHoc(Class<START> type) {
+        AdhocSource<START> adhocSource = new AdhocSource<>(type);
+        return new PipelineBuilder<>(adhocSource, adhocSource);
     }
 
-    default Pipeline<OUT, OUT> observe(Consumer<OUT> observer) {
-        return observe((pipe, input) -> observer.accept(input));
+    static <START> PipelineBuilder<START, START, START> of(START value) {
+        return iterate(List.of(value));
     }
 
-    default Pipeline<OUT, OUT> observe(BiConsumer<Pipeline<OUT, OUT>, OUT> observer) {
-        return map((pipe, input) -> {
-            observer.accept(pipe, input);
-            return input;
-        });
+    static <START> PipelineBuilder<START, START, START> of(START value1, START value2) {
+        return iterate(List.of(value1, value2));
     }
 
-    default <R> Pipeline<OUT, R> map(Function<OUT, R> function) {
-        return map((pipe, input) -> function.apply(input));
+    static <START> PipelineBuilder<START, START, START> of(START value1, START value2, START value3) {
+        return iterate(List.of(value1, value2, value3));
     }
 
-    <R> Pipeline<OUT, R> map(BiFunction<Pipeline<OUT, R>, OUT, R> function);
-
-    default <R> Pipeline<OUT, R> flatStream(Function<OUT, Stream<R>> function) {
-        return flatStream((pipe, input) -> function.apply(input));
+    static <START> PipelineBuilder<START, START, START> of(START value1, START value2, START value3, START value4) {
+        return iterate(List.of(value1, value2, value3, value4));
     }
 
-    default <R> Pipeline<OUT, R> flatStream(BiFunction<Pipeline<OUT, R>, OUT, Stream<R>> function) {
-        BiFunction<Pipeline<OUT, R>, OUT, Iterable<R>> f = function.andThen(s -> s::iterator);
-        return flatMap(f);
+    static <START> PipelineBuilder<START, START, START> iterate(Iterable<START> source) {
+        IterableSource<START> itSource = new IterableSource<>(source);
+        return new PipelineBuilder<>(itSource, itSource);
     }
 
-    default <R> Pipeline<OUT, R> flatMap(Function<OUT, Iterable<R>> function) {
-        return flatMap((pipe, input) -> function.apply(input));
+    static <START> PipelineBuilder<START, START, START> supply(Supplier<START> supplier) {
+        SupplierSource<START> s = new SupplierSource<>(supplier);
+        return new PipelineBuilder<>(s, s);
     }
 
-    <R> Pipeline<OUT, R> flatMap(BiFunction<Pipeline<OUT, R>, OUT, Iterable<R>> function);
-
-    default Pipeline<OUT, OUT> filter(Predicate<OUT> predicate) {
-        return filter((pipe, value) -> predicate.test(value));
+    static <IN, OUT> PipelineBuilder<IN, IN, OUT> from(Stage<IN, OUT> start) {
+        if (start instanceof AbstractStage) {
+            return new PipelineBuilder<>((AbstractStage<IN, ?>) start, (AbstractStage<IN, OUT>) start);
+        } else {
+            throw new IllegalArgumentException();
+        }
     }
 
-    Pipeline<OUT, OUT> filter(BiPredicate<Pipeline<OUT, OUT>, OUT> predicate);
+    /**
+     * Publish a message to this pipeline. Depending on underlying implementation,
+     * may return throw an {@link IllegalArgumentException}
+     *
+     * @param item the value to publish
+     * @return this pipeline
+     */
+    Pipeline<I, O> publish(I item);
 
-    default <R> Pipeline<R, R> aggregate(Function<OUT, R> function) {
-        return aggregate((pipe, value) -> function.apply(value));
+    /**
+     * Join the future completion of this pipeline, blocking until the pipeline {@link #onComplete()} has
+     * been called.
+     */
+    default void join() {
+        future().join();
     }
-
-    default <R> Pipeline<R, R> aggregate(BiFunction<Pipeline<OUT, R>, OUT, R> function) {
-        return map(function).filter((pipe, value) -> value != null);
-    }
-
-    <R, A> Pipeline<OUT, R> collect(Collector<OUT, A, R> collector);
-
-    default Pipeline<IN, OUT> forward(Consumer<Pipeline<IN, OUT>> action) {
-        action.accept(this);
-        return this;
-    }
-
-    void unsubscribe();
-
-    Pipeline<IN, OUT> async(ExecutorService executorService);
-
-    CompletableFuture<Void> completionFuture();
 }

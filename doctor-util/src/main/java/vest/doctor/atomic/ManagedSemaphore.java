@@ -44,7 +44,10 @@ public final class ManagedSemaphore {
      * @return a {@link Try} representing the success or failure of the runnable
      */
     public Try<Void> withPermit(long acquireTimeout, TimeUnit unit, ThrowingRunnable runnable) {
-        return acquire(acquireTimeout, unit, () -> Try.run(runnable));
+        return acquire(acquireTimeout, unit, () -> {
+            runnable.run();
+            return null;
+        });
     }
 
     /**
@@ -66,7 +69,7 @@ public final class ManagedSemaphore {
      * @return a {@link Try} representing the success or failure of the supplier
      */
     public <R> Try<R> withPermit(long acquireTimeout, TimeUnit unit, ThrowingSupplier<R> supplier) {
-        return acquire(acquireTimeout, unit, () -> Try.supply(supplier));
+        return acquire(acquireTimeout, unit, supplier);
     }
 
     /**
@@ -90,7 +93,7 @@ public final class ManagedSemaphore {
      * @return a {@link Try} representing the success or failure of applying the function
      */
     public <I, R> Try<R> withPermit(long acquireTimeout, TimeUnit unit, I input, ThrowingFunction<I, R> function) {
-        return acquire(acquireTimeout, unit, () -> Try.apply(input, function));
+        return acquire(acquireTimeout, unit, () -> function.apply(input));
     }
 
     /**
@@ -117,13 +120,11 @@ public final class ManagedSemaphore {
         return withPermit(acquireTimeout, unit, () -> action.accept(input));
     }
 
-    private <T> Try<T> acquire(long acquireTimeout, TimeUnit unit, ThrowingSupplier<Try<T>> supplier) {
+    private <T> Try<T> acquire(long acquireTimeout, TimeUnit unit, ThrowingSupplier<T> supplier) {
         try {
             if (semaphore.tryAcquire(acquireTimeout, unit)) {
                 try {
-                    return supplier.get();
-                } catch (Exception e) {
-                    return Try.failure(e);
+                    return Try.get(supplier);
                 } finally {
                     semaphore.release();
                 }

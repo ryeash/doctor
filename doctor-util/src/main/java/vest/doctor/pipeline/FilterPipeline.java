@@ -1,12 +1,13 @@
 package vest.doctor.pipeline;
 
+import java.util.concurrent.Flow;
 import java.util.function.BiPredicate;
 
-public class FilterPipeline<IN> extends AbstractPipeline<IN, IN> {
+class FilterPipeline<IN> extends AbstractStage<IN, IN> {
 
-    private final BiPredicate<Pipeline<IN, IN>, IN> predicate;
+    private final BiPredicate<Flow.Subscription, IN> predicate;
 
-    public FilterPipeline(AbstractPipeline<?, IN> upstream, BiPredicate<Pipeline<IN, IN>, IN> predicate) {
+    public FilterPipeline(AbstractStage<?, IN> upstream, BiPredicate<Flow.Subscription, IN> predicate) {
         super(upstream);
         this.predicate = predicate;
     }

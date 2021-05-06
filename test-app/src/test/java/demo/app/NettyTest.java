@@ -213,6 +213,16 @@ public class NettyTest extends BaseDoctorTest {
                 .body(is("JUNK"));
     }
 
+    @Test
+    public void locale() {
+        req()
+                .header("Accept-Language", "en-US,en;q=0.9")
+                .get("/netty/locale")
+                .then()
+                .statusCode(200)
+                .body(containsString("en"));
+    }
+
 //    @Test
 //    public void waitAReallyLongTIme() throws InterruptedException {
 //        Thread.sleep(1000000);

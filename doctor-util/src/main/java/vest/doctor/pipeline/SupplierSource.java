@@ -2,7 +2,7 @@ package vest.doctor.pipeline;
 
 import java.util.function.Supplier;
 
-public class SupplierSource<IN> extends AbstractPipeline<IN, IN> {
+class SupplierSource<IN> extends AbstractStage<IN, IN> {
 
     private final Supplier<IN> source;
 
@@ -17,19 +17,14 @@ public class SupplierSource<IN> extends AbstractPipeline<IN, IN> {
     }
 
     @Override
-    public void unsubscribe() {
-        // no-op
-    }
-
-    @Override
     public void request(long n) {
         // TODO
     }
 
     @Override
-    protected void requestInternal(long n, Pipeline<IN, ?> requester) {
+    protected void requestInternal(long n, Stage<IN, ?> requester) {
         for (long i = 0; i < n; i++) {
-            requester.publish(source.get());
+            requester.onNext(source.get());
         }
     }
 

@@ -1,8 +1,9 @@
 package vest.doctor.util;
 
 import org.testng.Assert;
-import org.testng.annotations.AfterTest;
+import org.testng.annotations.AfterMethod;
 
+import java.lang.reflect.Method;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -12,8 +13,8 @@ import java.util.function.Consumer;
 public abstract class BaseUtilTest extends Assert {
     final Queue<AssertingConsumer<?>> asserting = new LinkedBlockingQueue<>();
 
-    @AfterTest(alwaysRun = true)
-    public void checkAssertions() {
+    @AfterMethod(alwaysRun = true)
+    public void checkAssertions(Method method) {
         AssertingConsumer<?> c;
         while ((c = asserting.poll()) != null) {
             c.assertCallCount();

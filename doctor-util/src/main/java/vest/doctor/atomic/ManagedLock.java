@@ -53,7 +53,10 @@ public final class ManagedLock {
      * @return a {@link Try} representing the success or failure of the runnable
      */
     public Try<Void> withLock(long acquireTimeout, TimeUnit unit, ThrowingRunnable runnable) {
-        return guard(acquireTimeout, unit, () -> Try.run(runnable));
+        return guard(acquireTimeout, unit, () -> {
+            runnable.run();
+            return null;
+        });
     }
 
     /**
@@ -77,7 +80,7 @@ public final class ManagedLock {
      * @return a {@link Try} representing the success or failure of applying the function
      */
     public <I, R> Try<R> withLock(long acquireTimeout, TimeUnit unit, I input, ThrowingFunction<I, R> function) {
-        return guard(acquireTimeout, unit, () -> Try.apply(input, function));
+        return guard(acquireTimeout, unit, () -> function.apply(input));
     }
 
     /**
@@ -99,7 +102,7 @@ public final class ManagedLock {
      * @return a {@link Try} representing the success or failure of executing the supplier
      */
     public <R> Try<R> withLock(long acquireTimeout, TimeUnit unit, ThrowingSupplier<R> supplier) {
-        return guard(acquireTimeout, unit, () -> Try.supply(supplier));
+        return guard(acquireTimeout, unit, supplier);
     }
 
     /**
@@ -114,7 +117,7 @@ public final class ManagedLock {
     }
 
     /**
-     * Acquire the lock with the given timeout and execute the actino with the input.
+     * Acquire the lock with the given timeout and execute the action with the input.
      *
      * @param acquireTimeout the timeout
      * @param unit           the unit for the timeout
@@ -126,13 +129,11 @@ public final class ManagedLock {
         return withLock(acquireTimeout, unit, () -> action.accept(input));
     }
 
-    private <R> Try<R> guard(long acquireTimeout, TimeUnit unit, ThrowingSupplier<Try<R>> supplier) {
+    private <R> Try<R> guard(long acquireTimeout, TimeUnit unit, ThrowingSupplier<R> supplier) {
         try {
             if (lock.tryLock(acquireTimeout, unit)) {
                 try {
-                    return supplier.get();
-                } catch (Exception e) {
-                    return Try.failure(e);
+                    return Try.get(supplier);
                 } finally {
                     lock.unlock();
                 }

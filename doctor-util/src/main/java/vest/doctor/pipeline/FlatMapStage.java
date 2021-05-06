@@ -1,12 +1,13 @@
 package vest.doctor.pipeline;
 
+import java.util.concurrent.Flow;
 import java.util.function.BiFunction;
 
-public class FlatMapStage<IN, OUT> extends AbstractStage<IN, OUT> {
+class FlatMapStage<IN, OUT> extends AbstractStage<IN, OUT> {
 
-    private final BiFunction<Stage<IN, OUT>, IN, Iterable<OUT>> function;
+    private final BiFunction<Flow.Subscription, IN, Iterable<OUT>> function;
 
-    public FlatMapStage(AbstractStage<?, IN> upstream, BiFunction<Stage<IN, OUT>, IN, Iterable<OUT>> function) {
+    public FlatMapStage(AbstractStage<?, IN> upstream, BiFunction<Flow.Subscription, IN, Iterable<OUT>> function) {
         super(upstream);
         this.function = function;
     }

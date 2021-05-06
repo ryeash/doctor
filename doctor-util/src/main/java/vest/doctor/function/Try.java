@@ -34,7 +34,7 @@ public final class Try<T> {
      * @param supplier the supplier
      * @return the resulting Try
      */
-    public static <V> Try<V> supply(ThrowingSupplier<? extends V> supplier) {
+    public static <V> Try<V> get(ThrowingSupplier<? extends V> supplier) {
         try {
             return success(supplier.get());
         } catch (Throwable t) {
@@ -154,6 +154,7 @@ public final class Try<T> {
      *
      * @param exception the exception
      * @return a failed Try
+     * @throws NullPointerException if the exception is null
      */
     public static <V> Try<V> failure(Throwable exception) {
         return new Try<>(null, Objects.requireNonNull(exception));
@@ -188,7 +189,7 @@ public final class Try<T> {
     }
 
     /**
-     * @return true if this Try is a failure
+     * @return true if this Try is a failure and has an exception
      */
     public boolean isFailure() {
         return t != null;
@@ -420,13 +421,15 @@ public final class Try<T> {
 
     /**
      * Turn this try into an optional value. If the try succeeded the resulting
-     * optional will have the result (or be empty if the result was null).
-     * This method will throw an exception if {@link #isFailure()}.
+     * optional will have the result (or be empty if the result was null). If
+     * this try failed the optional will be empty.
      *
      * @return an {@link Optional} representing the result of the try
      */
     public Optional<T> toOptional() {
-        throwUnchecked();
+        if (isFailure()) {
+            return Optional.empty();
+        }
         return Optional.ofNullable(result);
     }
 

@@ -11,6 +11,7 @@ import javax.lang.model.util.ElementFilter;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -43,18 +44,18 @@ public class StandardConversionGenerator implements StringConversionGenerator {
         CLASS_TO_CONVERTER.put(Number.class.getCanonicalName(), BigDecimal.class.getCanonicalName() + "::new");
         CLASS_TO_CONVERTER.put(UUID.class.getCanonicalName(), UUID.class.getCanonicalName() + "::fromString");
         CLASS_TO_CONVERTER.put(URI.class.getCanonicalName(), URI.class.getCanonicalName() + "::create");
+        CLASS_TO_CONVERTER.put(Duration.class.getCanonicalName(), Duration.class.getCanonicalName() + "::parse");
     }
 
     @Override
     public String converterFunction(AnnotationProcessorContext context, TypeMirror targetType) {
         String converterMethod = CLASS_TO_CONVERTER.get(targetType.toString());
-        if (converterMethod == null && hasStringConstructor(context, targetType)) {
-            return targetType.toString() + "::new";
+        if (converterMethod != null) {
+            return converterMethod;
+        } else if (hasStringConstructor(context, targetType)) {
+            return targetType + "::new";
         }
-        if (converterMethod == null) {
-            throw new IllegalArgumentException("no string conversion registered to handle: " + targetType);
-        }
-        return converterMethod;
+        throw new IllegalArgumentException("no string conversion registered to handle: " + targetType);
     }
 
     @Override

@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-public class IterableSource<IN> extends Source<IN> {
+class IterableSource<IN> extends AbstractSource<IN> {
 
     private final Iterable<IN> source;
     private final Map<Integer, Iterator<IN>> iterators;
@@ -21,16 +21,16 @@ public class IterableSource<IN> extends Source<IN> {
     }
 
     @Override
-    protected void requestInternal(long n, Pipeline<IN, ?> requester) {
+    protected void requestInternal(long n, Stage<IN, ?> requester) {
+        executorService.submit(() -> iterateInternal(n, requester));
+    }
+
+    private void iterateInternal(long n, Stage<IN, ?> requester) {
         Iterator<IN> it = iterators.computeIfAbsent(requester.id(), r -> source.iterator());
-        for (long i = 0; i < n; i++) {
+        for (; n > 0; n--) {
             if (it.hasNext()) {
                 IN value = it.next();
-                if (executorService != null) {
-                    executorService.submit(() -> requester.publish(value));
-                } else {
-                    requester.publish(value);
-                }
+                requester.onNext(value);
             } else {
                 requester.onComplete();
                 iterators.remove(requester.id());

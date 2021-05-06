@@ -1,24 +1,24 @@
 package vest.doctor.pipeline;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
+abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
     static final AtomicInteger ID_SEQUENCE = new AtomicInteger(0);
 
     private final int id;
-    private final AbstractStage<?, IN> upstream;
-    protected final List<Stage<OUT, ?>> downstream;
+    protected final AbstractStage<?, IN> upstream;
+    protected final Map<Integer, Stage<OUT, ?>> downstream;
     private final CompletableFuture<Void> completionFuture;
 
     public AbstractStage(AbstractStage<?, IN> upstream) {
         this.id = ID_SEQUENCE.incrementAndGet();
         this.upstream = upstream;
-        this.downstream = new LinkedList<>();
+        this.downstream = new ConcurrentSkipListMap<>();
         this.completionFuture = new CompletableFuture<>();
     }
 
@@ -35,10 +35,11 @@ public abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
 
     @Override
     public void cancel() {
-        upstream.downstream.remove(this);
+        upstream.downstream.remove(this.id);
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void request(long n) {
         requestInternal(n, (Stage<OUT, ?>) this);
     }
@@ -59,7 +60,6 @@ public abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
         try {
             internalPublish(item);
         } catch (Throwable t) {
-            // TODO
             onError(new RuntimeException(t));
         }
     }
@@ -67,7 +67,7 @@ public abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
     protected abstract void internalPublish(IN value);
 
     protected final void publishDownstream(OUT out) {
-        for (Stage<OUT, ?> down : downstream) {
+        for (Stage<OUT, ?> down : downstream.values()) {
             down.onNext(out);
         }
     }
@@ -78,12 +78,13 @@ public abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
         if (upstream != null) {
             upstream.onError(throwable);
         }
+        cancel();
     }
 
     @Override
     public void onComplete() {
         completionFuture.complete(null);
-        for (Stage<OUT, ?> down : downstream) {
+        for (Stage<OUT, ?> down : downstream.values()) {
             down.onComplete();
         }
     }
@@ -92,10 +93,10 @@ public abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
     @SuppressWarnings("unchecked")
     public void subscribe(Flow.Subscriber<? super OUT> subscriber) {
         if (subscriber instanceof Stage) {
-            downstream.add((Stage<OUT, ?>) subscriber);
+            downstream.put(((Stage<?, ?>) subscriber).id(), (Stage<OUT, ?>) subscriber);
         } else {
-            throw new UnsupportedOperationException();
-//            downstream.add(new SubscriberToStage<>(this, subscriber));
+            SubscriberToStage<OUT> s2s = new SubscriberToStage<>(this, subscriber);
+            downstream.put(s2s.id(), s2s);
         }
     }
 
@@ -106,7 +107,7 @@ public abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
     }
 
     @Override
-    public CompletableFuture<Void> completionFuture() {
+    public CompletableFuture<Void> future() {
         return completionFuture;
     }
 }

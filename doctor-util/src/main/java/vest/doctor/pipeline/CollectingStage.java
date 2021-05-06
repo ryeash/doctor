@@ -2,26 +2,23 @@ package vest.doctor.pipeline;
 
 import java.util.stream.Collector;
 
-public class CollectingPipeline<IN, A, C> extends AbstractPipeline<IN, C> {
+class CollectingStage<IN, A, C> extends AbstractStage<IN, C> {
 
     private final Collector<IN, A, C> collector;
     private final A intermediate;
 
-    public CollectingPipeline(AbstractPipeline<?, IN> upstream, Collector<IN, A, C> collector) {
+    public CollectingStage(AbstractStage<?, IN> upstream, Collector<IN, A, C> collector) {
         super(upstream);
         this.collector = collector;
         this.intermediate = collector.supplier().get();
+        future().thenAccept(v -> {
+            C apply = collector.finisher().apply(intermediate);
+            publishDownstream(apply);
+        });
     }
 
     @Override
     protected void internalPublish(IN value) {
         collector.accumulator().accept(intermediate, value);
-    }
-
-    @Override
-    public void onComplete() {
-        super.onComplete();
-        C apply = collector.finisher().apply(intermediate);
-        publishDownstream(apply);
     }
 }

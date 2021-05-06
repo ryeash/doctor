@@ -1,12 +1,13 @@
 package vest.doctor.pipeline;
 
+import java.util.concurrent.Flow;
 import java.util.function.BiFunction;
 
-public final class MapStage<IN, OUT> extends AbstractStage<IN, OUT> {
+final class MapStage<IN, OUT> extends AbstractStage<IN, OUT> {
 
-    private final BiFunction<Stage<IN, OUT>, IN, OUT> function;
+    private final BiFunction<Flow.Subscription, IN, OUT> function;
 
-    public MapStage(AbstractStage<?, IN> upstream, BiFunction<Stage<IN, OUT>, IN, OUT> function) {
+    public MapStage(AbstractStage<?, IN> upstream, BiFunction<Flow.Subscription, IN, OUT> function) {
         super(upstream);
         this.function = function;
     }

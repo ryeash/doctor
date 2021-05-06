@@ -2,11 +2,11 @@ package vest.doctor.pipeline;
 
 import java.util.concurrent.Flow;
 
-class SubscriberToPipeline<IN> extends AbstractPipeline<IN, IN> {
+class SubscriberToStage<IN> extends AbstractStage<IN, IN> {
 
     private final Flow.Subscriber<? super IN> subscriber;
 
-    public SubscriberToPipeline(AbstractPipeline<?, IN> upstream, Flow.Subscriber<? super IN> subscriber) {
+    public SubscriberToStage(AbstractStage<?, IN> upstream, Flow.Subscriber<? super IN> subscriber) {
         super(upstream);
         this.subscriber = subscriber;
     }

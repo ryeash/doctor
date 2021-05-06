@@ -1,31 +1,27 @@
 package vest.doctor.pipeline;
 
-public class AdhocSource<IN> extends Source<IN> {
+class AdhocSource<IN> extends AbstractSource<IN> {
+
+    private final Class<IN> type;
+
+    public AdhocSource(Class<IN> type) {
+        this.type = type;
+    }
 
     @Override
     public void internalPublish(IN value) {
-        for (Pipeline<IN, ?> p : downstream) {
-            if (executorService != null) {
-                executorService.submit(() -> p.publish(value));
-            } else {
-                p.publish(value);
-            }
+        if (!type.isInstance(value)) {
+            throw new ClassCastException();
         }
-    }
-
-    @Override
-    public void unsubscribe() {
-        // no-op
-    }
-
-    @Override
-    public void request(long n) {
-        // TODO
-    }
-
-    @Override
-    protected void requestInternal(long n, Pipeline<IN, ?> requester) {
-        // no-op
+        requested.replaceAll((id, n) -> {
+            if (n <= 0) {
+                return 0L;
+            }
+            executorService.submit(() -> {
+                downstream.get(id).onNext(value);
+            });
+            return n - 1;
+        });
     }
 
     @Override

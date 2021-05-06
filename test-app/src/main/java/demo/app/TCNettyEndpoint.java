@@ -24,6 +24,7 @@ import vest.doctor.http.server.rest.R;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -49,6 +50,7 @@ public class TCNettyEndpoint {
     @GET
     @Path("/hello2")
     public byte[] hello2() {
+        Locale.forLanguageTag("");
         return "bytes".getBytes();
     }
 
@@ -129,5 +131,11 @@ public class TCNettyEndpoint {
     @Path("/anything")
     public String any(Request request) {
         return request.method().toString();
+    }
+
+    @GET
+    @Path("/locale")
+    public String locale(@HeaderParam("Accept-Language") Locale locale) {
+        return locale.toString();
     }
 }

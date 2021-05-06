@@ -82,7 +82,7 @@ public class Tuple implements Serializable, Comparable<Tuple>, Iterable<Object> 
      * @param values the values to store in the tuple
      */
     public Tuple(Object... values) {
-        this.values = values;
+        this.values = Objects.requireNonNull(values);
     }
 
     /**
@@ -120,7 +120,16 @@ public class Tuple implements Serializable, Comparable<Tuple>, Iterable<Object> 
 
     @Override
     public String toString() {
-        return Arrays.stream(values).map(String::valueOf).collect(Collectors.joining(", ", "(", ")"));
+        return Arrays.stream(values)
+                .map(v -> {
+                    if (v instanceof CharSequence) {
+                        return '"' + String.valueOf(v) + '"';
+                    } else {
+                        return v;
+                    }
+                })
+                .map(String::valueOf)
+                .collect(Collectors.joining(", ", "(", ")"));
     }
 
     @Override
