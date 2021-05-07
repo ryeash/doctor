@@ -1,18 +1,14 @@
 package vest.doctor.pipeline;
 
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 
 class IterableSource<IN> extends AbstractSource<IN> {
 
-    private final Iterable<IN> source;
-    private final Map<Integer, Iterator<IN>> iterators;
+    private final Iterator<IN> source;
 
     public IterableSource(Iterable<IN> source) {
         super();
-        this.source = source;
-        this.iterators = new HashMap<>();
+        this.source = source.iterator();
     }
 
     @Override
@@ -21,19 +17,17 @@ class IterableSource<IN> extends AbstractSource<IN> {
     }
 
     @Override
-    protected void requestInternal(long n, Stage<IN, ?> requester) {
-        executorService.submit(() -> iterateInternal(n, requester));
+    public void request(long n) {
+        executorService.submit(() -> iterateInternal(n));
     }
 
-    private void iterateInternal(long n, Stage<IN, ?> requester) {
-        Iterator<IN> it = iterators.computeIfAbsent(requester.id(), r -> source.iterator());
+    private void iterateInternal(long n) {
         for (; n > 0; n--) {
-            if (it.hasNext()) {
-                IN value = it.next();
-                requester.onNext(value);
+            if (source.hasNext()) {
+                IN value = source.next();
+                downstream.onNext(value);
             } else {
-                requester.onComplete();
-                iterators.remove(requester.id());
+                downstream.onComplete();
                 break;
             }
         }

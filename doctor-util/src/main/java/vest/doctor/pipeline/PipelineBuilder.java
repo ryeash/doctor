@@ -1,6 +1,7 @@
 package vest.doctor.pipeline;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
@@ -18,24 +19,28 @@ import java.util.stream.Stream;
 /**
  * Builds {@link Pipeline pipelines} by combining {@link Stage stages} together into a cohesive processing flow.
  *
- * @param <START> the initial value type that this pipeline consumer
+ * @param <START> the initial value type that this pipeline consumes
  * @param <I>     the input type of the current {@link Stage}
  * @param <O>     the output type of the current {@link Stage}
  */
 public final class PipelineBuilder<START, I, O> {
 
-    private static final ExecutorService COMMON = new ForkJoinPool(Math.max(4, Runtime.getRuntime().availableProcessors()) * 2);
+    static final ExecutorService COMMON = new ForkJoinPool(
+            Optional.ofNullable(System.getProperty("doctor.pipeline.defaultParallelism"))
+                    .map(Integer::valueOf)
+                    .orElseGet(() -> Math.max(4, Runtime.getRuntime().availableProcessors()) * 2));
 
-    private final AbstractStage<START, ?> start;
-    private final AbstractStage<I, O> stage;
+    private final Stage<START, ?> start;
+    private final Stage<I, O> stage;
 
-    PipelineBuilder(AbstractStage<START, ?> start, AbstractStage<I, O> stage) {
+    PipelineBuilder(Stage<START, ?> start, Stage<I, O> stage) {
         this.start = start;
         this.stage = stage;
     }
 
     /**
-     * Add a buffer stage the the pipeline.
+     * Add a buffer stage the the pipeline. A buffer stage will hold items in a queue pending request
+     * from downstream stages.
      *
      * @return the next builder step
      */
@@ -44,10 +49,12 @@ public final class PipelineBuilder<START, I, O> {
     }
 
     /**
-     * Add a buffer stage to the pipeline.
+     * Add a buffer stage to the pipeline. A buffer stage will hold items in a queue pending request
+     * from downstream stages.
      *
      * @param size the number of elements that can be buffered (per downstream observer) before
-     *             causing a buffer overflow exception to be thrown
+     *             causing a buffer overflow exception to be thrown. A value less than 0 indicates
+     *             that the buffer will be unbounded.
      * @return the next builder step
      */
     public PipelineBuilder<START, O, O> buffer(int size) {
@@ -55,7 +62,7 @@ public final class PipelineBuilder<START, I, O> {
     }
 
     /**
-     * Add an observer stage to the pipeline.
+     * Add an observer stage to the pipeline. An observer automatically emits all items it consumes.
      *
      * @param observer the observer
      * @return the next builder step
@@ -65,53 +72,13 @@ public final class PipelineBuilder<START, I, O> {
     }
 
     /**
-     * Add an observer stage to the pipeline.
+     * Add an observer stage to the pipeline. An observer automatically emits all items it consumes.
      *
      * @param observer the observer
      * @return the next builder step
      */
     public PipelineBuilder<START, O, O> observe(BiConsumer<Flow.Subscription, O> observer) {
         return chain(new ObserverStage<>(stage, observer));
-    }
-
-    /**
-     * Add a flat mapping stage to the pipeline.
-     *
-     * @param function the mapper
-     * @return the next builder step
-     */
-    public <NEXT> PipelineBuilder<START, O, NEXT> flatMap(Function<O, Iterable<NEXT>> function) {
-        return flatMap((pipe, value) -> function.apply(value));
-    }
-
-    /**
-     * Add a flat mapping stage to the pipeline.
-     *
-     * @param function the mapper
-     * @return the next builder step
-     */
-    public <NEXT> PipelineBuilder<START, O, NEXT> flatMap(BiFunction<Flow.Subscription, O, Iterable<NEXT>> function) {
-        return chain(new FlatMapStage<>(stage, function));
-    }
-
-    /**
-     * Add a flat mapping stage to the pipeline.
-     *
-     * @param function the mapper
-     * @return the next builder step
-     */
-    public <NEXT> PipelineBuilder<START, O, NEXT> flatStream(Function<O, Stream<NEXT>> function) {
-        return flatStream((pipe, value) -> function.apply(value));
-    }
-
-    /**
-     * Add a flat mapping stage to the pipeline.
-     *
-     * @param function the mapper
-     * @return the next builder step
-     */
-    public <NEXT> PipelineBuilder<START, O, NEXT> flatStream(BiFunction<Flow.Subscription, O, Stream<NEXT>> function) {
-        return chain(new FlatStreamStage<>(stage, function));
     }
 
     /**
@@ -135,9 +102,55 @@ public final class PipelineBuilder<START, I, O> {
     }
 
     /**
-     * Add a filter stage to the pipeline.
+     * Add a flat mapping stage to the pipeline. A flat map stage maps input items to one or more items and
+     * emits them to downstream stages.
      *
-     * @param predicate the predicate
+     * @param function the mapper
+     * @return the next builder step
+     */
+    public <NEXT> PipelineBuilder<START, O, NEXT> flatMap(Function<O, Iterable<NEXT>> function) {
+        return flatMap((pipe, value) -> function.apply(value));
+    }
+
+    /**
+     * Add a flat mapping stage to the pipeline. A flat map stage maps input items to one or more items and
+     * emits them to downstream stages.
+     *
+     * @param function the mapper
+     * @return the next builder step
+     */
+    public <NEXT> PipelineBuilder<START, O, NEXT> flatMap(BiFunction<Flow.Subscription, O, Iterable<NEXT>> function) {
+        return chain(new FlatMapStage<>(stage, function));
+    }
+
+    /**
+     * Add a flat mapping stage to the pipeline. A flat map stage maps input items to one or more items and
+     * emits them to downstream stages.
+     *
+     * @param function the mapper
+     * @return the next builder step
+     */
+    public <NEXT> PipelineBuilder<START, O, NEXT> flatStream(Function<O, Stream<NEXT>> function) {
+        return flatStream((pipe, value) -> function.apply(value));
+    }
+
+    /**
+     * Add a flat mapping stage to the pipeline. A flat map stage maps input items to one or more items and
+     * emits them to downstream stages.
+     *
+     * @param function the mapper
+     * @return the next builder step
+     */
+    public <NEXT> PipelineBuilder<START, O, NEXT> flatStream(BiFunction<Flow.Subscription, O, Stream<NEXT>> function) {
+        return chain(new FlatStreamStage<>(stage, function));
+    }
+
+    /**
+     * Add a filter stage to the pipeline. A filter will examine input items and determine if they should
+     * be passed to downstream stages.
+     *
+     * @param predicate the predicate, when the predicate evaluates true, the input item will be emitted to
+     *                  downstream stages
      * @return the next builder step
      */
     public PipelineBuilder<START, O, O> filter(Predicate<O> predicate) {
@@ -145,17 +158,20 @@ public final class PipelineBuilder<START, I, O> {
     }
 
     /**
-     * Add a filter stage to the pipeline.
+     * Add a filter stage to the pipeline. A filter will examine input items and determine if they should
+     * be passed to downstream stages.
      *
-     * @param predicate the predicate
+     * @param predicate the predicate, when the predicate evaluates true, the input item will be emitted to
+     *                  downstream stages
      * @return the next builder step
      */
     public PipelineBuilder<START, O, O> filter(BiPredicate<Flow.Subscription, O> predicate) {
-        return chain(new FilterPipeline<>(stage, predicate));
+        return chain(new FilterStage<>(stage, predicate));
     }
 
     /**
-     * Add a collecting stage to the pipeline.
+     * Add a collecting stage to the pipeline. A collector will consume all input items and when it
+     * receives the on-complete signal will emit the collection to downstream stages.
      *
      * @param collector the collector
      * @return the next builder step
@@ -167,17 +183,24 @@ public final class PipelineBuilder<START, I, O> {
     /**
      * Create an observer branch from this builder. The branch will receive events just as
      * an observer added with {@link #observe(Consumer)} would, but will be an independent pipeline
-     * from the one being built. As a side effect, the given builder MUST call one of the subscribe methods
-     * in order to receive events in it's pipeline.
+     * from the one being built.
      *
      * @param builder the branch builder
      * @return this builder
      */
-    // TODO
-    public PipelineBuilder<START, I, O> branch(Consumer<PipelineBuilder<START, O, O>> builder) {
-        PipelineBuilder<START, O, O> chain = chain(new BranchStage<>(stage, null));
-        builder.accept(chain);
-        return this;
+    public PipelineBuilder<START, O, O> branch(Function<PipelineBuilder<O, O, O>, Pipeline<O, ?>> builder) {
+        Pipeline<O, ?> branch = builder.apply(Pipeline.adHoc());
+        return chain(new BranchStage<>(stage, branch));
+    }
+
+    /**
+     * Chain this builder to the next stage.
+     *
+     * @param next the next stage
+     * @return the next builder step
+     */
+    public <R> PipelineBuilder<START, O, R> chain(Stage<O, R> next) {
+        return new PipelineBuilder<>(start, stage.chain(next));
     }
 
     /**
@@ -302,16 +325,14 @@ public final class PipelineBuilder<START, I, O> {
      * @return the pipeline
      */
     public Pipeline<START, O> subscribe(long initialRequestCount, ExecutorService executorService) {
-        BasePipeline<START, O> agg = new BasePipeline<>(start, stage);
+        Pipeline<START, O> agg = buildPipeline();
         agg.async(Objects.requireNonNull(executorService));
         agg.onSubscribe(agg);
         agg.request(initialRequestCount);
         return agg;
     }
 
-    private <R> PipelineBuilder<START, O, R> chain(AbstractStage<O, R> next) {
-        PipelineBuilder<START, O, R> b = new PipelineBuilder<>(start, next);
-        this.stage.add(b.stage);
-        return b;
+    private Pipeline<START, O> buildPipeline() {
+        return new BasePipeline<>(start, stage);
     }
 }

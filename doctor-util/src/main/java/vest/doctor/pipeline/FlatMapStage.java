@@ -7,7 +7,7 @@ class FlatMapStage<IN, OUT> extends AbstractStage<IN, OUT> {
 
     private final BiFunction<Flow.Subscription, IN, Iterable<OUT>> function;
 
-    public FlatMapStage(AbstractStage<?, IN> upstream, BiFunction<Flow.Subscription, IN, Iterable<OUT>> function) {
+    public FlatMapStage(Stage<?, IN> upstream, BiFunction<Flow.Subscription, IN, Iterable<OUT>> function) {
         super(upstream);
         this.function = function;
     }

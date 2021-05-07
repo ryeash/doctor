@@ -10,7 +10,7 @@ class FlatStreamStage<IN, OUT> extends AbstractStage<IN, OUT> {
     private final BiFunction<Flow.Subscription, IN, Stream<OUT>> function;
     private boolean async = false;
 
-    public FlatStreamStage(AbstractStage<?, IN> upstream, BiFunction<Flow.Subscription, IN, Stream<OUT>> function) {
+    public FlatStreamStage(Stage<?, IN> upstream, BiFunction<Flow.Subscription, IN, Stream<OUT>> function) {
         super(upstream);
         this.function = function;
     }

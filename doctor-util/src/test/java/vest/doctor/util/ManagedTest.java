@@ -5,7 +5,6 @@ import vest.doctor.atomic.ManagedLock;
 import vest.doctor.atomic.ManagedResource;
 import vest.doctor.atomic.ManagedSemaphore;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -39,7 +38,8 @@ public class ManagedTest extends BaseUtilTest {
                     set.add(c.incrementAndGet());
                     c.decrementAndGet();
                 }));
-        assertEquals(set, Arrays.asList(1, 2));
+        assertTrue(set.size() <= 2);
+        assertTrue(set.stream().allMatch(i -> i <= 2));
     }
 
     public void resource() {

@@ -7,7 +7,7 @@ class CollectingStage<IN, A, C> extends AbstractStage<IN, C> {
     private final Collector<IN, A, C> collector;
     private final A intermediate;
 
-    public CollectingStage(AbstractStage<?, IN> upstream, Collector<IN, A, C> collector) {
+    public CollectingStage(Stage<?, IN> upstream, Collector<IN, A, C> collector) {
         super(upstream);
         this.collector = collector;
         this.intermediate = collector.supplier().get();

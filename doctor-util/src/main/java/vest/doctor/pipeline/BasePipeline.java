@@ -15,19 +15,14 @@ class BasePipeline<I, O> implements Pipeline<I, O> {
         this.last = last;
     }
 
-    public Pipeline<I, O> publish(I item) {
-        onNext(item);
-        return this;
-    }
-
     @Override
     public int id() {
         return id;
     }
 
     @Override
-    public <R> Stage<O, R> add(Stage<O, R> stage) {
-        return last.add(stage);
+    public <R> Stage<O, R> chain(Stage<O, R> stage) {
+        return last.chain(stage);
     }
 
     @Override
@@ -59,6 +54,11 @@ class BasePipeline<I, O> implements Pipeline<I, O> {
     @Override
     public CompletableFuture<Void> future() {
         return last.future();
+    }
+
+    @Override
+    public ExecutorService executorService() {
+        return last.executorService();
     }
 
     @Override

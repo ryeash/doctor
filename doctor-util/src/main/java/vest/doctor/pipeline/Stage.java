@@ -20,15 +20,15 @@ public interface Stage<IN, OUT> extends Flow.Subscription, Flow.Processor<IN, OU
     int id();
 
     /**
-     * Add a downstream {@link Stage} for emitted values.
+     * Chain a downstream {@link Stage} for emitted values.
      *
-     * @param stage the downstream stage to receive value emitted by this stage
-     * @return the given stage for chaining
+     * @param stage the downstream stage to receive values emitted by this stage
+     * @return the given stage
      */
-    <R> Stage<OUT, R> add(Stage<OUT, R> stage);
+    <R> Stage<OUT, R> chain(Stage<OUT, R> stage);
 
     /**
-     * Set the non-null{@link ExecutorService} that will be used internally to handle concurrency within
+     * Set the non-null {@link ExecutorService} that will be used internally to handle concurrency within
      * the pipeline.
      *
      * @param executorService a non-null executor service
@@ -43,4 +43,6 @@ public interface Stage<IN, OUT> extends Flow.Subscription, Flow.Processor<IN, OU
      * @return the completable future indicating the pipeline that this stage is a part of is complete
      */
     CompletableFuture<Void> future();
+
+    ExecutorService executorService();
 }

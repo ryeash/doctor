@@ -88,17 +88,32 @@ public class RxTest extends BaseUtilTest {
         assertEquals(c.get(), 5);
     }
 
-    // TODO
-    @Test(enabled = false)
     public void basicBranch() {
         Pipeline.iterate(strings)
-                .branch(p -> p.observe(expect(5, (it, string) -> assertEquals(string, strings.get(it)))).subscribeJoin())
+                .branch(p -> p
+                        .observe(expect(5, (it, string) -> {
+                            System.out.println("first observer: " + it + " " + string);
+                        }))
+                        .map(String::length)
+                        .observe(expect(5, (it, length) -> {
+                            System.out.println("second observer: " + it + " " + length);
+                        }))
+                        .subscribe())
+                .observe(expect(5, (it, string) -> assertEquals(string, strings.get(it))))
                 .subscribeJoin();
+        Clock.sleepQuietly(100);
     }
 
     public void basicBuffer() {
         Pipeline.iterate(strings)
                 .buffer()
+                .observe(expect(5, (it, v) -> assertEquals(v, strings.get(it))))
+                .map(String::length)
+                .observe(expect(5, (it, v) -> assertEquals((int) v, strings.get(it).length())))
+                .subscribeJoin(Executors.newSingleThreadExecutor());
+
+        Pipeline.iterate(strings)
+                .buffer(-1)
                 .observe(expect(5, (it, v) -> assertEquals(v, strings.get(it))))
                 .map(String::length)
                 .observe(expect(5, (it, v) -> assertEquals((int) v, strings.get(it).length())))

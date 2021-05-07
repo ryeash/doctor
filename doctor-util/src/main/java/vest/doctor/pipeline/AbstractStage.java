@@ -1,24 +1,24 @@
 package vest.doctor.pipeline;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicInteger;
 
-abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
+/**
+ * The base class for {@link Stage stages}. Provides implementations for the basic operations of a stage.
+ */
+public abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
     static final AtomicInteger ID_SEQUENCE = new AtomicInteger(0);
 
     private final int id;
-    protected final AbstractStage<?, IN> upstream;
-    protected final Map<Integer, Stage<OUT, ?>> downstream;
+    protected final Stage<?, IN> upstream;
+    protected Stage<OUT, ?> downstream;
     private final CompletableFuture<Void> completionFuture;
 
-    public AbstractStage(AbstractStage<?, IN> upstream) {
+    public AbstractStage(Stage<?, IN> upstream) {
         this.id = ID_SEQUENCE.incrementAndGet();
         this.upstream = upstream;
-        this.downstream = new ConcurrentSkipListMap<>();
         this.completionFuture = new CompletableFuture<>();
     }
 
@@ -28,24 +28,21 @@ abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
     }
 
     @Override
-    public <R> Stage<OUT, R> add(Stage<OUT, R> stage) {
+    public <R> Stage<OUT, R> chain(Stage<OUT, R> stage) {
         subscribe(stage);
         return stage;
     }
 
     @Override
-    public void cancel() {
-        upstream.downstream.remove(this.id);
+    public void request(long n) {
+        if (upstream != null) {
+            upstream.request(n);
+        }
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public void request(long n) {
-        requestInternal(n, (Stage<OUT, ?>) this);
-    }
-
-    protected void requestInternal(long n, Stage<OUT, ?> requester) {
-        upstream.requestInternal(n, this);
+    public void cancel() {
+        downstream = null;
     }
 
     @Override
@@ -60,15 +57,15 @@ abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
         try {
             internalPublish(item);
         } catch (Throwable t) {
-            onError(new RuntimeException(t));
+            onError(t);
         }
     }
 
     protected abstract void internalPublish(IN value);
 
     protected final void publishDownstream(OUT out) {
-        for (Stage<OUT, ?> down : downstream.values()) {
-            down.onNext(out);
+        if (downstream != null) {
+            downstream.onNext(out);
         }
     }
 
@@ -79,24 +76,29 @@ abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
             upstream.onError(throwable);
         }
         cancel();
+        if (downstream != null) {
+            downstream.onError(throwable);
+        }
     }
 
     @Override
     public void onComplete() {
         completionFuture.complete(null);
-        for (Stage<OUT, ?> down : downstream.values()) {
-            down.onComplete();
+        if (downstream != null) {
+            downstream.onComplete();
         }
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public void subscribe(Flow.Subscriber<? super OUT> subscriber) {
+        if (downstream != null) {
+            throw new IllegalStateException("this stage has already been subscribed");
+        }
         if (subscriber instanceof Stage) {
-            downstream.put(((Stage<?, ?>) subscriber).id(), (Stage<OUT, ?>) subscriber);
+            downstream = (Stage<OUT, ?>) subscriber;
         } else {
-            SubscriberToStage<OUT> s2s = new SubscriberToStage<>(this, subscriber);
-            downstream.put(s2s.id(), s2s);
+            downstream = new SubscriberToStage<>(this, subscriber);
         }
     }
 
@@ -109,5 +111,10 @@ abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
     @Override
     public CompletableFuture<Void> future() {
         return completionFuture;
+    }
+
+    @Override
+    public ExecutorService executorService() {
+        return upstream.executorService();
     }
 }

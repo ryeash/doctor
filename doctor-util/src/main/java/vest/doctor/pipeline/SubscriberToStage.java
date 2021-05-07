@@ -6,7 +6,7 @@ class SubscriberToStage<IN> extends AbstractStage<IN, IN> {
 
     private final Flow.Subscriber<? super IN> subscriber;
 
-    public SubscriberToStage(AbstractStage<?, IN> upstream, Flow.Subscriber<? super IN> subscriber) {
+    public SubscriberToStage(Stage<?, IN> upstream, Flow.Subscriber<? super IN> subscriber) {
         super(upstream);
         this.subscriber = subscriber;
     }

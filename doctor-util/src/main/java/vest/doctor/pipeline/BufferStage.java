@@ -1,71 +1,57 @@
 package vest.doctor.pipeline;
 
 import java.nio.BufferOverflowException;
-import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Flow;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
 
 class BufferStage<IN> extends AbstractStage<IN, IN> {
 
-    private ExecutorService executorService;
-    private final int size;
-    private final Map<Integer, Long> requested;
-    private final Map<Integer, Queue<IN>> buffers;
+    private final AtomicLong requested = new AtomicLong(0);
+    private final long initialRequest;
+    private final Queue<IN> buffer;
     private boolean complete = false;
 
-    public BufferStage(AbstractStage<?, IN> upstream, int size) {
+    public BufferStage(Stage<?, IN> upstream, int size) {
         super(upstream);
         if (size == 0) {
             throw new IllegalArgumentException("size must not be zero: negative indicates unbounded, positive indicates max items buffered");
         }
-        this.size = size;
-        this.requested = new ConcurrentSkipListMap<>();
-        this.buffers = new ConcurrentSkipListMap<>();
+        if (size < 0) {
+            this.initialRequest = Flow.defaultBufferSize();
+            this.buffer = new LinkedBlockingQueue<>();
+        } else {
+            this.initialRequest = size;
+            this.buffer = new LinkedBlockingQueue<>(size);
+        }
     }
 
     @Override
     public void internalPublish(IN value) {
-        for (Stage<IN, ?> stage : downstream.values()) {
-            Queue<IN> ins = buffers.computeIfAbsent(stage.id(), this::newQueue);
-            boolean added = ins.add(value);
+        if (downstream != null) {
+            boolean added = buffer.add(value);
             if (!added) {
-                stage.onError(new BufferOverflowException());
+                onError(new BufferOverflowException());
             } else {
-                executorService.submit(() -> consume(stage));
+                executorService().submit(this::consume);
             }
         }
     }
 
     private void consume() {
-        for (Stage<IN, ?> stage : downstream.values()) {
-            if (executorService != null) {
-                executorService.submit(() -> consume(stage));
-            }
-        }
-    }
-
-    private void consume(Stage<IN, ?> stage) {
-        int id = stage.id();
-        long req = requested.get(id);
-        if (req <= 0) {
-            return;
-        }
-        Queue<IN> ins = buffers.computeIfAbsent(stage.id(), v -> new ArrayBlockingQueue<>(128));
-        for (; req > 0; req--) {
-            IN poll = ins.poll();
+        for (; requested.get() > 0; requested.decrementAndGet()) {
+            IN poll = buffer.poll();
             if (poll != null) {
-                stage.onNext(poll);
+                downstream.onNext(poll);
+                super.request(1);
             } else {
                 if (complete) {
-                    stage.onComplete();
+                    downstream.onComplete();
                 }
                 break;
             }
         }
-        requested.put(id, req);
     }
 
     @Override
@@ -75,23 +61,14 @@ class BufferStage<IN> extends AbstractStage<IN, IN> {
     }
 
     @Override
-    protected void requestInternal(long n, Stage<IN, ?> requester) {
-        upstream.requestInternal(n, this);
-        requested.compute(requester.id(), (id, request) -> request != null ? request + n : n);
+    public void request(long n) {
+        requested.addAndGet(n);
         consume();
     }
 
     @Override
-    public Stage<IN, IN> async(ExecutorService executorService) {
-        this.executorService = executorService;
-        return super.async(executorService);
-    }
-
-    private Queue<IN> newQueue(int id) {
-        if (size < 0) {
-            return new LinkedBlockingQueue<>();
-        } else {
-            return new ArrayBlockingQueue<>(size);
-        }
+    public void onSubscribe(Flow.Subscription subscription) {
+        super.onSubscribe(subscription);
+        super.request(initialRequest);
     }
 }

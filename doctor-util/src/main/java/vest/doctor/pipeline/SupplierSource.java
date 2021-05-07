@@ -2,12 +2,11 @@ package vest.doctor.pipeline;
 
 import java.util.function.Supplier;
 
-class SupplierSource<IN> extends AbstractStage<IN, IN> {
+class SupplierSource<IN> extends AbstractSource<IN> {
 
     private final Supplier<IN> source;
 
     public SupplierSource(Supplier<IN> source) {
-        super(null);
         this.source = source;
     }
 
@@ -18,19 +17,13 @@ class SupplierSource<IN> extends AbstractStage<IN, IN> {
 
     @Override
     public void request(long n) {
-        // TODO
+        super.request(n);
+        executorService.submit(this::consume);
     }
 
-    @Override
-    protected void requestInternal(long n, Stage<IN, ?> requester) {
-        for (long i = 0; i < n; i++) {
-            requester.onNext(source.get());
+    protected void consume() {
+        for (; requested.get() > 0; requested.decrementAndGet()) {
+            downstream.onNext(source.get());
         }
-    }
-
-    @Override
-    public void onError(Throwable throwable) {
-        // TODO
-        throw new RuntimeException("error in pipeline", throwable);
     }
 }

@@ -5,8 +5,13 @@ import java.util.function.Supplier;
 
 public interface Pipeline<I, O> extends Stage<I, O> {
 
+    static <START> PipelineBuilder<START, START, START> adHoc() {
+        AdhocSource<START> adhocSource = new AdhocSource<>();
+        return new PipelineBuilder<>(adhocSource, adhocSource);
+    }
+
     static <START> PipelineBuilder<START, START, START> adHoc(Class<START> type) {
-        AdhocSource<START> adhocSource = new AdhocSource<>(type);
+        AdhocSource<START> adhocSource = new AdhocSource<>();
         return new PipelineBuilder<>(adhocSource, adhocSource);
     }
 
@@ -46,12 +51,15 @@ public interface Pipeline<I, O> extends Stage<I, O> {
 
     /**
      * Publish a message to this pipeline. Depending on underlying implementation,
-     * may return throw an {@link IllegalArgumentException}
+     * may throw an {@link IllegalArgumentException}
      *
      * @param item the value to publish
      * @return this pipeline
      */
-    Pipeline<I, O> publish(I item);
+    default Pipeline<I, O> publish(I item) {
+        onNext(item);
+        return this;
+    }
 
     /**
      * Join the future completion of this pipeline, blocking until the pipeline {@link #onComplete()} has

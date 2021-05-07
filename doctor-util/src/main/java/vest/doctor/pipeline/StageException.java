@@ -8,6 +8,11 @@ public class StageException extends RuntimeException {
         this.stage = stage;
     }
 
+    public StageException(Stage<?, ?> stage, String message) {
+        super(message);
+        this.stage = stage;
+    }
+
     public Stage<?, ?> getStage() {
         return stage;
     }

@@ -7,7 +7,7 @@ final class ObserverStage<IN> extends AbstractStage<IN, IN> {
 
     private final BiConsumer<Flow.Subscription, IN> consumer;
 
-    public ObserverStage(AbstractStage<?, IN> upstream, BiConsumer<Flow.Subscription, IN> consumer) {
+    public ObserverStage(Stage<?, IN> upstream, BiConsumer<Flow.Subscription, IN> consumer) {
         super(upstream);
         this.consumer = consumer;
     }
