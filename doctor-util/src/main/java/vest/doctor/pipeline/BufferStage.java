@@ -62,7 +62,14 @@ class BufferStage<IN> extends AbstractStage<IN, IN> {
 
     @Override
     public void request(long n) {
-        requested.addAndGet(n);
+        requested.accumulateAndGet(n, (current, increment) -> {
+            long r = current + increment;
+            // from Math.addExact
+            if (((current ^ r) & (increment ^ r)) < 0) {
+                return increment >= 0 ? Long.MAX_VALUE : 0;
+            }
+            return r;
+        });
         consume();
     }
 

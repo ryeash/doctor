@@ -13,7 +13,7 @@ final class BranchStage<IN> extends AbstractStage<IN, IN> {
 
     @Override
     public void internalPublish(IN value) {
-        executorService().submit(() -> branch.onNext(value));
+        branch.executorService().submit(() -> branch.onNext(value));
         publishDownstream(value);
     }
 

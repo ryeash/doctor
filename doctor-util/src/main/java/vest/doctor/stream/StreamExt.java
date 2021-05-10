@@ -301,7 +301,7 @@ public class StreamExt<T> implements Stream<T>, Iterable<T> {
     }
 
     /**
-     * Flat map from a functino that produces iterables. Equivalent to calling <code>map(mapper).flatMap(StreamExt::of)</code>
+     * Flat map from a function that produces iterables. Equivalent to calling <code>map(mapper).flatMap(StreamExt::of)</code>
      *
      * @param mapper maps elements to iterables
      * @return a flat map of values contained in the mapped iterables

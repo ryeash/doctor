@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 @Test(invocationCount = 5)
 public class RxTest extends BaseUtilTest {
@@ -97,8 +98,7 @@ public class RxTest extends BaseUtilTest {
                         .map(String::length)
                         .observe(expect(5, (it, length) -> {
                             System.out.println("second observer: " + it + " " + length);
-                        }))
-                        .subscribe())
+                        })))
                 .observe(expect(5, (it, string) -> assertEquals(string, strings.get(it))))
                 .subscribeJoin();
         Clock.sleepQuietly(100);
@@ -118,5 +118,19 @@ public class RxTest extends BaseUtilTest {
                 .map(String::length)
                 .observe(expect(5, (it, v) -> assertEquals((int) v, strings.get(it).length())))
                 .subscribeJoin(Executors.newSingleThreadExecutor());
+    }
+
+    public void complex() {
+        Pipeline.iterate(strings)
+                .flatStream(string -> string.chars().mapToObj(Character::toString))
+                .filter(c -> c.equals("a"))
+                .observe(expect(5, (it, c) -> assertEquals(c, "a")))
+                .collect(Collectors.counting())
+                .observe(expect(1, (it, count) -> assertEquals(count.intValue(), 5)))
+                .flatStream(count -> LongStream.range(0, count).boxed())
+                .observe(expect(5, (it, l) -> assertEquals(it.intValue(), l.intValue())))
+                .observe(expect(5, (it, l) -> assertEquals(it.intValue(), l.intValue())))
+                .observe(expect(5, (it, l) -> assertEquals(it.intValue(), l.intValue())))
+                .subscribeJoin();
     }
 }

@@ -43,6 +43,7 @@ public final class PipelineBuilder<START, I, O> {
      * from downstream stages.
      *
      * @return the next builder step
+     * @see #buffer(int)
      */
     public PipelineBuilder<START, O, O> buffer() {
         return buffer(Flow.defaultBufferSize());
@@ -50,7 +51,9 @@ public final class PipelineBuilder<START, I, O> {
 
     /**
      * Add a buffer stage to the pipeline. A buffer stage will hold items in a queue pending request
-     * from downstream stages.
+     * from downstream stages. The buffer stage will ignore items published to it until it has a downstream
+     * stage. If the internal buffer overflows, the pipeline will fail and exception will propagate through
+     * the stages.
      *
      * @param size the number of elements that can be buffered (per downstream observer) before
      *             causing a buffer overflow exception to be thrown. A value less than 0 indicates
@@ -183,12 +186,26 @@ public final class PipelineBuilder<START, I, O> {
     /**
      * Create an observer branch from this builder. The branch will receive events just as
      * an observer added with {@link #observe(Consumer)} would, but will be an independent pipeline
+     * from the one being built. The PipelineBuilder returned by the builder function will be automatically
+     * subscribed using {@link #subscribe()}, use {@link #branchBuilder(Function)} to have more control over
+     * how the branch is subscribed.
+     *
+     * @param builder the branch builder
+     * @return this builder
+     */
+    public PipelineBuilder<START, O, O> branch(Function<PipelineBuilder<O, O, O>, PipelineBuilder<O, ?, ?>> builder) {
+        return branchBuilder(builder.andThen(PipelineBuilder::subscribe));
+    }
+
+    /**
+     * Create an observer branch from this builder. The branch will receive events just as
+     * an observer added with {@link #observe(Consumer)} would, but will be an independent pipeline
      * from the one being built.
      *
      * @param builder the branch builder
      * @return this builder
      */
-    public PipelineBuilder<START, O, O> branch(Function<PipelineBuilder<O, O, O>, Pipeline<O, ?>> builder) {
+    public PipelineBuilder<START, O, O> branchBuilder(Function<PipelineBuilder<O, O, O>, Pipeline<O, ?>> builder) {
         Pipeline<O, ?> branch = builder.apply(Pipeline.adHoc());
         return chain(new BranchStage<>(stage, branch));
     }
@@ -290,6 +307,7 @@ public final class PipelineBuilder<START, I, O> {
 
     /**
      * Finish building the pipeline and subscribe to it.
+     * Alias for <code>subscribe(Long.MAX_VALUE, PipelineBuilder.COMMON)</code>
      *
      * @return the pipeline
      */
@@ -321,7 +339,7 @@ public final class PipelineBuilder<START, I, O> {
      * Finish building the pipeline and subscribe to it.
      *
      * @param initialRequestCount the initial backpressure request
-     * @param executorService     the executor service to use with {@link Pipeline#async(ExecutorService)}
+     * @param executorService     the executor service to use to execute the workflow
      * @return the pipeline
      */
     public Pipeline<START, O> subscribe(long initialRequestCount, ExecutorService executorService) {
