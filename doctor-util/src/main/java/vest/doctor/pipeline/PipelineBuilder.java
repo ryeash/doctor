@@ -343,14 +343,10 @@ public final class PipelineBuilder<START, I, O> {
      * @return the pipeline
      */
     public Pipeline<START, O> subscribe(long initialRequestCount, ExecutorService executorService) {
-        Pipeline<START, O> agg = buildPipeline();
+        Pipeline<START, O> agg = new BasePipeline<>(start, stage);
         agg.async(Objects.requireNonNull(executorService));
         agg.onSubscribe(agg);
         agg.request(initialRequestCount);
         return agg;
-    }
-
-    private Pipeline<START, O> buildPipeline() {
-        return new BasePipeline<>(start, stage);
     }
 }

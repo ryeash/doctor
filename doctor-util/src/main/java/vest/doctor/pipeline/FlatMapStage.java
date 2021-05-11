@@ -19,5 +19,4 @@ class FlatMapStage<IN, OUT> extends AbstractStage<IN, OUT> {
             publishDownstream(o);
         }
     }
-
 }

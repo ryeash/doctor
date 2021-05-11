@@ -18,5 +18,4 @@ class FilterStage<IN> extends AbstractStage<IN, IN> {
             publishDownstream(value);
         }
     }
-
 }

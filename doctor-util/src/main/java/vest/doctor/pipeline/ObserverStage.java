@@ -17,5 +17,4 @@ final class ObserverStage<IN> extends AbstractStage<IN, IN> {
         consumer.accept(this, value);
         publishDownstream(value);
     }
-
 }

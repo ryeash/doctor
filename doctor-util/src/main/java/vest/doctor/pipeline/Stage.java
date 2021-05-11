@@ -44,5 +44,10 @@ public interface Stage<IN, OUT> extends Flow.Subscription, Flow.Processor<IN, OU
      */
     CompletableFuture<Void> future();
 
+    /**
+     * Get the executor that can execute pipeline tasks.
+     *
+     * @return the executor service
+     */
     ExecutorService executorService();
 }

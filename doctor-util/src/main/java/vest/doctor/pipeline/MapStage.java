@@ -17,5 +17,4 @@ final class MapStage<IN, OUT> extends AbstractStage<IN, OUT> {
         OUT out = function.apply(this, value);
         publishDownstream(out);
     }
-
 }
