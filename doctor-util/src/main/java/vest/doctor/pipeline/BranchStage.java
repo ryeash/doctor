@@ -19,7 +19,7 @@ final class BranchStage<IN> extends AbstractStage<IN, IN> {
 
     @Override
     public void onComplete() {
-        branch.onComplete();
+        branch.executorService().submit(branch::onComplete);
         super.onComplete();
     }
 }

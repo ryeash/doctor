@@ -1,7 +1,6 @@
 package vest.doctor.http.server;
 
 import vest.doctor.Prioritized;
-import vest.doctor.http.server.impl.Router;
 
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
@@ -18,8 +17,7 @@ public interface Filter extends Prioritized {
      * Filter a request/response.
      *
      * @param request  the request that was received
-     * @param response the future response (will be completed by the selected {@link Handler}
-     *                 in the {@link Router})
+     * @param response the future response
      * @return the response; possibly with new chained actions attached
      */
     CompletionStage<Response> filter(Request request, CompletionStage<Response> response);

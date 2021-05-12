@@ -1,8 +1,11 @@
 package vest.doctor.pipeline;
 
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 import java.util.concurrent.ForkJoinPool;
@@ -13,6 +16,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
@@ -170,6 +174,26 @@ public final class PipelineBuilder<START, I, O> {
      */
     public PipelineBuilder<START, O, O> filter(BiPredicate<Flow.Subscription, O> predicate) {
         return chain(new FilterStage<>(stage, predicate));
+    }
+
+    /**
+     * Add a filter stage to the pipeline that examines input items and emits only unique entries.
+     *
+     * @return the next builder step
+     */
+    public PipelineBuilder<START, O, O> distinct() {
+        return distinct(() -> Collections.newSetFromMap(new ConcurrentHashMap<>(128, .95F, 2)));
+    }
+
+    /**
+     * Add a filter stage to the pipeline that examines input items and emits only unique entries.
+     *
+     * @param setProvider the supplier that will build the set that tracks item uniqueness
+     * @return the next builder step
+     */
+    public PipelineBuilder<START, O, O> distinct(Supplier<Set<O>> setProvider) {
+        Set<O> tracker = setProvider.get();
+        return filter(tracker::add);
     }
 
     /**
