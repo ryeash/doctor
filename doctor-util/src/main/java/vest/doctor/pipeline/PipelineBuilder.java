@@ -1,5 +1,7 @@
 package vest.doctor.pipeline;
 
+import vest.doctor.tuple.Tuple3Consumer;
+
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
@@ -234,6 +236,14 @@ public final class PipelineBuilder<START, I, O> {
         return chain(new BranchStage<>(stage, branch));
     }
 
+    public <NEXT> PipelineBuilder<START, O, NEXT> async(BiConsumer<O, Consumer<NEXT>> consumer) {
+        return async((sub, value, emitter) -> consumer.accept(value, emitter));
+    }
+
+    public <NEXT> PipelineBuilder<START, O, NEXT> async(Tuple3Consumer<Flow.Subscription, O, Consumer<NEXT>> consumer) {
+        return chain(new AsyncStage<>(stage, consumer));
+    }
+
     /**
      * Chain this builder to the next stage.
      *
@@ -242,6 +252,17 @@ public final class PipelineBuilder<START, I, O> {
      */
     public <R> PipelineBuilder<START, O, R> chain(Stage<O, R> next) {
         return new PipelineBuilder<>(start, stage.chain(next));
+    }
+
+    /**
+     * Do something with the completable future of the current stage.
+     *
+     * @param futureTask the action to take on the {@link CompletableFuture}
+     * @return this builder
+     */
+    public PipelineBuilder<START, I, O> attachFuture(Consumer<CompletableFuture<Void>> futureTask) {
+        futureTask.accept(stage.future());
+        return this;
     }
 
     /**

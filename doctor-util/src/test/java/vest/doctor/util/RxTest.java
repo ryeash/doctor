@@ -2,10 +2,14 @@ package vest.doctor.util;
 
 import org.testng.annotations.Test;
 import vest.doctor.pipeline.Pipeline;
+import vest.doctor.tuple.Tuple2;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
@@ -118,6 +122,21 @@ public class RxTest extends BaseUtilTest {
                 .map(String::length)
                 .observe(expect(5, (it, v) -> assertEquals((int) v, strings.get(it).length())))
                 .subscribeJoin(Executors.newSingleThreadExecutor());
+    }
+
+    public void basicAsync() {
+        AtomicReference<CompletableFuture<Void>> finished = new AtomicReference<>();
+        Pipeline.iterate(strings)
+                .<Tuple2<String, Integer>>async((string, emitter) -> {
+                    CompletableFuture.supplyAsync(string::length, ForkJoinPool.commonPool())
+                            .thenAccept(l -> emitter.accept(Tuple2.of(string, l)));
+                })
+                .attachFuture(finished::set)
+                .observe(l -> System.out.println(Thread.currentThread().getName() + " string length: " + l))
+                .observe(expect(5, (it, v) -> assertEquals(v.second().intValue(), v.first().length())))
+
+                .subscribeJoin();
+        finished.get().join();
     }
 
     public void complex() {

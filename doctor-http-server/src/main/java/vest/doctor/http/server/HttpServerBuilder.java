@@ -8,7 +8,8 @@ import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 /**
- * Builder for {@link HttpServer}.
+ * Builder for {@link HttpServer}. Combines {@link HttpServerConfiguration} and {@link Router} into
+ * a builder style configuration and startup mechanism.
  */
 public class HttpServerBuilder {
 
@@ -107,6 +108,41 @@ public class HttpServerBuilder {
 
     public HttpServerBuilder delete(String pathSpec, Handler handler) {
         router.delete(pathSpec, handler);
+        return this;
+    }
+
+    public HttpServerBuilder getSync(String pathSpec, SynchronousHandler handler) {
+        router.get(pathSpec, handler);
+        return this;
+    }
+
+    public HttpServerBuilder putSync(String pathSpec, SynchronousHandler handler) {
+        router.put(pathSpec, handler);
+        return this;
+    }
+
+    public HttpServerBuilder postSync(String pathSpec, SynchronousHandler handler) {
+        router.post(pathSpec, handler);
+        return this;
+    }
+
+    public HttpServerBuilder deleteSync(String pathSpec, SynchronousHandler handler) {
+        router.delete(pathSpec, handler);
+        return this;
+    }
+
+    public HttpServerBuilder filter(Filter filter) {
+        router.addFilter(filter);
+        return this;
+    }
+
+    public HttpServerBuilder filter(Consumer<Request> beforeFilter) {
+        router.addFilter(Filter.before(beforeFilter));
+        return this;
+    }
+
+    public HttpServerBuilder filter(UnaryOperator<Response> afterFilter) {
+        router.addFilter(Filter.after(afterFilter));
         return this;
     }
 

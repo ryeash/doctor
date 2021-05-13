@@ -28,60 +28,57 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import static org.hamcrest.Matchers.is;
-import static vest.doctor.http.server.Handler.sync;
 
 public class NettyHttpTest {
     HttpServer server;
 
     @BeforeClass(alwaysRun = true)
     public void initServer() {
-        HttpServerConfiguration configuration = new HttpServerConfiguration();
-        configuration.addBindAddress(new InetSocketAddress("localhost", 61234));
-
-        Router router = new Router()
-                .addFilter(Filter.after(response -> {
+        this.server = new HttpServerBuilder()
+                .addBindAddress(new InetSocketAddress("localhost", 61234))
+                .filter(response -> {
                     response.headers().set("X-Filter", "true");
                     return response;
-                }))
-                .addFilter(Filter.before(request -> {
+                })
+                .filter(request -> {
                     request.attribute(Router.PATH_OVERRIDE, request.path().toLowerCase());
                     request.headers().set("X-Before", true);
-                }))
-                .addFilter(Filter.after(response -> {
+                })
+                .filter(response -> {
                     response.headers().set("X-Filter2", new Date());
                     return response;
-                }))
-                .addFilter(((request, response) -> {
+                })
+                .filter(((request, response) -> {
                     if (Objects.equals(request.queryParam("shortcircuit"), "true")) {
                         return CompletableFuture.completedFuture(request.createResponse().status(500).body(ResponseBody.of("shortcircuited")));
                     } else {
                         return response;
                     }
                 }))
-                .get("/", sync((request) -> {
+                .getSync("/", request -> {
                     System.out.println(request);
                     return request.createResponse().body(ResponseBody.of("ok"));
-                }))
-                .get("/hello/{name}", sync((request) -> {
+                })
+                .getSync("/hello/{name}", request -> {
                     Map<String, String> pathParams = request.attribute(Router.PATH_PARAMS);
                     return request.createResponse()
                             .body(ResponseBody.of(pathParams.get("name")));
-                }))
-                .get("/empty", sync((request) -> request.createResponse().body(ResponseBody.empty())))
-                .get("/stream", sync((request) -> {
+                })
+                .getSync("/empty", request -> request.createResponse().body(ResponseBody.empty()))
+                .getSync("/stream", request -> {
                     byte[] bytes = new byte[1024];
                     Arrays.fill(bytes, (byte) 'a');
                     return request.createResponse().body(ResponseBody.of(new ByteArrayInputStream(bytes)));
-                }))
-                .get("/exception", sync(request -> {
+                })
+                .get("/exception", request -> {
                     throw new RuntimeException("I threw an error");
-                }))
-                .post("/", (request) -> request.body()
+                })
+                .post("/", request -> request.body()
                         .asString()
                         .thenApply(ResponseBody::of)
                         .thenApply(request.createResponse()::body)
-                        .thenApply(r -> r.header("Content-Type", "text/plain")));
-        this.server = new HttpServer(configuration, router);
+                        .thenApply(r -> r.header("Content-Type", "text/plain")))
+                .start();
         System.out.println(server);
     }
 
