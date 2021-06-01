@@ -2,6 +2,7 @@ package vest.doctor.util;
 
 import org.testng.annotations.Test;
 import vest.doctor.pipeline.Pipeline;
+import vest.doctor.pipeline.Stage;
 import vest.doctor.tuple.Tuple2;
 
 import java.util.List;
@@ -70,14 +71,14 @@ public class RxTest extends BaseUtilTest {
     }
 
     public void adhocSource() {
-        Pipeline<String, String> subscribe = Pipeline.adHoc(String.class)
+        Stage<String, String> subscribe = Pipeline.adHoc(String.class)
                 .observe(expect(3, (it, c) -> assertNotNull(c)))
                 .subscribe();
-        subscribe.publish("alpha")
-                .publish("bravo")
-                .publish("charlie")
-                .onComplete();
-        subscribe.join();
+        subscribe.onNext("alpha");
+        subscribe.onNext("bravo");
+        subscribe.onNext("charlie");
+        subscribe.onComplete();
+        subscribe.future().join();
     }
 
     public void basicBackpressure() {
@@ -89,6 +90,7 @@ public class RxTest extends BaseUtilTest {
                     subscription.request(1);
                 })
                 .subscribe(1)
+                .future()
                 .join();
         assertEquals(c.get(), 5);
     }
@@ -134,9 +136,18 @@ public class RxTest extends BaseUtilTest {
                 .attachFuture(finished::set)
                 .observe(l -> System.out.println(Thread.currentThread().getName() + " string length: " + l))
                 .observe(expect(5, (it, v) -> assertEquals(v.second().intValue(), v.first().length())))
-
                 .subscribeJoin();
         finished.get().join();
+        Clock.sleepQuietly(100);
+    }
+
+    public void basicCompletable() {
+        CompletableFuture<String> future = new CompletableFuture<>();
+        CompletableFuture<String> completed = Pipeline.completable(future)
+                .observe(expect(1, (it, v) -> assertEquals(v, "test")))
+                .subscribeFuture();
+        future.complete("test");
+        completed.join();
     }
 
     public void complex() {

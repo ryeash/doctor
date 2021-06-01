@@ -1,5 +1,6 @@
 package vest.doctor.pipeline;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
@@ -11,13 +12,6 @@ import java.util.concurrent.Flow;
  * @param <OUT> the type that the stage emits to downstream observers
  */
 public interface Stage<IN, OUT> extends Flow.Subscription, Flow.Processor<IN, OUT> {
-
-    /**
-     * The id for this stage. Used internally to track subscription requests.
-     *
-     * @return this stage's id
-     */
-    int id();
 
     /**
      * Chain a downstream {@link Stage} for emitted values.
@@ -40,14 +34,21 @@ public interface Stage<IN, OUT> extends Flow.Subscription, Flow.Processor<IN, OU
      * Get the {@link CompletableFuture} that will be notified when this stage's {@link #onComplete()}
      * method is called
      *
-     * @return the completable future indicating the pipeline that this stage is a part of is complete
+     * @return the completable future indicating the {@link #onComplete()} method has been called
      */
     CompletableFuture<Void> future();
 
     /**
-     * Get the executor that can execute pipeline tasks.
+     * Get the executor that can execute parallel pipeline tasks.
      *
      * @return the executor service
      */
     ExecutorService executorService();
+
+    /**
+     * Get the downstream stage chained to this stage.
+     *
+     * @return the optional downstream stage
+     */
+    Optional<Stage<OUT, ?>> downstream();
 }

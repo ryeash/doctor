@@ -20,7 +20,7 @@ public final class Try<T> {
      */
     public static Try<Void> run(ThrowingRunnable runnable) {
         try {
-            runnable.run();
+            runnable.runThrows();
             return success(null);
         } catch (Throwable t) {
             return failure(t);
@@ -36,7 +36,7 @@ public final class Try<T> {
      */
     public static <V> Try<V> get(ThrowingSupplier<? extends V> supplier) {
         try {
-            return success(supplier.get());
+            return success(supplier.getThrows());
         } catch (Throwable t) {
             return failure(t);
         }
@@ -67,7 +67,7 @@ public final class Try<T> {
      */
     public static <I, V> Try<V> apply(I input, ThrowingFunction<? super I, ? extends V> mapper) {
         try {
-            return success(mapper.apply(input));
+            return success(mapper.applyThrows(input));
         } catch (Throwable t) {
             return failure(t);
         }
@@ -84,7 +84,7 @@ public final class Try<T> {
      */
     public static <I1, I2, V> Try<V> apply(I1 input1, I2 input2, ThrowingBiFunction<? super I1, ? super I2, ? extends V> mapper) {
         try {
-            return success(mapper.apply(input1, input2));
+            return success(mapper.applyThrows(input1, input2));
         } catch (Throwable e) {
             return failure(e);
         }
@@ -100,7 +100,7 @@ public final class Try<T> {
      */
     public static <I> Try<Boolean> test(I input, ThrowingPredicate<? super I> check) {
         try {
-            return success(check.test(input));
+            return success(check.testThrows(input));
         } catch (Throwable e) {
             return failure(e);
         }
@@ -115,7 +115,7 @@ public final class Try<T> {
      */
     public static <V> Try<Void> accept(V input, ThrowingConsumer<? super V> action) {
         try {
-            action.accept(input);
+            action.acceptThrows(input);
             return success(null);
         } catch (Exception e) {
             return failure(e);
@@ -132,11 +132,22 @@ public final class Try<T> {
      */
     public static <I1, I2> Try<Void> accept(I1 input1, I2 input2, ThrowingBiConsumer<? super I1, ? super I2> action) {
         try {
-            action.accept(input1, input2);
+            action.acceptThrows(input1, input2);
             return success(null);
         } catch (Throwable e) {
             return failure(e);
         }
+    }
+
+    /**
+     * Combine a completable future with a try.
+     *
+     * @param future the future to combine
+     * @return a future that will never complete exceptionally, instead wrapping the result and possible
+     * exception in a Try
+     */
+    public static <T> CompletableFuture<Try<T>> completable(CompletableFuture<T> future) {
+        return future.handle(Try::new);
     }
 
     /**
@@ -254,7 +265,7 @@ public final class Try<T> {
     public Try<T> accept(ThrowingConsumer<? super T> action) {
         try {
             if (isSuccess()) {
-                action.accept(result);
+                action.acceptThrows(result);
             }
             return this;
         } catch (Throwable e) {
@@ -273,7 +284,7 @@ public final class Try<T> {
             return failure(t);
         } else {
             try {
-                return fn.apply(result);
+                return fn.applyThrows(result);
             } catch (Throwable e) {
                 return failure(e);
             }
@@ -320,7 +331,7 @@ public final class Try<T> {
     public Try<T> exceptionallyCompose(ThrowingFunction<? super Throwable, ? extends Try<T>> fn) {
         if (isFailure()) {
             try {
-                return fn.apply(t);
+                return fn.applyThrows(t);
             } catch (Throwable e) {
                 return failure(e);
             }
@@ -341,7 +352,7 @@ public final class Try<T> {
     public <E extends Throwable> Try<T> exceptionallyCompose(Class<E> exceptionType, ThrowingFunction<E, ? extends Try<T>> mapper) {
         if (isFailure() && exceptionType.isInstance(t)) {
             try {
-                return mapper.apply((E) t);
+                return mapper.applyThrows((E) t);
             } catch (Throwable e) {
                 return failure(e);
             }
@@ -358,7 +369,7 @@ public final class Try<T> {
      */
     public <U> Try<U> handle(ThrowingBiFunction<? super T, Throwable, ? extends U> fn) {
         try {
-            return success(fn.apply(result, t));
+            return success(fn.applyThrows(result, t));
         } catch (Throwable e) {
             return failure(e);
         }

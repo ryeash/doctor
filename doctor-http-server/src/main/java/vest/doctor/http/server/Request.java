@@ -120,6 +120,13 @@ public interface Request {
     <T> T attribute(Class<T> type);
 
     /**
+     * Get all the attributes attached to this request via {@link #attribute(String, Object)}
+     *
+     * @return the attribute map
+     */
+    Map<String, Object> attributes();
+
+    /**
      * Get the request charset.
      *
      * @param defaultCharset the fallback charset to use if the charset wasn't set

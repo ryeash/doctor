@@ -1,30 +1,22 @@
 package vest.doctor.pipeline;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The base class for {@link Stage stages}. Provides implementations for the basic operations of a stage.
  */
 public abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
-    static final AtomicInteger ID_SEQUENCE = new AtomicInteger(0);
 
-    private final int id;
     protected final Stage<?, IN> upstream;
     protected Stage<OUT, ?> downstream;
     private final CompletableFuture<Void> completionFuture;
 
     public AbstractStage(Stage<?, IN> upstream) {
-        this.id = ID_SEQUENCE.incrementAndGet();
         this.upstream = upstream;
         this.completionFuture = new CompletableFuture<>();
-    }
-
-    @Override
-    public int id() {
-        return id;
     }
 
     @Override
@@ -116,5 +108,10 @@ public abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
     @Override
     public ExecutorService executorService() {
         return upstream.executorService();
+    }
+
+    @Override
+    public Optional<Stage<OUT, ?>> downstream() {
+        return Optional.ofNullable(downstream);
     }
 }

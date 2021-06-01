@@ -45,6 +45,6 @@ public abstract class AbstractSource<IN> extends AbstractStage<IN, IN> {
 
     @Override
     public ExecutorService executorService() {
-        return executorService != null ? executorService : PipelineBuilder.COMMON;
+        return executorService != null ? executorService : Pipeline.COMMON;
     }
 }

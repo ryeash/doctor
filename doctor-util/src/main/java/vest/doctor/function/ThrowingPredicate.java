@@ -1,10 +1,20 @@
 package vest.doctor.function;
 
+import java.util.function.Predicate;
+
 /**
  * Predicate that can throw an exception.
  */
 @FunctionalInterface
-public interface ThrowingPredicate<T> {
+public interface ThrowingPredicate<T> extends Predicate<T> {
 
-    boolean test(T value) throws Exception;
+    default boolean test(T value) {
+        try {
+            return testThrows(value);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    boolean testThrows(T value) throws Exception;
 }

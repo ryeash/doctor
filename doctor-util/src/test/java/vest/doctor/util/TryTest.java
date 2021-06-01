@@ -4,13 +4,14 @@ import org.testng.annotations.Test;
 import vest.doctor.function.Try;
 
 import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+@Test
 public class TryTest extends BaseUtilTest {
 
-    @Test
     public void basics() {
         Try<Void> run = Try.run(() -> System.out.println("running"));
         assertTrue(run.isSuccess());
@@ -25,7 +26,6 @@ public class TryTest extends BaseUtilTest {
         assertThrows(IllegalArgumentException.class, exceptional::get);
     }
 
-    @Test
     public void recovery() {
         AtomicInteger c = new AtomicInteger();
         Try<String> supply = Try
@@ -56,7 +56,6 @@ public class TryTest extends BaseUtilTest {
                 });
     }
 
-    @Test
     public void laterFailure() {
         Try<Character> apply = Try.get(() -> "string")
                 .apply(s -> s.charAt(42));
@@ -64,7 +63,6 @@ public class TryTest extends BaseUtilTest {
         assertThrows(IndexOutOfBoundsException.class, apply::get);
     }
 
-    @Test
     public void compose() {
         String s1 = Try.get(() -> "string")
                 .compose(s -> Try.success(s.toUpperCase()))
@@ -72,7 +70,6 @@ public class TryTest extends BaseUtilTest {
         assertEquals(s1, "STRING");
     }
 
-    @Test
     public void toThings() throws ExecutionException, InterruptedException {
         Try<String> success = Try.get(() -> "string");
         assertTrue(success.toOptional().isPresent());
@@ -85,5 +82,17 @@ public class TryTest extends BaseUtilTest {
         assertFalse(failure.toOptional().isPresent());
         assertThrows(failure::toStream);
         assertTrue(failure.toCompletableFuture().isCompletedExceptionally());
+    }
+
+    public void completable() {
+        CompletableFuture<String> s = new CompletableFuture<>();
+        CompletableFuture<Try<String>> ct = Try.completable(s);
+        s.complete("test");
+        assertEquals(ct.join().get(), "test");
+
+        CompletableFuture<String> e = new CompletableFuture<>();
+        CompletableFuture<Try<String>> er = Try.completable(e);
+        e.completeExceptionally(new IllegalArgumentException());
+        assertThrows(IllegalArgumentException.class, er.join()::get);
     }
 }

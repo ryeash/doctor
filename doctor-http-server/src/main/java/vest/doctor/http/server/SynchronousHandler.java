@@ -1,5 +1,6 @@
 package vest.doctor.http.server;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -12,7 +13,7 @@ public interface SynchronousHandler extends Handler {
     default CompletionStage<Response> handle(Request request) {
         return request.body()
                 .completionFuture()
-                .thenApplyAsync(body -> handleSync(request), request.pool());
+                .thenCombineAsync(CompletableFuture.completedFuture(request), (body, req) -> handleSync(req), request.pool());
     }
 
     /**

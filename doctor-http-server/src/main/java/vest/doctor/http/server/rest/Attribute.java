@@ -9,7 +9,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Route parameter annotation the directs the router to pull a value from {@link Request#attribute(String)}.
+ * Route parameter annotation that directs the router to pull a value from {@link Request#attribute(String)}.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

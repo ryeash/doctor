@@ -7,11 +7,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Indicates the route method responds to any HTTP method name.
+ * Indicates the route method responds to any HTTP method.
  */
 @Documented
-@HttpMethod("_ANY_")
+@HttpMethod(ANY.ANY_METHOD_NAME)
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
 public @interface ANY {
+
+    String ANY_METHOD_NAME = "_ANY_";
 }

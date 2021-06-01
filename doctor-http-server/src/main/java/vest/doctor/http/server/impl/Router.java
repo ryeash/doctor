@@ -17,11 +17,13 @@ import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-public class Router implements Handler {
+import static vest.doctor.http.server.rest.ANY.ANY_METHOD_NAME;
+
+public final class Router implements Handler {
     public static final String PATH_OVERRIDE = "doctor.netty.router.pathOverride";
     public static final String METHOD_OVERRIDE = "doctor.netty.router.methodOverride";
     public static final String PATH_PARAMS = "doctor.netty.router.pathparams";
-    public static final HttpMethod ANY = HttpMethod.valueOf("_ANY_");
+    public static final HttpMethod ANY = HttpMethod.valueOf(ANY_METHOD_NAME);
     public static final Handler NOT_FOUND = new NotFound();
 
     private final List<FilterAndPath> filters = new LinkedList<>();
@@ -36,42 +38,18 @@ public class Router implements Handler {
         this.caseInsensitiveMatch = caseInsensitiveMatch;
     }
 
-    public Router get(String path, Handler handler) {
-        return addRoute(HttpMethod.GET, path, handler);
+    public Router route(String method, String path, Handler handler) {
+        return route(HttpMethod.valueOf(method), path, handler);
     }
 
-    public Router put(String path, Handler handler) {
-        return addRoute(HttpMethod.PUT, path, handler);
-    }
-
-    public Router post(String path, Handler handler) {
-        return addRoute(HttpMethod.POST, path, handler);
-    }
-
-    public Router delete(String path, Handler handler) {
-        return addRoute(HttpMethod.DELETE, path, handler);
-    }
-
-    public Router options(String path, Handler handler) {
-        return addRoute(HttpMethod.OPTIONS, path, handler);
-    }
-
-    public Router any(String path, Handler handler) {
-        return addRoute(ANY, path, handler);
-    }
-
-    public Router addRoute(String method, String path, Handler handler) {
-        return addRoute(HttpMethod.valueOf(method), path, handler);
-    }
-
-    public Router addRoute(HttpMethod method, String path, Handler handler) {
+    public Router route(HttpMethod method, String path, Handler handler) {
         if (method.equals(HttpMethod.GET)) {
             // cross list all GETs as HEADs
-            addRoute(HttpMethod.HEAD, path, handler);
+            route(HttpMethod.HEAD, path, handler);
         }
-        List<Route> routes = this.routes.computeIfAbsent(method, v -> new ArrayList<>());
         Route newRoute = new Route(path, caseInsensitiveMatch, handler);
 
+        List<Route> routes = this.routes.computeIfAbsent(method, v -> new ArrayList<>());
         if (routes.stream().anyMatch(r -> r.getPathSpec().getPattern().toString().equals(newRoute.getPathSpec().getPattern().toString()))) {
             throw new IllegalArgumentException("attempted to register duplicate path for " + method + " " + path);
         }
@@ -80,11 +58,11 @@ public class Router implements Handler {
         return this;
     }
 
-    public Router addFilter(Filter filter) {
-        return addFilter("/*", filter);
+    public Router filter(Filter filter) {
+        return filter("/*", filter);
     }
 
-    public Router addFilter(String path, Filter filter) {
+    public Router filter(String path, Filter filter) {
         filters.add(new FilterAndPath(new PathSpec(path, caseInsensitiveMatch), filter));
         filters.sort(Prioritized.COMPARATOR);
         return this;

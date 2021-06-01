@@ -4,7 +4,15 @@ package vest.doctor.function;
  * Runnable that can throw an exception.
  */
 @FunctionalInterface
-public interface ThrowingRunnable {
+public interface ThrowingRunnable extends Runnable {
 
-    void run() throws Exception;
+    default void run() {
+        try {
+            runThrows();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    void runThrows() throws Exception;
 }

@@ -146,6 +146,11 @@ public class ServerRequest implements Request {
     }
 
     @Override
+    public Map<String, Object> attributes() {
+        return Collections.unmodifiableMap(attributes);
+    }
+
+    @Override
     public Charset requestCharset(Charset defaultCharset) {
         return HttpUtil.getCharset(request, defaultCharset);
     }

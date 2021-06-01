@@ -8,6 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import vest.doctor.http.server.Request;
+import vest.doctor.http.server.Response;
+import vest.doctor.http.server.ResponseBody;
 import vest.doctor.http.server.rest.ANY;
 import vest.doctor.http.server.rest.Attribute;
 import vest.doctor.http.server.rest.BeanParam;
@@ -137,5 +139,13 @@ public class TCNettyEndpoint {
     @Path("/locale")
     public String locale(@HeaderParam("Accept-Language") Locale locale) {
         return locale.toString();
+    }
+
+    @GET
+    @Path("/fullresponse")
+    public CompletableFuture<Response> responder(Request request) {
+        return request.body()
+                .completionFuture()
+                .thenApplyAsync(v -> request.createResponse().body(ResponseBody.of("response")));
     }
 }

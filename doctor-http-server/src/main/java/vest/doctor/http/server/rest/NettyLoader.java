@@ -52,7 +52,7 @@ public class NettyLoader implements AppLoader {
 
         providerRegistry.getProviders(Filter.class)
                 .map(Provider::get)
-                .forEach(router::addFilter);
+                .forEach(router::filter);
 
         providerRegistry.getProviders(EndpointConfiguration.class)
                 .forEach(Provider::get);

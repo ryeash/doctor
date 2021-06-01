@@ -57,7 +57,7 @@ class BufferStage<IN> extends AbstractStage<IN, IN> {
     @Override
     public void onComplete() {
         complete = true;
-        consume();
+        executorService().submit(this::consume);
     }
 
     @Override
@@ -70,7 +70,7 @@ class BufferStage<IN> extends AbstractStage<IN, IN> {
             }
             return r;
         });
-        consume();
+        executorService().submit(this::consume);
     }
 
     @Override

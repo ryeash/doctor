@@ -4,9 +4,9 @@ import java.util.Objects;
 
 final class BranchStage<IN> extends AbstractStage<IN, IN> {
 
-    private final Pipeline<IN, ?> branch;
+    private final Stage<IN, ?> branch;
 
-    public BranchStage(Stage<?, IN> upstream, Pipeline<IN, ?> branch) {
+    public BranchStage(Stage<?, IN> upstream, Stage<IN, ?> branch) {
         super(upstream);
         this.branch = Objects.requireNonNull(branch);
     }

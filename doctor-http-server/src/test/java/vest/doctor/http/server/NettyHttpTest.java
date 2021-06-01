@@ -1,5 +1,6 @@
 package vest.doctor.http.server;
 
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.restassured.RestAssured;
 import io.restassured.config.RestAssuredConfig;
 import io.restassured.specification.RequestSpecification;
@@ -27,6 +28,7 @@ import java.util.stream.IntStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 public class NettyHttpTest {
@@ -36,25 +38,29 @@ public class NettyHttpTest {
     public void initServer() {
         this.server = new HttpServerBuilder()
                 .addBindAddress(new InetSocketAddress("localhost", 61234))
-                .filter(response -> {
+                .after("/*", response -> {
                     response.headers().set("X-Filter", "true");
                     return response;
                 })
-                .filter(request -> {
+                .before("/*", request -> {
                     request.attribute(Router.PATH_OVERRIDE, request.path().toLowerCase());
                     request.headers().set("X-Before", true);
                 })
-                .filter(response -> {
+                .after("/*", response -> {
                     response.headers().set("X-Filter2", new Date());
                     return response;
                 })
-                .filter(((request, response) -> {
+                .filter("/*", ((request, response) -> {
                     if (Objects.equals(request.queryParam("shortcircuit"), "true")) {
                         return CompletableFuture.completedFuture(request.createResponse().status(500).body(ResponseBody.of("shortcircuited")));
                     } else {
                         return response;
                     }
                 }))
+                .after("/hello/*", response -> {
+                    response.headers().set(HttpHeaderNames.SERVER, "doctor");
+                    return response;
+                })
                 .getSync("/", request -> {
                     System.out.println(request);
                     return request.createResponse().body(ResponseBody.of("ok"));
@@ -73,6 +79,14 @@ public class NettyHttpTest {
                 .get("/exception", request -> {
                     throw new RuntimeException("I threw an error");
                 })
+                .get("/futureexception", request -> {
+                    CompletableFuture<Response> f = new CompletableFuture<>();
+                    f.completeExceptionally(new RuntimeException("I threw an error"));
+                    return f;
+                })
+                .postSync("/readablebody", request ->
+                        request.createResponse()
+                                .body(ResponseBody.of(request.body().asString().join())))
                 .post("/", request -> request.body()
                         .asString()
                         .thenApply(ResponseBody::of)
@@ -98,13 +112,19 @@ public class NettyHttpTest {
     @Test
     public void init() {
         req().get("/")
-                .prettyPeek();
+                .then()
+                .statusCode(200);
     }
 
     @Test
     public void hello() {
         req().get("/hello/goodbye")
-                .prettyPeek()
+                .then()
+                .body(Matchers.equalTo("goodbye"))
+                .header("server", equalTo("doctor"));
+
+        // case-insensitive
+        req().get("/HELLO/goodbye")
                 .then()
                 .body(Matchers.equalTo("goodbye"));
     }
@@ -135,7 +155,16 @@ public class NettyHttpTest {
         String as = req().body(gzipCompress(test.getBytes(StandardCharsets.UTF_8)))
                 .header("content-encoding", "gzip")
                 .post("/")
-                .prettyPeek()
+                .body()
+                .asString();
+        Assert.assertEquals(as, test);
+    }
+
+    @Test
+    public void postSync() {
+        String test = "test";
+        String as = req().body(test)
+                .post("/readablebody")
                 .body()
                 .asString();
         Assert.assertEquals(as, test);
@@ -144,6 +173,10 @@ public class NettyHttpTest {
     @Test
     public void exception() {
         req().get("/exception")
+                .then()
+                .statusCode(500);
+
+        req().get("/futureexception")
                 .then()
                 .statusCode(500);
     }
@@ -166,7 +199,6 @@ public class NettyHttpTest {
                 .forEach(i -> req()
                         .body(randomBytes())
                         .post("/")
-//                            .prettyPeek()
                         .then()
                         .statusCode(200));
         System.out.println(TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + "ms");

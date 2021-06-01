@@ -1,23 +1,17 @@
 package vest.doctor.pipeline;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 
-class BasePipeline<I, O> implements Pipeline<I, O> {
-    private final int id;
+class BasePipeline<I, O> implements Stage<I, O> {
     private final Stage<I, ?> source;
     private final Stage<?, O> last;
 
     public BasePipeline(Stage<I, ?> source, Stage<?, O> last) {
-        this.id = AbstractStage.ID_SEQUENCE.incrementAndGet();
         this.source = source;
         this.last = last;
-    }
-
-    @Override
-    public int id() {
-        return id;
     }
 
     @Override
@@ -59,6 +53,11 @@ class BasePipeline<I, O> implements Pipeline<I, O> {
     @Override
     public ExecutorService executorService() {
         return last.executorService();
+    }
+
+    @Override
+    public Optional<Stage<O, ?>> downstream() {
+        return last.downstream();
     }
 
     @Override

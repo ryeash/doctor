@@ -54,7 +54,7 @@ public final class ManagedLock {
      */
     public Try<Void> withLock(long acquireTimeout, TimeUnit unit, ThrowingRunnable runnable) {
         return guard(acquireTimeout, unit, () -> {
-            runnable.run();
+            runnable.runThrows();
             return null;
         });
     }
@@ -80,7 +80,7 @@ public final class ManagedLock {
      * @return a {@link Try} representing the success or failure of applying the function
      */
     public <I, R> Try<R> withLock(long acquireTimeout, TimeUnit unit, I input, ThrowingFunction<I, R> function) {
-        return guard(acquireTimeout, unit, () -> function.apply(input));
+        return guard(acquireTimeout, unit, () -> function.applyThrows(input));
     }
 
     /**
@@ -113,7 +113,7 @@ public final class ManagedLock {
      * @return a {@link Try} representing the success or failure of executing the action
      */
     public <I> Try<Void> withLock(I input, ThrowingConsumer<I> action) {
-        return withLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS, () -> action.accept(input));
+        return withLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS, () -> action.acceptThrows(input));
     }
 
     /**
@@ -126,7 +126,7 @@ public final class ManagedLock {
      * @return a {@link Try} representing the success or failure of executing the action
      */
     public <I> Try<Void> withLock(long acquireTimeout, TimeUnit unit, I input, ThrowingConsumer<I> action) {
-        return withLock(acquireTimeout, unit, () -> action.accept(input));
+        return withLock(acquireTimeout, unit, () -> action.acceptThrows(input));
     }
 
     private <R> Try<R> guard(long acquireTimeout, TimeUnit unit, ThrowingSupplier<R> supplier) {
