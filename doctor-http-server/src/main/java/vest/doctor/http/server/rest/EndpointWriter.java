@@ -18,6 +18,7 @@ import vest.doctor.codegen.GenericInfo;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
 import vest.doctor.http.server.Request;
+import vest.doctor.http.server.Response;
 import vest.doctor.http.server.impl.Router;
 
 import javax.lang.model.element.Element;
@@ -60,6 +61,7 @@ public class EndpointWriter implements ProviderDefinitionListener {
                 .addImportClass(EndpointConfiguration.class)
                 .addImportClass(ProviderRegistry.class)
                 .addImportClass(Request.class)
+                .addImportClass(Response.class)
                 .addImportClass(Router.class)
                 .addImportClass(TypeInfo.class)
                 .addImportClass(Inject.class)
@@ -145,10 +147,11 @@ public class EndpointWriter implements ProviderDefinitionListener {
 
         boolean isVoid = method.getReturnType().getKind() == TypeKind.VOID;
         boolean bodyFuture = isBodyFuture(context, method);
+        boolean completableResponse = returnsCompletableResponse(context, method);
 
         String callMethod = "endpoint.get()." + method.getSimpleName() + parameters + ";";
 
-        initialize.line("router.addRoute(\"",
+        initialize.line("router.route(\"",
                 ProcessorUtils.escapeStringForCode(httpMethod), '"',
                 ",\"", ProcessorUtils.escapeStringForCode(path), "\", request -> {");
         initialize.line("TypeInfo typeInfo = ", buildTypeInfoCode(method), ';');
@@ -163,6 +166,8 @@ public class EndpointWriter implements ProviderDefinitionListener {
         if (isVoid) {
             initialize.line(callMethod);
             initialize.line("return convertResponse(request, null, bodyInterchange);");
+        } else if (completableResponse) {
+            initialize.line("return ", callMethod);
         } else {
             initialize.line("Object result = ", callMethod);
             initialize.line("return convertResponse(request, result, bodyInterchange);");
@@ -177,11 +182,19 @@ public class EndpointWriter implements ProviderDefinitionListener {
 
     private static boolean isBodyFuture(AnnotationProcessorContext context, ExecutableElement method) {
         for (VariableElement parameter : method.getParameters()) {
-            if (parameter.getAnnotation(Body.class) != null) {
-                if (ProcessorUtils.isCompatibleWith(context, parameter.asType(), CompletableFuture.class)) {
-                    return true;
-                }
+            if (parameter.getAnnotation(Body.class) != null
+                    && ProcessorUtils.isCompatibleWith(context, parameter.asType(), CompletableFuture.class)) {
+                return true;
             }
+        }
+        return false;
+    }
+
+    private static boolean returnsCompletableResponse(AnnotationProcessorContext context, ExecutableElement method) {
+        if (ProcessorUtils.isCompatibleWith(context, method.getReturnType(), CompletableFuture.class)) {
+            return GenericInfo.firstParameterizedType(method.getReturnType())
+                    .map(tm -> ProcessorUtils.isCompatibleWith(context, tm, Response.class))
+                    .orElse(false);
         }
         return false;
     }
@@ -330,20 +343,19 @@ public class EndpointWriter implements ProviderDefinitionListener {
         throw new CodeProcessingException("no string conversion available for: " + target);
     }
 
+    private static final List<String> SETTER_PREFIXES = List.of("set", "is", "has");
+
     private static ExecutableElement findCorrespondingSetter(AnnotationProcessorContext context, VariableElement field, TypeElement beanType) {
         return ProcessorUtils.hierarchy(context, beanType)
                 .stream()
                 .flatMap(t -> ElementFilter.methodsIn(t.getEnclosedElements()).stream())
                 .distinct()
+                .filter(method -> method.getParameters().size() == 1)
                 .filter(method -> {
-                    if (method.getSimpleName().toString().equalsIgnoreCase("set" + field.getSimpleName())
-                            || method.getSimpleName().toString().equalsIgnoreCase("is" + field.getSimpleName())) {
-                        if (method.getParameters().size() != 1) {
-                            throw new CodeProcessingException("setters for BeanParam fields must have one and only one parameter", method);
-                        }
-                        return true;
-                    }
-                    return false;
+                    String methodName = method.getSimpleName().toString();
+                    return SETTER_PREFIXES.stream()
+                            .map(prefix -> prefix + field.getSimpleName())
+                            .anyMatch(methodName::equalsIgnoreCase);
                 })
                 .findFirst()
                 .orElseThrow(() -> new CodeProcessingException("missing setter method for BeanParam field", field));

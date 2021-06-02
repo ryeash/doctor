@@ -16,11 +16,13 @@
         <module>doctor-http-server-jackson</module>
         <module>doctor-jpa</module>
         <module>test-app</module>
+        <module>doctor-util</module>
     </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <compiler.version>15</compiler.version>
+        <maven.compiler.source>15</maven.compiler.source>
+        <maven.compiler.target>15</maven.compiler.target>
         <slf4j.version>1.7.30</slf4j.version>
         <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
@@ -71,9 +73,9 @@
                 <configuration>
                     <verbose>false</verbose>
                     <fork>false</fork>
-                    <compilerVersion>${compiler.version}</compilerVersion>
-                    <source>${compiler.version}</source>
-                    <target>${compiler.version}</target>
+                    <compilerVersion>${maven.compiler.source}</compilerVersion>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
                     <encoding>${project.build.sourceEncoding}</encoding>
                     <showDeprecation>true</showDeprecation>
                     <showWarnings>true</showWarnings>

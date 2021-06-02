@@ -100,7 +100,7 @@ public class R {
     }
 
     /**
-     * Set a response header's value(s).
+     * Set a response header's value(s). If values is null, the header will be removed.
      *
      * @param name   the header to set
      * @param values the values to set
@@ -116,7 +116,7 @@ public class R {
     }
 
     /**
-     * Set a response header.
+     * Set a response header. If value is null, the header will be removed.
      *
      * @param name  the header name
      * @param value the header value

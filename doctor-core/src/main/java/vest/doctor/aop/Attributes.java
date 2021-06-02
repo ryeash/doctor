@@ -7,7 +7,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * A collection of attribute to decorate a method
+ * A collection of attributes to decorate a method
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

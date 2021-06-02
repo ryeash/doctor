@@ -26,6 +26,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.IntStream;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 public class NettyTest extends BaseDoctorTest {
@@ -211,6 +212,25 @@ public class NettyTest extends BaseDoctorTest {
                 .then()
                 .statusCode(200)
                 .body(is("JUNK"));
+    }
+
+    @Test
+    public void locale() {
+        req()
+                .header("Accept-Language", "en-US,en;q=0.9")
+                .get("/netty/locale")
+                .then()
+                .statusCode(200)
+                .body(containsString("en"));
+    }
+
+    @Test
+    public void futureResponse() {
+        req()
+                .get("/netty/fullresponse")
+                .then()
+                .statusCode(200)
+                .body(equalTo("response"));
     }
 
 //    @Test

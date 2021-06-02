@@ -67,6 +67,9 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
 
     public HttpServer(HttpServerConfiguration config, Handler handler, ServerSocketChannelInitializer channelInitializer, ExceptionHandler exceptionHandler) {
         super();
+        if (config.getBindAddresses() == null || config.getBindAddresses().isEmpty()) {
+            throw new IllegalArgumentException("can not start without at least one bind address set");
+        }
         this.config = config;
         this.handler = handler;
         this.websockets = new HashMap<>();

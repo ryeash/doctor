@@ -5,6 +5,7 @@ import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.CodeProcessingException;
 import vest.doctor.DoctorProvider;
 import vest.doctor.ExplicitProvidedTypes;
+import vest.doctor.InjectionException;
 import vest.doctor.Modules;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDependency;
@@ -152,6 +153,7 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                 .addImportClass(List.class)
                 .addImportClass(providedType().getQualifiedName().toString())
                 .addImportClass(DoctorProvider.class)
+                .addImportClass(InjectionException.class)
                 .addImplementsInterface(DoctorProvider.class.getSimpleName() + "<" + providedType().getSimpleName() + ">")
                 .addField("private final ", ProviderRegistry.class.getSimpleName(), " {{providerRegistry}}");
 

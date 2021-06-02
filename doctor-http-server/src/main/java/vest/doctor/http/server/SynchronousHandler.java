@@ -11,8 +11,9 @@ public interface SynchronousHandler extends Handler {
 
     @Override
     default CompletionStage<Response> handle(Request request) {
-        return CompletableFuture.completedFuture(request)
-                .thenApplyAsync(this::handleSync, request.pool());
+        return request.body()
+                .completionFuture()
+                .thenCombineAsync(CompletableFuture.completedFuture(request), (body, req) -> handleSync(req), request.pool());
     }
 
     /**

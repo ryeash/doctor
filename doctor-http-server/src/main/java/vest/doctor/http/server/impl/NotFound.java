@@ -13,7 +13,7 @@ final class NotFound implements Handler {
     public CompletionStage<Response> handle(Request request) {
         return request.body()
                 .ignored()
-                .thenCombine(CompletableFuture.supplyAsync(request::createResponse),
-                        (v, resp) -> resp.status(404).body(EmptyBody.INSTANCE));
+                .thenCombine(CompletableFuture.completedFuture(request.createResponse()),
+                        (ignored, resp) -> resp.status(404).body(EmptyBody.INSTANCE));
     }
 }

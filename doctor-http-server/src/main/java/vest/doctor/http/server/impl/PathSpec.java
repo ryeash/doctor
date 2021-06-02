@@ -19,6 +19,7 @@ public final class PathSpec implements Comparable<PathSpec> {
     private final Pattern pattern;
 
     public PathSpec(String path, boolean caseInsensitiveMatch) {
+        // TODO sorting path?
         if (path.isEmpty()) {
             throw new IllegalArgumentException("the route path may not be empty");
         }
@@ -27,23 +28,22 @@ public final class PathSpec implements Comparable<PathSpec> {
         this.path = path;
         this.paramNames = new ArrayList<>(3);
 
-        // build the regex pattern uri and extract parameter names
         // pre-process to handle '*'
         String temp = SPLAT_PARAM_PATTERN.matcher(path).replaceAll("/{*:.*}");
 
+        // build the regex pattern uri and extract parameter names
         StringBuilder builder = new StringBuilder("^");
         int i = 0;
         Matcher matcher = PATH_PARAM_PATTERN.matcher(temp);
         while (matcher.find()) {
             builder.append(temp, i, matcher.start());
             String section = matcher.group().trim();
-            String name = section.substring(1, section.length() - 1);
-            String paramRegex = DEFAULT_PARAM_REGEX;
-            int index = name.indexOf(':');
-            if (index >= 0) {
-                paramRegex = name.substring(index + 1);
-                name = name.substring(0, index);
+            String[] nameAndRegex = splitNameAndRegex(section);
+            String name = nameAndRegex[0].trim();
+            if (name.isEmpty()) {
+                throw new IllegalArgumentException("the name for a path parameter must not be empty: " + path);
             }
+            String paramRegex = nameAndRegex[1].trim();
             paramNames.add(name);
             builder.append('(').append(paramRegex).append(')');
             i = matcher.end();
@@ -111,5 +111,15 @@ public final class PathSpec implements Comparable<PathSpec> {
             // default to sorting alphabetically
             default -> c;
         };
+    }
+
+    private static String[] splitNameAndRegex(String section) {
+        String trimmed = section.substring(1, section.length() - 1);
+        int colon = trimmed.indexOf(':');
+        if (colon >= 0) {
+            return new String[]{trimmed.substring(0, colon), trimmed.substring(colon + 1)};
+        } else {
+            return new String[]{trimmed, DEFAULT_PARAM_REGEX};
+        }
     }
 }

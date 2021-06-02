@@ -14,6 +14,7 @@ import java.util.stream.Stream;
  * <p>
  * This implementation of cron requires 6 fields:
  * <code>seconds, minutes, hours, day-of-month, month, day-of-week</code>
+ * <pre>
  * Field definitions:
  * - second: the second of the minute, restricted to [0, 59]
  * - minute: the minute of the hour, restricted to [0, 59]
@@ -34,23 +35,24 @@ import java.util.stream.Stream;
  * Jan 1, 2020 01:05:00
  * Jan 1, 2020 02:05:00
  * Jan 1, 2020 03:05:00
- * <p>
+ *
  * Supported field definitions:
  * - a constant number, e.g. `5` will enforce fire times having only that value for the field
  * - a comma delimited list of numbers, e.g. `5,10,15` will enforce fire times having one of those values for the field
  * - ranges, e.g `5-25` will enforce fire times having any number in the range (inclusive) for the field
  * - wildcard, e.g. `*` any value for the field is allowed in a fire time
- * <p>
+ *
  * Aliases for some field are supported:
  * - Month: the first 3 letters of the english month name, all caps, are supported for the month expression, e.g. `JAN`, `NOV`, etc.
  * - Day of week: the first 3 letter of the english day name, all caps, are supported for the day of week, e.g. `MON`, `SAT`
- * <p>
+ *
  * There are some built in macros supported with pre-defined cron expressions:
  * <code>@yearly</code>: "0 0 0 1 JAN *" - every year at midnight on January 1st
  * <code>@monthly</code>: "0 0 0 1 * *" - every month at midnight of the 1st day
  * <code>@weekly</code>: "0 0 0 * * SUN" - every week at midnight on Sunday
  * <code>@hourly</code>: "0 0 * * * *" - every hour at the top of the hour
  * <code>@midnight</code>: "0 0 0 * * *" - every day at midnight
+ * </pre>
  */
 public class Cron {
 

@@ -128,7 +128,13 @@ public class GenericInfo {
 
         @Override
         public List<GenericInfo> visitWildcard(WildcardType t, Void aVoid) {
-            return Collections.singletonList(new GenericInfo(Optional.ofNullable(t.getSuperBound()).orElse(t.getExtendsBound())));
+            if (t.getSuperBound() != null) {
+                return Collections.singletonList(new GenericInfo(t.getSuperBound()));
+            } else if (t.getExtendsBound() != null) {
+                return Collections.singletonList(new GenericInfo(t.getExtendsBound()));
+            } else {
+                return Collections.emptyList();
+            }
         }
 
         @Override
