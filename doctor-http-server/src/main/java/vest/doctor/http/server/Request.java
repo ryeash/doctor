@@ -43,7 +43,7 @@ public interface Request {
     URI uri();
 
     /**
-     * Get the request path.
+     * Get the full HTTP request path.
      */
     String path();
 
@@ -110,14 +110,6 @@ public interface Request {
      * @return the value of the attribute, or null if it is not set
      */
     <T> T attribute(String name);
-
-    /**
-     * Get the value of an attribute.
-     *
-     * @param type the type of the attribute
-     * @return the value of the attribute, or null if it is not set
-     */
-    <T> T attribute(Class<T> type);
 
     /**
      * Get all the attributes attached to this request via {@link #attribute(String, Object)}

@@ -136,16 +136,6 @@ public class ServerRequest implements Request {
     }
 
     @Override
-    public <T> T attribute(Class<T> type) {
-        return attributes.values()
-                .stream()
-                .filter(type::isInstance)
-                .findFirst()
-                .map(type::cast)
-                .orElse(null);
-    }
-
-    @Override
     public Map<String, Object> attributes() {
         return Collections.unmodifiableMap(attributes);
     }

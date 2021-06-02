@@ -19,29 +19,96 @@ import java.util.concurrent.CompletionStage;
 
 import static vest.doctor.http.server.rest.ANY.ANY_METHOD_NAME;
 
+/**
+ * A handler that uses path specifications to route to handlers internally.
+ * <p>
+ * A path specification is a regular expression matching construct similar to JAX-RS routing.
+ * In it's simplest form, a path specification can be a literal path: /api/v2/data.
+ * Extending it to have path parameters: <code>/api/v2/data/{id}</code>. In this case the handler
+ * registered with this path specification will have access to the "id" path parameter via
+ * <code>Map<String, String> map = request.attribute(Router.PATH_PARAMS);</code>
+ * <p>
+ * Internally, path specification are converted into regular expressions mapping path parameter
+ * names to matching groups. You can define the regular expressions for the declared path parameters
+ * using the syntax: <code>/api/v2/data/{id:[^/]+?}</code>. Everything after the ':' is the regular expression
+ * for the parameter. These two paths are converted to the same internal regular expression:
+ * <code>/api/v2/data/{id}</code>, <code>/api/v2/data/{id:[^/]+?}</code>.
+ * <p>
+ * Paths are matched first against the path override attribute from request.attribute({@link Router#PATH_OVERRIDE}),
+ * if it exists, otherwise they are matched against {@link Request#path()} which is the full path requested
+ * in the HTTP request.
+ * <p>
+ * Path specifications can use the wildcard '*' to indicate that any path structure is accepted, e.g.
+ * <code>/api/v2/*</code>. In this case, routes will have access to the '*' path parameter, containing
+ * the entire path that was matched by the wildcard. So, for example, a request to /api/v2/that/thing
+ * the '*' path parameter would be "that/thing".
+ */
 public final class Router implements Handler {
-    public static final String PATH_OVERRIDE = "doctor.netty.router.pathOverride";
-    public static final String METHOD_OVERRIDE = "doctor.netty.router.methodOverride";
-    public static final String PATH_PARAMS = "doctor.netty.router.pathparams";
-    public static final HttpMethod ANY = HttpMethod.valueOf(ANY_METHOD_NAME);
-    public static final Handler NOT_FOUND = new NotFound();
 
+    /**
+     * The name of the path override attribute. Can be used to override the request path
+     * in e.g. a filter via <code>request.attribute(Router.PATH_OVERRIDE, request.path().toLowerCase());</code>.
+     */
+    public static final String PATH_OVERRIDE = "doctor.netty.router.pathOverride";
+
+    /**
+     * The name of the method override attribute. Can be used to override the request method
+     * in e.g. a filter via <code>request.attribute(Router.METHOD_OVERRIDE, "GET");</code>.
+     */
+    public static final String METHOD_OVERRIDE = "doctor.netty.router.methodOverride";
+
+    /**
+     * The name of the path parameters attribute. Used in routes to get the path parameters
+     * based on the matched path specification.
+     */
+    public static final String PATH_PARAMS = "doctor.netty.router.pathparams";
+
+    /**
+     * The ANY method. This method can be used to create a route that responds to any HTTP method.
+     */
+    public static final HttpMethod ANY = HttpMethod.valueOf(ANY_METHOD_NAME);
+
+    private static final Handler NOT_FOUND = new NotFound();
     private final List<FilterAndPath> filters = new LinkedList<>();
     private final Map<HttpMethod, List<Route>> routes = new TreeMap<>();
     private final boolean caseInsensitiveMatch;
 
+    /**
+     * Create a new Router, equivalent to <code>new Router(true)</code>
+     */
     public Router() {
         this(true);
     }
 
+    /**
+     * Create a new Router.
+     *
+     * @param caseInsensitiveMatch if true, paths will be matched in case insensitive mode (see {@link java.util.regex.Pattern#CASE_INSENSITIVE}).
+     */
     public Router(boolean caseInsensitiveMatch) {
         this.caseInsensitiveMatch = caseInsensitiveMatch;
     }
 
+    /**
+     * Add new handler to this router.
+     *
+     * @param method  the HTTP method that the request must match to trigger the given handler
+     * @param path    the path specification for the route
+     * @param handler the handler that will be routed for the given method and path
+     * @return this router
+     */
     public Router route(String method, String path, Handler handler) {
         return route(HttpMethod.valueOf(method), path, handler);
     }
 
+    /**
+     * Add a new handler to this router.
+     *
+     * @param method  the HTTP method that the request must match to trigger the given handler
+     * @param path    that path specification for the route
+     * @param handler the handler that will be routed for the given method and path
+     * @return this router
+     */
     public Router route(HttpMethod method, String path, Handler handler) {
         if (method.equals(HttpMethod.GET)) {
             // cross list all GETs as HEADs
@@ -58,10 +125,24 @@ public final class Router implements Handler {
         return this;
     }
 
+    /**
+     * Add a new filter to this router that will trigger for all requests.
+     * Equivalent to <code>router.filter("/*", filter)</code>
+     *
+     * @param filter the filter to add
+     * @return this router
+     */
     public Router filter(Filter filter) {
         return filter("/*", filter);
     }
 
+    /**
+     * Add a new filter to this router.
+     *
+     * @param path   the path specification for the filter
+     * @param filter the filter that will be triggered for the given path
+     * @return this router
+     */
     public Router filter(String path, Filter filter) {
         filters.add(new FilterAndPath(new PathSpec(path, caseInsensitiveMatch), filter));
         filters.sort(Prioritized.COMPARATOR);

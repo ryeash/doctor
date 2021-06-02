@@ -6,7 +6,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 
 /**
- * A processing stage in a {@link Pipeline}
+ * A processing stage in a reactive {@link Pipeline}.
  *
  * @param <IN>  the type that the stage accepts to {@link #onNext(Object)}
  * @param <OUT> the type that the stage emits to downstream observers
