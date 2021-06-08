@@ -68,7 +68,6 @@
         <dependency>
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
-            <version>2.5.1</version>
         </dependency>
 
         <dependency>
@@ -83,7 +82,7 @@
         <dependency>
             <groupId>org.eclipse.jetty.websocket</groupId>
             <artifactId>websocket-client</artifactId>
-            <version>9.4.39.v20210325</version>
+            <version>9.4.41.v20210516</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
