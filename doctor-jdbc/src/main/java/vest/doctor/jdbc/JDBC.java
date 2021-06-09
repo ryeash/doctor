@@ -10,10 +10,11 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.stream.Stream;
 
 /**
- * Wrapper around basic JDBC functions.
+ * Facilitator for basic JDBC functions. Wraps a {@link DataSource} and provides access to the other
+ * wrapped elements of the jdbc module: {@link JDBCConnection}, {@link Query}, and {@link PreparedQuery}.
+ * Additionally provides helper methods to facilitate basic, disciplined use of jdbc.
  */
 public class JDBC implements AutoCloseable {
 
@@ -195,7 +196,7 @@ public class JDBC implements AutoCloseable {
      */
     public static void doQuietly(ThrowingRunnable runnable) {
         try {
-            runnable.run();
+            runnable.runThrows();
         } catch (Throwable t) {
             // ignored
         }
@@ -208,8 +209,7 @@ public class JDBC implements AutoCloseable {
                 || o instanceof Connection
                 || o instanceof Statement
                 || o instanceof ResultSet
-                || o instanceof Row
-                || o instanceof Stream) {
+                || o instanceof Row) {
             throw new JDBCException("not allowed to return objects of type " + o.getClass().getSimpleName());
         }
     }

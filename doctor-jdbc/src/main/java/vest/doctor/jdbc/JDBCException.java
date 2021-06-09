@@ -6,19 +6,17 @@ package vest.doctor.jdbc;
  */
 public class JDBCException extends RuntimeException {
 
+    /**
+     * @see RuntimeException#RuntimeException(String)
+     */
     public JDBCException(String msg) {
         super(msg);
     }
 
+    /**
+     * @see RuntimeException#RuntimeException(String, Throwable)
+     */
     public JDBCException(String msg, Throwable t) {
         super(msg, t);
-    }
-
-    public static RuntimeException unchecked(Throwable t) {
-        if (t instanceof RuntimeException) {
-            return (RuntimeException) t;
-        } else {
-            throw new JDBCException("error executing jdbc actions", t);
-        }
     }
 }

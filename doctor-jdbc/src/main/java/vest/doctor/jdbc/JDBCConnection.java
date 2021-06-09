@@ -121,7 +121,7 @@ public class JDBCConnection implements AutoCloseable {
      * Switch to reusable mode. The caller will be responsible for closing the returned object. Failure to close the
      * returned object will result in connection/resource leaks.
      *
-     * @return a reusable {@link JDBCConnection}
+     * @return a reusable {@link JDBCConnection}, will return this object if it is already reusable
      */
     public JDBCConnection reusable() {
         if (closeOnExecute) {
