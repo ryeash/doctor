@@ -2,6 +2,9 @@ package vest.doctor.event;
 
 import vest.doctor.ProviderRegistry;
 
+/**
+ * Base class for messages that hold the {@link ProviderRegistry} along with their payload.
+ */
 public abstract class ProviderRegistryHolder {
 
     protected final ProviderRegistry providerRegistry;

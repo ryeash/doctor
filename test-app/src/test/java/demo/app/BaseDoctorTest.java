@@ -8,6 +8,8 @@ import vest.doctor.runtime.DefaultConfigurationFacade;
 import vest.doctor.runtime.Doctor;
 import vest.doctor.runtime.MapConfigurationSource;
 
+import java.util.Map;
+
 public abstract class BaseDoctorTest extends Assert {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
@@ -20,8 +22,8 @@ public abstract class BaseDoctorTest extends Assert {
             System.setProperty("doctor.app.properties", "test-override.props,test.props");
 
             doctor = Doctor.load(DefaultConfigurationFacade.defaultConfigurationFacade()
-                    .addSource(new MapConfigurationSource(
-                            "doctor.netty.bind", "localhost:61233"))
+                    .addSource(new MapConfigurationSource(Map.of(
+                            "doctor.netty.bind", "localhost:61233")))
                     .addSource(new TCConfigReload()));
         }
     }

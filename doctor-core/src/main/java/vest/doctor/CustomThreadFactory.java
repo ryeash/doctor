@@ -23,10 +23,11 @@ public final class CustomThreadFactory implements ThreadFactory, ForkJoinPool.Fo
      * Create a new thread factory.
      *
      * @param daemonize                whether the created threads will be deamons; see {@link Thread#setDaemon(boolean)}
-     * @param nameFormat               the prefix name to use for the threads, thread names will be set to the thread
-     *                                 prefix appended with a unique thread id number
-     * @param uncaughtExceptionHandler the {@link java.lang.Thread.UncaughtExceptionHandler} to use for the threads
-     * @param classLoader              the {@link ClassLoader} to use for the threads
+     * @param nameFormat               the name format to use for the threads; Example "background-%d";
+     *                                 see {@link String#format(String, Object...)} and {@link Thread#setName(String)}
+     * @param uncaughtExceptionHandler the {@link java.lang.Thread.UncaughtExceptionHandler} to use for the threads;
+     *                                 see {@link Thread#setUncaughtExceptionHandler(Thread.UncaughtExceptionHandler)}
+     * @param classLoader              the context {@link ClassLoader} to use for the threads; see {@link Thread#setContextClassLoader(ClassLoader)}
      */
     public CustomThreadFactory(boolean daemonize, String nameFormat, Thread.UncaughtExceptionHandler uncaughtExceptionHandler, ClassLoader classLoader) {
         this.daemonize = daemonize;

@@ -25,6 +25,10 @@ import java.util.stream.StreamSupport;
  */
 public class DefaultConfigurationFacade implements ConfigurationFacade {
 
+    /**
+     * The property name that will point to the properties file(s) to load. For example
+     * <code>-Ddoctor.app.properties=application.override.conf,application.conf</code>.
+     */
     public static final String PROPERTIES = "doctor.app.properties";
     private static final String MACRO_OPEN = "${";
     private static final String MACRO_CLOSE = "}";

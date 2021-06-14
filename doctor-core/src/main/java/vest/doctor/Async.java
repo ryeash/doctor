@@ -19,7 +19,7 @@ import java.lang.annotation.Target;
 public @interface Async {
 
     /**
-     * The name of the {@link java.util.concurrent.ExecutorService}
+     * The qualifier name of the provided {@link java.util.concurrent.ExecutorService}
      * that will be used to execute the method.
      */
     String value() default "default";
