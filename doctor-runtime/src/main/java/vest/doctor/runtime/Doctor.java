@@ -34,7 +34,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
 
     private static final String ASCII_ART = """
               
-              _             
+              _
              / | _  _ _/__  __
             /_.'/_//_ / /_//
             """;

@@ -209,7 +209,7 @@ public class JDBC implements AutoCloseable {
                 || o instanceof Connection
                 || o instanceof Statement
                 || o instanceof ResultSet
-                || o instanceof Row) {
+                || o instanceof ResultSetRow) {
             throw new JDBCException("not allowed to return objects of type " + o.getClass().getSimpleName());
         }
     }

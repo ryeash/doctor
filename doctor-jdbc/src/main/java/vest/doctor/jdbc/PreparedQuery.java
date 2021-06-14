@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 public class PreparedQuery extends AbstractStatement<PreparedQuery> {
     private static final Pattern NAMES = Pattern.compile(":[0-9a-zA-Z_\\-]+");
 
-    public static PreparedQuery prepareNamed(Connection connection, String sql, boolean closeOnExecute) throws SQLException {
+    static PreparedQuery prepareNamed(Connection connection, String sql, boolean closeOnExecute) throws SQLException {
         Map<String, List<Integer>> namesToPositions = new LinkedHashMap<>();
         Matcher matcher = NAMES.matcher(sql);
         int i = 1;
@@ -34,9 +34,8 @@ public class PreparedQuery extends AbstractStatement<PreparedQuery> {
         return new PreparedQuery(connection, sql, sb.toString(), Collections.unmodifiableMap(namesToPositions), closeOnExecute);
     }
 
-    public static PreparedQuery prepareStandard(Connection connection, String sql, boolean closeOnExecute) throws SQLException {
+    static PreparedQuery prepareStandard(Connection connection, String sql, boolean closeOnExecute) throws SQLException {
         return new PreparedQuery(connection, sql, sql, Collections.emptyMap(), closeOnExecute);
-
     }
 
     private final String originalSql;

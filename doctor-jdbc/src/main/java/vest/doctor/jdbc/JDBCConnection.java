@@ -106,7 +106,7 @@ public class JDBCConnection implements AutoCloseable {
      * Execute a count query, returning a long representing the number of rows counted.
      *
      * @param sql         the count query
-     * @param countColumn the count column name (for use with {@link Row#getNumber(String)})
+     * @param countColumn the count column name (for use with {@link ResultSetRow#getNumber(String)})
      * @return the count
      */
     public long count(String sql, String countColumn) {

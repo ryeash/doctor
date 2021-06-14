@@ -21,5 +21,5 @@ public @interface Modules {
     /**
      * The modules for which the provider will be active.
      */
-    String[] value() default {};
+    String[] value();
 }

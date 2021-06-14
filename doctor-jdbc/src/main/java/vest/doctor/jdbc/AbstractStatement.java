@@ -147,26 +147,26 @@ abstract class AbstractStatement<S extends AbstractStatement<?>> implements Auto
      * @return the number of rows altered by the modification statement.
      */
     public long update() {
-        return execute().map(Row::updateCount).findFirst().orElse(-1L);
+        return execute().map(row -> row.getLong(UpdateResultRow.UPDATE_COUNT)).findFirst().orElse(-1L);
     }
 
     /**
      * Execute the underlying statement and return a stream of result rows.
      *
-     * @return a stream of {@link Row rows} representing the results of the query
+     * @return a stream of {@link ResultSetRow rows} representing the results of the query
      */
     public StreamExt<Row> execute() {
         try {
             boolean hasResultSet = internalExecute();
             if (hasResultSet) {
                 ResultSet resultSet = statement.getResultSet();
-                return RowIterator.streamRows(resultSet)
+                return StreamExt.of(new RowIterator(Objects.requireNonNull(resultSet)))
                         .onClose(() -> JDBC.doQuietly(resultSet::close))
                         .onClose(this::internalClose);
             } else {
                 try {
                     int updated = statement.getUpdateCount();
-                    return RowIterator.streamUpdateResult(updated);
+                    return StreamExt.of(new UpdateResultRow(updated));
                 } finally {
                     internalClose();
                 }

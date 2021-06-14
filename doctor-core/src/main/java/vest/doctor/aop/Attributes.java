@@ -14,5 +14,8 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD})
 public @interface Attributes {
 
+    /**
+     * The attributes to attach to the method.
+     */
     Attribute[] value();
 }

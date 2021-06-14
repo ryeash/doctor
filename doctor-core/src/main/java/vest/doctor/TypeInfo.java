@@ -3,6 +3,7 @@ package vest.doctor;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Information about the type of a parameter or field.
@@ -11,10 +12,22 @@ public class TypeInfo {
     private final Class<?> rawType;
     private final List<TypeInfo> parameterTypes;
 
+    /**
+     * Create a new type information object with the given raw type and parameter types.
+     *
+     * @param rawType        the raw type
+     * @param parameterTypes the parameter types
+     */
     public TypeInfo(Class<?> rawType, TypeInfo... parameterTypes) {
         this(rawType, List.of(parameterTypes));
     }
 
+    /**
+     * Create a new type information object with the given raw type and parameter types.
+     *
+     * @param rawType        the raw type
+     * @param parameterTypes the parameter types
+     */
     public TypeInfo(Class<?> rawType, List<TypeInfo> parameterTypes) {
         this.rawType = rawType;
         if (rawType != null) {
@@ -47,10 +60,11 @@ public class TypeInfo {
 
     @Override
     public String toString() {
-        return "TypeInfo{" +
-                "rawType=" + rawType +
-                ", parameterTypes=" + parameterTypes +
-                '}';
+        StringBuilder sb = new StringBuilder(rawType.getName());
+        if (hasParameterizedTypes()) {
+            sb.append(parameterTypes.stream().map(String::valueOf).collect(Collectors.joining(", ", "<", ">")));
+        }
+        return sb.toString();
     }
 
     @Override
