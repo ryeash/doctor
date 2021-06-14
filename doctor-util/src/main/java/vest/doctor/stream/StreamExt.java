@@ -740,7 +740,7 @@ public class StreamExt<T> implements Stream<T>, Iterable<T> {
     }
 
     /**
-     * Terminal operation that will execute a no-op for every element of this stream.
+     * Terminal operation that will iterate through the stream, doing nothing for each element.
      */
     public void sink() {
         forEach(obj -> {

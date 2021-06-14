@@ -15,6 +15,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
 public @interface Properties {
+
     /**
      * Prefix to prepend before the values in {@link Property} annotations on the interface methods. For example:
      * setting this to `db.` will result in a method with <code>@Property("url")</code> to be bound to the property name

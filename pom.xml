@@ -17,6 +17,7 @@
         <module>doctor-jpa</module>
         <module>test-app</module>
         <module>doctor-util</module>
+        <module>doctor-jdbc</module>
     </modules>
 
     <properties>
@@ -35,6 +36,11 @@
                 <version>${slf4j.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.hsqldb</groupId>
+                <artifactId>hsqldb</artifactId>
+                <version>2.6.0</version>
+            </dependency>
+            <dependency>
                 <groupId>org.testng</groupId>
                 <artifactId>testng</artifactId>
                 <version>7.4.0</version>
@@ -42,7 +48,7 @@
             <dependency>
                 <groupId>io.rest-assured</groupId>
                 <artifactId>rest-assured</artifactId>
-                <version>4.3.3</version>
+                <version>4.4.0</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>
