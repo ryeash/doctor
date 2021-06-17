@@ -1,5 +1,7 @@
 package vest.doctor;
 
+import java.util.stream.Stream;
+
 /**
  * A source of property values.
  */
@@ -14,9 +16,9 @@ public interface ConfigurationSource {
     String get(String fullyQualifiedPropertyName);
 
     /**
-     * Get an iterable for all property names contained within this source.
+     * Get a stream of all property names contained within this source.
      */
-    Iterable<String> propertyNames();
+    Stream<String> propertyNames();
 
     /**
      * Reload this source. It is up to the implementation to decide what this means.

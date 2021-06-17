@@ -109,4 +109,47 @@ public interface ConfigurationFacade extends ConfigurationSource {
      * @return this facade as a properties object
      */
     Properties toProperties();
+
+    /**
+     * Get the unique set of property groups with the given prefix and terminal ".". Alias
+     * for {@link #uniquePropertyGroups(String, String) uniquePropertyGroups(prefix, ".")}.
+     *
+     * @param prefix the prefix for the grouping, e.g. "executors."
+     * @return a set of unique property sub groups
+     */
+    Set<String> uniquePropertyGroups(String prefix);
+
+    /**
+     * Get the unique set of property groups with the given prefix and suffix, scraping
+     * the names of a sub-grouping within the configured property values.
+     * For example, with these properties:
+     * <pre>
+     * executors.background.type = fixed
+     * executors.background.minThread = 4
+     * executors.io.type = cached
+     * executors.io.minThread = 16
+     * </pre><br/>
+     * calling <code>uniquePropertyGroups("executors.", ".")</code> will return
+     * <code>["background", "io"]</code>.
+     *
+     * @param prefix   the prefix for the grouping, e.g. "executors."
+     * @param terminal the terminal for the group, e.g. "."
+     * @return a set of unique property sub groups
+     */
+    Set<String> uniquePropertyGroups(String prefix, String terminal);
+
+    /**
+     * Get a view into a subsection of the configuration. The returned configuration facade
+     * will automatically prefix all property requests with the given prefix.
+     * <p>
+     * Example:
+     * <pre>
+     * ConfigurationFacade sub = facade.subsection("executors.default.");
+     * sub.get("minThreads"); // this will look for the "executors.default.minThreads" property
+     * </pre>
+     *
+     * @param prefix the subsection prefix
+     * @return a ConfigurationFacade that is a view into the subsection's properties
+     */
+    ConfigurationFacade subsection(String prefix);
 }

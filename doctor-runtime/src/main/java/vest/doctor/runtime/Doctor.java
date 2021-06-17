@@ -168,16 +168,6 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
     }
 
     @Override
-    public <T> T getInstance(Class<T> type) {
-        return getProvider(type).get();
-    }
-
-    @Override
-    public <T> T getInstance(Class<T> type, String qualifier) {
-        return getProvider(type, qualifier).get();
-    }
-
-    @Override
     public <T> DoctorProvider<T> getProvider(Class<T> type) {
         return getProvider(type, null);
     }

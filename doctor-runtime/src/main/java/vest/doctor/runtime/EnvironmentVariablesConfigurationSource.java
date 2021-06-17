@@ -2,6 +2,8 @@ package vest.doctor.runtime;
 
 import vest.doctor.ConfigurationSource;
 
+import java.util.stream.Stream;
+
 /**
  * Configuration source that gets properties from {@link System#getenv(String)}.
  */
@@ -13,7 +15,7 @@ public class EnvironmentVariablesConfigurationSource implements ConfigurationSou
     }
 
     @Override
-    public Iterable<String> propertyNames() {
-        return System.getenv().keySet();
+    public Stream<String> propertyNames() {
+        return System.getenv().keySet().stream();
     }
 }

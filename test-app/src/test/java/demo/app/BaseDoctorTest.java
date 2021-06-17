@@ -23,7 +23,7 @@ public abstract class BaseDoctorTest extends Assert {
 
             doctor = Doctor.load(DefaultConfigurationFacade.defaultConfigurationFacade()
                     .addSource(new MapConfigurationSource(Map.of(
-                            "doctor.netty.bind", "localhost:61233")))
+                            "doctor.netty.http.bind", "localhost:61233")))
                     .addSource(new TCConfigReload()));
         }
     }

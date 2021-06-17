@@ -4,6 +4,7 @@ import io.netty.handler.codec.http.HttpMethod;
 import vest.doctor.Prioritized;
 import vest.doctor.http.server.Filter;
 import vest.doctor.http.server.Handler;
+import vest.doctor.http.server.HttpServerConfiguration;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
 
@@ -13,9 +14,11 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 import static vest.doctor.http.server.rest.ANY.ANY_METHOD_NAME;
 
@@ -63,6 +66,9 @@ public final class Router implements Handler {
      */
     public static final String PATH_PARAMS = "doctor.netty.router.pathparams";
 
+    private static final String DEBUG_ROUTING_ATTRIBUTE = "doctor.netty.router.debugInfo";
+    private static final String DEBUG_START_ATTRIBUTE = "doctor.netty.router.debugStart";
+
     /**
      * The ANY method. This method can be used to create a route that responds to any HTTP method.
      */
@@ -71,22 +77,13 @@ public final class Router implements Handler {
     private static final Handler NOT_FOUND = new NotFound();
     private final List<FilterAndPath> filters = new LinkedList<>();
     private final Map<HttpMethod, List<Route>> routes = new TreeMap<>();
-    private final boolean caseInsensitiveMatch;
+    private final HttpServerConfiguration conf;
 
     /**
      * Create a new Router, equivalent to <code>new Router(true)</code>
      */
-    public Router() {
-        this(true);
-    }
-
-    /**
-     * Create a new Router.
-     *
-     * @param caseInsensitiveMatch if true, paths will be matched in case insensitive mode (see {@link java.util.regex.Pattern#CASE_INSENSITIVE}).
-     */
-    public Router(boolean caseInsensitiveMatch) {
-        this.caseInsensitiveMatch = caseInsensitiveMatch;
+    public Router(HttpServerConfiguration conf) {
+        this.conf = conf;
     }
 
     /**
@@ -114,7 +111,7 @@ public final class Router implements Handler {
             // cross list all GETs as HEADs
             route(HttpMethod.HEAD, path, handler);
         }
-        Route newRoute = new Route(path, caseInsensitiveMatch, handler);
+        Route newRoute = new Route(path, conf.getCaseInsensitiveMatching(), handler);
 
         List<Route> routes = this.routes.computeIfAbsent(method, v -> new ArrayList<>());
         if (routes.stream().anyMatch(r -> r.getPathSpec().getPattern().toString().equals(newRoute.getPathSpec().getPattern().toString()))) {
@@ -144,13 +141,18 @@ public final class Router implements Handler {
      * @return this router
      */
     public Router filter(String path, Filter filter) {
-        filters.add(new FilterAndPath(new PathSpec(path, caseInsensitiveMatch), filter));
+        filters.add(new FilterAndPath(new PathSpec(path, conf.getCaseInsensitiveMatching()), filter));
         filters.sort(Prioritized.COMPARATOR);
         return this;
     }
 
     @Override
     public CompletionStage<Response> handle(Request request) throws Exception {
+        if (conf.isDebugRequestRouting()) {
+            request.attribute(DEBUG_START_ATTRIBUTE, System.nanoTime());
+            addTraceMessage(request, "request " + request.method() + " " + request.path());
+        }
+
         CompletableFuture<Response> parent = new CompletableFuture<>();
         CompletionStage<Response> temp = parent;
 
@@ -160,6 +162,7 @@ public final class Router implements Handler {
 
             String path = attributeOrElse(request, PATH_OVERRIDE, request.path());
             Map<String, String> pathParams = pathSpec.matchAndCollect(path);
+            addTraceMessage(request, filterAndPath, pathParams != null);
             if (pathParams != null) {
                 request.attribute(PATH_PARAMS, pathParams);
                 temp = filter.filter(request, temp);
@@ -168,6 +171,8 @@ public final class Router implements Handler {
                 }
             }
         }
+
+        temp.thenAccept(response -> attachTracing(request, response));
 
         CompletionStage<Response> response = selectHandler(request).handle(request);
         forward(response, parent);
@@ -185,6 +190,7 @@ public final class Router implements Handler {
             return handler;
         }
         // not found
+        addTraceMessage(request, "no matching route found");
         return NOT_FOUND;
     }
 
@@ -192,6 +198,7 @@ public final class Router implements Handler {
         for (Route route : routes.getOrDefault(method, Collections.emptyList())) {
             String path = attributeOrElse(request, PATH_OVERRIDE, request.path());
             Map<String, String> pathParams = route.getPathSpec().matchAndCollect(path);
+            addTraceMessage(request, method.name(), route, pathParams != null);
             if (pathParams != null) {
                 request.attribute(PATH_PARAMS, pathParams);
                 return route.getHandler();
@@ -239,6 +246,49 @@ public final class Router implements Handler {
     private static <T> T attributeOrElse(Request request, String attribute, T orElse) {
         T val = request.attribute(attribute);
         return val != null ? val : orElse;
+    }
+
+    private void attachTracing(Request request, Response response) {
+        if (conf.isDebugRequestRouting()) {
+            List<String> trace = request.attribute(DEBUG_ROUTING_ATTRIBUTE);
+            if (trace != null) {
+                for (String info : trace) {
+                    response.headers().add("X-Route-Tracing", info);
+                }
+            }
+        }
+    }
+
+    private void addTraceMessage(Request request, FilterAndPath filterAndPath, boolean matched) {
+        if (conf.isDebugRequestRouting()) {
+            addTraceMessage(request, "filter " +
+                    (matched ? "match" : "not-matched") + ' ' +
+                    filterAndPath.pathSpec + ' ' +
+                    filterAndPath.filter);
+        }
+    }
+
+    private void addTraceMessage(Request request, String routeMethod, Route route, boolean matched) {
+        if (conf.isDebugRequestRouting()) {
+            addTraceMessage(request, "route " +
+                    (matched ? "match" : "not-matched") + ' ' +
+                    routeMethod + ' ' +
+                    route.getPathSpec() + ' ' +
+                    route.getHandler());
+        }
+    }
+
+    private void addTraceMessage(Request request, String info) {
+        List<String> trace = request.attribute(DEBUG_ROUTING_ATTRIBUTE);
+        if (trace == null) {
+            trace = new LinkedList<>();
+            request.attribute(DEBUG_ROUTING_ATTRIBUTE, trace);
+        }
+        String dur = Optional.ofNullable(request.<Long>attribute(DEBUG_START_ATTRIBUTE))
+                .map(start -> System.nanoTime() - start)
+                .map(duration -> TimeUnit.MICROSECONDS.convert(duration, TimeUnit.NANOSECONDS) + "us")
+                .orElse("");
+        trace.add(dur + " " + info);
     }
 
     private static final class FilterAndPath implements Prioritized {

@@ -3,6 +3,7 @@ package vest.doctor.runtime;
 import vest.doctor.ConfigurationSource;
 
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * Configuration source that gets properties from a {@link Map}.
@@ -26,7 +27,7 @@ public class MapConfigurationSource implements ConfigurationSource {
     }
 
     @Override
-    public Iterable<String> propertyNames() {
-        return map.keySet();
+    public Stream<String> propertyNames() {
+        return map.keySet().stream();
     }
 }

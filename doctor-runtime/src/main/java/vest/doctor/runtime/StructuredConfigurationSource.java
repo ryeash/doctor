@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import static java.io.StreamTokenizer.TT_EOF;
 import static java.io.StreamTokenizer.TT_EOL;
@@ -69,8 +70,8 @@ public class StructuredConfigurationSource implements ConfigurationSource {
     }
 
     @Override
-    public Iterable<String> propertyNames() {
-        return properties.keySet();
+    public Stream<String> propertyNames() {
+        return properties.keySet().stream();
     }
 
     @Override

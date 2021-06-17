@@ -203,6 +203,7 @@ public class NettyTest extends BaseDoctorTest {
     @Test
     public void anyMethod() {
         req().get("/netty/anything")
+                .prettyPeek()
                 .then()
                 .statusCode(200)
                 .body(is("GET"));

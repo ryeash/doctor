@@ -12,9 +12,7 @@ import vest.doctor.event.ReloadConfiguration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
-import java.util.stream.StreamSupport;
 
 public class BuiltInAppLoader implements AppLoader {
 
@@ -28,11 +26,8 @@ public class BuiltInAppLoader implements AppLoader {
         providerRegistry.register(new AdHocProvider<>(Properties.class, providerRegistry.configuration().toProperties(), null));
 
         Map<String, ConfigurationDrivenExecutorServiceProvider.ThreadPoolType> executors = new HashMap<>();
-        StreamSupport.stream(providerRegistry.configuration().propertyNames().spliterator(), false)
-                .filter(name -> name.startsWith("executors."))
-                .map(name -> getBetween(name, "executors.", "."))
-                .filter(Objects::nonNull)
-                .forEach(name -> executors.put(name, null));
+        providerRegistry.configuration().uniquePropertyGroups("executors.")
+                .forEach(group -> executors.put(group, null));
         if (loadBuiltIns(providerRegistry)) {
             EventBus eventBus = new EventBus();
             providerRegistry.register(new AdHocProvider<>(EventBus.class, eventBus, null, List.of(EventBus.class, EventProducer.class)));
@@ -64,17 +59,6 @@ public class BuiltInAppLoader implements AppLoader {
 
     private boolean loadBuiltIns(ProviderRegistry providerRegistry) {
         return providerRegistry.configuration().get(LOAD_BUILT_INS, true, Boolean::valueOf);
-    }
-
-    private static String getBetween(String string, String start, String end) {
-        int begin = string.indexOf(start);
-        if (begin >= 0) {
-            begin += start.length();
-            int stop = string.indexOf(end, begin);
-            return string.substring(begin, stop);
-        } else {
-            return null;
-        }
     }
 
 }

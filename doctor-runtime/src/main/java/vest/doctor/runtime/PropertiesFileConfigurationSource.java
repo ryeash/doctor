@@ -7,6 +7,7 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.stream.Stream;
 
 /**
  * Configuration source that reads properties from a file.
@@ -38,7 +39,7 @@ public class PropertiesFileConfigurationSource implements ConfigurationSource {
     }
 
     @Override
-    public Iterable<String> propertyNames() {
-        return properties.stringPropertyNames();
+    public Stream<String> propertyNames() {
+        return properties.stringPropertyNames().stream();
     }
 }

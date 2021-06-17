@@ -47,7 +47,7 @@ public class NettyLoader implements AppLoader {
         BodyInterchange bodyInterchange = new BodyInterchange(providerRegistry);
         providerRegistry.register(new AdHocProvider<>(BodyInterchange.class, bodyInterchange, null));
 
-        Router router = new Router(conf.getCaseInsensitiveMatching());
+        Router router = new Router(conf);
         providerRegistry.register(new AdHocProvider<>(Router.class, router, null));
 
         providerRegistry.getProviders(Filter.class)
@@ -106,16 +106,16 @@ public class NettyLoader implements AppLoader {
     }
 
     private HttpServerConfiguration buildConf(ProviderRegistry providerRegistry) {
-        ConfigurationFacade cf = providerRegistry.configuration();
+        ConfigurationFacade httpConf = providerRegistry.configuration().subsection("doctor.netty.http.");
 
         HttpServerConfiguration conf = new HttpServerConfiguration();
-        conf.setTcpManagementThreads(cf.get("doctor.netty.tcp.threads", 1, Integer::valueOf));
-        conf.setTcpThreadPrefix(cf.get("doctor.netty.tcp.threadPrefix", "netty-tcp"));
-        conf.setWorkerThreads(cf.get("doctor.netty.worker.threads", 16, Integer::valueOf));
-        conf.setWorkerThreadPrefix(cf.get("doctor.netty.worker.threadPrefix", "netty-worker"));
-        conf.setSocketBacklog(cf.get("doctor.netty.tcp.socketBacklog", 1024, Integer::valueOf));
+        conf.setTcpManagementThreads(httpConf.get("tcp.threads", 1, Integer::valueOf));
+        conf.setTcpThreadPrefix(httpConf.get("tcp.threadPrefix", "netty-tcp"));
+        conf.setWorkerThreads(httpConf.get("worker.threads", 16, Integer::valueOf));
+        conf.setWorkerThreadPrefix(httpConf.get("worker.threadPrefix", "netty-worker"));
+        conf.setSocketBacklog(httpConf.get("tcp.socketBacklog", 1024, Integer::valueOf));
 
-        List<InetSocketAddress> bind = cf.getList("doctor.netty.bind", Function.identity())
+        List<InetSocketAddress> bind = httpConf.getList("bind", Function.identity())
                 .stream()
                 .map(s -> s.split(":"))
                 .map(hp -> new InetSocketAddress(hp[0].trim(), Integer.parseInt(hp[1].trim())))
@@ -123,16 +123,16 @@ public class NettyLoader implements AppLoader {
         conf.setBindAddresses(bind);
 
         try {
-            if (cf.get("doctor.netty.ssl.selfSigned", false, Boolean::valueOf)) {
+            if (httpConf.get("ssl.selfSigned", false, Boolean::valueOf)) {
                 SelfSignedCertificate ssc = new SelfSignedCertificate();
                 SslContext sslContext = SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey()).build();
                 conf.setSslContext(sslContext);
             }
 
-            String keyCertChainFile = cf.get("doctor.netty.ssl.keyCertChainFile");
+            String keyCertChainFile = httpConf.get("ssl.keyCertChainFile");
             if (keyCertChainFile != null && !keyCertChainFile.isEmpty()) {
-                String keyFile = Objects.requireNonNull(cf.get("doctor.netty.ssl.keyFile"), "missing ssl key file configuration");
-                String keyPassword = cf.get("doctor.netty.ssl.keyPassword");
+                String keyFile = Objects.requireNonNull(httpConf.get("ssl.keyFile"), "missing ssl key file configuration");
+                String keyPassword = httpConf.get("ssl.keyPassword");
                 SslContext sslContext = SslContextBuilder.forServer(new File(keyCertChainFile), new File(keyFile), keyPassword).build();
                 conf.setSslContext(sslContext);
             }
@@ -140,16 +140,15 @@ public class NettyLoader implements AppLoader {
             throw new RuntimeException("error configuring ssl", t);
         }
 
-        conf.setMaxInitialLineLength(cf.get("doctor.netty.http.maxInitialLineLength", 8192, Integer::valueOf));
-        conf.setMaxHeaderSize(cf.get("doctor.netty.http.maxHeaderSize", 8192, Integer::valueOf));
-        conf.setMaxChunkSize(cf.get("doctor.netty.http.maxChunkSize", 8192, Integer::valueOf));
-        conf.setValidateHeaders(cf.get("doctor.netty.http.validateHeaders", false, Boolean::valueOf));
-        conf.setInitialBufferSize(cf.get("doctor.netty.http.initialBufferSize", 8192, Integer::valueOf));
-        conf.setMaxContentLength(cf.get("doctor.netty.http.maxContentLength", 8388608, Integer::valueOf));
+        conf.setMaxInitialLineLength(httpConf.get("maxInitialLineLength", 8192, Integer::valueOf));
+        conf.setMaxHeaderSize(httpConf.get("maxHeaderSize", 8192, Integer::valueOf));
+        conf.setMaxChunkSize(httpConf.get("maxChunkSize", 8192, Integer::valueOf));
+        conf.setValidateHeaders(httpConf.get("validateHeaders", false, Boolean::valueOf));
+        conf.setInitialBufferSize(httpConf.get("initialBufferSize", 8192, Integer::valueOf));
+        conf.setMaxContentLength(httpConf.get("maxContentLength", 8388608, Integer::valueOf));
 
-        conf.setCaseInsensitiveMatching(cf.get("doctor.netty.http.caseInsensitiveMatching", false, Boolean::valueOf));
-        // TODO
-        boolean debugRouting = cf.get("doctor.netty.http.debugRequestRouting", false, Boolean::valueOf);
+        conf.setCaseInsensitiveMatching(httpConf.get("caseInsensitiveMatching", false, Boolean::valueOf));
+        conf.setDebugRequestRouting(httpConf.get("debugRequestRouting", false, Boolean::valueOf));
         return conf;
     }
 

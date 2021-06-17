@@ -88,6 +88,11 @@ public class HttpServerConfiguration {
      */
     private boolean caseInsensitiveMatching = true;
 
+    /**
+     * Whether or not to add debug headers to the response when routing requests.
+     */
+    private boolean debugRequestRouting = false;
+
     public int getTcpManagementThreads() {
         return tcpManagementThreads;
     }
@@ -205,5 +210,13 @@ public class HttpServerConfiguration {
 
     public void setCaseInsensitiveMatching(boolean caseInsensitiveMatching) {
         this.caseInsensitiveMatching = caseInsensitiveMatching;
+    }
+
+    public boolean isDebugRequestRouting() {
+        return debugRequestRouting;
+    }
+
+    public void setDebugRequestRouting(boolean debugRequestRouting) {
+        this.debugRequestRouting = debugRequestRouting;
     }
 }

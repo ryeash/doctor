@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
@@ -92,12 +93,12 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
     }
 
     @Override
-    public Iterable<String> propertyNames() {
+    public Stream<String> propertyNames() {
         return sources.stream()
                 .map(ConfigurationSource::propertyNames)
                 .flatMap(i -> StreamSupport.stream(i.spliterator(), false))
                 .filter(Objects::nonNull)
-                .distinct()::iterator;
+                .distinct();
     }
 
     @Override
@@ -185,6 +186,27 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
     }
 
     @Override
+    public Set<String> uniquePropertyGroups(String prefix) {
+        return uniquePropertyGroups(prefix, ".");
+    }
+
+    @Override
+    public Set<String> uniquePropertyGroups(String prefix, String terminal) {
+        return StreamSupport.stream(propertyNames().spliterator(), false)
+                .filter(name -> name.startsWith(prefix))
+                .map(name -> getBetween(name, prefix, terminal))
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public ConfigurationFacade subsection(String prefix) {
+        return new SubsectionConfigurationFacade(this, prefix);
+    }
+
+    @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("Sources (in order): ");
@@ -246,5 +268,17 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
         } else {
             return new String[]{str.substring(0, i), str.substring(i + 1)};
         }
+    }
+
+    private static String getBetween(String string, String start, String end) {
+        int begin = string.indexOf(start);
+        if (begin >= 0) {
+            begin += start.length();
+            int stop = string.indexOf(end, begin);
+            if (stop >= begin) {
+                return string.substring(begin, stop);
+            }
+        }
+        return null;
     }
 }

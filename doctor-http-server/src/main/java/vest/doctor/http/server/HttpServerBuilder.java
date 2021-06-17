@@ -15,7 +15,7 @@ import java.util.function.UnaryOperator;
 public class HttpServerBuilder {
 
     private final HttpServerConfiguration config = new HttpServerConfiguration();
-    private final Router router = new Router();
+    private final Router router = new Router(config);
 
     /**
      * @see HttpServerConfiguration#setTcpManagementThreads(int)

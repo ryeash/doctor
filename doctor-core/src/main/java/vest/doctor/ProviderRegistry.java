@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 public interface ProviderRegistry {
 
     /**
-     * The list of active modules the app was started with.
+     * The list of active modules.
      */
     List<String> getActiveModules();
 
@@ -29,36 +29,40 @@ public interface ProviderRegistry {
     /**
      * Get an instance of a provided type.
      *
-     * @param type the type to get the instance of
+     * @param type the provided type to get
      * @return an instance of the provided type
      * @throws IllegalArgumentException if the type can not be provided
      */
-    <T> T getInstance(Class<T> type);
+    default <T> T getInstance(Class<T> type) {
+        return getProvider(type, null).get();
+    }
 
     /**
      * Get an instance of a provided type.
      *
-     * @param type      the type to get the instance of
+     * @param type      the provided type to get
      * @param qualifier the qualifier of the instance
      * @return an instance of the provided type
      * @throws IllegalArgumentException if the type can not be provided
      */
-    <T> T getInstance(Class<T> type, String qualifier);
-
-    /**
-     * Optionally get an instance of a provided type, without throwing an exception if the type is not provided.
-     *
-     * @param type the type to get the instance of
-     * @return an optional instance of the provided type
-     */
-    default <T> Optional<T> getInstanceOpt(Class<T> type) {
-        return getInstanceOpt(type, null);
+    default <T> T getInstance(Class<T> type, String qualifier) {
+        return getProvider(type, qualifier).get();
     }
 
     /**
      * Optionally get an instance of a provided type, without throwing an exception if the type is not provided.
      *
-     * @param type      the type to get the instance of
+     * @param type the provided type to get
+     * @return an optional instance of the provided type
+     */
+    default <T> Optional<T> getInstanceOpt(Class<T> type) {
+        return getProviderOpt(type, null).map(Provider::get);
+    }
+
+    /**
+     * Optionally get an instance of a provided type, without throwing an exception if the type is not provided.
+     *
+     * @param type      the provided type to get
      * @param qualifier the qualifier of the instance
      * @return an optional instance of the provided type
      */
@@ -69,7 +73,7 @@ public interface ProviderRegistry {
     /**
      * Get a provider for the given type.
      *
-     * @param type the type to get the provider for
+     * @param type the provided type to get
      * @return a provider for the type
      * @throws IllegalArgumentException if the type can not be provided
      */
@@ -78,7 +82,7 @@ public interface ProviderRegistry {
     /**
      * Get a provider for the given type.
      *
-     * @param type      the type to get the provider for
+     * @param type      the provided type to get
      * @param qualifier the qualifier of the provider
      * @return a provider for the type
      * @throws IllegalArgumentException if the type can not be provided
@@ -89,7 +93,7 @@ public interface ProviderRegistry {
      * Get an optional provider for the given type. Unlike {@link #getProvider(Class)} this method does not throw
      * an exception if the type can not be provided.
      *
-     * @param type the type to get the provider for
+     * @param type the provided type to get
      * @return an optional provider for the type
      */
     default <T> Optional<DoctorProvider<T>> getProviderOpt(Class<T> type) {
@@ -100,7 +104,7 @@ public interface ProviderRegistry {
      * Get an optional provider for the given type. Unlike {@link #getProvider(Class)} this method does not throw
      * an exception if the type can not be provided.
      *
-     * @param type      the type to get the provider for
+     * @param type      the provided type to get
      * @param qualifier the qualifier of the provider
      * @return an optional provider for the type and qualifier
      */
@@ -109,7 +113,7 @@ public interface ProviderRegistry {
     /**
      * Get all providers that can satisfy the given type.
      *
-     * @param type the type to get provider for
+     * @param type the provided type to get
      * @return a stream of all providers for the given type
      */
     <T> Stream<DoctorProvider<T>> getProviders(Class<T> type);
@@ -117,7 +121,7 @@ public interface ProviderRegistry {
     /**
      * Get all providers that can satisfy the given type and qualifier.
      *
-     * @param type      the type to get providers for
+     * @param type      the provided type to get
      * @param qualifier the required qualifier for the providers
      * @return a stream of all provider for the given type and qualifier
      */
@@ -144,7 +148,7 @@ public interface ProviderRegistry {
      *
      * @param type      the type to check
      * @param qualifier the qualifier to check
-     * @return true if a provider exists that can satisfy the given type and qualfier
+     * @return true if a provider exists that can satisfy the given type and qualifier
      */
     boolean hasProvider(Class<?> type, String qualifier);
 
@@ -161,11 +165,10 @@ public interface ProviderRegistry {
     ShutdownContainer shutdownContainer();
 
     /**
-     * Convenience method for <code>configuration().resolvePlaceholders()</code>.
+     * Convenience method for <code>configuration().resolvePlaceholders(string)</code>.
      *
      * @param string the string to resolve
      * @return a new string with placeholders resolved using properties
      */
     String resolvePlaceholders(String string);
-
 }

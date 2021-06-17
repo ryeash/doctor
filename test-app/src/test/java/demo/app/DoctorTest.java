@@ -83,6 +83,10 @@ public class DoctorTest extends BaseDoctorTest {
         assertEquals((int) conf.<Integer>get("number", Integer::valueOf), 42);
         assertTrue(conf.get("boolean", Boolean::valueOf));
         assertEquals(conf.get("override.this"), "overridden");
+
+        List<String> dbProps = doctor.configuration().subsection("db.")
+                .propertyNames().collect(Collectors.toList());
+        assertEquals(dbProps, List.of("url", "username", "password"));
     }
 
     @Test
