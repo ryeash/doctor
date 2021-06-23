@@ -14,6 +14,7 @@ import vest.doctor.codegen.Constants;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
 import vest.doctor.event.EventBus;
+import vest.doctor.event.EventConsumer;
 import vest.doctor.event.EventListener;
 
 import javax.lang.model.element.ExecutableElement;
@@ -35,6 +36,12 @@ public class EventConsumersWriter implements ProviderDefinitionListener {
     @Override
     public void process(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
         initBuilders(context);
+
+        if (ProcessorUtils.isCompatibleWith(context, providerDefinition.providedType(), EventConsumer.class)) {
+            postProcess.line("bus.addConsumer(", ProcessorUtils.getProviderCode(providerDefinition), ".get());");
+            return;
+        }
+
         List<ExecutableElement> listeners = new LinkedList<>();
         for (ExecutableElement listener : ProcessorUtils.allMethods(context, providerDefinition.providedType())) {
             if (listener.getAnnotation(EventListener.class) == null) {

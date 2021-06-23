@@ -8,6 +8,8 @@ import vest.doctor.AdHocProvider;
 import vest.doctor.AppLoader;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.event.ApplicationStarted;
+import vest.doctor.event.EventBus;
 import vest.doctor.event.EventProducer;
 import vest.doctor.event.ServiceStarted;
 import vest.doctor.event.ServiceStopped;
@@ -32,13 +34,8 @@ import java.util.stream.Stream;
 
 public class NettyLoader implements AppLoader {
 
-    private ProviderRegistry providerRegistry;
-    private HttpServer server;
-
     @Override
-    public void postProcess(ProviderRegistry providerRegistry) {
-        this.providerRegistry = providerRegistry;
-
+    public void load(ProviderRegistry providerRegistry) {
         HttpServerConfiguration conf = buildConf(providerRegistry);
         if (conf.getBindAddresses().isEmpty()) {
             return;
@@ -48,9 +45,6 @@ public class NettyLoader implements AppLoader {
 
         Router router = new Router(conf);
         providerRegistry.register(new AdHocProvider<>(Router.class, router, null));
-
-        providerRegistry.getProviders(EndpointConfiguration.class)
-                .forEach(Provider::get);
 
         CompositeExceptionHandler compositeExceptionHandler = new CompositeExceptionHandler();
         providerRegistry.getProviders(ExceptionHandler.class)
@@ -62,7 +56,7 @@ public class NettyLoader implements AppLoader {
                         .map(Provider::get)
                         .collect(Collectors.toList())));
 
-        this.server = new HttpServer(conf, router, channelInitializer, compositeExceptionHandler);
+        HttpServer server = new HttpServer(conf, router, channelInitializer, compositeExceptionHandler);
 
         providerRegistry.getProviders(Websocket.class)
                 .forEach(ws -> {
@@ -86,18 +80,22 @@ public class NettyLoader implements AppLoader {
                     }
                 });
 
-        providerRegistry.register(new AdHocProvider<>(HttpServer.class, this.server, null));
-        providerRegistry.getInstance(EventProducer.class).publish(new ServiceStarted("netty-http", server));
-    }
+        providerRegistry.register(new AdHocProvider<>(HttpServer.class, server, null));
 
-    @Override
-    public void close() {
-        if (server != null) {
+        providerRegistry.getInstanceOpt(EventBus.class)
+                .ifPresent(bus -> {
+                    bus.addConsumer(event -> {
+                        if (event instanceof ApplicationStarted) {
+                            bus.publish(new ServiceStarted("netty-http", server));
+                        }
+                    });
+                });
+
+        providerRegistry.shutdownContainer().register(() -> {
             server.close();
-        }
-        if (providerRegistry != null) {
-            providerRegistry.getInstance(EventProducer.class).publish(new ServiceStopped("netty-http", server));
-        }
+            providerRegistry.getInstance(EventProducer.class)
+                    .publish(new ServiceStopped("netty-http", server));
+        });
     }
 
     private HttpServerConfiguration buildConf(ProviderRegistry providerRegistry) {

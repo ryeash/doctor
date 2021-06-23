@@ -1,11 +1,9 @@
 package vest.doctor.jpa;
 
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
+import vest.doctor.AdHocProvider;
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.AppLoader;
 import vest.doctor.CodeProcessingException;
-import vest.doctor.DestroyMethod;
-import vest.doctor.Factory;
 import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderDefinitionListener;
 import vest.doctor.ProviderRegistry;
@@ -30,6 +28,7 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
     private final Set<String> processedPersistenceUnits = new HashSet<>();
 
     private ClassBuilder jpaAppLoader;
+    private MethodBuilder preProcess;
 
     @Override
     public void process(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
@@ -42,52 +41,45 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
     }
 
     private void processAnnotation(AnnotationProcessorContext context, PersistenceContext persistenceContext) {
-        initAppLoader(context);
         String pcName = Objects.requireNonNull(persistenceContext.name(), "@PersistenceContext annotations must have a name defined that matches the persistence unit name in the xml");
 
         if (processedPersistenceUnits.contains(pcName)) {
             throw new CodeProcessingException("multiple @PersistenceContext annotations with the same name: " + pcName);
         }
         processedPersistenceUnits.add(pcName);
+        initAppLoader(context);
 
-        String generatedClassName = context.generatedPackage() + ".JPAObjectFactory__jpa" + context.nextId();
-        ClassBuilder entityManagerFactory = new ClassBuilder()
-                .setClassName(generatedClassName)
-                .addClassAnnotation("@Singleton")
-                .addImportClass(Singleton.class)
-                .addImportClass(Named.class)
-                .addImportClass(Factory.class)
-                .addImportClass(DestroyMethod.class)
-                .addImportClass(EntityManager.class)
-                .addImportClass(EntityManagerFactory.class)
-                .addImportClass(Persistence.class)
-                .addImportClass(SynchronizationType.class)
-                .addImportClass(ProviderRegistry.class)
-                .addImportClass(Map.class)
-                .addImportClass(LinkedHashMap.class)
-                .addImportClass("org.slf4j.Logger")
-                .addImportClass("org.slf4j.LoggerFactory");
-
-        entityManagerFactory.addField("private final static Logger log = LoggerFactory.getLogger(", generatedClassName, ".class)");
-
-        MethodBuilder emf = entityManagerFactory.newMethod("@Singleton @Factory @DestroyMethod(\"close\") @Named(\"", ProcessorUtils.escapeStringForCode(pcName), "\") " +
-                "public " + EntityManagerFactory.class.getSimpleName() + " entityManagerFactory" + context.nextId() + "(" + ProviderRegistry.class.getSimpleName() + " {{providerRegistry}})");
-        emf.line("Map<String, String> properties = new LinkedHashMap<>();");
+        String properties = "properties" + context.nextId();
+        String emf = "entityManagerFactory" + context.nextId();
+        String em = "entityManager" + context.nextId();
+        preProcess.line("Map<String, String> ", properties, " = new LinkedHashMap<>();");
         for (PersistenceProperty property : persistenceContext.properties()) {
-            emf.line("properties.put({{providerRegistry}}.resolvePlaceholders(\"", property.name(), "\"), {{providerRegistry}}.resolvePlaceholders(\"", property.value(), "\"));");
+            preProcess.line(properties, ".put({{providerRegistry}}.resolvePlaceholders(\"", property.name(), "\"), {{providerRegistry}}.resolvePlaceholders(\"", property.value(), "\"));");
         }
-        emf.line("return Persistence.createEntityManagerFactory({{providerRegistry}}.resolvePlaceholders(\"", pcName, "\"), properties);");
+        preProcess.line("EntityManagerFactory ", emf, " = Persistence.createEntityManagerFactory({{providerRegistry}}.resolvePlaceholders(\"", pcName, "\"), ", properties, ");");
+        preProcess.line("{{providerRegistry}}.shutdownContainer().register(", emf, "::close);");
+        preProcess.line("{{providerRegistry}}.register(new AdHocProvider<>(EntityManagerFactory.class, ", emf, ", \"", ProcessorUtils.escapeStringForCode(pcName), "\"));");
 
-        MethodBuilder em = entityManagerFactory.newMethod("@Singleton @Factory @DestroyMethod(\"close\") @Named(\"", ProcessorUtils.escapeStringForCode(pcName), "\") ",
-                "public ", EntityManager.class.getSimpleName(), " entityManager", context.nextId(), "(", ProviderRegistry.class, " {{providerRegistry}}, @Named(\"", ProcessorUtils.escapeStringForCode(pcName), "\") EntityManagerFactory entityManagerFactory)");
-        em.line("try{");
-        em.line("return entityManagerFactory.createEntityManager(SynchronizationType.", persistenceContext.synchronization(), ", entityManagerFactory.getProperties());");
-        em.line("} catch (" + IllegalStateException.class.getSimpleName() + " e) {");
-        em.line("log.warn(\"could not create entity manager with explicit synchronization type, falling back; error message: {}\", e.getMessage());");
-        em.line("log.debug(\"full error stack\", e);");
-        em.line("return entityManagerFactory.createEntityManager(entityManagerFactory.getProperties());");
-        em.line("}");
-        entityManagerFactory.writeClass(context.filer());
+        preProcess.line("EntityManager ", em, " = null;");
+        preProcess.line("try{");
+        preProcess.line(em, " = ", emf, ".createEntityManager(SynchronizationType.", persistenceContext.synchronization(), ", ", properties, ");");
+        preProcess.line("} catch (" + IllegalStateException.class.getSimpleName() + " e) {");
+        preProcess.line("log.warn(\"could not create entity manager with explicit synchronization type, falling back; error message: {}\", e.getMessage());");
+        preProcess.line("log.debug(\"full error stack\", e);");
+        preProcess.line(em, " = ", emf, ".createEntityManager(", properties, ");");
+        preProcess.line("}");
+        preProcess.line("{{providerRegistry}}.shutdownContainer().register(", em, "::close);");
+        preProcess.line("{{providerRegistry}}.register(new AdHocProvider<>(EntityManager.class, ", em, ", \"", ProcessorUtils.escapeStringForCode(pcName), "\"));");
+        context.addSatisfiedDependency(EntityManagerFactory.class, '"' + pcName + '"');
+        context.addSatisfiedDependency(EntityManager.class, '"' + pcName + '"');
+    }
+
+    @Override
+    public void finish(AnnotationProcessorContext context) {
+        if (jpaAppLoader != null) {
+            jpaAppLoader.writeClass(context.filer());
+            context.addServiceImplementation(AppLoader.class, jpaAppLoader.getFullyQualifiedClassName());
+        }
     }
 
     private void initAppLoader(AnnotationProcessorContext context) {
@@ -97,18 +89,19 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
         String generatedClassName = context.generatedPackage() + ".JPAAppLoader__" + context.nextId();
         jpaAppLoader = new ClassBuilder()
                 .setClassName(generatedClassName)
-                .addClassAnnotation("@Singleton")
-                .addImportClass(Singleton.class)
-                .addImportClass(Named.class)
-                .addImportClass(Factory.class)
+                .addImplementsInterface(AppLoader.class)
                 .addImportClass(EntityManager.class)
                 .addImportClass(EntityManagerFactory.class)
                 .addImportClass(Persistence.class)
                 .addImportClass(SynchronizationType.class)
                 .addImportClass(ProviderRegistry.class)
+                .addImportClass(AdHocProvider.class)
                 .addImportClass(Map.class)
                 .addImportClass(LinkedHashMap.class)
                 .addImportClass("org.slf4j.Logger")
-                .addImportClass("org.slf4j.LoggerFactory");
+                .addImportClass("org.slf4j.LoggerFactory")
+                .addField("private final static Logger log = LoggerFactory.getLogger(", generatedClassName, ".class)");
+
+        preProcess = jpaAppLoader.newMethod("public void preProcess(ProviderRegistry {{providerRegistry}})");
     }
 }

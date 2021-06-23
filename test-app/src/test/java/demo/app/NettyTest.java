@@ -12,12 +12,21 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import vest.doctor.runtime.DefaultConfigurationFacade;
+import vest.doctor.runtime.Doctor;
+import vest.doctor.runtime.MapConfigurationSource;
 
 import java.net.URI;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -29,7 +38,27 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
-public class NettyTest extends BaseDoctorTest {
+public class NettyTest extends Assert {
+
+    protected final Logger log = LoggerFactory.getLogger(getClass());
+    public Doctor doctor;
+
+    @BeforeClass(alwaysRun = true)
+    public void start() {
+        if (doctor == null) {
+            System.setProperty("qualifierInterpolation", "interpolated");
+            System.setProperty("doctor.app.properties", "test-override.props,test.props");
+
+            doctor = Doctor.load(DefaultConfigurationFacade.defaultConfigurationFacade()
+                    .addSource(new MapConfigurationSource(Map.of(
+                            "doctor.netty.http.bind", "localhost:61233"))));
+        }
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void shutdown() {
+        doctor.close();
+    }
 
     private RequestSpecification req() {
         RestAssured.baseURI = "http://localhost:61233/";

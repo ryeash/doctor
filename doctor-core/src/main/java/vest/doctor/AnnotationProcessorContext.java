@@ -170,5 +170,5 @@ public interface AnnotationProcessorContext {
         }
     }
 
-    void addServiceImplementation(Class<?> serviceInterface, String appLoaderFullyQualifiedClass);
+    void addServiceImplementation(Class<?> serviceInterface, String fullyQualifiedClassName);
 }

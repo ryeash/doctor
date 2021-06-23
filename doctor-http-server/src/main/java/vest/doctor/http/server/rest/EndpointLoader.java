@@ -1,5 +1,7 @@
 package vest.doctor.http.server.rest;
 
+import vest.doctor.AppLoader;
+import vest.doctor.ProviderRegistry;
 import vest.doctor.TypeInfo;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
@@ -12,8 +14,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * Internally used during endpoint annotation processing.
  */
-public interface EndpointConfiguration {
-    void initialize();
+public interface EndpointLoader extends AppLoader {
 
     default String pathParam(Request request, String name) {
         Map<String, String> map = request.attribute(Router.PATH_PARAMS);
@@ -38,5 +39,14 @@ public interface EndpointConfiguration {
             future.completeExceptionally(t);
             return future;
         }
+    }
+
+    default boolean isRouterWired(ProviderRegistry providerRegistry) {
+        return providerRegistry.getProviderOpt(Router.class).isPresent();
+    }
+
+    @Override
+    default int priority() {
+        return Integer.MAX_VALUE;
     }
 }

@@ -3,11 +3,16 @@ package demo.app;
 import demo.app.dao.DAO;
 import demo.app.dao.User;
 import jakarta.inject.Provider;
-import org.testng.annotations.AfterSuite;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.event.EventProducer;
 import vest.doctor.event.ReloadConfiguration;
+import vest.doctor.runtime.DefaultConfigurationFacade;
 import vest.doctor.runtime.Doctor;
 
 import java.io.IOException;
@@ -20,9 +25,23 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class DoctorTest extends BaseDoctorTest {
+public class DoctorTest extends Assert {
 
-    @AfterSuite(alwaysRun = true)
+    protected final Logger log = LoggerFactory.getLogger(getClass());
+    public Doctor doctor;
+
+    @BeforeClass(alwaysRun = true)
+    public void start() {
+        if (doctor == null) {
+            System.setProperty("qualifierInterpolation", "interpolated");
+            System.setProperty("doctor.app.properties", "test-override.props,test.props");
+
+            doctor = Doctor.load(DefaultConfigurationFacade.defaultConfigurationFacade()
+                    .addSource(new TCConfigReload()));
+        }
+    }
+
+    @AfterClass(alwaysRun = true)
     public void shutdown() {
         log.info("{}", doctor);
         doctor.close();
@@ -172,7 +191,7 @@ public class DoctorTest extends BaseDoctorTest {
         }
     }
 
-    @Test(groups = "dev")
+    @Test
     public void injectedMethodsTest() {
         TCInjectedMethodsC instance = doctor.getInstance(TCInjectedMethodsC.class);
         assertNotNull(instance.coffeeMaker);

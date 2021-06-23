@@ -52,11 +52,6 @@ public class BuiltInAppLoader implements AppLoader {
         return 10;
     }
 
-    @Override
-    public void close() {
-        // no-op
-    }
-
     private boolean loadBuiltIns(ProviderRegistry providerRegistry) {
         return providerRegistry.configuration().get(LOAD_BUILT_INS, true, Boolean::valueOf);
     }

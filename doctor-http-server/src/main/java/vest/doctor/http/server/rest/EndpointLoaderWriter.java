@@ -5,6 +5,7 @@ import jakarta.inject.Named;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import vest.doctor.AnnotationProcessorContext;
+import vest.doctor.AppLoader;
 import vest.doctor.CodeProcessingException;
 import vest.doctor.ExplicitProvidedTypes;
 import vest.doctor.ProviderDefinition;
@@ -43,25 +44,89 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-public class EndpointWriter implements ProviderDefinitionListener {
+public class EndpointLoaderWriter implements ProviderDefinitionListener {
 
     private final Set<ExecutableElement> processedMethods = new HashSet<>();
+    private final AtomicBoolean hasRoutes = new AtomicBoolean(false);
+    private ClassBuilder config;
+    private MethodBuilder postProcess;
 
     @Override
     public void process(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
         if (providerDefinition.annotationSource().getAnnotation(Path.class) == null) {
             return;
         }
+        initialize(context);
 
-        String className = "EndpointConfig_" + providerDefinition.providedType().getSimpleName() + "_" + context.nextId();
+        String endpointRef = "endpoint" + context.nextId();
+        postProcess.line("Provider<", providerDefinition.providedType(), "> ", endpointRef, " = {{providerRegistry}}.getProvider(", providerDefinition.providedType(), ".class, ", providerDefinition.qualifier(), ");");
+        String[] roots = Optional.ofNullable(providerDefinition.annotationSource().getAnnotation(Path.class))
+                .map(Path::value)
+                .orElse(new String[]{"/"});
+
+        if (ProcessorUtils.isCompatibleWith(context, providerDefinition.providedType(), Filter.class)) {
+            for (String root : roots) {
+                hasRoutes.set(true);
+                postProcess.line("router.filter(\"", ProcessorUtils.escapeStringForCode(root), "\",", endpointRef, ".get());");
+            }
+        }
+
+        if (ProcessorUtils.isCompatibleWith(context, providerDefinition.providedType(), Handler.class)) {
+            List<String> methods = ProcessorUtils.methodMatchingSignature(context, providerDefinition.providedType(), "handle", Request.class)
+                    .map(EndpointLoaderWriter::getHttpMethods)
+                    .filter(l -> !l.isEmpty())
+                    .orElse(Collections.singletonList(ANY.ANY_METHOD_NAME));
+            for (String root : roots) {
+                for (String method : methods) {
+                    postProcess.line("router.route(\"",
+                            ProcessorUtils.escapeStringForCode(method), "\",\"",
+                            ProcessorUtils.escapeStringForCode(root),
+                            "\",", endpointRef, ".get());");
+                }
+            }
+        } else {
+            ProcessorUtils.allMethods(context, providerDefinition.providedType())
+                    .stream()
+                    .filter(m -> m.getModifiers().contains(Modifier.PUBLIC))
+                    .filter(processedMethods::add)
+                    .forEach(method -> {
+                        List<String> methods = getHttpMethods(method);
+                        if (!methods.isEmpty()) {
+                            String[] paths = Optional.ofNullable(method.getAnnotation(Path.class)).map(Path::value).orElse(new String[]{""});
+                            List<String> fullPaths = paths(roots, paths);
+
+                            for (String httMethod : methods) {
+                                for (String fullPath : fullPaths) {
+                                    addRoute(postProcess, context, httMethod, fullPath, endpointRef, method);
+                                    hasRoutes.set(true);
+                                }
+                            }
+                        }
+                    });
+        }
+    }
+
+    @Override
+    public void finish(AnnotationProcessorContext context) {
+        if (hasRoutes.get()) {
+            config.writeClass(context.filer());
+            context.addServiceImplementation(AppLoader.class, config.getFullyQualifiedClassName());
+        }
+    }
+
+    private void initialize(AnnotationProcessorContext context) {
+        if (config != null) {
+            return;
+        }
+        String className = "EndpointLoader_" + context.nextId();
         String qualifiedClassName = context.generatedPackage() + "." + className;
 
-        ClassBuilder config = new ClassBuilder()
+        this.config = new ClassBuilder()
                 .setClassName(qualifiedClassName)
-                .addImplementsInterface(EndpointConfiguration.class)
+                .addImplementsInterface(EndpointLoader.class)
                 .addImportClass(CompletableFuture.class)
                 .addImportClass(BodyInterchange.class)
-                .addImportClass(EndpointConfiguration.class)
+                .addImportClass(EndpointLoader.class)
                 .addImportClass(ProviderRegistry.class)
                 .addImportClass(Request.class)
                 .addImportClass(Response.class)
@@ -71,75 +136,13 @@ public class EndpointWriter implements ProviderDefinitionListener {
                 .addImportClass(Singleton.class)
                 .addImportClass(Named.class)
                 .addImportClass(ExplicitProvidedTypes.class)
-                .addImportClass(Provider.class)
-                .addClassAnnotation("@Singleton")
-                .addClassAnnotation("@Named(\"", className, "\")")
-                .addClassAnnotation("@ExplicitProvidedTypes({EndpointConfiguration.class})")
-                .addField("private final ProviderRegistry providerRegistry")
-                .addField("private final BodyInterchange bodyInterchange")
-                .addField("private final Router router")
-                .addField("private final Provider<", providerDefinition.providedType(), "> endpoint");
+                .addImportClass(Provider.class);
 
-        config.addMethod("@Inject public " + className + "(ProviderRegistry {{providerRegistry}})", b -> {
-            b.line("this.{{providerRegistry}} = {{providerRegistry}};");
-            b.line("this.endpoint = {{providerRegistry}}.getProvider(", providerDefinition.providedType(), ".class, ", providerDefinition.qualifier(), ");");
-            b.line("this.router = {{providerRegistry}}.getInstance(Router.class);");
-            b.line("this.bodyInterchange = {{providerRegistry}}.getInstance(BodyInterchange.class);");
-        });
+        this.postProcess = config.newMethod("public void postProcess(ProviderRegistry {{providerRegistry}})");
+        postProcess.line("if(!isRouterWired({{providerRegistry}})) { return; }");
+        postProcess.line("Router router = {{providerRegistry}}.getInstance(Router.class);");
+        postProcess.line("BodyInterchange bodyInterchange = {{providerRegistry}}.getInstance(BodyInterchange.class);");
 
-        MethodBuilder initialize = config.newMethod("@Inject public void initialize()");
-
-        String[] roots = Optional.ofNullable(providerDefinition.annotationSource().getAnnotation(Path.class))
-                .map(Path::value)
-                .orElse(new String[]{"/"});
-
-        AtomicBoolean methodAdded = new AtomicBoolean(false);
-
-        if (ProcessorUtils.isCompatibleWith(context, providerDefinition.providedType(), Filter.class)) {
-            for (String root : roots) {
-                methodAdded.set(true);
-                initialize.line("router.filter(\"", ProcessorUtils.escapeStringForCode(root), "\",endpoint.get());");
-            }
-        }
-
-        if (ProcessorUtils.isCompatibleWith(context, providerDefinition.providedType(), Handler.class)) {
-            List<String> methods = ProcessorUtils.methodMatchingSignature(context, providerDefinition.providedType(), "handle", Request.class)
-                    .map(EndpointWriter::getHttpMethods)
-                    .filter(l -> !l.isEmpty())
-                    .orElse(Collections.singletonList(ANY.ANY_METHOD_NAME));
-            for (String root : roots) {
-                for (String method : methods) {
-                    initialize.line("router.route(\"",
-                            ProcessorUtils.escapeStringForCode(method), "\",\"",
-                            ProcessorUtils.escapeStringForCode(root),
-                            "\",endpoint.get());");
-                }
-            }
-            config.writeClass(context.filer());
-            return;
-        }
-
-        ProcessorUtils.allMethods(context, providerDefinition.providedType())
-                .stream()
-                .filter(m -> m.getModifiers().contains(Modifier.PUBLIC))
-                .filter(processedMethods::add)
-                .forEach(method -> {
-                    List<String> methods = getHttpMethods(method);
-                    if (!methods.isEmpty()) {
-                        String[] paths = Optional.ofNullable(method.getAnnotation(Path.class)).map(Path::value).orElse(new String[]{""});
-                        List<String> fullPaths = paths(roots, paths);
-
-                        for (String httMethod : methods) {
-                            for (String fullPath : fullPaths) {
-                                addRoute(initialize, context, httMethod, fullPath, method);
-                                methodAdded.set(true);
-                            }
-                        }
-                    }
-                });
-        if (methodAdded.get()) {
-            config.writeClass(context.filer());
-        }
     }
 
     private static List<String> getHttpMethods(ExecutableElement method) {
@@ -167,6 +170,7 @@ public class EndpointWriter implements ProviderDefinitionListener {
                                  AnnotationProcessorContext context,
                                  String httpMethod,
                                  String path,
+                                 String endpointRef,
                                  ExecutableElement method) {
 
         String parameters = method.getParameters().stream()
@@ -177,7 +181,7 @@ public class EndpointWriter implements ProviderDefinitionListener {
         boolean bodyFuture = isBodyFuture(context, method);
         boolean completableResponse = returnsCompletableResponse(context, method);
 
-        String callMethod = "endpoint.get()." + method.getSimpleName() + parameters + ";";
+        String callMethod = endpointRef + ".get()." + method.getSimpleName() + parameters + ";";
 
         initialize.line("router.route(\"",
                 ProcessorUtils.escapeStringForCode(httpMethod), '"',

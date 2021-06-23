@@ -234,13 +234,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
             getProviderOpt(EventProducer.class, null)
                     .map(Provider::get)
                     .ifPresent(ep -> ep.publish(new ApplicationShutdown(this)));
-            for (AppLoader loader : loaders) {
-                try {
-                    loader.close();
-                } catch (Exception e) {
-                    // ignored
-                }
-            }
+            shutdownContainer.close();
         }
     }
 

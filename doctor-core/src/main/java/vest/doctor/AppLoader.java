@@ -6,7 +6,7 @@ import java.util.List;
  * Loaded by the {@link ProviderRegistry} to boot the application. All AppLoaders configured
  * (via service loading) will be instantiated and the three stages will be called in groups: preProcess, load, postProcess.
  */
-public interface AppLoader extends Prioritized, AutoCloseable {
+public interface AppLoader extends Prioritized {
 
     /**
      * Execute any code required during pre-processing.
@@ -33,10 +33,6 @@ public interface AppLoader extends Prioritized, AutoCloseable {
      */
     default void postProcess(ProviderRegistry providerRegistry) {
         // no-op
-    }
-
-    @Override
-    default void close() throws Exception {
     }
 
     /**

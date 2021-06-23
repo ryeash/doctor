@@ -17,8 +17,6 @@ public class NettyProcessorConfiguration implements ProcessorConfiguration {
 
     @Override
     public List<CustomizationPoint> customizationPoints() {
-        return Arrays.asList(
-                new EndpointWriter(),
-                new HttpStringConverter());
+        return Arrays.asList(new EndpointLoaderWriter(), new HttpStringConverter());
     }
 }

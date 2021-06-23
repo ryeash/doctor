@@ -249,5 +249,4 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
         return request.headers().getInt(HttpHeaderNames.CONTENT_LENGTH, 0) > 0
                 || request.headers().contains(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED, true);
     }
-
 }

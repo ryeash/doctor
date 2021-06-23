@@ -113,8 +113,6 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 .addImportClass(DoctorProvider.class)
                 .addImportClass(PrimaryProviderWrapper.class)
                 .addImportClass(ShutdownContainer.class)
-                .addField("private final ", ShutdownContainer.class, " {{shutdownContainer}} = new ", ShutdownContainer.class, "()")
-                .addMethod("public void close()", b -> b.line("{{shutdownContainer}}.close();"))
                 .addField("private final List<", DoctorProvider.class, "<?>> eagerList = new ArrayList<>()");
         this.load = appLoader.newMethod("public void load(", ProviderRegistry.class, " {{providerRegistry}})");
         this.postProcess = appLoader.newMethod("public void postProcess(", ProviderRegistry.class, " {{providerRegistry}})");
@@ -257,9 +255,9 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     }
 
     @Override
-    public void addServiceImplementation(Class<?> serviceInterface, String appLoaderFullyQualifiedClass) {
+    public void addServiceImplementation(Class<?> serviceInterface, String fullyQualifiedClassName) {
         serviceImplementations.computeIfAbsent(serviceInterface, v -> new HashSet<>())
-                .add(appLoaderFullyQualifiedClass);
+                .add(fullyQualifiedClassName);
     }
 
     private void errorChecking(ProviderDefinition providerDefinition) {
