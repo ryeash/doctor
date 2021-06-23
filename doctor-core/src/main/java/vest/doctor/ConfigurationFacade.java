@@ -27,72 +27,72 @@ public interface ConfigurationFacade extends ConfigurationSource {
     /**
      * Get a property value.
      *
-     * @param fullyQualifiedPropertyName the full name of the property
-     * @param defaultValue               the value to return if the property is not set
+     * @param propertyName the name of the property
+     * @param defaultValue the value to return if the property is not set
      * @return the property value, or the default value if the property is not found
      */
-    String get(String fullyQualifiedPropertyName, String defaultValue);
+    String get(String propertyName, String defaultValue);
 
     /**
      * Get a property value, converting it to another value using the given converter function.
      *
-     * @param fullyQualifiedPropertyName the full name of the property
-     * @param converter                  the converter to use to convert the property value
+     * @param propertyName the name of the property
+     * @param converter    the converter to use to convert the property value
      * @return the converted property value or null if the property is not found
      */
-    <T> T get(String fullyQualifiedPropertyName, Function<String, T> converter);
+    <T> T get(String propertyName, Function<String, T> converter);
 
     /**
      * Get a property value, converting it to another value using the given converter function.
      *
-     * @param fullyQualifiedPropertyName the full name of the property
-     * @param defaultValue               the value to return if the property is not set
-     * @param converter                  the converter to use to convert the property value
+     * @param propertyName the name of the property
+     * @param defaultValue the value to return if the property is not set
+     * @param converter    the converter to use to convert the property value
      * @return the converted property value, or the default value if the property is not found
      */
-    <T> T get(String fullyQualifiedPropertyName, T defaultValue, Function<String, T> converter);
+    <T> T get(String propertyName, T defaultValue, Function<String, T> converter);
 
     /**
      * Get a list of property values, delimited by commas. Individual values will be converted using the given
      * converter function.
      *
-     * @param fullyQualifiedPropertyName the full name of the property
-     * @param converter                  the converter to use to convert the property value
+     * @param propertyName the name of the property
+     * @param converter    the converter to use to convert the property value
      * @return the property values, or an empty list if the property is not found
      */
-    <T> List<T> getList(String fullyQualifiedPropertyName, Function<String, T> converter);
+    <T> List<T> getList(String propertyName, Function<String, T> converter);
 
     /**
      * Get a list of property values, delimited by commas. Individual values will be converted using the given
      * converter function.
      *
-     * @param fullyQualifiedPropertyName the full name of the property
-     * @param defaultValue               the value to return if the property is not set
-     * @param converter                  the converter to use to convert the property value
+     * @param propertyName the name of the property
+     * @param defaultValue the value to return if the property is not set
+     * @param converter    the converter to use to convert the property value
      * @return the property values, or the default value if the property is not found
      */
-    <T> List<T> getList(String fullyQualifiedPropertyName, List<T> defaultValue, Function<String, T> converter);
+    <T> List<T> getList(String propertyName, List<T> defaultValue, Function<String, T> converter);
 
     /**
      * Get a set of property values, delimited by commas. Individual values will be converted using the given
      * converter function.
      *
-     * @param fullyQualifiedPropertyName the full name of the property
-     * @param converter                  the converter to use to convert the property value
+     * @param propertyName the name of the property
+     * @param converter    the converter to use to convert the property value
      * @return the property values, or an empty set if the property is not found
      */
-    <T> Set<T> getSet(String fullyQualifiedPropertyName, Function<String, T> converter);
+    <T> Set<T> getSet(String propertyName, Function<String, T> converter);
 
     /**
      * Get a set of property values, delimited by commas. Individual values will be converted using the given
      * converter function.
      *
-     * @param fullyQualifiedPropertyName the full name of the property
-     * @param defaultValue               the value to return if the property is not set
-     * @param converter                  the converter to use to convert the property value
+     * @param propertyName the name of the property
+     * @param defaultValue the value to return if the property is not set
+     * @param converter    the converter to use to convert the property value
      * @return the property values, or the default value if the property is not found
      */
-    <T> Set<T> getSet(String fullyQualifiedPropertyName, Set<T> defaultValue, Function<String, T> converter);
+    <T> Set<T> getSet(String propertyName, Set<T> defaultValue, Function<String, T> converter);
 
     /**
      * Resolve placeholder values in the given string. Placeholders are designated like `${property.name}` and can be

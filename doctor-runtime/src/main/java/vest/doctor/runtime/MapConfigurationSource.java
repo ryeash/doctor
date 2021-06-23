@@ -22,8 +22,8 @@ public class MapConfigurationSource implements ConfigurationSource {
     }
 
     @Override
-    public String get(String fullyQualifiedPropertyName) {
-        return map.get(fullyQualifiedPropertyName);
+    public String get(String propertyName) {
+        return map.get(propertyName);
     }
 
     @Override

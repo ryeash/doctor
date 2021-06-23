@@ -65,8 +65,8 @@ public class StructuredConfigurationSource implements ConfigurationSource {
     }
 
     @Override
-    public String get(String fullyQualifiedPropertyName) {
-        return properties.get(fullyQualifiedPropertyName);
+    public String get(String propertyName) {
+        return properties.get(propertyName);
     }
 
     @Override
@@ -113,7 +113,7 @@ public class StructuredConfigurationSource implements ConfigurationSource {
 
             return map;
         } catch (IOException e) {
-            throw new UncheckedIOException("error reading properties file - line: " + tokenizer.lineno() + " type:" + (char) tokenizer.ttype + " val:" + tokenizer.sval + " toString:" + tokenizer.toString(), e);
+            throw new UncheckedIOException("error reading properties file - line: " + tokenizer.lineno() + " type:" + (char) tokenizer.ttype + " val:" + tokenizer.sval + " toString:" + tokenizer, e);
         }
     }
 

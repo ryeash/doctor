@@ -191,6 +191,21 @@ public class ProcessorUtils {
                 .collect(Collectors.toList());
     }
 
+    public static Optional<ExecutableElement> methodMatchingSignature(AnnotationProcessorContext context, TypeElement type, String methodName, Class<?>... parameterTypes) {
+        return allMethods(context, type).stream()
+                .filter(e -> e.getSimpleName().toString().equals(methodName))
+                .filter(e -> e.getParameters().size() == parameterTypes.length)
+                .filter(e -> {
+                    for (int i = 0; i < e.getParameters().size(); i++) {
+                        if (!isCompatibleWith(context, e.getParameters().get(i).asType(), parameterTypes[i])) {
+                            return false;
+                        }
+                    }
+                    return true;
+                })
+                .findAny();
+    }
+
     public static List<VariableElement> allFields(AnnotationProcessorContext context, TypeElement type) {
         return ElementFilter.fieldsIn(context.processingEnvironment().getElementUtils().getAllMembers(type))
                 .stream()

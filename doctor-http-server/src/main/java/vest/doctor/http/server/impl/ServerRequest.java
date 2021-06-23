@@ -179,7 +179,7 @@ public class ServerRequest implements Request {
             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
         }
         if (body != null) {
-            sb.append(body.toString());
+            sb.append(body);
         }
         return sb.toString();
     }

@@ -9,8 +9,8 @@ import java.util.stream.Stream;
  */
 public class SystemPropertiesConfigurationSource implements ConfigurationSource {
     @Override
-    public String get(String fullyQualifiedPropertyName) {
-        return System.getProperty(fullyQualifiedPropertyName);
+    public String get(String propertyName) {
+        return System.getProperty(propertyName);
     }
 
     @Override

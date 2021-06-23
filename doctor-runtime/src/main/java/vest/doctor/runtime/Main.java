@@ -40,7 +40,7 @@ public final class Main {
                 .addSource(new EnvironmentVariablesConfigurationSource())
                 .addSource(new SystemPropertiesConfigurationSource());
 
-        DefaultConfigurationFacade.split(properties)
+        DefaultConfigurationFacade.split(properties.trim())
                 .stream()
                 .map(props -> {
                     try {

@@ -234,6 +234,15 @@ public class NettyTest extends BaseDoctorTest {
                 .body(equalTo("response"));
     }
 
+    @Test
+    public void usingHandlerDirectly() {
+        req()
+                .get("/netty/rawhandler")
+                .then()
+                .statusCode(200)
+                .body(equalTo("rawhandler"));
+    }
+
 //    @Test
 //    public void waitAReallyLongTIme() throws InterruptedException {
 //        Thread.sleep(1000000);

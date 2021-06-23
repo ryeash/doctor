@@ -78,14 +78,14 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
     }
 
     @Override
-    public String get(String fullyQualifiedPropertyName) {
+    public String get(String propertyName) {
         for (ConfigurationSource source : sources) {
-            String s = source.get(fullyQualifiedPropertyName);
+            String s = source.get(propertyName);
             if (s != null) {
                 try {
                     return resolvePlaceholders(s);
                 } catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("failed to interpolate property: " + fullyQualifiedPropertyName, e);
+                    throw new IllegalArgumentException("failed to interpolate property: " + propertyName, e);
                 }
             }
         }
@@ -102,43 +102,43 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
     }
 
     @Override
-    public String get(String fullyQualifiedPropertyName, String defaultValue) {
-        return Optional.ofNullable(get(fullyQualifiedPropertyName))
+    public String get(String propertyName, String defaultValue) {
+        return Optional.ofNullable(get(propertyName))
                 .orElse(defaultValue);
     }
 
     @Override
-    public <T> T get(String fullyQualifiedPropertyName, Function<String, T> converter) {
-        return Optional.ofNullable(get(fullyQualifiedPropertyName))
+    public <T> T get(String propertyName, Function<String, T> converter) {
+        return Optional.ofNullable(get(propertyName))
                 .map(converter)
                 .orElse(null);
     }
 
     @Override
-    public <T> T get(String fullyQualifiedPropertyName, T defaultValue, Function<String, T> converter) {
-        return Optional.ofNullable(get(fullyQualifiedPropertyName))
+    public <T> T get(String propertyName, T defaultValue, Function<String, T> converter) {
+        return Optional.ofNullable(get(propertyName))
                 .map(converter)
                 .orElse(defaultValue);
     }
 
     @Override
-    public <T> List<T> getList(String fullyQualifiedPropertyName, Function<String, T> converter) {
-        return getList(fullyQualifiedPropertyName, Collections.emptyList(), converter);
+    public <T> List<T> getList(String propertyName, Function<String, T> converter) {
+        return getList(propertyName, Collections.emptyList(), converter);
     }
 
     @Override
-    public <T> List<T> getList(String fullyQualifiedPropertyName, List<T> defaultValue, Function<String, T> converter) {
-        return spl(fullyQualifiedPropertyName, defaultValue, converter, ArrayList::new);
+    public <T> List<T> getList(String propertyName, List<T> defaultValue, Function<String, T> converter) {
+        return spl(propertyName, defaultValue, converter, ArrayList::new);
     }
 
     @Override
-    public <T> Set<T> getSet(String fullyQualifiedPropertyName, Function<String, T> converter) {
-        return getSet(fullyQualifiedPropertyName, Collections.emptySet(), converter);
+    public <T> Set<T> getSet(String propertyName, Function<String, T> converter) {
+        return getSet(propertyName, Collections.emptySet(), converter);
     }
 
     @Override
-    public <T> Set<T> getSet(String fullyQualifiedPropertyName, Set<T> defaultValue, Function<String, T> converter) {
-        return spl(fullyQualifiedPropertyName, defaultValue, converter, LinkedHashSet::new);
+    public <T> Set<T> getSet(String propertyName, Set<T> defaultValue, Function<String, T> converter) {
+        return spl(propertyName, defaultValue, converter, LinkedHashSet::new);
     }
 
     @Override

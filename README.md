@@ -92,16 +92,18 @@ public class BookDao {
 > type for the resulting provider will be the first listed type (in this case BookDao), with any additional
 > types (PurchaseDao) being treated as satisfied super types. This means for the purposes of verifying
 > duplicate providers only the first bound will be considered.
-> 
+>
 
 ### Scoping
 
 These are the built-in scopes supported:
 
 - [@Prototype](doctor-core/src/main/java/vest/doctor/Prototype.java): each call to Provider.get() creates a new instance
-- [@Singleton](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/singleton): one and only one instance is created per jvm
+- [@Singleton](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/singleton): one and only one instance
+  is created per jvm
 - [@ThreadLocal](doctor-core/src/main/java/vest/doctor/ThreadLocal.java): one instance is created per thread
-- [@Cached](doctor-core/src/main/java/vest/doctor/Cached.java): an instance is created and shared for a configurable length of time
+- [@Cached](doctor-core/src/main/java/vest/doctor/Cached.java): an instance is created and shared for a configurable
+  length of time
 
 ### Qualifiers
 
@@ -144,8 +146,8 @@ public class MorningRoutine {
 
 Only one qualifier is allowed per provided type.
 
-The [@Named](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/named) qualifier is
-the only qualifier included with doctor. To create qualifiers see example here: 
+The [@Named](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/named) qualifier is the only qualifier
+included with doctor. To create qualifiers see example here:
 [@Qualifier](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/qualifier).
 
 ### [@Modules](doctor-core/src/main/java/vest/doctor/Modules.java)

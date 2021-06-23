@@ -7,7 +7,7 @@ import vest.doctor.ProviderRegistry;
  */
 public abstract class ProviderRegistryHolder {
 
-    protected final ProviderRegistry providerRegistry;
+    private final ProviderRegistry providerRegistry;
 
     protected ProviderRegistryHolder(ProviderRegistry providerRegistry) {
         this.providerRegistry = providerRegistry;

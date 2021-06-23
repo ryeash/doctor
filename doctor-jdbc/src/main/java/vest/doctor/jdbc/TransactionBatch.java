@@ -45,23 +45,6 @@ public final class TransactionBatch implements AutoCloseable {
     }
 
     /**
-     * Add all the given actions to this batch. If the max actions is >=0, the limit
-     * will be evaluated after each action is added to the batch, potentially triggering
-     * an {@link #execute()} before all the given actions are added; i.e. when using the
-     * max actions limit, the given actions may not be executed in the same transaction.
-     *
-     * @param actions the actions to add
-     * @return this object
-     * @see #add(ThrowingConsumer)
-     */
-    public TransactionBatch add(ThrowingConsumer<JDBCConnection>... actions) {
-        for (ThrowingConsumer<JDBCConnection> action : actions) {
-            add(action);
-        }
-        return this;
-    }
-
-    /**
      * Add a new action to this batch. If max actions is >=0 and the limit has been reached
      * this method will automatically call {@link #execute()} before returning.
      *

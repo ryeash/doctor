@@ -3,7 +3,7 @@ package vest.doctor;
 import javax.lang.model.element.TypeElement;
 
 /**
- * Represents a type/qualifier combination.
+ * Represents a type/qualifier dependency.
  */
 public interface ProviderDependency {
 

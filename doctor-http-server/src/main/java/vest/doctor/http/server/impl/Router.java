@@ -66,13 +66,18 @@ public final class Router implements Handler {
      */
     public static final String PATH_PARAMS = "doctor.netty.router.pathparams";
 
-    private static final String DEBUG_ROUTING_ATTRIBUTE = "doctor.netty.router.debugInfo";
-    private static final String DEBUG_START_ATTRIBUTE = "doctor.netty.router.debugStart";
+    /**
+     * A path specification string that will match any requested path.
+     */
+    public static final String MATCH_ALL_PATH_SPEC = "/*";
 
     /**
      * The ANY method. This method can be used to create a route that responds to any HTTP method.
      */
     public static final HttpMethod ANY = HttpMethod.valueOf(ANY_METHOD_NAME);
+
+    private static final String DEBUG_ROUTING_ATTRIBUTE = "doctor.netty.router.debugInfo";
+    private static final String DEBUG_START_ATTRIBUTE = "doctor.netty.router.debugStart";
 
     private static final Handler NOT_FOUND = new NotFound();
     private final List<FilterAndPath> filters = new LinkedList<>();
@@ -130,7 +135,7 @@ public final class Router implements Handler {
      * @return this router
      */
     public Router filter(Filter filter) {
-        return filter("/*", filter);
+        return filter(MATCH_ALL_PATH_SPEC, filter);
     }
 
     /**

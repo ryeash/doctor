@@ -113,6 +113,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
      *
      * @param configurationFacade the configuration for the application
      * @param activeModules       the active modules
+     * @param additionalLoaders   additional {@link AppLoader AppLoaders} to use during initialization
      */
     public Doctor(ConfigurationFacade configurationFacade, List<String> activeModules, AppLoader... additionalLoaders) {
         log.debug("Doctor initializing...");
@@ -154,7 +155,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
             Runtime.getRuntime().addShutdownHook(new Thread(this::close, "doctor-shutdown-" + this.hashCode()));
         }
         getInstance(EventProducer.class).publish(new ApplicationStarted(this));
-        log.info(ASCII_ART + "\ninitialized in {}ms", (System.currentTimeMillis() - start));
+        log.info("\n{}\ninitialized in {}ms", ASCII_ART, (System.currentTimeMillis() - start));
     }
 
     @Override

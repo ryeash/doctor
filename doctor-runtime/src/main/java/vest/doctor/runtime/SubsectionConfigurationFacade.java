@@ -33,8 +33,8 @@ class SubsectionConfigurationFacade implements ConfigurationFacade {
     }
 
     @Override
-    public String get(String fullyQualifiedPropertyName) {
-        return delegate.get(prependPrefix(fullyQualifiedPropertyName));
+    public String get(String propertyName) {
+        return delegate.get(prependPrefix(propertyName));
     }
 
     @Override
@@ -45,38 +45,38 @@ class SubsectionConfigurationFacade implements ConfigurationFacade {
     }
 
     @Override
-    public String get(String fullyQualifiedPropertyName, String defaultValue) {
-        return delegate.get(prependPrefix(fullyQualifiedPropertyName), defaultValue);
+    public String get(String propertyName, String defaultValue) {
+        return delegate.get(prependPrefix(propertyName), defaultValue);
     }
 
     @Override
-    public <T> T get(String fullyQualifiedPropertyName, Function<String, T> converter) {
-        return delegate.get(prependPrefix(fullyQualifiedPropertyName), converter);
+    public <T> T get(String propertyName, Function<String, T> converter) {
+        return delegate.get(prependPrefix(propertyName), converter);
     }
 
     @Override
-    public <T> T get(String fullyQualifiedPropertyName, T defaultValue, Function<String, T> converter) {
-        return delegate.get(prependPrefix(fullyQualifiedPropertyName), defaultValue, converter);
+    public <T> T get(String propertyName, T defaultValue, Function<String, T> converter) {
+        return delegate.get(prependPrefix(propertyName), defaultValue, converter);
     }
 
     @Override
-    public <T> List<T> getList(String fullyQualifiedPropertyName, Function<String, T> converter) {
-        return delegate.getList(prependPrefix(fullyQualifiedPropertyName), converter);
+    public <T> List<T> getList(String propertyName, Function<String, T> converter) {
+        return delegate.getList(prependPrefix(propertyName), converter);
     }
 
     @Override
-    public <T> List<T> getList(String fullyQualifiedPropertyName, List<T> defaultValue, Function<String, T> converter) {
-        return delegate.getList(prependPrefix(fullyQualifiedPropertyName), defaultValue, converter);
+    public <T> List<T> getList(String propertyName, List<T> defaultValue, Function<String, T> converter) {
+        return delegate.getList(prependPrefix(propertyName), defaultValue, converter);
     }
 
     @Override
-    public <T> Set<T> getSet(String fullyQualifiedPropertyName, Function<String, T> converter) {
-        return delegate.getSet(prependPrefix(fullyQualifiedPropertyName), converter);
+    public <T> Set<T> getSet(String propertyName, Function<String, T> converter) {
+        return delegate.getSet(prependPrefix(propertyName), converter);
     }
 
     @Override
-    public <T> Set<T> getSet(String fullyQualifiedPropertyName, Set<T> defaultValue, Function<String, T> converter) {
-        return delegate.getSet(prependPrefix(fullyQualifiedPropertyName), defaultValue, converter);
+    public <T> Set<T> getSet(String propertyName, Set<T> defaultValue, Function<String, T> converter) {
+        return delegate.getSet(prependPrefix(propertyName), defaultValue, converter);
     }
 
     @Override

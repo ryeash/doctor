@@ -8,6 +8,8 @@ import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
 
+import java.util.Objects;
+
 public class ServerResponse implements Response {
 
     private final Request request;
@@ -57,11 +59,7 @@ public class ServerResponse implements Response {
 
     @Override
     public Response body(ResponseBody body) {
-        if (body == null) {
-            this.body = EmptyBody.INSTANCE;
-        } else {
-            this.body = body;
-        }
+        this.body = Objects.requireNonNullElse(body, EmptyBody.INSTANCE);
         return this;
     }
 

@@ -6,6 +6,7 @@ import vest.doctor.InjectionException;
 import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ParameterLookupCustomizer;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.SkipInjection;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.Constants;
 import vest.doctor.codegen.MethodBuilder;
@@ -72,7 +73,7 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
             b.line("try {")
                     .line("{{container}} container = {{getContainer}}.get();")
                     .line("{{providedType}} instance = {{call}};");
-            if (!isSkipInjection()) {
+            if (!markedWith(SkipInjection.class)) {
                 for (NewInstanceCustomizer customizer : context.customizations(NewInstanceCustomizer.class)) {
                     customizer.customize(context, this, b, "instance", Constants.PROVIDER_REGISTRY);
                 }

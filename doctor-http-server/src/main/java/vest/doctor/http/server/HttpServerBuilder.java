@@ -278,7 +278,7 @@ public class HttpServerBuilder {
     /**
      * Add a request handler to the router.
      *
-     * @param method  the http method for the route, e.g. "GET"
+     * @param method  the http method for the route, e.g. {@link HttpMethod#GET}
      * @param path    the path specification for the handler, e.g. /api/v2/{type}/{collection}
      * @param handler the handler that will be routed for requests matching the method and path specification
      * @return this builder

@@ -5,6 +5,7 @@ import vest.doctor.codegen.ClassBuilder;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
+import java.lang.annotation.Annotation;
 import java.util.List;
 
 /**
@@ -24,7 +25,7 @@ public interface ProviderDefinition {
 
     /**
      * All types that the provided type should be able to satisfy, including the explicitly provided type. For example
-     * a class "Foo" that implements "Bar" should return (Foo, Bar).
+     * a provider definition for class "Foo" that implements "Bar" will return (Foo, Bar).
      */
     List<TypeElement> getAllProvidedTypes();
 
@@ -54,29 +55,13 @@ public interface ProviderDefinition {
     List<String> modules();
 
     /**
-     * A hierarchy of all types that the provided type extends or implements.
+     * Checked if the annotation source is annotated with this given annotation type.
+     *
+     * @param annotationType the annotation type to check for
+     * @return true if the annotation source is marked with an annotation of the given type
      */
-    List<TypeElement> hierarchy();
-
-    /**
-     * Check if the annotation source is marked with {@link Primary}.
-     */
-    default boolean isPrimary() {
-        return annotationSource().getAnnotation(Primary.class) != null;
-    }
-
-    /**
-     * Check if the annotation source is marked with {@link Eager}.
-     */
-    default boolean isEager() {
-        return annotationSource().getAnnotation(Eager.class) != null;
-    }
-
-    /**
-     * Check if the annotation source is marked with {@link SkipInjection}.
-     */
-    default boolean isSkipInjection() {
-        return annotationSource().getAnnotation(SkipInjection.class) != null;
+    default boolean markedWith(Class<? extends Annotation> annotationType) {
+        return annotationSource().getAnnotation(annotationType) != null;
     }
 
     /**
@@ -86,8 +71,6 @@ public interface ProviderDefinition {
 
     /**
      * Get the class builder that will write the provider instance.
-     *
-     * @return
      */
     ClassBuilder getClassBuilder();
 

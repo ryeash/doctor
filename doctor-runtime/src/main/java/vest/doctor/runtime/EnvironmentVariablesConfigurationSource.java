@@ -10,8 +10,8 @@ import java.util.stream.Stream;
 public class EnvironmentVariablesConfigurationSource implements ConfigurationSource {
 
     @Override
-    public String get(String fullyQualifiedPropertyName) {
-        return System.getenv(fullyQualifiedPropertyName);
+    public String get(String propertyName) {
+        return System.getenv(propertyName);
     }
 
     @Override

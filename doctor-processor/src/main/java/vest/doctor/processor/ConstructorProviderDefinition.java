@@ -7,6 +7,7 @@ import vest.doctor.InjectionException;
 import vest.doctor.NewInstanceCustomizer;
 import vest.doctor.ParameterLookupCustomizer;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.SkipInjection;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.Constants;
 import vest.doctor.codegen.ProcessorUtils;
@@ -76,7 +77,7 @@ public class ConstructorProviderDefinition extends AbstractProviderDefinition {
         classBuilder.addMethod("public " + providedType.getSimpleName() + " get()", b -> {
             b.line("try {");
             b.line(providedType.getSimpleName() + " instance = " + context.constructorCall(this, injectableConstructor, Constants.PROVIDER_REGISTRY) + ";");
-            if (!isSkipInjection()) {
+            if (!markedWith(SkipInjection.class)) {
                 for (NewInstanceCustomizer customizer : context.customizations(NewInstanceCustomizer.class)) {
                     customizer.customize(context, this, b, "instance", Constants.PROVIDER_REGISTRY);
                 }

@@ -147,7 +147,13 @@ final class AspectedMethod {
         }
         invoker.append("}");
 
-        sb.append("MethodInvocation invocation = new MethodInvocationImpl(").append(metadataName()).append(", " + arguments + ", ").append(invoker).append(");\n");
+        sb.append("MethodInvocation invocation = new MethodInvocationImpl(")
+                .append(metadataName())
+                .append(", ")
+                .append(arguments)
+                .append(", ")
+                .append(invoker)
+                .append(");\n");
         if (method.getReturnType().getKind() != TypeKind.VOID) {
             sb.append("return ");
         }

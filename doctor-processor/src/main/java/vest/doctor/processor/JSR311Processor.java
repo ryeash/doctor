@@ -8,6 +8,8 @@ import vest.doctor.CodeProcessingException;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.CustomizationPoint;
 import vest.doctor.DoctorProvider;
+import vest.doctor.Eager;
+import vest.doctor.Primary;
 import vest.doctor.PrimaryProviderWrapper;
 import vest.doctor.Prioritized;
 import vest.doctor.ProcessorConfiguration;
@@ -206,7 +208,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 if (Objects.equals(dependency, provided)) {
                     return true;
                 }
-                if (providerDefinition.isPrimary()) {
+                if (providerDefinition.markedWith(Primary.class)) {
                     Dependency primary = new Dependency(type, null);
                     if (Objects.equals(dependency, primary)) {
                         return true;
@@ -301,14 +303,14 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
         }
         load.line(DoctorProvider.class, "<", providerDefinition.providedType().getSimpleName(), "> ", providerDefinition.uniqueInstanceName(), " = ", creator, ";");
         load.line("{{providerRegistry}}.register(", providerDefinition.uniqueInstanceName(), ");");
-        if (providerDefinition.isPrimary()) {
+        if (providerDefinition.markedWith(Primary.class)) {
             if (providerDefinition.qualifier() == null) {
-                throw new IllegalArgumentException("unqualified provider can not be marked @Primary: " + providerDefinition.toString());
+                throw new IllegalArgumentException("unqualified provider can not be marked @Primary: " + providerDefinition);
             }
             load.line("{{providerRegistry}}.register(new ", PrimaryProviderWrapper.class, "(", providerDefinition.uniqueInstanceName(), "));");
         }
 
-        if (providerDefinition.isEager()) {
+        if (providerDefinition.markedWith(Eager.class)) {
             load.line("eagerList.add(", providerDefinition.uniqueInstanceName(), ");");
         }
 

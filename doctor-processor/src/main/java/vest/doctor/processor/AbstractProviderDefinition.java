@@ -57,7 +57,7 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
         this.annotationSource = annotationSource;
 
         if (providedTypes.isEmpty()) {
-            throw new IllegalArgumentException("providedType may not be empty");
+            throw new IllegalArgumentException("providedTypes may not be empty");
         }
 
         this.providedType = providedTypes.get(0);
@@ -130,11 +130,6 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
     @Override
     public List<String> modules() {
         return modules;
-    }
-
-    @Override
-    public List<TypeElement> hierarchy() {
-        return hierarchy;
     }
 
     @Override

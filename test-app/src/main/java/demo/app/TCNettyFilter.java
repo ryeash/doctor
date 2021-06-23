@@ -1,20 +1,19 @@
 package demo.app;
 
 import jakarta.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import vest.doctor.http.server.Filter;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
+import vest.doctor.http.server.rest.Path;
 
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 @Singleton
+@Path("/netty/*")
 public class TCNettyFilter implements Filter {
-    private static final Logger log = LoggerFactory.getLogger(TCNettyFilter.class);
 
     @Override
     public CompletionStage<Response> filter(Request request, CompletionStage<Response> response) {

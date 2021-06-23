@@ -8,7 +8,7 @@ public class TCConfigReload implements ConfigurationSource {
     public static boolean reloaded = false;
 
     @Override
-    public String get(String fullyQualifiedPropertyName) {
+    public String get(String propertyName) {
         return null;
     }
 

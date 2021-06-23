@@ -17,6 +17,8 @@ import vest.doctor.codegen.Constants;
 import vest.doctor.codegen.GenericInfo;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
+import vest.doctor.http.server.Filter;
+import vest.doctor.http.server.Handler;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.impl.Router;
@@ -31,6 +33,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import java.lang.annotation.Annotation;
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -91,6 +94,31 @@ public class EndpointWriter implements ProviderDefinitionListener {
                 .orElse(new String[]{"/"});
 
         AtomicBoolean methodAdded = new AtomicBoolean(false);
+
+        if (ProcessorUtils.isCompatibleWith(context, providerDefinition.providedType(), Filter.class)) {
+            for (String root : roots) {
+                methodAdded.set(true);
+                initialize.line("router.filter(\"", ProcessorUtils.escapeStringForCode(root), "\",endpoint.get());");
+            }
+        }
+
+        if (ProcessorUtils.isCompatibleWith(context, providerDefinition.providedType(), Handler.class)) {
+            List<String> methods = ProcessorUtils.methodMatchingSignature(context, providerDefinition.providedType(), "handle", Request.class)
+                    .map(EndpointWriter::getHttpMethods)
+                    .filter(l -> !l.isEmpty())
+                    .orElse(Collections.singletonList(ANY.ANY_METHOD_NAME));
+            for (String root : roots) {
+                for (String method : methods) {
+                    initialize.line("router.route(\"",
+                            ProcessorUtils.escapeStringForCode(method), "\",\"",
+                            ProcessorUtils.escapeStringForCode(root),
+                            "\",endpoint.get());");
+                }
+            }
+            config.writeClass(context.filer());
+            return;
+        }
+
         ProcessorUtils.allMethods(context, providerDefinition.providedType())
                 .stream()
                 .filter(m -> m.getModifiers().contains(Modifier.PUBLIC))

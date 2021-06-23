@@ -10,10 +10,10 @@ public interface ConfigurationSource {
     /**
      * Get a property value.
      *
-     * @param fullyQualifiedPropertyName the full name of the property
+     * @param propertyName the name of the property
      * @return the property value, or null if no property is found
      */
-    String get(String fullyQualifiedPropertyName);
+    String get(String propertyName);
 
     /**
      * Get a stream of all property names contained within this source.

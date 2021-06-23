@@ -12,7 +12,6 @@ import vest.doctor.event.EventProducer;
 import vest.doctor.event.ServiceStarted;
 import vest.doctor.event.ServiceStopped;
 import vest.doctor.http.server.ExceptionHandler;
-import vest.doctor.http.server.Filter;
 import vest.doctor.http.server.HttpListener;
 import vest.doctor.http.server.HttpServer;
 import vest.doctor.http.server.HttpServerConfiguration;
@@ -49,10 +48,6 @@ public class NettyLoader implements AppLoader {
 
         Router router = new Router(conf);
         providerRegistry.register(new AdHocProvider<>(Router.class, router, null));
-
-        providerRegistry.getProviders(Filter.class)
-                .map(Provider::get)
-                .forEach(router::filter);
 
         providerRegistry.getProviders(EndpointConfiguration.class)
                 .forEach(Provider::get);
