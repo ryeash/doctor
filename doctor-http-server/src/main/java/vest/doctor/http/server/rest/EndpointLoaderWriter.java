@@ -5,7 +5,7 @@ import jakarta.inject.Named;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.AppLoader;
+import vest.doctor.ApplicationLoader;
 import vest.doctor.CodeProcessingException;
 import vest.doctor.ExplicitProvidedTypes;
 import vest.doctor.ProviderDefinition;
@@ -49,7 +49,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
     private final Set<ExecutableElement> processedMethods = new HashSet<>();
     private final AtomicBoolean hasRoutes = new AtomicBoolean(false);
     private ClassBuilder config;
-    private MethodBuilder postProcess;
+    private MethodBuilder stage5;
 
     @Override
     public void process(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
@@ -59,7 +59,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         initialize(context);
 
         String endpointRef = "endpoint" + context.nextId();
-        postProcess.line("Provider<", providerDefinition.providedType(), "> ", endpointRef, " = {{providerRegistry}}.getProvider(", providerDefinition.providedType(), ".class, ", providerDefinition.qualifier(), ");");
+        stage5.line("Provider<", providerDefinition.providedType(), "> ", endpointRef, " = {{providerRegistry}}.getProvider(", providerDefinition.providedType(), ".class, ", providerDefinition.qualifier(), ");");
         String[] roots = Optional.ofNullable(providerDefinition.annotationSource().getAnnotation(Path.class))
                 .map(Path::value)
                 .orElse(new String[]{"/"});
@@ -67,7 +67,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         if (ProcessorUtils.isCompatibleWith(context, providerDefinition.providedType(), Filter.class)) {
             for (String root : roots) {
                 hasRoutes.set(true);
-                postProcess.line("router.filter(\"", ProcessorUtils.escapeStringForCode(root), "\",", endpointRef, ".get());");
+                stage5.line("router.filter(\"", ProcessorUtils.escapeStringForCode(root), "\",", endpointRef, ".get());");
             }
         }
 
@@ -78,7 +78,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                     .orElse(Collections.singletonList(ANY.ANY_METHOD_NAME));
             for (String root : roots) {
                 for (String method : methods) {
-                    postProcess.line("router.route(\"",
+                    stage5.line("router.route(\"",
                             ProcessorUtils.escapeStringForCode(method), "\",\"",
                             ProcessorUtils.escapeStringForCode(root),
                             "\",", endpointRef, ".get());");
@@ -97,7 +97,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
 
                             for (String httMethod : methods) {
                                 for (String fullPath : fullPaths) {
-                                    addRoute(postProcess, context, httMethod, fullPath, endpointRef, method);
+                                    addRoute(stage5, context, httMethod, fullPath, endpointRef, method);
                                     hasRoutes.set(true);
                                 }
                             }
@@ -110,7 +110,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
     public void finish(AnnotationProcessorContext context) {
         if (hasRoutes.get()) {
             config.writeClass(context.filer());
-            context.addServiceImplementation(AppLoader.class, config.getFullyQualifiedClassName());
+            context.addServiceImplementation(ApplicationLoader.class, config.getFullyQualifiedClassName());
         }
     }
 
@@ -138,10 +138,10 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                 .addImportClass(ExplicitProvidedTypes.class)
                 .addImportClass(Provider.class);
 
-        this.postProcess = config.newMethod("public void postProcess(ProviderRegistry {{providerRegistry}})");
-        postProcess.line("if(!isRouterWired({{providerRegistry}})) { return; }");
-        postProcess.line("Router router = {{providerRegistry}}.getInstance(Router.class);");
-        postProcess.line("BodyInterchange bodyInterchange = {{providerRegistry}}.getInstance(BodyInterchange.class);");
+        this.stage5 = config.newMethod("public void stage5(ProviderRegistry {{providerRegistry}})");
+        stage5.line("if(!isRouterWired({{providerRegistry}})) { return; }");
+        stage5.line("Router router = {{providerRegistry}}.getInstance(Router.class);");
+        stage5.line("BodyInterchange bodyInterchange = {{providerRegistry}}.getInstance(BodyInterchange.class);");
 
     }
 

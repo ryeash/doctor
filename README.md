@@ -272,27 +272,26 @@ Basics of event produce and consume:
 
 ```java
 @Singleton
-public class EventExample {
+public class EventExample implements EventConsumer<String> {
 
-    private final EventProducer producer;
+  private final EventProducer producer;
 
     @Inject
     public EventExample(EventProducer producer) {
-        this.producer = producer;
+      this.producer = producer;
     }
 
-    @Inject
-    @Async
-    public void message() {
-        // publish a string event when this class is instantiated 
-        producer.publish("test");
-    }
+  @Inject
+  @Async
+  public void message() {
+    // publish a string event when this class is instantiated 
+    producer.publish("test");
+  }
 
-    // create a consumer of string events
-    @EventListener
-    public void stringMessages(String message) {
-        System.out.println("message received: " + message);
-    }
+  @Override
+  public void receive(String message) {
+    System.out.println("message received: " + message);
+  }
 }
 ```
 
@@ -307,14 +306,6 @@ public class AsyncDemo {
     @Inject
     @Async // this method will be called asynchronously when this class is instantiated
     public void injectAsync() {
-        ...
-    }
-
-    @EventListener
-    @Async("async-event")
-    // when a compatible message is published, this method will be called in a background thread
-    // from the executor service named 'async-event'
-    public void asyncListener(Object message) {
         ...
     }
 }

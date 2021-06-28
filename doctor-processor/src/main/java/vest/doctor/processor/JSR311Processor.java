@@ -3,7 +3,7 @@ package vest.doctor.processor;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
 import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.AppLoader;
+import vest.doctor.ApplicationLoader;
 import vest.doctor.CodeProcessingException;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.CustomizationPoint;
@@ -78,8 +78,8 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     private long start;
 
     private ClassBuilder appLoader;
-    private MethodBuilder load;
-    private MethodBuilder postProcess;
+    private MethodBuilder stage3;
+    private MethodBuilder stage5;
 
     private final Map<Class<?>, Collection<String>> serviceImplementations = new HashMap<>();
 
@@ -104,7 +104,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
 
         this.appLoader = new ClassBuilder()
                 .setClassName(generatedPackage + ".AppLoaderImpl")
-                .addImplementsInterface(AppLoader.class)
+                .addImplementsInterface(ApplicationLoader.class)
                 .addImportClass(List.class)
                 .addImportClass(ArrayList.class)
                 .addImportClass(Objects.class)
@@ -114,8 +114,8 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 .addImportClass(PrimaryProviderWrapper.class)
                 .addImportClass(ShutdownContainer.class)
                 .addField("private final List<", DoctorProvider.class, "<?>> eagerList = new ArrayList<>()");
-        this.load = appLoader.newMethod("public void load(", ProviderRegistry.class, " {{providerRegistry}})");
-        this.postProcess = appLoader.newMethod("public void postProcess(", ProviderRegistry.class, " {{providerRegistry}})");
+        this.stage3 = appLoader.newMethod("public void stage3(", ProviderRegistry.class, " {{providerRegistry}})");
+        this.stage5 = appLoader.newMethod("public void stage5(", ProviderRegistry.class, " {{providerRegistry}})");
     }
 
     private void loadConf(ProcessorConfiguration processorConfiguration) {
@@ -138,9 +138,9 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
 
         if (roundEnv.processingOver()) {
             customizationPoints.forEach(c -> c.finish(this));
-            postProcess.line("eagerList.stream().filter(Objects::nonNull).forEach(", Provider.class, "::get);");
+            stage5.line("eagerList.stream().filter(Objects::nonNull).forEach(", Provider.class, "::get);");
             appLoader.writeClass(filer());
-            addServiceImplementation(AppLoader.class, appLoader.getFullyQualifiedClassName());
+            addServiceImplementation(ApplicationLoader.class, appLoader.getFullyQualifiedClassName());
             writeServicesResource();
             compileTimeDependencyCheck();
             infoMessage("took " + (System.currentTimeMillis() - start) + "ms");
@@ -291,7 +291,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                     .filter(Objects::nonNull)
                     .map(m -> '"' + m + '"')
                     .collect(Collectors.joining(", "));
-            load.line("if(isActive({{providerRegistry}}, List.of(", modules, "))){");
+            stage3.line("if(isActive({{providerRegistry}}, List.of(", modules, "))){");
         }
 
         if (providerDefinition.scope() != null) {
@@ -299,21 +299,21 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
             ScopeWriter scopeWriter = getScopeWriter(scopeType);
             creator = scopeWriter.wrapScope(this, providerDefinition, creator);
         }
-        load.line(DoctorProvider.class, "<", providerDefinition.providedType().getSimpleName(), "> ", providerDefinition.uniqueInstanceName(), " = ", creator, ";");
-        load.line("{{providerRegistry}}.register(", providerDefinition.uniqueInstanceName(), ");");
+        stage3.line(DoctorProvider.class, "<", providerDefinition.providedType().getSimpleName(), "> ", providerDefinition.uniqueInstanceName(), " = ", creator, ";");
+        stage3.line("{{providerRegistry}}.register(", providerDefinition.uniqueInstanceName(), ");");
         if (providerDefinition.markedWith(Primary.class)) {
             if (providerDefinition.qualifier() == null) {
                 throw new IllegalArgumentException("unqualified provider can not be marked @Primary: " + providerDefinition);
             }
-            load.line("{{providerRegistry}}.register(new ", PrimaryProviderWrapper.class, "(", providerDefinition.uniqueInstanceName(), "));");
+            stage3.line("{{providerRegistry}}.register(new ", PrimaryProviderWrapper.class, "(", providerDefinition.uniqueInstanceName(), "));");
         }
 
         if (providerDefinition.markedWith(Eager.class)) {
-            load.line("eagerList.add(", providerDefinition.uniqueInstanceName(), ");");
+            stage3.line("eagerList.add(", providerDefinition.uniqueInstanceName(), ");");
         }
 
         if (hasModules) {
-            load.line("}");
+            stage3.line("}");
         }
     }
 

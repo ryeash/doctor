@@ -1,10 +1,10 @@
 package vest.doctor.runtime;
 
 import vest.doctor.AdHocProvider;
-import vest.doctor.AppLoader;
+import vest.doctor.ApplicationLoader;
 import vest.doctor.ProviderRegistry;
 
-final class ArgsLoader implements AppLoader {
+final class ArgsLoader implements ApplicationLoader {
     private final Args args;
 
     ArgsLoader(Args args) {
@@ -12,7 +12,7 @@ final class ArgsLoader implements AppLoader {
     }
 
     @Override
-    public void preProcess(ProviderRegistry providerRegistry) {
+    public void stage1(ProviderRegistry providerRegistry) {
         providerRegistry.register(new AdHocProvider<>(Args.class, args, null));
     }
 

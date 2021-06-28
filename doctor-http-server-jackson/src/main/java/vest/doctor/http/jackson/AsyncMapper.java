@@ -110,10 +110,10 @@ class AsyncMapper<T> {
                         setValue(async.getText());
                         break;
                     case VALUE_NUMBER_INT:
-                        setValue(async.getLongValue());
+                        setValue(async.getBigIntegerValue());
                         break;
                     case VALUE_NUMBER_FLOAT:
-                        setValue(async.getFloatValue());
+                        setValue(async.getDecimalValue());
                         break;
                     case VALUE_TRUE:
                     case VALUE_FALSE:

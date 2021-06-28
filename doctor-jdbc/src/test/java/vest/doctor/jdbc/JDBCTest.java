@@ -12,7 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
-import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -57,7 +57,7 @@ public class JDBCTest extends Assert {
 
             for (int i = 0; i < 5; i++) {
                 insertUser.clearParameters();
-                insertUser.bindAll(Arrays.asList(i + 1, UUID.randomUUID().toString(), UUID.randomUUID().toString()))
+                insertUser.bindAll(List.of(i + 1, UUID.randomUUID().toString(), UUID.randomUUID().toString()))
                         .addBatch();
             }
             insertUser.executeBatch();

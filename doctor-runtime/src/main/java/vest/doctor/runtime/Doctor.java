@@ -4,7 +4,7 @@ import jakarta.inject.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vest.doctor.AdHocProvider;
-import vest.doctor.AppLoader;
+import vest.doctor.ApplicationLoader;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.DoctorProvider;
 import vest.doctor.Prioritized;
@@ -102,7 +102,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
     }
 
     private final List<String> activeModules;
-    private final List<AppLoader> loaders;
+    private final List<ApplicationLoader> loaders;
     private final ProviderIndex providerIndex;
     private final ConfigurationFacade configurationFacade;
     private final ShutdownContainer shutdownContainer;
@@ -113,9 +113,9 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
      *
      * @param configurationFacade the configuration for the application
      * @param activeModules       the active modules
-     * @param additionalLoaders   additional {@link AppLoader AppLoaders} to use during initialization
+     * @param additionalLoaders   additional {@link ApplicationLoader AppLoaders} to use during initialization
      */
-    public Doctor(ConfigurationFacade configurationFacade, List<String> activeModules, AppLoader... additionalLoaders) {
+    public Doctor(ConfigurationFacade configurationFacade, List<String> activeModules, ApplicationLoader... additionalLoaders) {
         log.debug("Doctor initializing...");
         long start = System.currentTimeMillis();
         this.providerIndex = new ProviderIndex();
@@ -128,23 +128,29 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         log.debug("Configuration: {}", this.configurationFacade);
 
         this.loaders = new LinkedList<>();
-        this.loaders.add(new BuiltInAppLoader());
-        for (AppLoader appLoader : ServiceLoader.load(AppLoader.class)) {
-            loaders.add(appLoader);
+        this.loaders.add(new BuiltInApplicationLoader());
+        for (ApplicationLoader applicationLoader : ServiceLoader.load(ApplicationLoader.class)) {
+            loaders.add(applicationLoader);
         }
         if (additionalLoaders != null) {
             loaders.addAll(List.of(additionalLoaders));
         }
         loaders.sort(Prioritized.COMPARATOR);
         log.debug("Loaders (in order): {}", loaders.stream().map(l -> l + ":" + l.priority()).collect(Collectors.joining(", ")));
-        for (AppLoader loader : loaders) {
-            loader.preProcess(this);
+        for (ApplicationLoader loader : loaders) {
+            loader.stage1(this);
         }
-        for (AppLoader loader : loaders) {
-            loader.load(this);
+        for (ApplicationLoader loader : loaders) {
+            loader.stage2(this);
         }
-        for (AppLoader loader : loaders) {
-            loader.postProcess(this);
+        for (ApplicationLoader loader : loaders) {
+            loader.stage3(this);
+        }
+        for (ApplicationLoader loader : loaders) {
+            loader.stage4(this);
+        }
+        for (ApplicationLoader loader : loaders) {
+            loader.stage5(this);
         }
 
         if (!configurationFacade.get("doctor.skip.validation", false, Boolean::valueOf)) {

@@ -4,7 +4,6 @@ import vest.doctor.CustomizationPoint;
 import vest.doctor.ProcessorConfiguration;
 
 import java.lang.annotation.Annotation;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -17,6 +16,6 @@ public class NettyProcessorConfiguration implements ProcessorConfiguration {
 
     @Override
     public List<CustomizationPoint> customizationPoints() {
-        return Arrays.asList(new EndpointLoaderWriter(), new HttpStringConverter());
+        return List.of(new EndpointLoaderWriter(), new HttpStringConverter());
     }
 }

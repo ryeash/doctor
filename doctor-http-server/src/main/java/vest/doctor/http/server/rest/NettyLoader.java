@@ -5,7 +5,7 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import jakarta.inject.Provider;
 import vest.doctor.AdHocProvider;
-import vest.doctor.AppLoader;
+import vest.doctor.ApplicationLoader;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.event.ApplicationStarted;
@@ -32,10 +32,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class NettyLoader implements AppLoader {
+public class NettyLoader implements ApplicationLoader {
 
     @Override
-    public void load(ProviderRegistry providerRegistry) {
+    public void stage4(ProviderRegistry providerRegistry) {
         HttpServerConfiguration conf = buildConf(providerRegistry);
         if (conf.getBindAddresses().isEmpty()) {
             return;
@@ -84,10 +84,8 @@ public class NettyLoader implements AppLoader {
 
         providerRegistry.getInstanceOpt(EventBus.class)
                 .ifPresent(bus -> {
-                    bus.addConsumer(event -> {
-                        if (event instanceof ApplicationStarted) {
-                            bus.publish(new ServiceStarted("netty-http", server));
-                        }
+                    bus.addConsumer(ApplicationStarted.class, event -> {
+                        bus.publish(new ServiceStarted("netty-http", server));
                     });
                 });
 

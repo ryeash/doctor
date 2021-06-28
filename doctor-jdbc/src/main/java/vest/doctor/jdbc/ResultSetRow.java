@@ -111,7 +111,9 @@ public class ResultSetRow implements Row {
             return null;
         } else if (n instanceof BigDecimal) {
             return (BigDecimal) n;
-        } else if (n instanceof Number || n instanceof CharSequence) {
+        } else if (n instanceof Number) {
+            return BigDecimal.valueOf(((Number) n).doubleValue());
+        } else if (n instanceof CharSequence) {
             return new BigDecimal(n.toString());
         } else {
             throw new IllegalArgumentException("unable to convert " + column + " to BigDecimal, type mismatch: " + n.getClass());
@@ -125,7 +127,9 @@ public class ResultSetRow implements Row {
             return null;
         } else if (n instanceof BigInteger) {
             return (BigInteger) n;
-        } else if (n instanceof Number || n instanceof CharSequence) {
+        } else if (n instanceof Number) {
+            return BigInteger.valueOf(((Number) n).longValue());
+        } else if (n instanceof CharSequence) {
             return new BigInteger(n.toString());
         } else {
             throw new IllegalArgumentException("unable to convert " + column + " to BigDecimal, type mismatch: " + n.getClass());

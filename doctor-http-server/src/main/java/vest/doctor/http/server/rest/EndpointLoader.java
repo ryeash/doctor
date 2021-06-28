@@ -1,6 +1,6 @@
 package vest.doctor.http.server.rest;
 
-import vest.doctor.AppLoader;
+import vest.doctor.ApplicationLoader;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.TypeInfo;
 import vest.doctor.http.server.Request;
@@ -14,7 +14,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * Internally used during endpoint annotation processing.
  */
-public interface EndpointLoader extends AppLoader {
+public interface EndpointLoader extends ApplicationLoader {
 
     default String pathParam(Request request, String name) {
         Map<String, String> map = request.attribute(Router.PATH_PARAMS);

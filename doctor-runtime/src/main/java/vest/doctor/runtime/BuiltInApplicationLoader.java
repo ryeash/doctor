@@ -1,7 +1,7 @@
 package vest.doctor.runtime;
 
 import vest.doctor.AdHocProvider;
-import vest.doctor.AppLoader;
+import vest.doctor.ApplicationLoader;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.SingletonScopedProvider;
@@ -14,14 +14,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-public class BuiltInAppLoader implements AppLoader {
+public class BuiltInApplicationLoader implements ApplicationLoader {
 
     public static final String LOAD_BUILT_INS = "doctor.load.builtins";
     public static final String DEFAULT_EXECUTOR_NAME = "default";
     public static final String DEFAULT_SCHEDULED_EXECUTOR_NAME = "scheduled";
 
     @Override
-    public void preProcess(ProviderRegistry providerRegistry) {
+    public void stage1(ProviderRegistry providerRegistry) {
         providerRegistry.register(new AdHocProvider<>(ConfigurationFacade.class, providerRegistry.configuration(), null));
         providerRegistry.register(new AdHocProvider<>(Properties.class, providerRegistry.configuration().toProperties(), null));
 
@@ -31,11 +31,7 @@ public class BuiltInAppLoader implements AppLoader {
         if (loadBuiltIns(providerRegistry)) {
             EventBus eventBus = new EventBus();
             providerRegistry.register(new AdHocProvider<>(EventBus.class, eventBus, null, List.of(EventBus.class, EventProducer.class)));
-            eventBus.addConsumer(obj -> {
-                if (obj instanceof ReloadConfiguration) {
-                    providerRegistry.configuration().reload();
-                }
-            });
+            eventBus.addConsumer(ReloadConfiguration.class, obj -> providerRegistry.configuration().reload());
             executors.put(DEFAULT_EXECUTOR_NAME, null);
             executors.put(DEFAULT_SCHEDULED_EXECUTOR_NAME, ConfigurationDrivenExecutorServiceProvider.ThreadPoolType.scheduled);
         }

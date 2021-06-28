@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
  * executors.[name].nameFormat - format of the thread names; e.g. "background-%d"
  * executors.[name].rejectedExecutionHandler - either the qualifier for a provided {@link RejectedExecutionHandler} or the name of one of the built in handlers: discard, discardOldest, callerRuns, abort
  * <p>
- * There are two executors provided automatically, their names are {@link BuiltInAppLoader#DEFAULT_EXECUTOR_NAME} and {@link BuiltInAppLoader#DEFAULT_SCHEDULED_EXECUTOR_NAME}
+ * There are two executors provided automatically, their names are {@link BuiltInApplicationLoader#DEFAULT_EXECUTOR_NAME} and {@link BuiltInApplicationLoader#DEFAULT_SCHEDULED_EXECUTOR_NAME}
  */
 public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvider<ExecutorService> {
 

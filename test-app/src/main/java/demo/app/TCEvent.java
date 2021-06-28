@@ -7,13 +7,11 @@ import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import vest.doctor.Async;
 import vest.doctor.event.ApplicationStarted;
-import vest.doctor.event.EventListener;
+import vest.doctor.event.EventConsumer;
 import vest.doctor.event.EventProducer;
-import vest.doctor.event.ServiceStarted;
-import vest.doctor.event.ServiceStopped;
 
 @Singleton
-public class TCEvent {
+public class TCEvent implements EventConsumer<Object> {
 
     private static final Logger log = LoggerFactory.getLogger(TCEvent.class);
     public boolean eventListened = false;
@@ -32,26 +30,17 @@ public class TCEvent {
         producer.publish("test");
     }
 
-    @EventListener
-    public void stringMessages(String message) {
-        this.messageReceived = message;
-    }
-
-    @EventListener
-    @Async
-    public void onStartup(ApplicationStarted startup) {
-        eventListened = true;
-        Assert.assertNotNull(startup);
-        Assert.assertNotNull(startup.providerRegistry());
-    }
-
-    @EventListener
-    public void serviceStarts(ServiceStarted serviceStarted) {
-        log.info("{}", serviceStarted);
-    }
-
-    @EventListener
-    public void serviceStops(ServiceStopped serviceStopped) {
-        log.info("{}", serviceStopped);
+    @Override
+    public void receive(Object event) {
+        if (event instanceof ApplicationStarted) {
+            eventListened = true;
+            ApplicationStarted startup = (ApplicationStarted) event;
+            Assert.assertNotNull(startup);
+            Assert.assertNotNull(startup.providerRegistry());
+        } else if (event instanceof String) {
+            this.messageReceived = (String) event;
+        } else {
+            log.info("{}", event);
+        }
     }
 }

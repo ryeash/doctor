@@ -1,29 +1,54 @@
 package vest.doctor.event;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Objects;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.stream.Collectors;
 
 /**
  * Primary class for supporting event publish and delivery.
  */
 public final class EventBus implements EventProducer {
 
-    private final List<EventConsumer> consumers = new LinkedList<>();
+    private final Collection<ConsumerHolder<?>> consumers = new ConcurrentLinkedDeque<>();
 
-    public void addConsumer(EventConsumer consumer) {
-        synchronized (consumers) {
-            if (consumers.contains(consumer)) {
-                throw new IllegalArgumentException("event consumer " + consumer + " has already been registered");
+    /**
+     * Add a new consumer to notify with published events.
+     *
+     * @param eventType the event type the consumer listens for
+     * @param consumer  the action
+     */
+    public <T> void addConsumer(Class<T> eventType, EventConsumer<T> consumer) {
+        consumers.add(new ConsumerHolder<>(eventType, consumer));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void publish(Object event) {
+        for (ConsumerHolder eventConsumer : consumers) {
+            if (eventConsumer.type.isInstance(event)) {
+                eventConsumer.consumer.receive(event);
             }
-            consumers.add(Objects.requireNonNull(consumer));
         }
     }
 
     @Override
-    public void publish(Object event) {
-        for (EventConsumer consumer : consumers) {
-            consumer.receive(event);
+    public String toString() {
+        return "EventBus{consumers: [" +
+                consumers.stream()
+                        .sorted(Comparator.comparing(h -> h.type.getName()))
+                        .map(holder -> holder.type.getName() + ": " + holder.consumer)
+                        .collect(Collectors.joining("\n")) +
+                "]}";
+    }
+
+    private static final class ConsumerHolder<T> {
+        private final Class<T> type;
+        private final EventConsumer<?> consumer;
+
+        private ConsumerHolder(Class<T> type, EventConsumer<T> consumer) {
+            this.type = type;
+            this.consumer = consumer;
         }
     }
 }

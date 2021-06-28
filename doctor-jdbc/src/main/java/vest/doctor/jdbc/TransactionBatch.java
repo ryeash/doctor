@@ -12,7 +12,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Bundles multiple actions together to allow them to execute inside a single
  * transaction. Efforts have been taken to ensure this class is thread-safe; it is, however,
- * recommended to have this class owned and used by only one thread.
+ * recommended that this class be owned and used by only one thread.
  * <p>
  * The batched actions can optionally be set to automatically execute after reaching a
  * specified limit. Use {@link #setMaxActions(int)} with value >0 to configure the

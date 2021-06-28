@@ -1,5 +1,5 @@
 module doctor.runtime {
-    uses vest.doctor.AppLoader;
+    uses vest.doctor.ApplicationLoader;
 
     requires transitive doctor.core;
 
