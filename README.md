@@ -18,12 +18,12 @@ public static void main(String[]args){
 Pseudo-support
 for [jakarta.inject](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/package-summary.html). During
 compile, [@Scope](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/scope) annotations (and others) are
-analyzed, and the boilerplate code to generate instances for the types is generated and wired into an infrastructure
-that relies on `ServiceProvider` to load/initialize the application.
+analyzed, and the boilerplate code to generate instances for the types is written and wired into an infrastructure that
+relies on `ServiceProvider` to load/initialize the application.
 
-To say it in another way, the source code is analyzed to generate implementations of
-[Provider](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/provider) and the providers are
-automatically wired together for dependency injection.
+To say it in another way, it analyzes the source code to generate implementations of
+[Provider](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/provider) and the providers are wired
+together for dependency injection.
 
 ### Defining providers
 
@@ -41,7 +41,7 @@ public class JdbcDao {
 }
 ```
 
-##### Factory
+##### [@Factory](doctor-core/src/main/java/vest/doctor/Factory.java)
 
 This method in this class does a similar thing (though having both in your project will cause a compilation error, so
 just pick one):
@@ -155,7 +155,6 @@ included with doctor. To create qualifiers see example here:
 Providers can be enabled for a specific set of modules.
 
 ```java
-
 @Singleton
 @Modules({"dev", "test"}) // this class will only be available when either the "dev" or "test" module is active.
 public class MockDao implements Dao {
@@ -415,7 +414,7 @@ Now, when you get an instance of Thing, all method calls will use the TimingAspe
 
 ```java
 Thing thing=doctor.getInstance(Thing.class);
-        thing.doSomething() // <- method will be both timed and observed
+thing.doSomething() // <- method will be both timed and observed
 ```
 
 #### A note on Aspect scoping

@@ -10,5 +10,5 @@ public interface EventConsumer<T> {
      *
      * @param event the event
      */
-    void receive(T event);
+    void accept(T event);
 }

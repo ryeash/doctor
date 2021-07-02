@@ -27,7 +27,7 @@ public final class EventBus implements EventProducer {
     public void publish(Object event) {
         for (ConsumerHolder eventConsumer : consumers) {
             if (eventConsumer.type.isInstance(event)) {
-                eventConsumer.consumer.receive(event);
+                eventConsumer.consumer.accept(event);
             }
         }
     }

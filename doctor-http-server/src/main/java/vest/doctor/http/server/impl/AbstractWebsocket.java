@@ -190,7 +190,7 @@ public abstract class AbstractWebsocket implements Websocket {
      *
      * @param ctx   The context to send the message to
      * @param frame The frame to send
-     * @return a future represented the eventual completed send of data
+     * @return a future representing the future completed send of data
      */
     protected CompletableFuture<Void> send(ChannelHandlerContext ctx, WebSocketFrame frame) {
         CompletableFuture<Future<?>> future = new CompletableFuture<>();

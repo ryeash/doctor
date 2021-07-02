@@ -14,9 +14,9 @@ import vest.doctor.aop.AspectWrappingProvider;
 import vest.doctor.aop.Aspects;
 import vest.doctor.aop.MethodInvocation;
 import vest.doctor.aop.MethodInvocationImpl;
+import vest.doctor.aop.MethodInvoker;
 import vest.doctor.aop.MethodMetadata;
 import vest.doctor.aop.MutableMethodArgument;
-import vest.doctor.aop.ThrowingFunction;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
@@ -89,7 +89,7 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
                 .addImportClass(Map.class)
                 .addImportClass(LinkedHashMap.class)
                 .addImportClass(List.class)
-                .addImportClass(ThrowingFunction.class)
+                .addImportClass(MethodInvoker.class)
                 .addImportClass(AspectCoordinator.class)
                 .addImportClass(TypeInfo.class)
                 .addImportClass(typeElement.getQualifiedName().toString());

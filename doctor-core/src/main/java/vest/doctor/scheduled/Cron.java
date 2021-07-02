@@ -230,8 +230,8 @@ public class Cron {
     }
 
     public long nextFireTime(long fromEpochMillis) {
-        Instant instant = Instant.ofEpochMilli(fromEpochMillis + 1000);
-        ZonedDateTime next = instant.atZone(ZoneId.systemDefault());
+        ZonedDateTime next = Instant.ofEpochMilli(fromEpochMillis + 1000)
+                .atZone(ZoneId.systemDefault());
         for (int i = 0; i < 15; i++) {
             long starting = next.toEpochSecond();
 

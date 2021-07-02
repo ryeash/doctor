@@ -24,27 +24,39 @@ public class UpdateResultRow implements Row {
 
     @Override
     public <T> T get(String column) {
+        checkColumn(column);
         return get(1);
     }
 
     @Override
     public <T> T get(String column, Class<T> type) {
-        return get(1);
+        checkColumn(column);
+        return type.cast(updateCount);
     }
 
     @Override
     public <T> Optional<T> getOpt(String column, Class<T> type) {
-        return Optional.ofNullable(get(1));
+        if (column.equalsIgnoreCase(UPDATE_COUNT)) {
+            return Optional.of(type.cast(updateCount));
+        } else {
+            return Optional.empty();
+        }
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public <T> T get(int column) {
+        if (column != 1) {
+            throw new IllegalArgumentException("column " + column + " does not exists in the result set; column count=1");
+        }
         return (T) updateCount;
     }
 
     @Override
     public <T> T get(int column, Class<T> type) {
+        if (column != 1) {
+            throw new IllegalArgumentException("column " + column + " does not exists in the result set; column count=1");
+        }
         return get(1);
     }
 
@@ -131,5 +143,11 @@ public class UpdateResultRow implements Row {
     @Override
     public Collection<String> columnNames() {
         return Collections.singletonList(UPDATE_COUNT);
+    }
+
+    private static void checkColumn(String column) {
+        if (!column.equalsIgnoreCase(UPDATE_COUNT)) {
+            throw new IllegalArgumentException("the column '" + column + "' does not exists in the result set, known columns: [" + UPDATE_COUNT + "]");
+        }
     }
 }

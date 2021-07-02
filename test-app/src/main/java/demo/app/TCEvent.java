@@ -31,7 +31,7 @@ public class TCEvent implements EventConsumer<Object> {
     }
 
     @Override
-    public void receive(Object event) {
+    public void accept(Object event) {
         if (event instanceof ApplicationStarted) {
             eventListened = true;
             ApplicationStarted startup = (ApplicationStarted) event;

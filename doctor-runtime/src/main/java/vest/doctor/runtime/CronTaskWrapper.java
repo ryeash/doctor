@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
 /**
- * Used internally to support running scheduled methods.
+ * Used internally to support running cron scheduled methods.
  */
 public final class CronTaskWrapper<T> implements Runnable {
 

@@ -28,11 +28,11 @@ public class EventConsumersWriter implements ProviderDefinitionListener {
         if (ProcessorUtils.isCompatibleWith(context, providerDefinition.providedType(), EventConsumer.class)) {
             String type = ProcessorUtils.allUniqueMethods(context, providerDefinition.providedType())
                     .stream()
-                    .filter(method -> method.getParameters().size() == 1 && method.getSimpleName().toString().equals("receive"))
+                    .filter(method -> method.getParameters().size() == 1 && method.getSimpleName().toString().equals("accept"))
                     .findFirst()
                     .map(method -> method.getParameters().get(0))
                     .map(param -> param.asType().toString() + ".class")
-                    .orElseThrow(() -> new CodeProcessingException("couldn't determine event type a type"));
+                    .orElseThrow(() -> new CodeProcessingException("couldn't determine event type for consumer: " + providerDefinition.providedType()));
             stage4.line("bus.addConsumer(", type, ",", ProcessorUtils.getProviderCode(providerDefinition), ".get());");
         }
     }

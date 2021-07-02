@@ -40,7 +40,7 @@ public interface RequestBody {
     /**
      * Get any trailing headers that were sent after the end of the request body stream.
      * The returned optional will always be empty if the end of the body has not been
-     * reached.
+     * read.
      */
     Optional<HttpHeaders> trailingHeaders();
 

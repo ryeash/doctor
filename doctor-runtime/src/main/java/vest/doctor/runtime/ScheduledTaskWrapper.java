@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
 /**
- * Used internally to support running scheduled methods.
+ * Used internally to support running interval scheduled methods.
  */
 public final class ScheduledTaskWrapper<T> implements Runnable {
 

@@ -32,6 +32,13 @@ public class RxTest extends BaseUtilTest {
                 .subscribeJoin();
     }
 
+    public void futureMap() {
+        Pipeline.iterate(strings)
+                .mapFuture(s -> CompletableFuture.completedFuture(s.length()))
+                .observe(expect(5, (it, length) -> assertEquals((int) length, strings.get(it).length())))
+                .subscribeJoin();
+    }
+
     public void basicFlatMap() {
         String test = "test";
         Pipeline.of(test)

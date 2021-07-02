@@ -12,7 +12,7 @@ import java.util.function.UnaryOperator;
  * Builder for {@link HttpServer}. Combines {@link HttpServerConfiguration} and {@link Router} into
  * a builder style configuration and startup mechanism.
  */
-public class HttpServerBuilder {
+public final class HttpServerBuilder {
 
     private final HttpServerConfiguration config = new HttpServerConfiguration();
     private final Router router = new Router(config);

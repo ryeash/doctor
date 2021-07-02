@@ -29,7 +29,6 @@ public abstract class AbstractSource<IN> extends AbstractStage<IN, IN> {
 
     @Override
     public void onError(Throwable throwable) {
-        throwable.printStackTrace();
         if (throwable instanceof RuntimeException) {
             throw (RuntimeException) throwable;
         } else {

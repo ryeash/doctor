@@ -192,6 +192,30 @@ public final class Pipeline<START, I, O> {
     }
 
     /**
+     * Add an asynchronous mapping stage to the pipeline. When the {@link CompletionStage} returned
+     * by the function completes, the result will automatically be applied, either publishing to downstreams
+     * on success, or calling {@link Stage#onError(Throwable)} when completed exceptionally.
+     *
+     * @param function the mapper
+     * @return the next builder step
+     */
+    public <NEXT> Pipeline<START, O, NEXT> mapFuture(Function<O, CompletionStage<NEXT>> function) {
+        return mapFuture((sub, o) -> function.apply(o));
+    }
+
+    /**
+     * Add an asynchronous mapping stage to the pipeline. When the {@link CompletionStage} returned
+     * by the function completes, the result will automatically be applied, either publishing to downstreams
+     * on success, or calling {@link Stage#onError(Throwable)} when completed exceptionally.
+     *
+     * @param function the mapper
+     * @return the next builder step
+     */
+    public <NEXT> Pipeline<START, O, NEXT> mapFuture(BiFunction<Flow.Subscription, O, CompletionStage<NEXT>> function) {
+        return chain(new MapFutureStage<>(stage, function));
+    }
+
+    /**
      * Add a flat mapping stage to the pipeline. A flat map stage maps input items to one or more items and
      * emits them to downstream stages.
      *

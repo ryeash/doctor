@@ -12,12 +12,12 @@ public class MethodInvocationImpl implements MethodInvocation {
 
     private final MethodMetadata methodMetadata;
     private final List<MutableMethodArgument> argumentList;
-    private final ThrowingFunction<MethodInvocation, ?> methodInvoker;
+    private final MethodInvoker<MethodInvocation, ?> methodInvoker;
     private Object result;
     private boolean invoked = false;
     private boolean invokable = true;
 
-    public MethodInvocationImpl(MethodMetadata methodMetadata, List<MutableMethodArgument> argumentList, ThrowingFunction<MethodInvocation, ?> methodInvoker) {
+    public MethodInvocationImpl(MethodMetadata methodMetadata, List<MutableMethodArgument> argumentList, MethodInvoker<MethodInvocation, ?> methodInvoker) {
         this.methodMetadata = methodMetadata;
         this.argumentList = Collections.unmodifiableList(argumentList);
         this.methodInvoker = methodInvoker;

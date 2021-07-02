@@ -2,6 +2,7 @@ package vest.doctor.http.server;
 
 import vest.doctor.Prioritized;
 
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
@@ -29,6 +30,7 @@ public interface Filter extends Prioritized {
      * @return a new before {@link Filter}
      */
     static Filter before(Consumer<Request> consumer) {
+        Objects.requireNonNull(consumer);
         return (request, resp) -> {
             consumer.accept(request);
             return resp;
@@ -42,6 +44,7 @@ public interface Filter extends Prioritized {
      * @return a new after {@link Filter}
      */
     static Filter after(UnaryOperator<Response> function) {
+        Objects.requireNonNull(function);
         return (request, resp) -> resp.thenApply(function);
     }
 }

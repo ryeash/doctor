@@ -16,7 +16,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 
 /**
- * A handle to the HTTP request body. Supports event driven reading of body data.
+ * A handle to the HTTP request body. Supports asynchronously reading the body data.
  */
 public class StreamingRequestBody extends InputStream implements RequestBody {
     private final CompositeByteBuf composite = PooledByteBufAllocator.DEFAULT.compositeBuffer(1024);
