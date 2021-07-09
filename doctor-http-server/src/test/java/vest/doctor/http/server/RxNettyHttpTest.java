@@ -1,0 +1,277 @@
+package vest.doctor.http.server;
+
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.restassured.RestAssured;
+import io.restassured.config.RestAssuredConfig;
+import io.restassured.response.Response;
+import io.restassured.specification.RequestSpecification;
+import org.hamcrest.Matchers;
+import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
+import vest.doctor.http.server.impl.Router;
+import vest.doctor.pipeline.Pipeline;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.IntStream;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+
+public class RxNettyHttpTest {
+
+    RxHttpServer server;
+
+    @BeforeClass(alwaysRun = true)
+    public void setup() {
+        server = new RxHttpServerBuilder()
+                .setDebugRequestRouting(true)
+                .addBindAddress(new InetSocketAddress("localhost", 61235))
+
+                .after("/*", response -> {
+                    response.headers().set("X-Filter", "true");
+                    return response;
+                })
+                .before("/*", request -> {
+                    request.attribute(Router.PATH_OVERRIDE, request.path().toLowerCase());
+                    request.headers().set("X-Before", true);
+                })
+                .after("/*", response -> {
+                    response.headers().set("X-Filter2", new Date());
+                    return response;
+                })
+                .filter("/*", ((request, pipeline) -> {
+                    if (Objects.equals(request.queryParam("shortcircuit"), "true")) {
+                        return Pipeline.of(request.createResponse().status(500).body(ResponseBody.of("shortcircuited")));
+                    } else {
+                        return pipeline;
+                    }
+                }))
+                .after("/hello/*", response -> {
+                    response.headers().set(HttpHeaderNames.SERVER, "doctor");
+                    return response;
+                })
+
+                .getSync("/", request -> {
+                    System.out.println(request);
+                    return request.createResponse().body(ResponseBody.of("ok"));
+                })
+                .getSync("/hello/{name}", request -> {
+                    Map<String, String> pathParams = request.attribute(Router.PATH_PARAMS);
+                    return request.createResponse()
+                            .body(ResponseBody.of(pathParams.get("name")));
+                })
+                .getSync("/empty", request -> request.createResponse().body(ResponseBody.empty()))
+                .getSync("/stream", request -> {
+                    byte[] bytes = new byte[1024];
+                    Arrays.fill(bytes, (byte) 'a');
+                    return request.createResponse().body(ResponseBody.of(new ByteArrayInputStream(bytes)));
+                })
+
+                .get("/exception", request -> {
+                    throw new RuntimeException("I threw an error");
+                })
+                .get("/futureexception", request -> {
+                    return request.body()
+                            .map(content -> {
+                                throw new RuntimeException("I threw an error mapping content");
+                            });
+                })
+                .post("/", request -> BodyUtils.asString(request.body())
+                        .map((Function<String, ResponseBody>) ResponseBody::of)
+                        .map(request.createResponse()::body)
+                        .map(r -> r.header("Content-Type", "text/plain")))
+
+                .any("/*", request ->
+                        BodyUtils.asString(request.body())
+                                .observe(s -> System.out.println(Thread.currentThread().getName() + " " + s))
+                                .map(c -> request.createResponse().body(ResponseBody.of(c))))
+                .get("/error", request -> {
+                    throw new RuntimeException("error");
+                })
+                .filter("/filterShortCircuit", (request, pipe) ->
+                        Pipeline.of(request.createResponse()
+                                .status(403)
+                                .body(ResponseBody.of("filterShortCircuit"))))
+                .start();
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void shutdown() {
+        server.close();
+    }
+
+    private RequestSpecification req() {
+        RestAssuredConfig config = RestAssured.config();
+        config.getDecoderConfig().useNoWrapForInflateDecoding(true);
+        return RestAssured.given()
+                .config(config)
+                .baseUri("http://localhost:61235");
+    }
+
+    @Test
+    public void init() {
+        req().get("/")
+                .then()
+                .statusCode(200);
+    }
+
+    @Test
+    public void hello() {
+        req().get("/hello/goodbye")
+                .then()
+                .body(Matchers.equalTo("goodbye"))
+                .header("server", equalTo("doctor"));
+
+        // case-insensitive
+        req().get("/HELLO/goodbye")
+                .then()
+                .body(Matchers.equalTo("goodbye"));
+    }
+
+    @Test
+    public void empty() {
+        req().get("/empty")
+                .then()
+                .body(Matchers.equalTo(""));
+    }
+
+    @Test
+    public void stream() {
+        byte[] bytes = req()
+                .get("/stream")
+                .prettyPeek()
+                .then()
+                .statusCode(200)
+                .header("content-encoding", is("gzip"))
+                .extract()
+                .asByteArray();
+        Assert.assertEquals(bytes.length, 1024);
+    }
+
+    @Test
+    public void compression() {
+        String test = "abcdefghijklmnopqrstuvwxyz";
+        String as = req().body(gzipCompress(test.getBytes(StandardCharsets.UTF_8)))
+                .header("content-encoding", "gzip")
+                .post("/")
+                .body()
+                .asString();
+        Assert.assertEquals(as, test);
+    }
+
+    @Test
+    public void postSync() {
+        String test = "test";
+        String as = req().body(test)
+                .post("/readablebody")
+                .body()
+                .asString();
+        Assert.assertEquals(as, test);
+    }
+
+    @Test
+    public void exception() {
+        req().get("/exception")
+                .then()
+                .statusCode(500);
+
+        req().get("/futureexception")
+                .then()
+                .statusCode(500);
+    }
+
+    @Test
+    public void shortCircuit() {
+        req()
+                .queryParam("shortcircuit", "true")
+                .get("/")
+                .then()
+                .statusCode(500)
+                .body(is("shortcircuited"));
+    }
+
+    @Test
+    public void foo() {
+        for (int i = 0; i < 10; i++) {
+            Response response = req()
+                    .body("test")
+                    .post();
+            System.out.println(response.time() + "ms");
+            response.prettyPeek()
+                    .then()
+                    .body(is("test"));
+        }
+    }
+
+    @Test(invocationCount = 2)
+    public void throughput() {
+        long start = System.nanoTime();
+        IntStream.range(0, 1000)
+                .parallel()
+                .forEach(i -> req()
+                        .body(randomBytes())
+                        .post("/")
+                        .then()
+                        .statusCode(200));
+        System.out.println(TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + "ms");
+    }
+
+    @Test
+    public void connectionClose() {
+        req()
+                .header("Connection", "close")
+                .get("/")
+                .then()
+                .statusCode(200);
+    }
+
+    private static byte[] randomBytes() {
+        int size = ThreadLocalRandom.current().nextInt(1024, 1024 * 20);
+        byte[] b = new byte[size];
+        ThreadLocalRandom.current().nextBytes(b);
+        return b;
+    }
+
+    private static byte[] gzipCompress(byte[] uncompressedData) {
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream(uncompressedData.length);
+             GZIPOutputStream gzipOS = new GZIPOutputStream(bos)) {
+            gzipOS.write(uncompressedData);
+            gzipOS.close();
+            return bos.toByteArray();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private byte[] uncompress(byte[] compressedData) {
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(compressedData);
+             ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             GZIPInputStream gzipIS = new GZIPInputStream(bis)) {
+
+            byte[] buffer = new byte[1024];
+            int len;
+            while ((len = gzipIS.read(buffer)) != -1) {
+                bos.write(buffer, 0, len);
+            }
+            return bos.toByteArray();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+}

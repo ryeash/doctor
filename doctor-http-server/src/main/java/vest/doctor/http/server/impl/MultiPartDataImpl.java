@@ -11,6 +11,7 @@ import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import vest.doctor.http.server.HttpException;
 import vest.doctor.http.server.MultiPartData;
+import vest.doctor.http.server.Part;
 import vest.doctor.http.server.RequestBody;
 
 import java.nio.charset.StandardCharsets;

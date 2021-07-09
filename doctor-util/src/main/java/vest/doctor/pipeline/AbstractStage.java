@@ -1,5 +1,6 @@
 package vest.doctor.pipeline;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -10,6 +11,7 @@ import java.util.concurrent.Flow;
  */
 public abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
 
+    protected ErrorHandler<IN, OUT> errorHandler;
     protected final Stage<?, IN> upstream;
     protected Stage<OUT, ?> downstream;
     private final CompletableFuture<Void> completionFuture;
@@ -63,14 +65,8 @@ public abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
 
     @Override
     public void onError(Throwable throwable) {
-        completionFuture.completeExceptionally(throwable);
-        if (upstream != null) {
-            upstream.onError(throwable);
-        }
-        cancel();
-        if (downstream != null) {
-            downstream.onError(throwable);
-        }
+        ErrorHandler<IN, OUT> errorHandler = Objects.requireNonNullElse(this.errorHandler, ErrorHandler.defaultErrorHandler());
+        errorHandler.handle(this, throwable);
     }
 
     @Override
@@ -113,5 +109,18 @@ public abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
     @Override
     public Optional<Stage<OUT, ?>> downstream() {
         return Optional.ofNullable(downstream);
+    }
+
+    @Override
+    public Optional<Stage<?, IN>> upstream() {
+        return Optional.ofNullable(upstream);
+    }
+
+    @Override
+    public void errorHandler(ErrorHandler handler) {
+        this.errorHandler = handler;
+        if (upstream != null) {
+            upstream.errorHandler(handler);
+        }
     }
 }

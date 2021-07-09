@@ -61,6 +61,16 @@ class BasePipeline<I, O> implements Stage<I, O> {
     }
 
     @Override
+    public Optional<Stage<?, I>> upstream() {
+        return source.upstream();
+    }
+
+    @Override
+    public void errorHandler(ErrorHandler handler) {
+        last.errorHandler(handler);
+    }
+
+    @Override
     public void subscribe(Flow.Subscriber<? super O> subscriber) {
         last.subscribe(subscriber);
     }

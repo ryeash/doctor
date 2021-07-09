@@ -1,18 +1,18 @@
 package vest.doctor.http.server.impl;
 
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
-import vest.doctor.http.server.HttpServer;
 
 public abstract class ServerSocketChannelInitializer extends ChannelInitializer<SocketChannel> {
 
-    private HttpServer server;
+    private ChannelHandler server;
 
-    public HttpServer getServer() {
+    public ChannelHandler getServer() {
         return server;
     }
 
-    public void setServer(HttpServer server) {
+    public void setServer(ChannelHandler server) {
         this.server = server;
     }
 }

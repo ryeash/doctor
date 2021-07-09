@@ -157,6 +157,15 @@ public class RxTest extends BaseUtilTest {
         completed.join();
     }
 
+    public void basicRecover() {
+        Byte b = Pipeline.of("string")
+                .map(s -> s.getBytes()[100])
+                .recover(error -> (byte) 0xFF)
+                .subscribeFuture()
+                .join();
+        assertEquals(b.byteValue(), (byte) 0xFF);
+    }
+
     public void complex() {
         Pipeline.iterate(strings)
                 .flatStream(string -> string.chars().mapToObj(Character::toString))

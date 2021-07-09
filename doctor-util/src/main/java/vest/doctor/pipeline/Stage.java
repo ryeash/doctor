@@ -51,4 +51,13 @@ public interface Stage<IN, OUT> extends Flow.Subscription, Flow.Processor<IN, OU
      * @return the optional downstream stage
      */
     Optional<Stage<OUT, ?>> downstream();
+
+    /**
+     * Get the upstream stage.
+     *
+     * @return the optional upstream stage
+     */
+    Optional<Stage<?, IN>> upstream();
+
+    void errorHandler(ErrorHandler<?, OUT> handler);
 }

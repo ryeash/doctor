@@ -2,6 +2,7 @@ module doctor.http.server {
     requires static java.compiler;
 
     requires transitive doctor.core;
+    requires transitive doctor.util;
 
     requires jakarta.inject;
     requires io.netty.buffer;
