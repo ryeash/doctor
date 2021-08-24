@@ -11,12 +11,12 @@ import vest.doctor.http.server.Response;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
@@ -26,7 +26,7 @@ import static vest.doctor.http.server.rest.ANY.ANY_METHOD_NAME;
  * A handler that uses path specifications to route to handlers internally.
  * <p>
  * A path specification is a regular expression matching construct similar to JAX-RS routing.
- * In it's simplest form, a path specification can be a literal path: /api/v2/data.
+ * In its simplest form, a path specification can be a literal path: /api/v2/data.
  * Extending it to have path parameters: <code>/api/v2/data/{id}</code>. In this case the handler
  * registered with this path specification will have access to the "id" path parameter via
  * <code>Map<String, String> map = request.attribute(Router.PATH_PARAMS);</code>
@@ -78,9 +78,10 @@ public final class Router implements Handler {
 
     private static final String DEBUG_ROUTING_ATTRIBUTE = "doctor.netty.router.debugInfo";
     private static final String DEBUG_START_ATTRIBUTE = "doctor.netty.router.debugStart";
+    private static final String FILTER_ITERATOR = "doctor.netty.router.filterIterator";
 
     private static final Handler NOT_FOUND = new NotFound();
-    private final List<FilterAndPath> filters = new LinkedList<>();
+    private final List<Filter> filters = new LinkedList<>();
     private final Map<HttpMethod, List<Route>> routes = new TreeMap<>();
     private final HttpServerConfiguration conf;
 
@@ -89,6 +90,10 @@ public final class Router implements Handler {
      */
     public Router(HttpServerConfiguration conf) {
         this.conf = conf;
+    }
+
+    public HttpServerConfiguration configuration() {
+        return conf;
     }
 
     /**
@@ -146,7 +151,7 @@ public final class Router implements Handler {
      * @return this router
      */
     public Router filter(String path, Filter filter) {
-        filters.add(new FilterAndPath(new PathSpec(path, conf.getCaseInsensitiveMatching()), filter));
+        filters.add(new FilterAndPath(this, new PathSpec(path, conf.getCaseInsensitiveMatching()), filter));
         filters.sort(Prioritized.COMPARATOR);
         return this;
     }
@@ -157,34 +162,24 @@ public final class Router implements Handler {
             request.attribute(DEBUG_START_ATTRIBUTE, System.nanoTime());
             addTraceMessage(request, "request " + request.method() + " " + request.path());
         }
-
-        CompletableFuture<Response> parent = new CompletableFuture<>();
-        CompletionStage<Response> temp = parent;
-
-        for (FilterAndPath filterAndPath : filters) {
-            PathSpec pathSpec = filterAndPath.pathSpec;
-            Filter filter = filterAndPath.filter;
-
-            String path = attributeOrElse(request, PATH_OVERRIDE, request.path());
-            Map<String, String> pathParams = pathSpec.matchAndCollect(path);
-            addTraceMessage(request, filterAndPath, pathParams != null);
-            if (pathParams != null) {
-                request.attribute(PATH_PARAMS, pathParams);
-                temp = filter.filter(request, temp);
-                if (temp.toCompletableFuture().isDone()) {
-                    return temp;
-                }
-            }
-        }
-
-        temp.thenAccept(response -> attachTracing(request, response));
-
-        CompletionStage<Response> response = selectHandler(request).handle(request);
-        forward(response, parent);
-        return temp;
+        Iterator<Filter> iterator = filters.iterator();
+        request.attribute(FILTER_ITERATOR, iterator);
+        return doNextFilter(request);
     }
 
-    protected Handler selectHandler(Request request) {
+    private CompletionStage<Response> doNextFilter(Request request) throws Exception {
+        Iterator<Filter> iterator = request.attribute(FILTER_ITERATOR);
+        if (iterator.hasNext()) {
+            return iterator.next().filter(request, this::doNextFilter);
+        }
+        return selectAndDoHandler(request);
+    }
+
+    private CompletionStage<Response> selectAndDoHandler(Request request) throws Exception {
+        return selectHandler(request).handle(request);
+    }
+
+    private Handler selectHandler(Request request) {
         HttpMethod httpMethod = attributeOrElse(request, METHOD_OVERRIDE, request.method());
         Handler handler = selectHandler(request, httpMethod);
         if (handler != null) {
@@ -212,25 +207,13 @@ public final class Router implements Handler {
         return null;
     }
 
-    private static <T> void forward(CompletionStage<T> source, CompletableFuture<T> receiver) {
-        source.whenComplete((t, error) -> {
-            if (error != null) {
-                receiver.completeExceptionally(error);
-            } else {
-                receiver.complete(t);
-            }
-        });
-    }
-
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("Router:\n");
         if (!filters.isEmpty()) {
             sb.append(" Filters:\n");
-            for (FilterAndPath filterAndPath : filters) {
-                sb.append("  ")
-                        .append(filterAndPath.pathSpec).append(' ')
-                        .append(filterAndPath.filter).append('\n');
+            for (Filter filterAndPath : filters) {
+                sb.append("  ").append(filterAndPath).append('\n');
             }
         }
         sb.append(" Routes:\n");
@@ -248,32 +231,12 @@ public final class Router implements Handler {
         return sb.toString();
     }
 
-    private static <T> T attributeOrElse(Request request, String attribute, T orElse) {
+    static <T> T attributeOrElse(Request request, String attribute, T orElse) {
         T val = request.attribute(attribute);
         return val != null ? val : orElse;
     }
 
-    private void attachTracing(Request request, Response response) {
-        if (conf.isDebugRequestRouting()) {
-            List<String> trace = request.attribute(DEBUG_ROUTING_ATTRIBUTE);
-            if (trace != null) {
-                for (String info : trace) {
-                    response.headers().add("X-Route-Tracing", info);
-                }
-            }
-        }
-    }
-
-    private void addTraceMessage(Request request, FilterAndPath filterAndPath, boolean matched) {
-        if (conf.isDebugRequestRouting()) {
-            addTraceMessage(request, "filter " +
-                    (matched ? "match" : "not-matched") + ' ' +
-                    filterAndPath.pathSpec + ' ' +
-                    filterAndPath.filter);
-        }
-    }
-
-    private void addTraceMessage(Request request, String routeMethod, Route route, boolean matched) {
+    void addTraceMessage(Request request, String routeMethod, Route route, boolean matched) {
         if (conf.isDebugRequestRouting()) {
             addTraceMessage(request, "route " +
                     (matched ? "match" : "not-matched") + ' ' +
@@ -283,7 +246,7 @@ public final class Router implements Handler {
         }
     }
 
-    private void addTraceMessage(Request request, String info) {
+    void addTraceMessage(Request request, String info) {
         List<String> trace = request.attribute(DEBUG_ROUTING_ATTRIBUTE);
         if (trace == null) {
             trace = new LinkedList<>();
@@ -294,20 +257,5 @@ public final class Router implements Handler {
                 .map(duration -> TimeUnit.MICROSECONDS.convert(duration, TimeUnit.NANOSECONDS) + "us")
                 .orElse("");
         trace.add(dur + " " + info);
-    }
-
-    private static final class FilterAndPath implements Prioritized {
-        private final PathSpec pathSpec;
-        private final Filter filter;
-
-        private FilterAndPath(PathSpec pathSpec, Filter filter) {
-            this.pathSpec = pathSpec;
-            this.filter = filter;
-        }
-
-        @Override
-        public int priority() {
-            return filter.priority();
-        }
     }
 }

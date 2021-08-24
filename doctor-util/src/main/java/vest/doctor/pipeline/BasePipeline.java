@@ -1,7 +1,6 @@
 package vest.doctor.pipeline;
 
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 
@@ -40,14 +39,9 @@ class BasePipeline<I, O> implements Stage<I, O> {
     }
 
     @Override
-    public Stage<I, O> async(ExecutorService executorService) {
-        last.async(executorService);
+    public Stage<I, O> executor(ExecutorService executorService) {
+        last.executor(executorService);
         return this;
-    }
-
-    @Override
-    public CompletableFuture<Void> future() {
-        return last.future();
     }
 
     @Override
@@ -58,6 +52,11 @@ class BasePipeline<I, O> implements Stage<I, O> {
     @Override
     public Optional<Stage<O, ?>> downstream() {
         return last.downstream();
+    }
+
+    @Override
+    public Optional<Stage<?, I>> upstream() {
+        return source.upstream();
     }
 
     @Override

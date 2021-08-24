@@ -5,6 +5,7 @@ import vest.doctor.pipeline.Pipeline;
 import vest.doctor.pipeline.Stage;
 import vest.doctor.tuple.Tuple2;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -78,14 +79,16 @@ public class RxTest extends BaseUtilTest {
     }
 
     public void adhocSource() {
-        Stage<String, String> subscribe = Pipeline.adHoc(String.class)
+        Stage<Object, String> stage = Pipeline.adHoc(String.class)
+                .buffer()
                 .observe(expect(3, (it, c) -> assertNotNull(c)))
-                .subscribe();
-        subscribe.onNext("alpha");
-        subscribe.onNext("bravo");
-        subscribe.onNext("charlie");
-        subscribe.onComplete();
-        subscribe.future().join();
+                .toStage();
+        CompletableFuture<String> future = Pipeline.from(stage).subscribeFuture();
+        stage.onNext("alpha");
+        stage.onNext("bravo");
+        stage.onNext("charlie");
+        stage.onComplete();
+        future.join();
     }
 
     public void basicBackpressure() {
@@ -96,9 +99,7 @@ public class RxTest extends BaseUtilTest {
                     assertEquals(value, strings.get(andIncrement));
                     subscription.request(1);
                 })
-                .subscribe(1)
-                .future()
-                .join();
+                .subscribeJoin(1);
         assertEquals(c.get(), 5);
     }
 
@@ -134,11 +135,11 @@ public class RxTest extends BaseUtilTest {
     }
 
     public void basicAsync() {
-        AtomicReference<CompletableFuture<Void>> finished = new AtomicReference<>();
+        AtomicReference<CompletableFuture<?>> finished = new AtomicReference<>();
         Pipeline.iterate(strings)
                 .<Tuple2<String, Integer>>async((string, emitter) -> {
                     CompletableFuture.supplyAsync(string::length, ForkJoinPool.commonPool())
-                            .thenAccept(l -> emitter.accept(Tuple2.of(string, l)));
+                            .thenAccept(l -> emitter.emit(Tuple2.of(string, l)));
                 })
                 .attachFuture(finished::set)
                 .observe(l -> System.out.println(Thread.currentThread().getName() + " string length: " + l))
@@ -157,6 +158,15 @@ public class RxTest extends BaseUtilTest {
         completed.join();
     }
 
+    public void basicRecover() {
+        Byte b = Pipeline.of("string")
+                .map(s -> s.getBytes()[100])
+                .recover(error -> (byte) 0xFF)
+                .subscribeFuture()
+                .join();
+        assertEquals(b.byteValue(), (byte) 0xFF);
+    }
+
     public void complex() {
         Pipeline.iterate(strings)
                 .flatStream(string -> string.chars().mapToObj(Character::toString))
@@ -168,6 +178,37 @@ public class RxTest extends BaseUtilTest {
                 .observe(expect(5, (it, l) -> assertEquals(it.intValue(), l.intValue())))
                 .observe(expect(5, (it, l) -> assertEquals(it.intValue(), l.intValue())))
                 .observe(expect(5, (it, l) -> assertEquals(it.intValue(), l.intValue())))
+                .subscribeJoin();
+    }
+
+    public void errorInPipe() {
+        assertThrows(() -> Pipeline.of("string")
+                .map(s -> s.getBytes()[100])
+                .subscribeJoin());
+    }
+
+    public void skipLimit() {
+        Pipeline.iterate(strings)
+                .skip(1)
+                .limit(3)
+                .collect(Collectors.toList())
+                .observe(expect(1, (it, l) -> assertEquals(l, Arrays.asList("bravo", "charlie", "delta"))))
+                .subscribeJoin();
+    }
+
+    public void takeWhile() {
+        Pipeline.iterate(strings)
+                .takeWhile(s -> !s.equals("charlie"))
+                .collect(Collectors.toList())
+                .observe(expect(1, (it, l) -> assertEquals(l, Arrays.asList("alpha", "bravo"))))
+                .subscribeJoin();
+    }
+
+    public void dropWhile() {
+        Pipeline.iterate(strings)
+                .dropWhile(s -> !s.equals("charlie"))
+                .collect(Collectors.toList())
+                .observe(expect(1, (it, l) -> assertEquals(l, Arrays.asList("charlie", "delta", "foxtrot"))))
                 .subscribeJoin();
     }
 }

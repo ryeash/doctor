@@ -7,62 +7,43 @@ import io.netty.handler.codec.http.HttpResponseStatus;
  */
 public class HttpException extends RuntimeException {
 
-    private HttpResponseStatus status = HttpResponseStatus.INTERNAL_SERVER_ERROR;
-
-    public HttpException(String errorMessage) {
-        super(errorMessage);
-    }
-
-    public HttpException(String errorMessage, Throwable t) {
-        super(errorMessage, t);
-    }
-
-    public HttpException(Throwable error) {
-        super(error);
-    }
+    private final HttpResponseStatus status;
+    private final ResponseBody body;
 
     public HttpException(HttpResponseStatus status) {
-        super();
-        this.status = status;
+        this(status, ResponseBody.empty(), null);
     }
 
     public HttpException(HttpResponseStatus status, String errorMessage) {
-        super(errorMessage);
-        this.status = status;
+        this(status, ResponseBody.empty(), errorMessage);
     }
 
     public HttpException(HttpResponseStatus status, Throwable t) {
-        super(t);
-        this.status = status;
+        this(status, ResponseBody.empty(), null, t);
     }
 
     public HttpException(HttpResponseStatus status, String errorMessage, Throwable t) {
+        this(status, ResponseBody.empty(), errorMessage, t);
+    }
+
+    public HttpException(HttpResponseStatus status, ResponseBody body, String errorMessage, Throwable t) {
         super(errorMessage, t);
         this.status = status;
+        this.body = body;
     }
 
-    public HttpException(int status) {
-        super();
-        this.status = HttpResponseStatus.valueOf(status);
-    }
-
-    public HttpException(int status, Throwable t) {
-        super(t);
-        this.status = HttpResponseStatus.valueOf(status);
-    }
-
-    public HttpException(int status, String errorMessage) {
+    public HttpException(HttpResponseStatus status, ResponseBody body, String errorMessage) {
         super(errorMessage);
-        this.status = HttpResponseStatus.valueOf(status);
-    }
-
-    public HttpException(int status, String errorMessage, Throwable t) {
-        super(errorMessage, t);
-        this.status = HttpResponseStatus.valueOf(status);
+        this.status = status;
+        this.body = body;
     }
 
     public HttpResponseStatus status() {
         return status;
+    }
+
+    public ResponseBody body() {
+        return body;
     }
 
     @Override

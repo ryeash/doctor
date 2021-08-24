@@ -4,7 +4,6 @@ import vest.doctor.Prioritized;
 
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 /**
@@ -17,24 +16,21 @@ public interface Filter extends Prioritized {
     /**
      * Filter a request/response.
      *
-     * @param request  the request that was received
-     * @param response the future response
+     * @param request the request that was received
+     * @param chain   the next step in the filter chain
      * @return the response; possibly with new chained actions attached
      */
-    CompletionStage<Response> filter(Request request, CompletionStage<Response> response);
+    CompletionStage<Response> filter(Request request, FilterChain chain) throws Exception;
 
     /**
      * Create a filter that operates on the request before it is sent to a {@link Handler}.
      *
-     * @param consumer the action to take on the request
+     * @param function the action to take on the request
      * @return a new before {@link Filter}
      */
-    static Filter before(Consumer<Request> consumer) {
-        Objects.requireNonNull(consumer);
-        return (request, resp) -> {
-            consumer.accept(request);
-            return resp;
-        };
+    static Filter before(UnaryOperator<Request> function) {
+        Objects.requireNonNull(function);
+        return new BeforeFilter(function);
     }
 
     /**
@@ -45,6 +41,34 @@ public interface Filter extends Prioritized {
      */
     static Filter after(UnaryOperator<Response> function) {
         Objects.requireNonNull(function);
-        return (request, resp) -> resp.thenApply(function);
+        return new AfterFilter(function);
+    }
+
+    class BeforeFilter implements Filter {
+
+        private final UnaryOperator<Request> consumer;
+
+        public BeforeFilter(UnaryOperator<Request> consumer) {
+            this.consumer = consumer;
+        }
+
+        @Override
+        public CompletionStage<Response> filter(Request request, FilterChain chain) throws Exception {
+            return chain.next(consumer.apply(request));
+        }
+    }
+
+    class AfterFilter implements Filter {
+
+        private final UnaryOperator<Response> function;
+
+        public AfterFilter(UnaryOperator<Response> function) {
+            this.function = function;
+        }
+
+        @Override
+        public CompletionStage<Response> filter(Request request, FilterChain chain) throws Exception {
+            return chain.next(request).thenApply(function);
+        }
     }
 }

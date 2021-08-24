@@ -28,28 +28,28 @@ class BufferStage<IN> extends AbstractStage<IN, IN> {
     }
 
     @Override
-    public void internalPublish(IN value) {
-        if (downstream != null) {
-            boolean added = buffer.add(value);
-            if (!added) {
-                onError(new BufferOverflowException());
-            } else {
-                executorService().submit(this::consume);
-            }
+    protected void handleItem(IN value) {
+        boolean added = buffer.add(value);
+        if (!added) {
+            onError(new BufferOverflowException());
+        } else {
+            executorService().submit(this::consume);
         }
     }
 
     private void consume() {
-        for (; requested.get() > 0; requested.decrementAndGet()) {
-            IN poll = buffer.poll();
-            if (poll != null) {
-                downstream.onNext(poll);
-                super.request(1);
-            } else {
-                if (complete) {
-                    downstream.onComplete();
+        if (downstream != null) {
+            for (; requested.get() > 0; requested.decrementAndGet()) {
+                IN poll = buffer.poll();
+                if (poll != null) {
+                    downstream.onNext(poll);
+                    super.request(1);
+                } else {
+                    if (complete) {
+                        downstream.onComplete();
+                    }
+                    break;
                 }
-                break;
             }
         }
     }

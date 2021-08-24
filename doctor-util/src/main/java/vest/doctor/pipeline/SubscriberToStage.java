@@ -12,7 +12,7 @@ class SubscriberToStage<IN> extends AbstractStage<IN, IN> {
     }
 
     @Override
-    protected void internalPublish(IN value) {
+    protected void handleItem(IN value) {
         subscriber.onNext(value);
         publishDownstream(value);
     }

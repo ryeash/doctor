@@ -1,5 +1,8 @@
 package vest.doctor.pipeline;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import vest.doctor.tuple.Tuple2Consumer;
 import vest.doctor.tuple.Tuple3Consumer;
 
 import java.util.Collections;
@@ -13,8 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Flow;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
@@ -28,15 +30,15 @@ import java.util.stream.Stream;
 /**
  * Builds pipelines by combining {@link Stage stages} together into a cohesive processing flow.
  *
- * @param <START> the initial value type that this pipeline consumes
- * @param <I>     the input type of the current {@link Stage}
- * @param <O>     the output type of the current {@link Stage}
+ * @param <O> the output type of the current {@link Stage}
  */
-public final class Pipeline<START, I, O> {
+public final class Pipeline<O> {
+
+    static final Logger log = LoggerFactory.getLogger(Pipeline.class);
 
     static final ExecutorService COMMON = Optional.ofNullable(System.getProperty("doctor.pipeline.defaultParallelism"))
             .map(Integer::valueOf)
-            .<ExecutorService>map(ForkJoinPool::new)
+            .map(Executors::newFixedThreadPool)
             .orElseGet(Executors::newSingleThreadExecutor);
 
     /**
@@ -45,7 +47,7 @@ public final class Pipeline<START, I, O> {
      *
      * @return a new builder
      */
-    public static <START> Pipeline<START, START, START> adHoc() {
+    public static <START> Pipeline<START> adHoc() {
         return from(new AdhocSource<>());
     }
 
@@ -57,7 +59,7 @@ public final class Pipeline<START, I, O> {
      * @return a new builder
      */
     @SuppressWarnings("unused")
-    public static <START> Pipeline<START, START, START> adHoc(Class<START> type) {
+    public static <START> Pipeline<START> adHoc(Class<START> type) {
         return adHoc();
     }
 
@@ -69,7 +71,7 @@ public final class Pipeline<START, I, O> {
      * @return a new builder
      */
     @SafeVarargs
-    public static <START> Pipeline<START, START, START> of(START... values) {
+    public static <START> Pipeline<START> of(START... values) {
         return iterate(List.of(values));
     }
 
@@ -81,7 +83,7 @@ public final class Pipeline<START, I, O> {
      * @param source the iterable source for pipeline items
      * @return a new builder
      */
-    public static <START> Pipeline<START, START, START> iterate(Iterable<START> source) {
+    public static <START> Pipeline<START> iterate(Iterable<START> source) {
         return from(new IterableSource<>(source));
     }
 
@@ -92,7 +94,7 @@ public final class Pipeline<START, I, O> {
      * @param supplier the supplier of values into the pipeline
      * @return a new builder
      */
-    public static <START> Pipeline<START, START, START> supply(Supplier<START> supplier) {
+    public static <START> Pipeline<START> supply(Supplier<START> supplier) {
         return from(new SupplierSource<>(supplier));
     }
 
@@ -102,7 +104,7 @@ public final class Pipeline<START, I, O> {
      * @param future the completion stage that will supply the value into the pipeline
      * @return a new builder
      */
-    public static <START> Pipeline<START, START, START> completable(CompletionStage<START> future) {
+    public static <START> Pipeline<START> completable(CompletionStage<START> future) {
         return from(new CompletableSource<>(future));
     }
 
@@ -113,14 +115,19 @@ public final class Pipeline<START, I, O> {
      * @param start the stage to build from
      * @return a new builder
      */
-    public static <IN, OUT> Pipeline<IN, IN, OUT> from(Stage<IN, OUT> start) {
-        return new Pipeline<>(start, start);
+    @SuppressWarnings("unchecked")
+    public static <IN, OUT> Pipeline<OUT> from(Stage<IN, OUT> start) {
+        return new Pipeline<>(null, (Stage<Object, ?>) start, start);
     }
 
-    private final Stage<START, ?> start;
-    private final Stage<I, O> stage;
+    private final Pipeline<?> parent;
+    private final Stage<Object, ?> start;
+    private final Stage<?, O> stage;
+    private ExecutorService defaultExecutor = COMMON;
+    private boolean subscribed = false;
 
-    Pipeline(Stage<START, ?> start, Stage<I, O> stage) {
+    Pipeline(Pipeline<?> parent, Stage<Object, ?> start, Stage<?, O> stage) {
+        this.parent = parent;
         this.start = start;
         this.stage = stage;
     }
@@ -132,7 +139,7 @@ public final class Pipeline<START, I, O> {
      * @return the next builder step
      * @see #buffer(int)
      */
-    public Pipeline<START, O, O> buffer() {
+    public Pipeline<O> buffer() {
         return buffer(Flow.defaultBufferSize());
     }
 
@@ -147,7 +154,7 @@ public final class Pipeline<START, I, O> {
      *             to be thrown on publish. A value less than 0 indicates that the buffer will be unbounded.
      * @return the next builder step
      */
-    public Pipeline<START, O, O> buffer(int size) {
+    public Pipeline<O> buffer(int size) {
         return chain(new BufferStage<>(stage, size));
     }
 
@@ -157,7 +164,7 @@ public final class Pipeline<START, I, O> {
      * @param observer the observer
      * @return the next builder step
      */
-    public Pipeline<START, O, O> observe(Consumer<O> observer) {
+    public Pipeline<O> observe(Consumer<O> observer) {
         return observe((pipe, input) -> observer.accept(input));
     }
 
@@ -167,8 +174,50 @@ public final class Pipeline<START, I, O> {
      * @param observer the observer
      * @return the next builder step
      */
-    public Pipeline<START, O, O> observe(BiConsumer<Flow.Subscription, O> observer) {
-        return chain(new ObserverStage<>(stage, observer));
+    public Pipeline<O> observe(BiConsumer<Flow.Subscription, O> observer) {
+        return async((s, v, emitter) -> {
+            observer.accept(s, v);
+            emitter.emit(v);
+        });
+    }
+
+    /**
+     * Add a recovery stage to the pipeline. If an upstream stage causes an exception
+     * the given function will be used to map the exception to a new item to emit to downstream
+     * stages, allowing the pipeline to continue processing messages without terminating in an error.
+     *
+     * @param function the recovery function
+     * @return the next builder step
+     */
+    public Pipeline<O> recover(Function<Throwable, O> function) {
+        return errorHandler((stage, error, emitter) -> {
+            O recoveryValue = function.apply(error);
+            emitter.emit(recoveryValue);
+        });
+    }
+
+    /**
+     * Add an error handler stage to the pipeline. The error handler will intercept the
+     * {@link java.util.concurrent.Flow.Subscriber#onError(Throwable)} method, giving user
+     * control of what to do when an error occurs in upstream stages.
+     *
+     * @param consumer the error handler
+     * @return the next builder step
+     */
+    public Pipeline<O> errorHandler(Tuple2Consumer<Throwable, Emitter<O>> consumer) {
+        return errorHandler((stage, error, emitter) -> consumer.accept(error, emitter));
+    }
+
+    /**
+     * Add an error handler stage to the pipeline. The error handler will intercept the
+     * {@link java.util.concurrent.Flow.Subscriber#onError(Throwable)} method, giving user
+     * control of what to do when an error occurs in upstream stages.
+     *
+     * @param consumer the error handler
+     * @return the next builder step
+     */
+    public Pipeline<O> errorHandler(Tuple3Consumer<Stage<O, O>, Throwable, Emitter<O>> consumer) {
+        return chain(new ErrorHandler<>(stage, consumer));
     }
 
     /**
@@ -177,7 +226,7 @@ public final class Pipeline<START, I, O> {
      * @param function the mapper
      * @return the next builder step
      */
-    public <NEXT> Pipeline<START, O, NEXT> map(Function<O, NEXT> function) {
+    public <NEXT> Pipeline<NEXT> map(Function<O, NEXT> function) {
         return map((pipe, input) -> function.apply(input));
     }
 
@@ -187,8 +236,8 @@ public final class Pipeline<START, I, O> {
      * @param function the mapper
      * @return the next builder step
      */
-    public <NEXT> Pipeline<START, O, NEXT> map(BiFunction<Flow.Subscription, O, NEXT> function) {
-        return chain(new MapStage<>(stage, function));
+    public <NEXT> Pipeline<NEXT> map(BiFunction<Flow.Subscription, O, NEXT> function) {
+        return async((s, v, emitter) -> emitter.emit(function.apply(s, v)));
     }
 
     /**
@@ -199,7 +248,7 @@ public final class Pipeline<START, I, O> {
      * @param function the mapper
      * @return the next builder step
      */
-    public <NEXT> Pipeline<START, O, NEXT> mapFuture(Function<O, CompletionStage<NEXT>> function) {
+    public <NEXT> Pipeline<NEXT> mapFuture(Function<O, CompletionStage<NEXT>> function) {
         return mapFuture((sub, o) -> function.apply(o));
     }
 
@@ -211,8 +260,17 @@ public final class Pipeline<START, I, O> {
      * @param function the mapper
      * @return the next builder step
      */
-    public <NEXT> Pipeline<START, O, NEXT> mapFuture(BiFunction<Flow.Subscription, O, CompletionStage<NEXT>> function) {
-        return chain(new MapFutureStage<>(stage, function));
+    public <NEXT> Pipeline<NEXT> mapFuture(BiFunction<Flow.Subscription, O, CompletionStage<NEXT>> function) {
+        return async((s, v, emitter) -> {
+            CompletionStage<NEXT> apply = function.apply(s, v);
+            apply.whenComplete((next, error) -> {
+                if (error != null) {
+                    s.onError(error);
+                } else {
+                    emitter.emit(next);
+                }
+            });
+        });
     }
 
     /**
@@ -222,7 +280,7 @@ public final class Pipeline<START, I, O> {
      * @param function the mapper
      * @return the next builder step
      */
-    public <NEXT> Pipeline<START, O, NEXT> flatMap(Function<O, Iterable<NEXT>> function) {
+    public <NEXT> Pipeline<NEXT> flatMap(Function<O, Iterable<NEXT>> function) {
         return flatMap((pipe, value) -> function.apply(value));
     }
 
@@ -233,8 +291,12 @@ public final class Pipeline<START, I, O> {
      * @param function the mapper
      * @return the next builder step
      */
-    public <NEXT> Pipeline<START, O, NEXT> flatMap(BiFunction<Flow.Subscription, O, Iterable<NEXT>> function) {
-        return chain(new FlatMapStage<>(stage, function));
+    public <NEXT> Pipeline<NEXT> flatMap(BiFunction<Flow.Subscription, O, Iterable<NEXT>> function) {
+        return async((s, v, emitter) -> {
+            for (NEXT next : function.apply(s, v)) {
+                emitter.emit(next);
+            }
+        });
     }
 
     /**
@@ -244,7 +306,7 @@ public final class Pipeline<START, I, O> {
      * @param function the mapper
      * @return the next builder step
      */
-    public <NEXT> Pipeline<START, O, NEXT> flatStream(Function<O, Stream<NEXT>> function) {
+    public <NEXT> Pipeline<NEXT> flatStream(Function<O, Stream<NEXT>> function) {
         return flatStream((pipe, value) -> function.apply(value));
     }
 
@@ -255,8 +317,33 @@ public final class Pipeline<START, I, O> {
      * @param function the mapper
      * @return the next builder step
      */
-    public <NEXT> Pipeline<START, O, NEXT> flatStream(BiFunction<Flow.Subscription, O, Stream<NEXT>> function) {
-        return chain(new FlatStreamStage<>(stage, function));
+    public <NEXT> Pipeline<NEXT> flatStream(BiFunction<Flow.Subscription, O, Stream<NEXT>> function) {
+        return async((s, v, emitter) -> function.apply(s, v).forEach(emitter::emit));
+    }
+
+    /**
+     * Add a 'flatten' stage to the pipeline. A 'flatten' stage takes the mapped pipeline object and automatically
+     * subscribes to it and emits its results downstream.
+     *
+     * @param function the mapper
+     * @return the next builder step
+     */
+    public <NEXT> Pipeline<NEXT> flatten(Function<O, Pipeline<NEXT>> function) {
+        return flatten((sub, value) -> function.apply(value));
+    }
+
+    /**
+     * Add a 'flatten' stage to the pipeline. A 'flatten' stage takes the mapped pipeline object and automatically
+     * subscribes to it and emits its results downstream.
+     *
+     * @param function the mapper
+     * @return the next builder step
+     */
+    public <NEXT> Pipeline<NEXT> flatten(BiFunction<Flow.Subscription, O, Pipeline<NEXT>> function) {
+        return async((s, v, emitter) ->
+                function.apply(s, v)
+                        .observe(emitter::emit)
+                        .subscribe(s.executorService()));
     }
 
     /**
@@ -267,7 +354,7 @@ public final class Pipeline<START, I, O> {
      *                  downstream stages
      * @return the next builder step
      */
-    public Pipeline<START, O, O> filter(Predicate<O> predicate) {
+    public Pipeline<O> filter(Predicate<O> predicate) {
         return filter((stage, value) -> predicate.test(value));
     }
 
@@ -279,8 +366,12 @@ public final class Pipeline<START, I, O> {
      *                  downstream stages
      * @return the next builder step
      */
-    public Pipeline<START, O, O> filter(BiPredicate<Flow.Subscription, O> predicate) {
-        return chain(new FilterStage<>(stage, predicate));
+    public Pipeline<O> filter(BiPredicate<Flow.Subscription, O> predicate) {
+        return async((s, v, emitter) -> {
+            if (predicate.test(s, v)) {
+                emitter.emit(v);
+            }
+        });
     }
 
     /**
@@ -288,7 +379,7 @@ public final class Pipeline<START, I, O> {
      *
      * @return the next builder step
      */
-    public Pipeline<START, O, O> distinct() {
+    public Pipeline<O> distinct() {
         return distinct(() -> Collections.newSetFromMap(new ConcurrentHashMap<>(128, .95F, 2)));
     }
 
@@ -298,7 +389,7 @@ public final class Pipeline<START, I, O> {
      * @param setProvider the supplier that will build the set that tracks item uniqueness
      * @return the next builder step
      */
-    public Pipeline<START, O, O> distinct(Supplier<Set<O>> setProvider) {
+    public Pipeline<O> distinct(Supplier<Set<O>> setProvider) {
         Set<O> tracker = setProvider.get();
         return filter(tracker::add);
     }
@@ -310,8 +401,8 @@ public final class Pipeline<START, I, O> {
      * @param collector the collector
      * @return the next builder step
      */
-    public <R, A> Pipeline<START, O, R> collect(Collector<O, A, R> collector) {
-        return chain(new CollectingStage<>(stage, collector));
+    public <R, A> Pipeline<R> collect(Collector<O, A, R> collector) {
+        return chain(new AsyncStage<>(stage, new CollectingAsyncStageConsumer<>(collector)));
     }
 
     /**
@@ -324,8 +415,10 @@ public final class Pipeline<START, I, O> {
      * @param builder the branch builder
      * @return the next builder step
      */
-    public Pipeline<START, O, O> branch(Function<Pipeline<O, O, O>, Pipeline<O, ?, ?>> builder) {
-        return branchBuilder(builder.andThen(Pipeline::subscribe));
+    @SuppressWarnings("unchecked")
+    public <O2> Pipeline<O> branch(Function<Pipeline<O>, Pipeline<O2>> builder) {
+        Function<Pipeline<O>, Stage<O, O2>> pipelineStageFunction = (Function<Pipeline<O>, Stage<O, O2>>) (Function) builder.andThen(Pipeline::subscribe);
+        return branchBuilder(pipelineStageFunction);
     }
 
     /**
@@ -336,9 +429,8 @@ public final class Pipeline<START, I, O> {
      * @param builder the branch builder
      * @return the next builder step
      */
-    public Pipeline<START, O, O> branchBuilder(Function<Pipeline<O, O, O>, Stage<O, ?>> builder) {
-        Stage<O, ?> branch = builder.apply(adHoc());
-        return chain(new BranchStage<>(stage, branch));
+    public <O2> Pipeline<O> branchBuilder(Function<Pipeline<O>, Stage<O, O2>> builder) {
+        return branch(builder.apply(adHoc()));
     }
 
     /**
@@ -349,8 +441,11 @@ public final class Pipeline<START, I, O> {
      * @param branch the branch to add
      * @return the next builder step
      */
-    public Pipeline<START, O, O> branch(Stage<O, ?> branch) {
-        return chain(new BranchStage<>(stage, branch));
+    public Pipeline<O> branch(Stage<O, ?> branch) {
+        return async((s, v, emitter) -> {
+            s.executorService().submit(() -> branch.onNext(v));
+            emitter.emit(v);
+        });
     }
 
     /**
@@ -360,19 +455,63 @@ public final class Pipeline<START, I, O> {
      * @param action the action to take on with published items and the emitter
      * @return the next builder step
      */
-    public <NEXT> Pipeline<START, O, NEXT> async(BiConsumer<O, Consumer<NEXT>> action) {
+    public <NEXT> Pipeline<NEXT> async(BiConsumer<O, Emitter<NEXT>> action) {
         return async((sub, value, emitter) -> action.accept(value, emitter));
     }
 
     /**
-     * Add and async emitting stage. Async stages will be given a handle to an emitter to produce
+     * Add an async emitting stage. Async stages will be given a handle to an emitter to produce
      * items for downstream stages.
      *
      * @param action the action to take on the stage, published items, and the emitter
      * @return the next builder step
      */
-    public <NEXT> Pipeline<START, O, NEXT> async(Tuple3Consumer<Stage<O, NEXT>, O, Consumer<NEXT>> action) {
+    public <NEXT> Pipeline<NEXT> async(AsyncStageConsumer<O, NEXT> action) {
         return chain(new AsyncStage<>(stage, action));
+    }
+
+    /**
+     * Add a skip stage that will drop the first n items it sees from the pipeline.
+     *
+     * @param n the number of items to skip
+     * @return the next builder step
+     */
+    public Pipeline<O> skip(long n) {
+        AtomicLong c = new AtomicLong(n);
+        return dropWhile(o -> c.getAndDecrement() > 0);
+    }
+
+    /**
+     * Add a limit stage that will automatically complete the pipeline after seeing n items.
+     *
+     * @param n the max number of items to allow through the pipeline
+     * @return the next builder step
+     */
+    public Pipeline<O> limit(long n) {
+        AtomicLong c = new AtomicLong(n);
+        return takeWhile(v -> c.getAndDecrement() > 0);
+    }
+
+    /**
+     * Add a take-while stage to the pipeline that will cancel and complete the pipeline
+     * subscription when the given predicate evaluates true for an item.
+     *
+     * @param predicate the test
+     * @return the next builder step
+     */
+    public Pipeline<O> takeWhile(Predicate<O> predicate) {
+        return chain(new TakeWhileStage<>(stage, predicate));
+    }
+
+    /**
+     * Add a drop-while stage to the pipeline that will ignore items until the given predicate evaluates
+     * false.
+     *
+     * @param predicate the test
+     * @return the next builder step
+     */
+    public Pipeline<O> dropWhile(Predicate<O> predicate) {
+        return chain(new DropWhileStage<>(stage, predicate));
     }
 
     /**
@@ -381,8 +520,8 @@ public final class Pipeline<START, I, O> {
      * @param next the next stage
      * @return the next builder step
      */
-    public <R> Pipeline<START, O, R> chain(Stage<O, R> next) {
-        return new Pipeline<>(start, stage.chain(next));
+    public <R> Pipeline<R> chain(Stage<O, R> next) {
+        return new Pipeline<>(this, start, stage.chain(next));
     }
 
     /**
@@ -391,11 +530,11 @@ public final class Pipeline<START, I, O> {
      * @param next the next subscriber to add to this processing pipeline
      * @return the next builder step
      */
-    public Pipeline<START, O, O> chain(Flow.Subscriber<O> next) {
+    public Pipeline<O> chain(Flow.Subscriber<O> next) {
         if (next instanceof Stage) {
-            return new Pipeline<>(start, (Stage<O, O>) next);
+            return new Pipeline<>(this, start, (Stage<O, O>) next);
         } else {
-            return new Pipeline<>(start, new SubscriberToStage<>(stage, next));
+            return new Pipeline<>(this, start, new SubscriberToStage<>(stage, next));
         }
     }
 
@@ -405,16 +544,17 @@ public final class Pipeline<START, I, O> {
      * @param futureTask the action to take on the {@link CompletableFuture}
      * @return this builder
      */
-    public Pipeline<START, I, O> attachFuture(Consumer<CompletableFuture<Void>> futureTask) {
-        futureTask.accept(stage.future());
-        return this;
+    public Pipeline<O> attachFuture(Consumer<CompletableFuture<O>> futureTask) {
+        CompletionListenerStage<O> f = new CompletionListenerStage<>(stage);
+        futureTask.accept(f.future());
+        return chain(f);
     }
 
     /**
      * Finish building the pipeline, subscribe to it with defaults, and block awaiting the completion signal.
      */
     public void subscribeJoin() {
-        subscribe().future().join();
+        subscribeJoin(Long.MAX_VALUE);
     }
 
     /**
@@ -424,27 +564,27 @@ public final class Pipeline<START, I, O> {
      * @param initialRequestCount the initial backpressure request
      */
     public void subscribeJoin(long initialRequestCount) {
-        subscribe(initialRequestCount).future().join();
+        subscribeJoin(initialRequestCount, COMMON);
     }
 
     /**
      * Finish building the pipeline, subscribe to it using the given executor service,
      * and block awaiting the completion signal.
      *
-     * @param executorService the executor service to use with {@link Stage#async(ExecutorService)}
+     * @param executorService the executor service to use with {@link Stage#executor(ExecutorService)}
      */
     public void subscribeJoin(ExecutorService executorService) {
-        subscribe(executorService).future().join();
+        subscribeJoin(Long.MAX_VALUE, executorService);
     }
 
     /**
      * Finish building the pipeline, subscribe to it, and block awaiting the completion signal.
      *
      * @param initialRequestCount the initial backpressure request
-     * @param executorService     the executor service to use with {@link Stage#async(ExecutorService)}
+     * @param executorService     the executor service to use with {@link Stage#executor(ExecutorService)}
      */
     public void subscribeJoin(long initialRequestCount, ExecutorService executorService) {
-        subscribe(initialRequestCount, executorService).future().join();
+        subscribeFuture(initialRequestCount, executorService).join();
     }
 
     /**
@@ -465,14 +605,14 @@ public final class Pipeline<START, I, O> {
      * @return the future indicating the pipeline is done
      */
     public CompletableFuture<O> subscribeFuture(long initialRequestCount) {
-        return subscribeFuture(initialRequestCount, COMMON);
+        return subscribeFuture(initialRequestCount, defaultExecutor);
     }
 
     /**
      * Finish building the pipeline, subscribe to it,
      * and return a future representing the last value observed in the pipeline.
      *
-     * @param executorService the executor service to use with {@link Stage#async(ExecutorService)}
+     * @param executorService the executor service to use with {@link Stage#executor(ExecutorService)}
      * @return the future indicating the pipeline is done
      */
     public CompletableFuture<O> subscribeFuture(ExecutorService executorService) {
@@ -484,34 +624,31 @@ public final class Pipeline<START, I, O> {
      * and return a future representing the last value observed in the pipeline.
      *
      * @param initialRequestCount the initial backpressure request
-     * @param executorService     the executor service to use with {@link Stage#async(ExecutorService)}
+     * @param executorService     the executor service to use with {@link Stage#executor(ExecutorService)}
      * @return the future indicating the pipeline is done
      */
     public CompletableFuture<O> subscribeFuture(long initialRequestCount, ExecutorService executorService) {
-        AtomicReference<O> last = new AtomicReference<>();
-        return observe(last::set)
-                .subscribe(initialRequestCount, executorService)
-                .future()
-                .thenApply(v -> last.get());
-    }
-
-    /**
-     * Finish building the pipeline and subscribe to it.
-     * Alias for <code>subscribe(Long.MAX_VALUE, Pipeline.COMMON)</code>
-     *
-     * @return the pipeline
-     */
-    public Stage<START, O> subscribe() {
-        return subscribe(Long.MAX_VALUE, COMMON);
+        CompletionListenerStage<O> listener = new CompletionListenerStage<>(stage);
+        chain(listener).subscribe(initialRequestCount, executorService);
+        return listener.future();
     }
 
     /**
      * Finish building the pipeline and subscribe to it.
      *
-     * @param executorService the executor service to use with {@link Stage#async(ExecutorService)}
      * @return the pipeline
      */
-    public Stage<START, O> subscribe(ExecutorService executorService) {
+    public <I> Stage<I, O> subscribe() {
+        return subscribe(Long.MAX_VALUE, defaultExecutor);
+    }
+
+    /**
+     * Finish building the pipeline and subscribe to it.
+     *
+     * @param executorService the executor service to use with {@link Stage#executor(ExecutorService)}
+     * @return the pipeline
+     */
+    public <I> Stage<I, O> subscribe(ExecutorService executorService) {
         return subscribe(Long.MAX_VALUE, executorService);
     }
 
@@ -521,8 +658,8 @@ public final class Pipeline<START, I, O> {
      * @param initialRequestCount the initial backpressure request
      * @return the pipeline
      */
-    public Stage<START, O> subscribe(long initialRequestCount) {
-        return subscribe(initialRequestCount, COMMON);
+    public <I> Stage<I, O> subscribe(long initialRequestCount) {
+        return subscribe(initialRequestCount, defaultExecutor);
     }
 
     /**
@@ -532,11 +669,59 @@ public final class Pipeline<START, I, O> {
      * @param executorService     the executor service to use to execute the workflow
      * @return the pipeline
      */
-    public Stage<START, O> subscribe(long initialRequestCount, ExecutorService executorService) {
-        Stage<START, O> agg = new BasePipeline<>(start, stage);
-        agg.async(Objects.requireNonNull(executorService));
+    @SuppressWarnings("unchecked")
+    public <I> Stage<I, O> subscribe(long initialRequestCount, ExecutorService executorService) {
+        if (!(stage instanceof ErrorHandler)) {
+            errorHandler(this::defaultErrorHandler);
+        }
+        Stage<?, O> agg = toStage();
+        agg.executor(Objects.requireNonNull(executorService));
         agg.onSubscribe(agg);
         agg.request(initialRequestCount);
-        return agg;
+        markSubscribed();
+        return (Stage<I, O>) agg;
+    }
+
+    /**
+     * Realize this pipeline as a {@link Stage}.
+     *
+     * @return the realized stage
+     */
+    @SuppressWarnings("unchecked")
+    public <I> Stage<I, O> toStage() {
+        return (Stage<I, O>) new BasePipeline<>(start, stage);
+    }
+
+    /**
+     * Check whether one of the subscribe methods has been called for this pipeline.
+     *
+     * @return true if any of the subscribe methods have been called
+     */
+    public boolean subscribed() {
+        return subscribed;
+    }
+
+    /**
+     * Override the default {@link ExecutorService} to use when the user subscribes without an explicit
+     * executor service.
+     *
+     * @param executorService the default executor service
+     * @return this pipeline
+     */
+    public Pipeline<O> defaultExecutor(ExecutorService executorService) {
+        this.defaultExecutor = Objects.requireNonNull(executorService);
+        return this;
+    }
+
+    private <T> void defaultErrorHandler(Stage<T, T> stage, Throwable error, Emitter<T> emitter) {
+        stage.cancel();
+        log.error("error in pipeline", error);
+    }
+
+    private void markSubscribed() {
+        subscribed = true;
+        if (parent != null) {
+            parent.markSubscribed();
+        }
     }
 }

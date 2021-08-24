@@ -11,12 +11,13 @@ final class CompletableSource<IN> extends AbstractSource<IN> {
     }
 
     @Override
-    protected void internalPublish(IN value) {
+    protected void handleItem(IN value) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void request(long n) {
+        stateCheck(PipelineState.SUBSCRIBED);
         if (n > 0) {
             future.whenCompleteAsync((value, error) -> {
                 if (error != null) {

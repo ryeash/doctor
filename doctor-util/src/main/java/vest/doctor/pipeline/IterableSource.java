@@ -12,7 +12,7 @@ class IterableSource<IN> extends AbstractSource<IN> {
     }
 
     @Override
-    public void internalPublish(IN value) {
+    protected void handleItem(IN value) {
         throw new UnsupportedOperationException();
     }
 
@@ -22,12 +22,12 @@ class IterableSource<IN> extends AbstractSource<IN> {
     }
 
     private void iterateInternal(long n) {
-        for (; n > 0; n--) {
+        for (; state() == PipelineState.SUBSCRIBED && n > 0; n--) {
             if (source.hasNext()) {
                 IN value = source.next();
                 downstream.onNext(value);
             } else {
-                downstream.onComplete();
+                onComplete();
                 break;
             }
         }

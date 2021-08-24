@@ -1,4 +1,5 @@
 module doctor.util {
+    requires org.slf4j;
     exports vest.doctor.function;
     exports vest.doctor.atomic;
     exports vest.doctor.util;

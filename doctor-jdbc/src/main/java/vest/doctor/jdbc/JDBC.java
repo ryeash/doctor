@@ -14,7 +14,7 @@ import java.sql.Statement;
 /**
  * Facilitator for basic JDBC functions. Wraps a {@link DataSource} and provides access to the other
  * wrapped elements of the jdbc module: {@link JDBCConnection}, {@link Query}, and {@link PreparedQuery}.
- * Additionally provides helper methods to facilitate basic, disciplined use of jdbc.
+ * Additionally, provides helper methods to facilitate basic, disciplined use of jdbc.
  */
 public class JDBC implements AutoCloseable {
 

@@ -11,7 +11,7 @@ class SupplierSource<IN> extends AbstractSource<IN> {
     }
 
     @Override
-    public void internalPublish(IN value) {
+    protected void handleItem(IN value) {
         throw new UnsupportedOperationException();
     }
 
@@ -22,7 +22,7 @@ class SupplierSource<IN> extends AbstractSource<IN> {
     }
 
     protected void consume() {
-        for (; requested.get() > 0; requested.decrementAndGet()) {
+        for (; state() == PipelineState.SUBSCRIBED && requested.get() > 0; requested.decrementAndGet()) {
             downstream.onNext(source.get());
         }
     }

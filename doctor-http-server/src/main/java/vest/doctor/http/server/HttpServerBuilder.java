@@ -307,8 +307,22 @@ public final class HttpServerBuilder {
      * @param beforeFilter the filter action to take on the {@link Request} object
      * @return this builder
      */
-    public HttpServerBuilder before(String pathSpec, Consumer<Request> beforeFilter) {
+    public HttpServerBuilder before(String pathSpec, UnaryOperator<Request> beforeFilter) {
         return filter(pathSpec, Filter.before(beforeFilter));
+    }
+
+    /**
+     * Add a before filter to the router.
+     *
+     * @param pathSpec     the path specification for the filter, e.g. /api/v2/{type}/{collection}
+     * @param beforeFilter the filter action to take on the {@link Request} object
+     * @return this builder
+     */
+    public HttpServerBuilder before(String pathSpec, Consumer<Request> beforeFilter) {
+        return filter(pathSpec, Filter.before(r -> {
+            beforeFilter.accept(r);
+            return r;
+        }));
     }
 
     /**

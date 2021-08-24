@@ -1,7 +1,6 @@
 package vest.doctor.pipeline;
 
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 
@@ -12,11 +11,9 @@ public abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
 
     protected final Stage<?, IN> upstream;
     protected Stage<OUT, ?> downstream;
-    private final CompletableFuture<Void> completionFuture;
 
     public AbstractStage(Stage<?, IN> upstream) {
         this.upstream = upstream;
-        this.completionFuture = new CompletableFuture<>();
     }
 
     @Override
@@ -47,13 +44,13 @@ public abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
     @Override
     public final void onNext(IN item) {
         try {
-            internalPublish(item);
+            handleItem(item);
         } catch (Throwable t) {
-            onError(t);
+            onError(new StageException(this, item, t));
         }
     }
 
-    protected abstract void internalPublish(IN value);
+    protected abstract void handleItem(IN value);
 
     protected final void publishDownstream(OUT out) {
         if (downstream != null) {
@@ -61,21 +58,19 @@ public abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
         }
     }
 
-    @Override
-    public void onError(Throwable throwable) {
-        completionFuture.completeExceptionally(throwable);
-        if (upstream != null) {
-            upstream.onError(throwable);
-        }
-        cancel();
+    protected final void asyncPublishDownstream(OUT out) {
         if (downstream != null) {
-            downstream.onError(throwable);
+            executorService().submit(() -> downstream.onNext(out));
         }
     }
 
     @Override
+    public void onError(Throwable throwable) {
+        downstream().ifPresent(s -> s.onError(throwable));
+    }
+
+    @Override
     public void onComplete() {
-        completionFuture.complete(null);
         if (downstream != null) {
             downstream.onComplete();
         }
@@ -95,14 +90,9 @@ public abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
     }
 
     @Override
-    public Stage<IN, OUT> async(ExecutorService executorService) {
-        upstream.async(executorService);
+    public Stage<IN, OUT> executor(ExecutorService executorService) {
+        upstream.executor(executorService);
         return this;
-    }
-
-    @Override
-    public CompletableFuture<Void> future() {
-        return completionFuture;
     }
 
     @Override
@@ -113,5 +103,10 @@ public abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
     @Override
     public Optional<Stage<OUT, ?>> downstream() {
         return Optional.ofNullable(downstream);
+    }
+
+    @Override
+    public Optional<Stage<?, IN>> upstream() {
+        return Optional.ofNullable(upstream);
     }
 }

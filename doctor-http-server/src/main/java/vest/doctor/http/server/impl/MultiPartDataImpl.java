@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.DefaultHttpContent;
 import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.multipart.Attribute;
 import io.netty.handler.codec.http.multipart.FileUpload;
@@ -49,7 +50,7 @@ class MultiPartDataImpl implements MultiPartData {
             return body.asyncRead(this::nextData);
         } else {
             CompletableFuture<Boolean> future = new CompletableFuture<>();
-            future.completeExceptionally(new HttpException(400, "expecting a multipart request"));
+            future.completeExceptionally(new HttpException(HttpResponseStatus.BAD_REQUEST, "expecting a multipart request"));
             return future;
         }
     }

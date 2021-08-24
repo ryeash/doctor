@@ -17,7 +17,7 @@ public abstract class BaseUtilTest extends Assert {
     public void checkAssertions(Method method) {
         AssertingConsumer<?> c;
         while ((c = asserting.poll()) != null) {
-            c.assertCallCount();
+            c.assertCallCount(method.getName());
         }
     }
 
@@ -50,9 +50,9 @@ public abstract class BaseUtilTest extends Assert {
             assertion.accept(i.getAndIncrement(), t);
         }
 
-        public void assertCallCount() {
+        public void assertCallCount(String method) {
             if (callsExpected >= 0) {
-                Assert.assertEquals(i.get(), callsExpected, "this asserting consumer was not called the expected number of times");
+                Assert.assertEquals(i.get(), callsExpected, "this asserting consumer was not called the expected number of times: " + method);
             }
         }
     }

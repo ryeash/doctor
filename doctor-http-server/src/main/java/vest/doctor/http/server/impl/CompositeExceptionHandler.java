@@ -58,10 +58,10 @@ public class CompositeExceptionHandler implements ExceptionHandler {
         Response response = request.createResponse();
 
         Throwable temp = error;
-        for (int i = 0; i < 4 && temp != null; i++) {
+        for (int i = 0; i < 7 && temp != null; i++) {
             if (temp instanceof HttpException) {
                 response.status(((HttpException) temp).status());
-                response.body(ResponseBody.of(temp.getMessage()));
+                response.body(((HttpException) temp).body());
                 return response;
             }
             temp = temp.getCause();

@@ -194,6 +194,7 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
                         && c.getParameters().isEmpty());
         return hasEmptyConstructor
                 && modifiers.contains(Modifier.PUBLIC)
-                && !modifiers.contains(Modifier.FINAL);
+                && !modifiers.contains(Modifier.FINAL)
+                && typeElement.getKind() == ElementKind.CLASS;
     }
 }

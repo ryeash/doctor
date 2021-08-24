@@ -25,7 +25,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
-import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -50,11 +49,11 @@ public class NettyHttpTest {
                     response.headers().set("X-Filter2", new Date());
                     return response;
                 })
-                .filter("/*", ((request, response) -> {
+                .filter("/*", ((request, chain) -> {
                     if (Objects.equals(request.queryParam("shortcircuit"), "true")) {
                         return CompletableFuture.completedFuture(request.createResponse().status(500).body(ResponseBody.of("shortcircuited")));
                     } else {
-                        return response;
+                        return chain.next(request);
                     }
                 }))
                 .after("/hello/*", response -> {
@@ -225,22 +224,6 @@ public class NettyHttpTest {
              GZIPOutputStream gzipOS = new GZIPOutputStream(bos)) {
             gzipOS.write(uncompressedData);
             gzipOS.close();
-            return bos.toByteArray();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    private byte[] uncompress(byte[] compressedData) {
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(compressedData);
-             ByteArrayOutputStream bos = new ByteArrayOutputStream();
-             GZIPInputStream gzipIS = new GZIPInputStream(bis)) {
-
-            byte[] buffer = new byte[1024];
-            int len;
-            while ((len = gzipIS.read(buffer)) != -1) {
-                bos.write(buffer, 0, len);
-            }
             return bos.toByteArray();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
