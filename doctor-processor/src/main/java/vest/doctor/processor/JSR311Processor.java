@@ -59,15 +59,26 @@ import java.util.stream.Stream;
 
 import static vest.doctor.codegen.Constants.PROVIDER_REGISTRY;
 
-@SupportedSourceVersion(SourceVersion.RELEASE_15)
-@SupportedOptions({JSR311Processor.PACKAGE_NAME_OPTION})
+@SupportedSourceVersion(SourceVersion.RELEASE_16)
+@SupportedOptions({JSR311Processor.PACKAGE_NAME_OPTION, JSR311Processor.IGNORE_PACKAGES})
 public class JSR311Processor extends AbstractProcessor implements AnnotationProcessorContext {
 
+    /**
+     * Sets the package name for the generated classes. If unset, the default
+     * uses a random package structure to avoid collisions.
+     */
     public static final String PACKAGE_NAME_OPTION = "doctor.generated.packagename";
+
+    /**
+     * Defines a set of package prefixes that should be ignored during processing.
+     */
+    public static final String IGNORE_PACKAGES = "doctor.ignore.packages";
+
     private static final AtomicInteger idGenerator = new AtomicInteger();
 
     private ProcessingEnvironment processingEnv;
     private String generatedPackage;
+    private List<String> ignorePackages;
     private final List<TypeElement> annotationsToProcess = new LinkedList<>();
 
     private final List<CustomizationPoint> customizationPoints = new LinkedList<>();
@@ -91,6 +102,11 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
 
         this.generatedPackage = "vest.doctor.generated."
                 + processingEnv.getOptions().getOrDefault(PACKAGE_NAME_OPTION, "$" + ProcessorUtils.uniqueHash());
+
+        this.ignorePackages = Stream.of(processingEnv.getOptions().getOrDefault(IGNORE_PACKAGES, "").split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
 
         loadConf(new DefaultProcessorConfiguration());
         for (ProcessorConfiguration processorConfiguration : ServiceLoader.load(ProcessorConfiguration.class, JSR311Processor.class.getClassLoader())) {
@@ -150,6 +166,10 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
 
     private void processElement(Element annotatedElement) {
         try {
+            if (shouldIgnore(annotatedElement)) {
+                infoMessage("ignoring element " + annotatedElement + " due to configured ignorePackages");
+                return;
+            }
             boolean claimed = false;
             for (ProviderDefinitionProcessor providerDefinitionProcessor : customizations(ProviderDefinitionProcessor.class)) {
                 ProviderDefinition provDef = providerDefinitionProcessor.process(this, annotatedElement);
@@ -361,5 +381,17 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 }
             }
         }
+    }
+
+    private boolean shouldIgnore(Element annotatedElement) {
+        String fullTypeName;
+        if (annotatedElement instanceof TypeElement) {
+            fullTypeName = annotatedElement.asType().toString();
+        } else if (annotatedElement instanceof ExecutableElement) {
+            fullTypeName = annotatedElement.getEnclosingElement().asType().toString();
+        } else {
+            fullTypeName = "";
+        }
+        return ignorePackages.stream().anyMatch(fullTypeName::startsWith);
     }
 }

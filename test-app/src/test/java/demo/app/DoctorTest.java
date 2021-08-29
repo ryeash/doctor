@@ -2,6 +2,7 @@ package demo.app;
 
 import demo.app.dao.DAO;
 import demo.app.dao.User;
+import demo.app.ignored.TCIgnoredClass;
 import jakarta.inject.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -237,5 +238,10 @@ public class DoctorTest extends Assert {
     public void staticFactory() {
         Object str = doctor.getInstance(Object.class, "static");
         assertEquals(str, "static");
+    }
+
+    @Test
+    public void ignoredClass() {
+        assertFalse(doctor.getProviderOpt(TCIgnoredClass.class).isPresent());
     }
 }

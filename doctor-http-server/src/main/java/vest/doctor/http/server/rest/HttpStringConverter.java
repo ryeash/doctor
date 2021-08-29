@@ -20,7 +20,7 @@ public class HttpStringConverter implements StringConversionGenerator {
         } else if (ProcessorUtils.isCompatibleWith(context, targetType, ZonedDateTime.class)) {
             return "str -> java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME.parse(str, java.time.ZonedDateTime::from)";
         } else if (ProcessorUtils.isCompatibleWith(context, targetType, LocalDateTime.class)) {
-            return "str -> java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME.parse(str, java.time.ZonedDateTime::from)";
+            return "str -> java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME.parse(str, java.time.LocalDateTime::from)";
         } else if (ProcessorUtils.isCompatibleWith(context, targetType, Instant.class)) {
             return "str -> java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME.parse(str, java.time.Instant::from)";
         }

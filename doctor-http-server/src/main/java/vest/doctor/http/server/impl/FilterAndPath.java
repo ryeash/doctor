@@ -21,8 +21,7 @@ final class FilterAndPath implements Filter {
 
     @Override
     public CompletionStage<Response> filter(Request request, FilterChain chain) throws Exception {
-        String path = Router.attributeOrElse(request, Router.PATH_OVERRIDE, request.path());
-        Map<String, String> pathParams = pathSpec.matchAndCollect(path);
+        Map<String, String> pathParams = pathSpec.matchAndCollect(request);
         router.addTraceMessage(request, "filter " +
                 (pathParams != null ? "match" : "not-matched") + ' ' +
                 pathSpec + ' ' +

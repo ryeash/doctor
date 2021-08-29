@@ -87,8 +87,8 @@
                     <showWarnings>true</showWarnings>
                     <compilerArgs>
                         <arg>-parameters</arg>
+                        <arg>-Adoctor.ignore.packages=demo.app.ignored,org.dummy</arg>
                     </compilerArgs>
-                    <!--                    <meminitial>2g</meminitial>-->
                     <maxmem>2g</maxmem>
                 </configuration>
             </plugin>

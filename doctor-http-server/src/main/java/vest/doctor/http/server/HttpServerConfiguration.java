@@ -1,6 +1,7 @@
 package vest.doctor.http.server;
 
 import io.netty.handler.ssl.SslContext;
+import vest.doctor.http.server.impl.Router;
 
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
@@ -68,7 +69,7 @@ public class HttpServerConfiguration {
     private int maxChunkSize = 8192;
 
     /**
-     * Whether or not to validate request headers.
+     * Whether to validate request headers.
      */
     private boolean validateHeaders = false;
 
@@ -83,15 +84,20 @@ public class HttpServerConfiguration {
     private int maxContentLength = 8388608;
 
     /**
-     * Whether or not to match routes in {@link vest.doctor.http.server.impl.Router}
-     * using case insensitive regular expressions.
+     * Whether to match routes in {@link vest.doctor.http.server.impl.Router}
+     * using case-insensitive regular expressions.
      */
     private boolean caseInsensitiveMatching = true;
 
     /**
-     * Whether or not to add debug headers to the response when routing requests.
+     * Whether to add debug headers to the response when routing requests.
      */
     private boolean debugRequestRouting = false;
+
+    /**
+     * The prefix to prepend to all routes and filters registered with the {@link Router}.
+     */
+    private String routerPrefix = "";
 
     public int getTcpManagementThreads() {
         return tcpManagementThreads;
@@ -218,5 +224,13 @@ public class HttpServerConfiguration {
 
     public void setDebugRequestRouting(boolean debugRequestRouting) {
         this.debugRequestRouting = debugRequestRouting;
+    }
+
+    public String getRouterPrefix() {
+        return routerPrefix;
+    }
+
+    public void setRouterPrefix(String routerPrefix) {
+        this.routerPrefix = routerPrefix;
     }
 }

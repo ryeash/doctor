@@ -5,6 +5,7 @@ import vest.doctor.StringConversionGenerator;
 import vest.doctor.codegen.ProcessorUtils;
 
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
@@ -14,6 +15,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -55,6 +57,10 @@ public class StandardConversionGenerator implements StringConversionGenerator {
         } else if (hasStringConstructor(context, targetType)) {
             return targetType + "::new";
         }
+        String staticBuilder = buildStaticConstructorReference(context, targetType);
+        if (staticBuilder != null) {
+            return staticBuilder;
+        }
         throw new IllegalArgumentException("no string conversion registered to handle: " + targetType);
     }
 
@@ -71,11 +77,27 @@ public class StandardConversionGenerator implements StringConversionGenerator {
         TypeElement typeElement = context.toTypeElement(targetType);
         for (ExecutableElement constructor : ElementFilter.constructorsIn(typeElement.getEnclosedElements())) {
             if (constructor.getParameters().size() == 1
+                    && constructor.getModifiers().contains(Modifier.PUBLIC)
                     && ProcessorUtils.isCompatibleWith(context, context.toTypeElement(constructor.getParameters().get(0).asType()), String.class)
                     && constructor.getThrownTypes().isEmpty()) {
                 return true;
             }
         }
         return false;
+    }
+
+    private static String buildStaticConstructorReference(AnnotationProcessorContext context, TypeMirror targetType) {
+        TypeElement typeElement = context.toTypeElement(targetType);
+        for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements())) {
+            if (method.getParameters().size() == 1
+                    && method.getModifiers().contains(Modifier.STATIC)
+                    && method.getModifiers().contains(Modifier.PUBLIC)
+                    && ProcessorUtils.isCompatibleWith(context, context.toTypeElement(method.getParameters().get(0).asType()), String.class)
+                    && Objects.equals(method.getReturnType().toString(), targetType.toString())
+                    && method.getThrownTypes().isEmpty()) {
+                return targetType + "::" + method.getSimpleName();
+            }
+        }
+        return null;
     }
 }

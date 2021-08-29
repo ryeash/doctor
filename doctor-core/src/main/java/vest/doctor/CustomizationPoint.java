@@ -6,7 +6,7 @@ package vest.doctor;
 public interface CustomizationPoint extends Prioritized {
 
     /**
-     * Called by the {@link AnnotationProcessorContext} after all classes have been compiled.
+     * Called by the {@link AnnotationProcessorContext} after all classes have been processed.
      *
      * @param context the {@link AnnotationProcessorContext}
      */

@@ -21,13 +21,15 @@ public class TCProperties {
                         @Property("boolean") Boolean bool,
                         @Property("boolean") boolean primBool,
                         @Property("string") Optional<String> optionalString,
-                        @Property("non-existent-property") Optional<Integer> otherThing) {
+                        @Property("non-existent-property") Optional<Integer> otherThing,
+                        @Property("string") TCStaticStringConverter converted) {
         Assert.assertEquals(stringProp, "value");
         Assert.assertEquals(c, 'v');
         Assert.assertTrue(bool);
         Assert.assertTrue(primBool);
         Assert.assertEquals(optionalString.get(), "value");
         Assert.assertEquals((int) otherThing.orElse(-1), -1);
+        Assert.assertEquals(converted.getValue(), "value");
     }
 
     @Inject

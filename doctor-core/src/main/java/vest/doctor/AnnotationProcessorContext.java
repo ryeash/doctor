@@ -86,12 +86,12 @@ public interface AnnotationProcessorContext {
     /**
      * Generate the next ID for this current build. Used for generating unique names during class generation.
      *
-     * @return a unique number
+     * @return a unique number for this build
      */
     Number nextId();
 
     /**
-     * Register a compile time dependency between a target and subject.
+     * Register a compile-time dependency between a target and subject.
      *
      * @param target     the dependent type, i.e. the element that the dependency is being registered for
      * @param dependency the element that is required by the target
@@ -117,7 +117,7 @@ public interface AnnotationProcessorContext {
     ProviderDependency buildDependency(TypeElement type, String qualifier, boolean required);
 
     /**
-     * Get a list of the {@link CustomizationPoint}s registered of the given type.
+     * Get a list of the {@link CustomizationPoint CustomizationPoints} registered of the given type.
      *
      * @param type the type of customizations to lookup
      * @return a list of {@link CustomizationPoint}s

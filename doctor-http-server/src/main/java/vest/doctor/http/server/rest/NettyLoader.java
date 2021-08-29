@@ -140,6 +140,7 @@ public class NettyLoader implements ApplicationLoader {
 
         conf.setCaseInsensitiveMatching(httpConf.get("caseInsensitiveMatching", false, Boolean::valueOf));
         conf.setDebugRequestRouting(httpConf.get("debugRequestRouting", false, Boolean::valueOf));
+        conf.setRouterPrefix(httpConf.get("routePrefix", ""));
         return conf;
     }
 

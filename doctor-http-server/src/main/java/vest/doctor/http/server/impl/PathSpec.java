@@ -1,5 +1,7 @@
 package vest.doctor.http.server.impl;
 
+import vest.doctor.http.server.Request;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -19,7 +21,6 @@ public final class PathSpec implements Comparable<PathSpec> {
     private final Pattern pattern;
 
     public PathSpec(String path, boolean caseInsensitiveMatch) {
-        // TODO sorting path?
         if (path.isEmpty()) {
             throw new IllegalArgumentException("the route path may not be empty");
         }
@@ -58,6 +59,11 @@ public final class PathSpec implements Comparable<PathSpec> {
 
     public Pattern getPattern() {
         return pattern;
+    }
+
+    Map<String, String> matchAndCollect(Request request) {
+        String path = Router.attributeOrElse(request, Router.PATH_OVERRIDE, request.path());
+        return matchAndCollect(path);
     }
 
     /**

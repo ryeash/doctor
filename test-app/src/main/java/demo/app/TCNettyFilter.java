@@ -28,7 +28,6 @@ public class TCNettyFilter implements Filter {
         Optional.ofNullable(request.queryParam("attr"))
                 .ifPresent(a -> request.attribute("attr", a));
 
-        request.headers().set("X-BEFORE-MATCH", true);
         request.headers().set("X-BEFORE-ROUTE", true);
         request.attribute("filter", true);
         return chain.next(request)

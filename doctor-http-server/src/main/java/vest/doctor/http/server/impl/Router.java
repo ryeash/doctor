@@ -117,11 +117,12 @@ public final class Router implements Handler {
      * @return this router
      */
     public Router route(HttpMethod method, String path, Handler handler) {
+        String fullPath = conf.getRouterPrefix() + path;
         if (method.equals(HttpMethod.GET)) {
             // cross list all GETs as HEADs
-            route(HttpMethod.HEAD, path, handler);
+            route(HttpMethod.HEAD, fullPath, handler);
         }
-        Route newRoute = new Route(path, conf.getCaseInsensitiveMatching(), handler);
+        Route newRoute = new Route(fullPath, conf.getCaseInsensitiveMatching(), handler);
 
         List<Route> routes = this.routes.computeIfAbsent(method, v -> new ArrayList<>());
         if (routes.stream().anyMatch(r -> r.getPathSpec().getPattern().toString().equals(newRoute.getPathSpec().getPattern().toString()))) {
@@ -151,7 +152,8 @@ public final class Router implements Handler {
      * @return this router
      */
     public Router filter(String path, Filter filter) {
-        filters.add(new FilterAndPath(this, new PathSpec(path, conf.getCaseInsensitiveMatching()), filter));
+        String fullPath = conf.getRouterPrefix() + path;
+        filters.add(new FilterAndPath(this, new PathSpec(fullPath, conf.getCaseInsensitiveMatching()), filter));
         filters.sort(Prioritized.COMPARATOR);
         return this;
     }
@@ -172,10 +174,6 @@ public final class Router implements Handler {
         if (iterator.hasNext()) {
             return iterator.next().filter(request, this::doNextFilter);
         }
-        return selectAndDoHandler(request);
-    }
-
-    private CompletionStage<Response> selectAndDoHandler(Request request) throws Exception {
         return selectHandler(request).handle(request);
     }
 
@@ -196,8 +194,7 @@ public final class Router implements Handler {
 
     private Handler selectHandler(Request request, HttpMethod method) {
         for (Route route : routes.getOrDefault(method, Collections.emptyList())) {
-            String path = attributeOrElse(request, PATH_OVERRIDE, request.path());
-            Map<String, String> pathParams = route.getPathSpec().matchAndCollect(path);
+            Map<String, String> pathParams = route.getPathSpec().matchAndCollect(request);
             addTraceMessage(request, method.name(), route, pathParams != null);
             if (pathParams != null) {
                 request.attribute(PATH_PARAMS, pathParams);
