@@ -79,7 +79,8 @@ final class ProviderIndex {
     }
 
     Stream<DoctorProvider<?>> allProviders() {
-        return primary.values().stream()
+        return primary.values()
+                .stream()
                 .map(Map::values)
                 .flatMap(Collection::stream);
     }
