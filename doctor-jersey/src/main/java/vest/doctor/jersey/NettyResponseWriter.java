@@ -30,12 +30,12 @@ final class NettyResponseWriter implements ContainerResponseWriter {
     private static final ChannelFutureListener FLUSH_FUTURE = future -> future.channel().flush();
     private final ChannelHandlerContext ctx;
     private final HttpRequest req;
-    private final NettyHttpContainer container;
+    private final DoctorJerseyContainer container;
     private volatile ScheduledFuture<?> suspendTimeoutFuture;
     private volatile Runnable suspendTimeoutHandler;
     private boolean responseWritten = false;
 
-    NettyResponseWriter(ChannelHandlerContext ctx, HttpRequest req, NettyHttpContainer container) {
+    NettyResponseWriter(ChannelHandlerContext ctx, HttpRequest req, DoctorJerseyContainer container) {
         this.ctx = ctx;
         this.req = req;
         this.container = container;

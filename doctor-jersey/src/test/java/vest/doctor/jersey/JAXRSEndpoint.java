@@ -25,7 +25,6 @@ public class JAXRSEndpoint {
     }
 
     @POST
-    @Path("/")
     public Response throughput(byte[] bytes) {
         return Response.ok()
                 .entity(new String(bytes, StandardCharsets.UTF_8))

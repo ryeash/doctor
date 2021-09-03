@@ -14,13 +14,11 @@ import org.glassfish.jersey.server.ResourceConfig;
  */
 final class DoctorChannelInitializer extends ChannelInitializer<SocketChannel> {
     private final HttpServerConfiguration config;
-    private final NettyHttpContainer container;
-    private final ResourceConfig resourceConfig;
+    private final JerseyChannelAdapter jerseyChannelAdapter;
 
-    public DoctorChannelInitializer(HttpServerConfiguration config, NettyHttpContainer container, ResourceConfig resourceConfig) {
+    public DoctorChannelInitializer(HttpServerConfiguration config, DoctorJerseyContainer container, ResourceConfig resourceConfig) {
         this.config = config;
-        this.container = container;
-        this.resourceConfig = resourceConfig;
+        this.jerseyChannelAdapter = new JerseyChannelAdapter(config, container, resourceConfig);
     }
 
     @Override
@@ -38,6 +36,6 @@ final class DoctorChannelInitializer extends ChannelInitializer<SocketChannel> {
         p.addLast("httpContentDecompressor", new HttpContentDecompressor());
         p.addLast("httpContentCompressor", new HttpContentCompressor(6, 15, 8, 812));
         p.addLast("chunkedWriteHandler", new ChunkedWriteHandler());
-        p.addLast("jerseyChannelAdapter", new JerseyChannelAdapter(config, container, resourceConfig));
+        p.addLast("jerseyChannelAdapter", jerseyChannelAdapter);
     }
 }

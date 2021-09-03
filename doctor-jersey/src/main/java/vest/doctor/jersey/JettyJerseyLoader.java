@@ -45,7 +45,7 @@ public final class JettyJerseyLoader implements ApplicationLoader {
 
         EventLoopGroup bossGroup = new NioEventLoopGroup(httpConfig.getTcpManagementThreads(), new CustomThreadFactory(true, httpConfig.getTcpThreadNameFormat(), LoggingUncaughtExceptionHandler.INSTANCE, JerseyChannelAdapter.class.getClassLoader()));
         EventLoopGroup workerGroup = new NioEventLoopGroup(httpConfig.getWorkerThreads(), new CustomThreadFactory(true, httpConfig.getWorkerThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, JerseyChannelAdapter.class.getClassLoader()));
-        NettyHttpContainer container = new NettyHttpContainer(config);
+        DoctorJerseyContainer container = new DoctorJerseyContainer(config);
 
         ServerBootstrap b = new ServerBootstrap();
         b.option(ChannelOption.SO_BACKLOG, httpConfig.getSocketBacklog());
