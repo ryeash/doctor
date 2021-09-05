@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 final class CompositeBufOutputStream extends OutputStream implements ChunkedInput<ByteBuf> {
 
     private final CompositeByteBuf buf;
+    private final AtomicBoolean written = new AtomicBoolean(false);
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     public CompositeBufOutputStream(CompositeByteBuf buf) {
@@ -23,7 +24,7 @@ final class CompositeBufOutputStream extends OutputStream implements ChunkedInpu
     @Override
     public boolean isEndOfInput() {
         synchronized (buf) {
-            return closed.get() && !buf.isReadable();
+            return closed.get() && written.get() && !buf.isReadable();
         }
     }
 
@@ -49,8 +50,9 @@ final class CompositeBufOutputStream extends OutputStream implements ChunkedInpu
 
     @Override
     public void write(byte[] b, int off, int len) {
+        written.set(true);
         synchronized (buf) {
-            buf.addComponent(true, Unpooled.copiedBuffer(b, off, len));
+            buf.addFlattenedComponents(true, Unpooled.copiedBuffer(b, off, len));
             buf.discardReadComponents();
         }
     }
