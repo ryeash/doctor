@@ -9,11 +9,10 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>doctor-jersey-jetty</artifactId>
+    <artifactId>doctor-jersey</artifactId>
 
     <properties>
         <jersey.version>3.0.2</jersey.version>
-        <netty.version>4.1.65.Final</netty.version>
     </properties>
 
     <dependencyManagement>
@@ -102,7 +101,7 @@
         <dependency>
             <groupId>org.eclipse.jetty.websocket</groupId>
             <artifactId>websocket-client</artifactId>
-            <version>9.4.41.v20210516</version>
+            <version>9.4.43.v20210629</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -51,6 +51,7 @@ final class CompositeBufOutputStream extends OutputStream implements ChunkedInpu
     public void write(byte[] b, int off, int len) {
         synchronized (buf) {
             buf.addComponent(true, Unpooled.copiedBuffer(b, off, len));
+            buf.discardReadComponents();
         }
     }
 
