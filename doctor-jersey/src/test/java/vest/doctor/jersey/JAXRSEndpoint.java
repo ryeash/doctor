@@ -1,14 +1,14 @@
 package vest.doctor.jersey;
 
+import io.netty.handler.codec.http.HttpHeaderNames;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.testng.Assert;
 import vest.doctor.ProviderRegistry;
-
-import java.nio.charset.StandardCharsets;
 
 @Singleton
 @Path("/jaxrs")
@@ -27,8 +27,8 @@ public class JAXRSEndpoint {
     @POST
     public Response throughput(byte[] bytes) {
         return Response.ok()
-                .entity(new String(bytes, StandardCharsets.UTF_8))
-                .header("Content-Type", "text/plain")
+                .entity(bytes)
+                .header(HttpHeaderNames.CONTENT_TYPE.toString(), MediaType.APPLICATION_OCTET_STREAM)
                 .build();
     }
 

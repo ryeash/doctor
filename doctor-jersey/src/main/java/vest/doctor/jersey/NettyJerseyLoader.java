@@ -1,10 +1,13 @@
 package vest.doctor.jersey;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.AdaptiveRecvByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.ssl.SslContext;
@@ -21,15 +24,20 @@ import vest.doctor.ProviderRegistry;
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public final class JettyJerseyLoader implements ApplicationLoader {
+public final class NettyJerseyLoader implements ApplicationLoader {
 
     @Override
     public void stage5(ProviderRegistry providerRegistry) {
         ResourceConfig config = new ResourceConfig();
+        for (Map.Entry<Object, Object> entry : providerRegistry.configuration().toProperties().entrySet()) {
+            config.property((String) entry.getKey(), entry.getValue());
+        }
+
         providerRegistry.getProvidersWithAnnotation(Path.class)
                 .map(DoctorProvider::type)
                 .forEach(config::register);
@@ -45,13 +53,16 @@ public final class JettyJerseyLoader implements ApplicationLoader {
 
         EventLoopGroup bossGroup = new NioEventLoopGroup(httpConfig.getTcpManagementThreads(), new CustomThreadFactory(true, httpConfig.getTcpThreadNameFormat(), LoggingUncaughtExceptionHandler.INSTANCE, JerseyChannelAdapter.class.getClassLoader()));
         EventLoopGroup workerGroup = new NioEventLoopGroup(httpConfig.getWorkerThreads(), new CustomThreadFactory(true, httpConfig.getWorkerThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, JerseyChannelAdapter.class.getClassLoader()));
-        DoctorJerseyContainer container = new DoctorJerseyContainer(config);
+        DoctorJerseyContainer container = new DoctorJerseyContainer(config, workerGroup);
 
-        ServerBootstrap b = new ServerBootstrap();
-        b.option(ChannelOption.SO_BACKLOG, httpConfig.getSocketBacklog());
-        b.group(bossGroup, workerGroup)
+        ServerBootstrap b = new ServerBootstrap()
+                .group(bossGroup)
                 .channel(NioServerSocketChannel.class)
-                .childHandler(new DoctorChannelInitializer(httpConfig, container, config));
+                .option(ChannelOption.SO_BACKLOG, httpConfig.getSocketBacklog())
+                .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+                .option(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator())
+                .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, WriteBufferWaterMark.DEFAULT)
+                .childHandler(new DoctorChannelInitializer(httpConfig, container, config, providerRegistry));
 
         List<Channel> channels = httpConfig.getBindAddresses()
                 .stream()

@@ -17,7 +17,8 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * Links {@link Provided} parameters, the {@link ProviderRegistry}, and the jersey parameter lookup subsystem together.
+ * Links {@link Provided} parameters, the {@link ProviderRegistry}, and the jersey parameter lookup subsystem together
+ * such that anything provided via the {@link ProviderRegistry} is injectable into request handler methods.
  */
 @Singleton
 public final class ProvidedValueParamProvider extends AbstractValueParamProvider {
@@ -36,20 +37,20 @@ public final class ProvidedValueParamProvider extends AbstractValueParamProvider
             Class<?> type = parameter.getRawType();
             String name = Optional.ofNullable(parameter.getAnnotation(Named.class))
                     .map(Named::value)
-                    .or(() -> getAnnotationWithExtension(parameter, Qualifier.class).map(String::valueOf))
+                    .or(() -> getQualifier(parameter).map(String::valueOf))
                     .orElse(null);
             return cr -> providerRegistry.getInstance(type, name);
         }
         return null;
     }
 
-    private static Optional<Annotation> getAnnotationWithExtension(AnnotatedElement annotatedElement, Class<? extends Annotation> parentAnnotation) {
+    private static Optional<Annotation> getQualifier(AnnotatedElement annotatedElement) {
         for (Annotation annotation : annotatedElement.getAnnotations()) {
-            if (annotation.annotationType() == parentAnnotation) {
+            if (annotation.annotationType() == Qualifier.class) {
                 return Optional.of(annotation);
             }
             for (Annotation extendsAnnotations : annotation.annotationType().getAnnotations()) {
-                if (extendsAnnotations.annotationType() == parentAnnotation) {
+                if (extendsAnnotations.annotationType() == Qualifier.class) {
                     return Optional.of(annotation);
                 }
             }

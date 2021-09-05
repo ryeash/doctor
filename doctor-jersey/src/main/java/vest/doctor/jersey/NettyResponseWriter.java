@@ -91,7 +91,7 @@ final class NettyResponseWriter implements ContainerResponseWriter {
     public boolean suspend(long timeOut, TimeUnit timeUnit, final TimeoutHandler timeoutHandler) {
         suspendTimeoutHandler = () -> timeoutHandler.onTimeout(this);
         if (timeOut > 0L) {
-            suspendTimeoutFuture = container.getScheduledExecutorService().schedule(suspendTimeoutHandler, timeOut, timeUnit);
+            suspendTimeoutFuture = ctx.executor().schedule(suspendTimeoutHandler, timeOut, timeUnit);
         }
         return true;
     }
@@ -102,7 +102,7 @@ final class NettyResponseWriter implements ContainerResponseWriter {
             suspendTimeoutFuture.cancel(true);
         }
         if (timeOut > 0L) {
-            suspendTimeoutFuture = container.getScheduledExecutorService().schedule(suspendTimeoutHandler, timeOut, timeUnit);
+            suspendTimeoutFuture = ctx.executor().schedule(suspendTimeoutHandler, timeOut, timeUnit);
         }
     }
 

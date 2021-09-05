@@ -20,6 +20,6 @@ public class TestFilter implements ContainerRequestFilter, ContainerResponseFilt
 
     @Override
     public void filter(ContainerRequestContext containerRequestContext, ContainerResponseContext containerResponseContext) {
-
+        containerResponseContext.getHeaders().putSingle("X-After", "true");
     }
 }

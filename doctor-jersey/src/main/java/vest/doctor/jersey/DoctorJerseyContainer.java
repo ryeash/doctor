@@ -1,25 +1,19 @@
 package vest.doctor.jersey;
 
+import io.netty.channel.EventLoopGroup;
 import jakarta.ws.rs.core.Application;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.spi.Container;
-import org.glassfish.jersey.spi.ExecutorServiceProvider;
-import org.glassfish.jersey.spi.ScheduledExecutorServiceProvider;
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
 
 final class DoctorJerseyContainer implements Container {
     private final ApplicationHandler applicationHandler;
-    private final ExecutorService executorService;
-    private final ScheduledExecutorService scheduledExecutorService;
+    private final EventLoopGroup workerGroup;
 
-    public DoctorJerseyContainer(Application application) {
+    public DoctorJerseyContainer(Application application, EventLoopGroup workerGroup) {
         this.applicationHandler = new ApplicationHandler(application);
-        this.executorService = applicationHandler.getInjectionManager().getInstance(ExecutorServiceProvider.class).getExecutorService();
-        this.scheduledExecutorService = applicationHandler.getInjectionManager().getInstance(ScheduledExecutorServiceProvider.class).getExecutorService();
+        this.workerGroup = workerGroup;
         this.applicationHandler.onStartup(this);
     }
 
@@ -44,11 +38,6 @@ final class DoctorJerseyContainer implements Container {
     }
 
     public void handle(ContainerRequest requestContext) {
-        // TODO: why can't this work with any other executor?
-        executorService.execute(() -> applicationHandler.handle(requestContext));
-    }
-
-    ScheduledExecutorService getScheduledExecutorService() {
-        return scheduledExecutorService;
+        workerGroup.execute(() -> applicationHandler.handle(requestContext));
     }
 }
