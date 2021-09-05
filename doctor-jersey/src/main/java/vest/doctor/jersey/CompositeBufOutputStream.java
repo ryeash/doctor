@@ -2,30 +2,23 @@ package vest.doctor.jersey;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.stream.ChunkedInput;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 final class CompositeBufOutputStream extends OutputStream implements ChunkedInput<ByteBuf> {
 
-    private final CompositeByteBuf buf;
-    private final AtomicBoolean written = new AtomicBoolean(false);
-    private final AtomicBoolean closed = new AtomicBoolean(false);
-
-    public CompositeBufOutputStream(CompositeByteBuf buf) {
-        this.buf = buf;
-    }
+    private static final ByteBuf LAST = Unpooled.wrappedBuffer(new byte[0]);
+    private final BlockingQueue<ByteBuf> queue = new LinkedBlockingQueue<>();
 
     @Override
     public boolean isEndOfInput() {
-        synchronized (buf) {
-            return closed.get() && written.get() && !buf.isReadable();
-        }
+        return queue.peek() == LAST;
     }
 
     @Override
@@ -35,17 +28,26 @@ final class CompositeBufOutputStream extends OutputStream implements ChunkedInpu
 
     @Override
     public ByteBuf readChunk(ByteBufAllocator allocator) {
-        return Unpooled.unreleasableBuffer(buf);
+        if (queue.peek() == LAST) {
+            return null;
+        }
+        synchronized (queue) {
+            if (queue.peek() == null) {
+                return null;
+            } else {
+                return queue.poll();
+            }
+        }
     }
 
     @Override
     public long length() {
-        return -1;
+        return -1L;
     }
 
     @Override
     public long progress() {
-        return buf.readerIndex();
+        return -1L;
     }
 
     @Override
@@ -55,9 +57,7 @@ final class CompositeBufOutputStream extends OutputStream implements ChunkedInpu
 
     @Override
     public synchronized void write(byte[] b, int off, int len) {
-        written.set(true);
-        buf.addFlattenedComponents(true, Unpooled.copiedBuffer(b, off, len));
-        buf.discardReadComponents();
+        queue.add(Unpooled.copiedBuffer(b, off, len));
     }
 
     @Override
@@ -67,12 +67,10 @@ final class CompositeBufOutputStream extends OutputStream implements ChunkedInpu
 
     @Override
     public void close() throws IOException {
-        closed.set(true);
+        queue.add(LAST);
     }
 
     public void teardown() {
-        synchronized (buf) {
-            buf.release();
-        }
+        queue.clear();
     }
 }
