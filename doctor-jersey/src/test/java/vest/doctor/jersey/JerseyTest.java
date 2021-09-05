@@ -61,7 +61,6 @@ public class JerseyTest {
     @Test
     public void init() {
         req().get("/jaxrs/get")
-                .prettyPeek()
                 .then()
                 .statusCode(200)
                 .body(is("ok"))
@@ -89,6 +88,14 @@ public class JerseyTest {
                 .body("description", is("desc"));
     }
 
+    @Test
+    public void async() {
+        req().get("/jaxrs/async")
+                .then()
+                .statusCode(200)
+                .body(is("async"));
+    }
+
     @Test(invocationCount = 2)
     public void throughput() {
         long start = System.nanoTime();
@@ -99,7 +106,6 @@ public class JerseyTest {
                     ValidatableResponse validatableResponse = req()
                             .body(bytes)
                             .post("/jaxrs")
-//                            .prettyPeek()
                             .then()
                             .statusCode(200);
                     assertEquals(validatableResponse.extract().body().asByteArray(), bytes);
@@ -130,7 +136,6 @@ public class JerseyTest {
             throw new UncheckedIOException(e);
         }
     }
-
 
     @Test
     public void ws() throws Exception {
