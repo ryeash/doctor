@@ -5,7 +5,7 @@ import jakarta.ws.rs.core.SecurityContext;
 
 import java.security.Principal;
 
-public class DefaultSecurityContext implements SecurityContext {
+final class DefaultSecurityContext implements SecurityContext {
     public static final SecurityContext INSTANCE = new DefaultSecurityContext();
 
     public static final Provider<SecurityContext> PROVIDER = () -> INSTANCE;

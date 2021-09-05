@@ -9,13 +9,13 @@ import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
+import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.util.AttributeKey;
 import jakarta.inject.Provider;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 import org.glassfish.jersey.internal.MapPropertiesDelegate;
@@ -55,6 +55,11 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        if (!(msg instanceof HttpObject)) {
+            log.error("unhandled object type: " + msg);
+            ctx.close();
+        }
+
         if (msg instanceof HttpRequest req) {
             // upgrade to websocket connection, if requested
             String upgradeHeader = req.headers().get(HttpHeaderNames.UPGRADE);
@@ -75,22 +80,17 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
                 stream.reset();
             }
             ContainerRequest requestContext = createContainerRequest(ctx, req);
-            requestContext.setWriter(new NettyResponseWriter(ctx, req, container));
+            requestContext.setWriter(new NettyResponseWriter(ctx, req));
             long contentLength = req.headers().contains(HttpHeaderNames.CONTENT_LENGTH) ? HttpUtil.getContentLength(req) : -1L;
-            if (contentLength >= httpConfig.getMaxContentLength()) {
-                requestContext.abortWith(Response.status(Response.Status.REQUEST_ENTITY_TOO_LARGE).build());
-            } else {
-                String contentType = req.headers().get(HttpHeaderNames.CONTENT_TYPE);
-                boolean isJson = contentType != null && contentType.toLowerCase().contains(MediaType.APPLICATION_JSON);
-                if (!isJson && contentLength != -1L || HttpUtil.isTransferEncodingChunked(req) || isJson && contentLength >= 2L) {
-                    requestContext.setEntityStream(stream);
-                }
-            }
+            requestContext.setEntityStream(stream);
 
             for (String name : req.headers().names()) {
                 requestContext.headers(name, req.headers().getAll(name));
             }
 
+            if (contentLength >= httpConfig.getMaxContentLength()) {
+                requestContext.abortWith(Response.status(Response.Status.REQUEST_ENTITY_TOO_LARGE).build());
+            }
             container.handle(requestContext);
         }
 
@@ -136,7 +136,6 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
             requestUri = URI.create(scheme + "://" + host + ":" + port + req.uri());
         }
         URI baseUri = URI.create(requestUri.getScheme() + "://" + requestUri.getHost() + ":" + requestUri.getPort() + "/");
-
         return new ContainerRequest(baseUri, requestUri, req.method().name(), securityContextProvider.get(), new MapPropertiesDelegate(), resourceConfig);
     }
 

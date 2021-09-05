@@ -3,6 +3,7 @@ package vest.doctor.jersey;
 import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
+import jakarta.ws.rs.core.MediaType;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -53,8 +54,8 @@ public class JerseyTest {
     private RequestSpecification req() {
         RestAssured.baseURI = "http://localhost:9998/";
         return RestAssured.given()
-                .accept("application/json")
-                .contentType("application/json");
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON);
     }
 
     @Test
@@ -73,6 +74,19 @@ public class JerseyTest {
                 .get("/jaxrs/get")
                 .then()
                 .statusCode(503);
+    }
+
+    @Test
+    public void pojo() {
+        User user = new User();
+        user.setName("user");
+        user.setDescription("desc");
+        req().body(user)
+                .post("/jaxrs/pojo")
+                .then()
+                .statusCode(200)
+                .body("name", is("user"))
+                .body("description", is("desc"));
     }
 
     @Test(invocationCount = 2)

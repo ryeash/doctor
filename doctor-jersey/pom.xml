@@ -45,7 +45,7 @@
         </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
-            <artifactId>jersey-container-netty-http</artifactId>
+            <artifactId>jersey-container-servlet-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>

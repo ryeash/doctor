@@ -32,4 +32,9 @@ public class JAXRSEndpoint {
                 .build();
     }
 
+    @POST
+    @Path("/pojo")
+    public User user(User user) {
+        return user;
+    }
 }

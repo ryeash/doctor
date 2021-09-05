@@ -12,7 +12,6 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.LastHttpContent;
-import org.glassfish.jersey.netty.connector.internal.JerseyChunkedInput;
 import org.glassfish.jersey.server.ContainerException;
 import org.glassfish.jersey.server.ContainerResponse;
 import org.glassfish.jersey.server.spi.ContainerResponseWriter;
@@ -24,66 +23,55 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 final class NettyResponseWriter implements ContainerResponseWriter {
     private static final Logger log = LoggerFactory.getLogger(NettyResponseWriter.class.getName());
-    private static final ChannelFutureListener FLUSH_FUTURE = future -> future.channel().flush();
     private final ChannelHandlerContext ctx;
     private final HttpRequest req;
-    private final DoctorJerseyContainer container;
     private volatile ScheduledFuture<?> suspendTimeoutFuture;
     private volatile Runnable suspendTimeoutHandler;
-    private boolean responseWritten = false;
+    private final AtomicBoolean written = new AtomicBoolean(false);
 
-    NettyResponseWriter(ChannelHandlerContext ctx, HttpRequest req, DoctorJerseyContainer container) {
+    NettyResponseWriter(ChannelHandlerContext ctx, HttpRequest req) {
         this.ctx = ctx;
         this.req = req;
-        this.container = container;
     }
 
     @Override
     public synchronized OutputStream writeResponseStatusAndHeaders(long contentLength, ContainerResponse responseContext) throws ContainerException {
-        if (responseWritten) {
-            log.trace("Response already written.");
-            return null;
+        if (!written.compareAndSet(false, true)) {
+            throw new IllegalStateException("Response already written");
+        }
+        String reasonPhrase = responseContext.getStatusInfo().getReasonPhrase();
+        int statusCode = responseContext.getStatus();
+        HttpResponseStatus status = HttpResponseStatus.valueOf(statusCode, reasonPhrase);
+        DefaultHttpResponse response = contentLength == 0L
+                ? new DefaultFullHttpResponse(req.protocolVersion(), status)
+                : new DefaultHttpResponse(req.protocolVersion(), status);
+
+        for (Map.Entry<String, List<String>> e : responseContext.getStringHeaders().entrySet()) {
+            response.headers().add(e.getKey(), e.getValue());
+        }
+
+        if (contentLength == -1L) {
+            HttpUtil.setTransferEncodingChunked(response, true);
         } else {
-            responseWritten = true;
-            String reasonPhrase = responseContext.getStatusInfo().getReasonPhrase();
-            int statusCode = responseContext.getStatus();
-            HttpResponseStatus status = reasonPhrase == null
-                    ? HttpResponseStatus.valueOf(statusCode)
-                    : new HttpResponseStatus(statusCode, reasonPhrase);
-            DefaultHttpResponse response = contentLength == 0L
-                    ? new DefaultFullHttpResponse(req.protocolVersion(), status)
-                    : new DefaultHttpResponse(req.protocolVersion(), status);
+            response.headers().set(HttpHeaderNames.CONTENT_LENGTH, contentLength);
+        }
 
-            for (Map.Entry<String, List<String>> e : responseContext.getStringHeaders().entrySet()) {
-                response.headers().add(e.getKey(), e.getValue());
-            }
+        if (!(HttpUtil.isKeepAlive(req) && HttpUtil.isKeepAlive(response))) {
+            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+        }
 
-            if (contentLength == -1L) {
-                HttpUtil.setTransferEncodingChunked(response, true);
-            } else {
-                response.headers().set(HttpHeaderNames.CONTENT_LENGTH, contentLength);
-            }
-
-            if (HttpUtil.isKeepAlive(req)) {
-                response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
-            }
-
-            ctx.writeAndFlush(response);
-            if (req.method() != HttpMethod.HEAD && (contentLength > 0L || contentLength == -1L)) {
-                JerseyChunkedInput jerseyChunkedInput = new JerseyChunkedInput(ctx.channel());
-                if (HttpUtil.isTransferEncodingChunked(response)) {
-                    ctx.writeAndFlush(new HttpChunkedInput(jerseyChunkedInput));
-                } else {
-                    ctx.write(new HttpChunkedInput(jerseyChunkedInput)).addListener(FLUSH_FUTURE);
-                }
-                return jerseyChunkedInput;
-            } else {
-                ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
-                return null;
-            }
+        ctx.writeAndFlush(response);
+        if (req.method() != HttpMethod.HEAD && (contentLength > 0L || contentLength == -1L)) {
+            CompositeBufOutputStream out = new CompositeBufOutputStream(ctx.alloc().compositeBuffer(128));
+            ctx.writeAndFlush(new HttpChunkedInput(out)).addListener(f -> out.teardown());
+            return out;
+        } else {
+            ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+            return null;
         }
     }
 
@@ -114,12 +102,12 @@ final class NettyResponseWriter implements ContainerResponseWriter {
     @Override
     public void failure(Throwable error) {
         log.error("error in response writer", error);
-        ctx.writeAndFlush(new DefaultFullHttpResponse(req.protocolVersion(), HttpResponseStatus.INTERNAL_SERVER_ERROR))
-                .addListener(ChannelFutureListener.CLOSE);
+        DefaultFullHttpResponse response = new DefaultFullHttpResponse(req.protocolVersion(), HttpResponseStatus.INTERNAL_SERVER_ERROR);
+        ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
     }
 
     @Override
     public boolean enableResponseBuffering() {
-        return true;
+        return false;
     }
 }
