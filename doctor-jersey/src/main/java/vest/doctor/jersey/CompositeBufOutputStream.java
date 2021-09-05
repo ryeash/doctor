@@ -49,6 +49,11 @@ final class CompositeBufOutputStream extends OutputStream implements ChunkedInpu
     }
 
     @Override
+    public void write(byte[] b) {
+        write(b, 0, b.length);
+    }
+
+    @Override
     public void write(byte[] b, int off, int len) {
         written.set(true);
         synchronized (buf) {
@@ -69,7 +74,7 @@ final class CompositeBufOutputStream extends OutputStream implements ChunkedInpu
 
     public void teardown() {
         synchronized (buf) {
-            buf.release();
+//            buf.release();
         }
     }
 }
