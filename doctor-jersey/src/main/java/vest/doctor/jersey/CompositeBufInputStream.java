@@ -75,7 +75,7 @@ final class CompositeBufInputStream extends InputStream {
                 lastContent.set(true);
             }
             if (next.content().isReadable()) {
-                buf.addComponent(true, next.content());
+                buf.addFlattenedComponents(true, next.content());
             }
         }
     }

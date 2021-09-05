@@ -96,10 +96,10 @@ public class JerseyTest {
                 .body(is("async"));
     }
 
-    @Test(invocationCount = 2)
+    @Test(invocationCount = 12)
     public void throughput() {
         long start = System.nanoTime();
-        IntStream.range(0, 1000)
+        IntStream.range(0, 10000)
                 .parallel()
                 .forEach(i -> {
                     byte[] bytes = randomBytes();

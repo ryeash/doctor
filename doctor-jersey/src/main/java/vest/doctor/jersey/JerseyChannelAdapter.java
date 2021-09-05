@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 
 @Sharable
 final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
-    private static final AttributeKey<CompositeBufInputStream> INPUT_STREAM = AttributeKey.newInstance("doctor.netty.isstream");
+    public static final AttributeKey<CompositeBufInputStream> INPUT_STREAM = AttributeKey.newInstance("doctor.netty.isstream");
     private static final Logger log = LoggerFactory.getLogger(JerseyChannelAdapter.class);
     private final HttpServerConfiguration httpConfig;
     private final DoctorJerseyContainer container;
