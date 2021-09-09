@@ -17,10 +17,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import vest.doctor.runtime.Doctor;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,7 +27,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.IntStream;
-import java.util.zip.GZIPInputStream;
 
 import static org.hamcrest.Matchers.is;
 import static org.testng.Assert.assertEquals;
@@ -96,16 +91,17 @@ public class JerseyTest {
                 .body(is("async"));
     }
 
-    @Test(invocationCount = 12)
+    @Test(invocationCount = 2)
     public void throughput() {
         long start = System.nanoTime();
-        IntStream.range(0, 10000)
+        IntStream.range(0, 1000)
                 .parallel()
                 .forEach(i -> {
                     byte[] bytes = randomBytes();
                     ValidatableResponse validatableResponse = req()
                             .body(bytes)
                             .post("/jaxrs")
+//                            .prettyPeek()
                             .then()
                             .statusCode(200);
                     assertEquals(validatableResponse.extract().body().asByteArray(), bytes);
@@ -120,23 +116,6 @@ public class JerseyTest {
         return b;
     }
 
-    static byte[] decompress(byte[] bytes) {
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            byte[] buffer = new byte[1024];
-            GZIPInputStream is = new GZIPInputStream(new ByteArrayInputStream(bytes));
-            int read;
-            while ((read = is.read(buffer)) > 0) {
-                baos.write(buffer, 0, read);
-            }
-            baos.close();
-            is.close();
-            return baos.toByteArray();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
     @Test
     public void ws() throws Exception {
         String destUri = "ws://localhost:9998/grumpy";
@@ -145,7 +124,7 @@ public class JerseyTest {
             client.start();
 
             URI echoUri = new URI(destUri);
-            SimpleEchoSocket socket = new SimpleEchoSocket();
+            TestWebSocketClient socket = new TestWebSocketClient();
             ClientUpgradeRequest request = new ClientUpgradeRequest();
             client.connect(socket, echoUri, request);
             assertTrue(socket.connectLatch.await(5, TimeUnit.SECONDS));
@@ -157,13 +136,13 @@ public class JerseyTest {
     }
 
     @WebSocket(maxTextMessageSize = 64 * 1024)
-    public static class SimpleEchoSocket {
+    public static class TestWebSocketClient {
         final CountDownLatch connectLatch;
         final CountDownLatch closeLatch;
         final List<String> messagesReceived = new LinkedList<>();
         Session session;
 
-        public SimpleEchoSocket() {
+        public TestWebSocketClient() {
             this.connectLatch = new CountDownLatch(1);
             this.closeLatch = new CountDownLatch(1);
         }

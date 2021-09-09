@@ -11,7 +11,7 @@ import java.io.OutputStream;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-final class CompositeBufOutputStream extends OutputStream implements ChunkedInput<ByteBuf> {
+final class QueuedBufOutputStream extends OutputStream implements ChunkedInput<ByteBuf> {
 
     private static final ByteBuf LAST = Unpooled.wrappedBuffer(new byte[0]);
     private final BlockingQueue<ByteBuf> queue = new LinkedBlockingQueue<>();
@@ -56,7 +56,7 @@ final class CompositeBufOutputStream extends OutputStream implements ChunkedInpu
     }
 
     @Override
-    public synchronized void write(byte[] b, int off, int len) {
+    public void write(byte[] b, int off, int len) {
         queue.add(Unpooled.copiedBuffer(b, off, len));
     }
 

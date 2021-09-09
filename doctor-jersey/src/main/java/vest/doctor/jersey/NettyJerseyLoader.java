@@ -48,6 +48,7 @@ public final class NettyJerseyLoader implements ApplicationLoader {
 
         config.register(new DoctorBinder(providerRegistry));
         config.register(ProvidedValueParamProvider.class);
+        config.register(ServletRequestParamProvider.class);
 
         HttpServerConfiguration httpConfig = buildConf(providerRegistry);
 

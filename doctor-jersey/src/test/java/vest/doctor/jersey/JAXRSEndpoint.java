@@ -2,11 +2,13 @@ package vest.doctor.jersey;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import jakarta.inject.Singleton;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.container.AsyncResponse;
 import jakarta.ws.rs.container.Suspended;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.testng.Assert;
@@ -26,8 +28,10 @@ public class JAXRSEndpoint {
 
     @GET
     @Path("/get")
-    public String get(@Provided ProviderRegistry providerRegistry) {
+    public String get(@Context HttpServletRequest request,
+                      @Provided ProviderRegistry providerRegistry) {
         System.out.println(Thread.currentThread().getName());
+        System.out.println(request);
         Assert.assertNotNull(providerRegistry);
         return "ok";
     }

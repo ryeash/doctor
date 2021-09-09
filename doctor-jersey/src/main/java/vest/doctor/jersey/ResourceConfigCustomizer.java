@@ -8,7 +8,7 @@ import org.glassfish.jersey.server.ResourceConfig;
 public interface ResourceConfigCustomizer {
 
     /**
-     * Customize the ResourceConfig for jersey.
+     * Customize the {@link ResourceConfig} for jersey.
      *
      * @param config the resource configuration
      */

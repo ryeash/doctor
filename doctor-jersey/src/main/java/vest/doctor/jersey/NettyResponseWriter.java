@@ -66,7 +66,7 @@ final class NettyResponseWriter implements ContainerResponseWriter {
 
         ctx.writeAndFlush(response);
         if (req.method() != HttpMethod.HEAD && (contentLength > 0L || contentLength == -1L)) {
-            CompositeBufOutputStream out = new CompositeBufOutputStream();
+            QueuedBufOutputStream out = new QueuedBufOutputStream();
             ctx.writeAndFlush(new HttpChunkedInput(out)).addListener(f -> out.teardown());
             return out;
         } else {

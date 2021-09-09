@@ -1,6 +1,5 @@
 package vest.doctor.jersey;
 
-import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
@@ -32,9 +31,13 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static vest.doctor.jersey.DoctorChannelInitializer.JERSEY_ADAPTER_NAME;
+
 @Sharable
 final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
-    public static final AttributeKey<CompositeBufInputStream> INPUT_STREAM = AttributeKey.newInstance("doctor.netty.isstream");
+    public static final AttributeKey<QueuedBufInputStream> INPUT_STREAM = AttributeKey.newInstance("doctor.netty.isstream");
+    public static final String NETTY_REQUEST = "doctor.netty.request";
+    public static final String NETTY_SERVLET_REQUEST = "doctor.netty.servlet.request";
     private static final Logger log = LoggerFactory.getLogger(JerseyChannelAdapter.class);
     private final HttpServerConfiguration httpConfig;
     private final DoctorJerseyContainer container;
@@ -61,6 +64,10 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
         }
 
         if (msg instanceof HttpRequest req) {
+            if (HttpUtil.is100ContinueExpected(req)) {
+                ctx.write(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE));
+            }
+
             // upgrade to websocket connection, if requested
             String upgradeHeader = req.headers().get(HttpHeaderNames.UPGRADE);
             if (upgradeHeader != null) {
@@ -68,18 +75,17 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
                 return;
             }
 
-            if (HttpUtil.is100ContinueExpected(req)) {
-                ctx.write(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE));
-            }
-
-            CompositeBufInputStream stream = ctx.channel().attr(INPUT_STREAM).get();
+            QueuedBufInputStream stream = ctx.channel().attr(INPUT_STREAM).get();
             if (stream == null) {
-                stream = new CompositeBufInputStream(PooledByteBufAllocator.DEFAULT.compositeBuffer(128));
+                stream = new QueuedBufInputStream();
                 ctx.channel().attr(INPUT_STREAM).set(stream);
             } else {
                 stream.reset();
             }
             ContainerRequest requestContext = createContainerRequest(ctx, req);
+            requestContext.setProperty(NETTY_REQUEST, req);
+            requestContext.setProperty(NETTY_SERVLET_REQUEST, new NettyHttpServletRequest(ctx, req));
+
             requestContext.setWriter(new NettyResponseWriter(ctx, req));
             long contentLength = req.headers().contains(HttpHeaderNames.CONTENT_LENGTH) ? HttpUtil.getContentLength(req) : -1L;
             requestContext.setEntityStream(stream);
@@ -95,7 +101,7 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
         }
 
         if (msg instanceof HttpContent httpContent) {
-            CompositeBufInputStream is = ctx.channel().attr(INPUT_STREAM).get();
+            QueuedBufInputStream is = ctx.channel().attr(INPUT_STREAM).get();
             is.append(httpContent);
             if (is.size() > httpConfig.getMaxContentLength()) {
                 ctx.write(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE))
@@ -107,9 +113,9 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        CompositeBufInputStream buf = ctx.channel().attr(INPUT_STREAM).get();
+        QueuedBufInputStream buf = ctx.channel().attr(INPUT_STREAM).get();
         if (buf != null) {
-            buf.teardown();
+            buf.reset();
         }
         super.channelInactive(ctx);
     }
@@ -146,7 +152,7 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
                     .orElse(null);
             if (ws != null) {
                 // add the websocket handler to the end of the processing pipeline
-                ctx.pipeline().replace("jerseyChannelAdapter", "websocketHandler", new WebsocketHandler(ws));
+                ctx.pipeline().replace(JERSEY_ADAPTER_NAME, "websocketHandler", new WebsocketHandler(ws));
                 ws.handshake(ctx, request, request.uri());
                 return;
             } else {
