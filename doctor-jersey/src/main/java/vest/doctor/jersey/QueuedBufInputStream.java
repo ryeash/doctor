@@ -76,7 +76,7 @@ final class QueuedBufInputStream extends InputStream {
             boolean added = false;
             if (next != null && next.content().isReadable()) {
                 size.addAndGet(next.content().readableBytes());
-                added = queue.add(Unpooled.wrappedBuffer(next.content()));
+                added = queue.add(next.content());
             }
             if (next instanceof LastHttpContent) {
                 added = queue.add(LAST);
@@ -89,14 +89,14 @@ final class QueuedBufInputStream extends InputStream {
 
     private void waitForData() {
         if (queue.isEmpty()) {
-            try {
-                synchronized (queue) {
-                    if (queue.isEmpty()) {
+            synchronized (queue) {
+                while (queue.isEmpty()) {
+                    try {
                         queue.wait(MAX_READ_DELAY);
+                    } catch (InterruptedException e) {
+                        // ignored
                     }
                 }
-            } catch (InterruptedException e) {
-                // ignored
             }
         }
     }
