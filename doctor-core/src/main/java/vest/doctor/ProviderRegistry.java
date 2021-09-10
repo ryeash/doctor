@@ -128,6 +128,13 @@ public interface ProviderRegistry {
     <T> Stream<DoctorProvider<T>> getProviders(Class<T> type, String qualifier);
 
     /**
+     * Get all providers registered.
+     *
+     * @return a stream of providers
+     */
+    Stream<DoctorProvider<?>> allProviders();
+
+    /**
      * Get all providers marked with the get annotation.
      *
      * @param annotationType the annotation to filter on

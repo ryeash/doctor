@@ -25,7 +25,6 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import org.slf4j.Logger;
@@ -119,42 +118,37 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
                 ctx.close();
                 return;
             }
-            if (object instanceof HttpRequest) {
-                startRequestContext(ctx, (HttpRequest) object);
-            } else if (object instanceof HttpContent) {
-                handleBodyData(ctx, (HttpContent) object);
+
+            if (object instanceof HttpRequest request) {
+                String upgradeHeader = request.headers().get(HttpHeaderNames.UPGRADE);
+                if (upgradeHeader != null) {
+                    handleWebsocketUpgrade(ctx, request, upgradeHeader);
+                    return;
+                }
+
+                StreamingRequestBody body = new StreamingRequestBody(config.getMaxContentLength());
+                ctx.channel().attr(CONTEXT_BODY).set(body);
+                ServerRequest req = new ServerRequest(request, ctx, workerGroup, body);
+                try {
+                    handler.handle(req)
+                            .exceptionally(error -> handleError(req, error))
+                            .thenAccept(response -> writeResponse(response.request(), response));
+                } catch (Throwable t) {
+                    Response errorResponse = handleError(req, t);
+                    writeResponse(req, errorResponse);
+                }
+            }
+
+            if (object instanceof HttpContent content) {
+                StreamingRequestBody streamingRequestBody = ctx.channel().attr(CONTEXT_BODY).get();
+                if (streamingRequestBody != null) {
+                    HttpContent httpContent = content.retainedDuplicate();
+                    ctx.executor().submit(() -> streamingRequestBody.append(httpContent));
+                }
             }
         } catch (Throwable t) {
             log.error("error doing http stuff", t);
             throw t;
-        }
-    }
-
-    private void startRequestContext(ChannelHandlerContext ctx, HttpRequest request) {
-        // upgrade to websocket connection, if requested
-        String upgradeHeader = request.headers().get(HttpHeaderNames.UPGRADE);
-        if (upgradeHeader != null) {
-            handleWebsocketUpgrade(ctx, request, upgradeHeader);
-            return;
-        }
-
-        // handle as a normal HTTP request
-        StreamingRequestBody body = new StreamingRequestBody(config.getMaxContentLength());
-        if (!expectingContent(request)) {
-            // end it since there is no body expected
-            body.append(LastHttpContent.EMPTY_LAST_CONTENT);
-        }
-        ctx.channel().attr(CONTEXT_BODY).set(body);
-
-        ServerRequest req = new ServerRequest(request, ctx, workerGroup, body);
-
-        try {
-            handler.handle(req)
-                    .exceptionally(error -> handleError(req, error))
-                    .thenAccept(response -> writeResponse(response.request(), response));
-        } catch (Throwable t) {
-            Response errorResponse = handleError(req, t);
-            writeResponse(req, errorResponse);
         }
     }
 
@@ -166,14 +160,6 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
             log.error("original exception", error);
             request.channelContext().close();
             return request.createResponse().status(500);
-        }
-    }
-
-    private void handleBodyData(ChannelHandlerContext ctx, HttpContent content) {
-        StreamingRequestBody streamingRequestBody = ctx.channel().attr(CONTEXT_BODY).get();
-        if (streamingRequestBody != null) {
-            HttpContent httpContent = content.retainedDuplicate();
-            ctx.executor().submit(() -> streamingRequestBody.append(httpContent));
         }
     }
 
@@ -201,8 +187,7 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
                     .orElse(null);
             if (ws != null) {
                 // add the websocket handler to the end of the processing pipeline
-                ctx.pipeline().removeLast();
-                ctx.pipeline().addLast(new WebsocketHandler(ws));
+                ctx.pipeline().replace(NettyHttpServerChannelInitializer.SERVER_HANDLER, "websocketHandler", new WebsocketHandler(ws));
                 ws.handshake(ctx, request, request.uri());
                 return;
             } else {
@@ -243,10 +228,5 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
         }
         sb.append("ExceptionHandler: ").append(exceptionHandler);
         return sb.toString();
-    }
-
-    private static boolean expectingContent(HttpRequest request) {
-        return request.headers().getInt(HttpHeaderNames.CONTENT_LENGTH, 0) > 0
-                || request.headers().contains(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED, true);
     }
 }

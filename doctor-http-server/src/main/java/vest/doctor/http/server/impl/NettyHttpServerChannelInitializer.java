@@ -13,6 +13,7 @@ import java.util.List;
 
 public final class NettyHttpServerChannelInitializer extends ServerSocketChannelInitializer {
 
+    public static final String SERVER_HANDLER = "serverHandler";
     private final HttpServerConfiguration config;
     private final HttpListenerManager httpListenerManager;
 
@@ -25,7 +26,7 @@ public final class NettyHttpServerChannelInitializer extends ServerSocketChannel
     protected void initChannel(SocketChannel ch) {
         ChannelPipeline p = ch.pipeline();
         if (config.getSslContext() != null) {
-            p.addLast(config.getSslContext().newHandler(ch.alloc()));
+            p.addLast("sslContext", config.getSslContext().newHandler(ch.alloc()));
         }
         p.addLast("httpServerCodec", new HttpServerCodec(config.getMaxInitialLineLength(),
                 config.getMaxHeaderSize(),
@@ -36,6 +37,6 @@ public final class NettyHttpServerChannelInitializer extends ServerSocketChannel
         p.addLast("httpContentDecompressor", new HttpContentDecompressor());
         p.addLast("httpContentCompressor", new HttpContentCompressor(6, 15, 8, 812));
         p.addLast("chunkedWriteHandler", new ChunkedWriteHandler());
-        p.addLast(getServer());
+        p.addLast(SERVER_HANDLER, getServer());
     }
 }

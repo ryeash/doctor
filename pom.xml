@@ -18,14 +18,16 @@
         <module>test-app</module>
         <module>doctor-util</module>
         <module>doctor-jdbc</module>
+        <module>doctor-jersey</module>
     </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>16</maven.compiler.source>
         <maven.compiler.target>16</maven.compiler.target>
-        <slf4j.version>1.7.30</slf4j.version>
+        <slf4j.version>1.7.32</slf4j.version>
         <maven.deploy.skip>true</maven.deploy.skip>
+        <netty.version>4.1.67.Final</netty.version>
     </properties>
 
     <dependencyManagement>

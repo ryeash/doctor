@@ -20,6 +20,7 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.TreeMap;
@@ -200,7 +201,12 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         if (qualifier == null) {
             return getProviders(type);
         }
-        return getProviders(type).filter(p -> p.qualifier().equals(qualifier));
+        return getProviders(type).filter(p -> Objects.equals(p.qualifier(), qualifier));
+    }
+
+    @Override
+    public Stream<DoctorProvider<?>> allProviders() {
+        return providerIndex.allProviders();
     }
 
     @Override
