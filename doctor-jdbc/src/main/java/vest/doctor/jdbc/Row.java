@@ -175,7 +175,7 @@ public interface Row {
      * will be made to automatically convert different types into UUIDs.
      *
      * @param column the name of the column
-     * @return the uuid valud of the column, if possible, otherwise a {@link ClassCastException} if
+     * @return the uuid value of the column, if possible, otherwise a {@link ClassCastException} if
      * the column type is inconvertible
      */
     UUID getUUID(String column);

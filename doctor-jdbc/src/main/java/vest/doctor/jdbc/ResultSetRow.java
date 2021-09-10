@@ -109,10 +109,10 @@ public class ResultSetRow implements Row {
         Object n = get(column);
         if (n == null) {
             return null;
-        } else if (n instanceof BigDecimal) {
-            return (BigDecimal) n;
-        } else if (n instanceof Number) {
-            return BigDecimal.valueOf(((Number) n).doubleValue());
+        } else if (n instanceof BigDecimal bd) {
+            return bd;
+        } else if (n instanceof Number num) {
+            return BigDecimal.valueOf(num.doubleValue());
         } else if (n instanceof CharSequence) {
             return new BigDecimal(n.toString());
         } else {
@@ -125,10 +125,10 @@ public class ResultSetRow implements Row {
         Object n = get(column);
         if (n == null) {
             return null;
-        } else if (n instanceof BigInteger) {
-            return (BigInteger) n;
-        } else if (n instanceof Number) {
-            return BigInteger.valueOf(((Number) n).longValue());
+        } else if (n instanceof BigInteger bi) {
+            return bi;
+        } else if (n instanceof Number num) {
+            return BigInteger.valueOf(num.longValue());
         } else if (n instanceof CharSequence) {
             return new BigInteger(n.toString());
         } else {
@@ -151,14 +151,14 @@ public class ResultSetRow implements Row {
         Object v = get(column);
         if (v == null) {
             return null;
-        } else if (v instanceof Boolean) {
-            return (Boolean) v;
-        } else if (v instanceof Number) {
-            return ((Number) v).intValue() != 0;
+        } else if (v instanceof Boolean b) {
+            return b;
+        } else if (v instanceof Number n) {
+            return n.intValue() != 0;
         } else if (v instanceof CharSequence) {
             return Boolean.valueOf(v.toString());
-        } else if (v instanceof Collection) {
-            return !((Collection<?>) v).isEmpty();
+        } else if (v instanceof Collection c) {
+            return !c.isEmpty();
         } else {
             // any other non-null value is true
             return true;
@@ -189,10 +189,9 @@ public class ResultSetRow implements Row {
         Object o = get(column);
         if (o == null) {
             return null;
-        } else if (o instanceof UUID) {
-            return (UUID) o;
-        } else if (o instanceof byte[]) {
-            byte[] bytes = (byte[]) o;
+        } else if (o instanceof UUID uuid) {
+            return uuid;
+        } else if (o instanceof byte[] bytes) {
             if (bytes.length != 16) {
                 throw new IllegalArgumentException("the value for " + column + " can not be interpreted as a UUID, arrays must be 16-bytes in order to be converted");
             }
