@@ -16,11 +16,6 @@ public class GrumpyWebsocket extends AbstractWebsocket {
     }
 
     @Override
-    public void connect(ChannelHandlerContext ctx, String path) {
-        System.out.println("NEW WEBSOCKET CONNECTION ACCEPTED");
-    }
-
-    @Override
     protected void onTextMessage(ChannelHandlerContext ctx, TextWebSocketFrame frame) {
         sendText(ctx, "go away " + frame.text())
                 .thenRun(() -> close(ctx));

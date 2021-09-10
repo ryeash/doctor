@@ -38,6 +38,7 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
     public static final AttributeKey<QueuedBufInputStream> INPUT_STREAM = AttributeKey.newInstance("doctor.netty.isstream");
     public static final String NETTY_REQUEST = "doctor.netty.request";
     public static final String NETTY_SERVLET_REQUEST = "doctor.netty.servlet.request";
+    public static final String RESOURCE_CONFIG = "doctor.jersey.resourceConfig";
     private static final Logger log = LoggerFactory.getLogger(JerseyChannelAdapter.class);
     private final HttpServerConfiguration httpConfig;
     private final DoctorJerseyContainer container;
@@ -85,6 +86,7 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
             ContainerRequest requestContext = createContainerRequest(ctx, req);
             requestContext.setProperty(NETTY_REQUEST, req);
             requestContext.setProperty(NETTY_SERVLET_REQUEST, new NettyHttpServletRequest(ctx, req));
+            requestContext.setProperty(RESOURCE_CONFIG, resourceConfig);
 
             requestContext.setWriter(new NettyResponseWriter(ctx, req));
             long contentLength = req.headers().contains(HttpHeaderNames.CONTENT_LENGTH) ? HttpUtil.getContentLength(req) : -1L;
@@ -102,11 +104,13 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
 
         if (msg instanceof HttpContent httpContent) {
             QueuedBufInputStream is = ctx.channel().attr(INPUT_STREAM).get();
-            is.append(httpContent);
-            if (is.size() > httpConfig.getMaxContentLength()) {
-                ctx.write(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE))
-                        .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE)
-                        .addListener(ChannelFutureListener.CLOSE);
+            if (is != null) {
+                is.append(httpContent);
+                if (is.size() > httpConfig.getMaxContentLength()) {
+                    ctx.write(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE))
+                            .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE)
+                            .addListener(ChannelFutureListener.CLOSE);
+                }
             }
         }
     }

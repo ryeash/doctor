@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.IntStream;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -54,12 +55,13 @@ public class JerseyTest {
     }
 
     @Test
-    public void init() {
+    public void basic() {
         req().get("/jaxrs/get")
                 .then()
                 .statusCode(200)
                 .body(is("ok"))
-                .header("X-After", is("true"));
+                .header("X-After", is("true"))
+                .header("TIME", containsString("us"));
     }
 
     @Test
@@ -89,6 +91,26 @@ public class JerseyTest {
                 .then()
                 .statusCode(200)
                 .body(is("async"));
+    }
+
+    @Test
+    public void context() {
+        req().get("/jaxrs/context")
+                .then()
+                .statusCode(200)
+                .body(is("ok"));
+    }
+
+    @Test
+    public void params() {
+        req().queryParam("queryParam", "query")
+                .header("X-Header", "header")
+                .cookie("_cookie", "cookie")
+                .get("/jaxrs/params/path")
+                .prettyPeek()
+                .then()
+                .statusCode(200)
+                .body(is("path query header cookie"));
     }
 
     @Test(invocationCount = 2)

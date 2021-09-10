@@ -24,6 +24,6 @@ public class TestFilter implements ContainerRequestFilter, ContainerResponseFilt
     public void filter(ContainerRequestContext containerRequestContext, ContainerResponseContext containerResponseContext) {
         containerResponseContext.getHeaders().putSingle("X-After", "true");
         long nanoStart = (long) containerRequestContext.getProperty("start");
-        containerResponseContext.getHeaders().putSingle("TIME", TimeUnit.MICROSECONDS.convert((System.nanoTime() - nanoStart), TimeUnit.NANOSECONDS));
+        containerResponseContext.getHeaders().putSingle("TIME", TimeUnit.MICROSECONDS.convert((System.nanoTime() - nanoStart), TimeUnit.NANOSECONDS) + "us");
     }
 }
