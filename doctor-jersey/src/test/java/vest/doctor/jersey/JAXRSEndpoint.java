@@ -29,14 +29,11 @@ import vest.doctor.ProviderRegistry;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 @Singleton
 @Path("/jaxrs")
 public class JAXRSEndpoint {
-
-    private final ExecutorService background = Executors.newFixedThreadPool(3);
 
     @GET
     @Path("/get")
@@ -44,7 +41,7 @@ public class JAXRSEndpoint {
                       @Provided ProviderRegistry providerRegistry,
                       @Attribute("start") long start) {
         Assert.assertNotNull(request);
-        Assert.assertTrue(start > System.currentTimeMillis() - 10000);
+        Assert.assertTrue(start > 0);
         Assert.assertNotNull(providerRegistry);
         return "ok";
     }
