@@ -107,7 +107,6 @@ public class JerseyTest {
                 .header("X-Header", "header")
                 .cookie("_cookie", "cookie")
                 .get("/jaxrs/params/path")
-                .prettyPeek()
                 .then()
                 .statusCode(200)
                 .body(is("path query header cookie"));

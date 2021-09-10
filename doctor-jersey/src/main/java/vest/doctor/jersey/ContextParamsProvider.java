@@ -39,7 +39,7 @@ public final class ContextParamsProvider extends AbstractValueParamProvider {
                 return cr -> cr.getProperty(JerseyChannelAdapter.NETTY_SERVLET_REQUEST);
             } else if (typeMatch(type, SecurityContext.class)) {
                 return ContainerRequest::getSecurityContext;
-            } else if (typeMatch(type, Request.class, HttpHeaders.class)) {
+            } else if (typeMatch(type, Request.class, HttpHeaders.class, ContainerRequest.class)) {
                 return Function.identity();
             } else if (typeMatch(type, Application.class, ResourceConfig.class)) {
                 return cr -> cr.getProperty(JerseyChannelAdapter.RESOURCE_CONFIG);

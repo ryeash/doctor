@@ -5,10 +5,12 @@ import jakarta.inject.Named;
 import jakarta.inject.Provider;
 import jakarta.inject.Qualifier;
 import jakarta.inject.Singleton;
+import jakarta.ws.rs.container.ContainerRequestContext;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.internal.inject.AbstractValueParamProvider;
 import org.glassfish.jersey.server.internal.inject.MultivaluedParameterExtractorProvider;
 import org.glassfish.jersey.server.model.Parameter;
+import vest.doctor.InjectionException;
 import vest.doctor.ProviderRegistry;
 
 import java.lang.annotation.Annotation;
@@ -19,14 +21,16 @@ import java.util.function.Function;
 /**
  * Links {@link Provided} parameters, the {@link ProviderRegistry}, and the jersey parameter lookup subsystem together
  * such that anything provided via the {@link ProviderRegistry} is injectable into request handler methods.
+ * <p>
+ * Supports the {@link Attribute} annotation to pull values from {@link ContainerRequestContext#getProperty(String)}.
  */
 @Singleton
-public final class ProvidedValueParamProvider extends AbstractValueParamProvider {
+public final class DoctorCustomValueParamProvider extends AbstractValueParamProvider {
 
     private final ProviderRegistry providerRegistry;
 
     @Inject
-    public ProvidedValueParamProvider(Provider<MultivaluedParameterExtractorProvider> provider, ProviderRegistry providerRegistry) {
+    public DoctorCustomValueParamProvider(Provider<MultivaluedParameterExtractorProvider> provider, ProviderRegistry providerRegistry) {
         super(provider, Parameter.Source.UNKNOWN);
         this.providerRegistry = providerRegistry;
     }
@@ -39,7 +43,14 @@ public final class ProvidedValueParamProvider extends AbstractValueParamProvider
                     .map(Named::value)
                     .or(() -> getQualifier(parameter).map(String::valueOf))
                     .orElse(null);
-            return cr -> providerRegistry.getInstance(type, name);
+            if (providerRegistry.hasProvider(type, name)) {
+                return cr -> providerRegistry.getInstance(type, name);
+            } else {
+                throw new InjectionException("unsatisfied dependency " + type + " for " + parameter, null);
+            }
+        } else if (parameter.isAnnotationPresent(Attribute.class)) {
+            String attributeName = parameter.getAnnotation(Attribute.class).value();
+            return cr -> cr.getProperty(attributeName);
         }
         return null;
     }

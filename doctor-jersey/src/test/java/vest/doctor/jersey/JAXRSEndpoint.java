@@ -1,6 +1,7 @@
 package vest.doctor.jersey;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
+import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,7 +41,10 @@ public class JAXRSEndpoint {
     @GET
     @Path("/get")
     public String get(@Context HttpServletRequest request,
-                      @Provided ProviderRegistry providerRegistry) {
+                      @Provided ProviderRegistry providerRegistry,
+                      @Attribute("start") long start) {
+        Assert.assertNotNull(request);
+        Assert.assertTrue(start > System.currentTimeMillis() - 10000);
         Assert.assertNotNull(providerRegistry);
         return "ok";
     }
@@ -61,7 +65,9 @@ public class JAXRSEndpoint {
 
     @GET
     @Path("/async")
-    public void async(@Suspended AsyncResponse ar) {
+    public void async(@Suspended AsyncResponse ar,
+                      @Provided @Named("default") ExecutorService executorService) {
+        Assert.assertNotNull(executorService);
         CompletableFuture.supplyAsync(() -> {
                     try {
                         TimeUnit.MILLISECONDS.sleep(100);
@@ -69,7 +75,7 @@ public class JAXRSEndpoint {
                         e.printStackTrace();
                     }
                     return "async";
-                }, background)
+                }, executorService)
                 .thenApply(Response.ok()::entity)
                 .thenApply(Response.ResponseBuilder::build)
                 .thenAccept(ar::resume);

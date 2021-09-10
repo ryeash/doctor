@@ -46,9 +46,9 @@ public final class NettyJerseyLoader implements ApplicationLoader {
                 .map(DoctorProvider::get)
                 .forEach(c -> c.customize(config));
 
-        config.register(new DoctorBinder(providerRegistry));
-        config.register(ProvidedValueParamProvider.class);
+        config.register(DoctorCustomValueParamProvider.class);
         config.register(ContextParamsProvider.class);
+        config.register(new DoctorBinder(providerRegistry));
 
         HttpServerConfiguration httpConfig = buildConf(providerRegistry);
 
@@ -63,7 +63,7 @@ public final class NettyJerseyLoader implements ApplicationLoader {
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .option(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator())
                 .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, WriteBufferWaterMark.DEFAULT)
-                .childHandler(new DoctorChannelInitializer(httpConfig, container, config, providerRegistry));
+                .childHandler(new DoctorChannelInitializer(httpConfig, workerGroup, container, providerRegistry));
 
         List<Channel> channels = httpConfig.getBindAddresses()
                 .stream()

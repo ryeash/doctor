@@ -81,7 +81,7 @@ public final class Router implements Handler {
     private static final String FILTER_ITERATOR = "doctor.netty.router.filterIterator";
 
     private static final Handler NOT_FOUND = new NotFound();
-    private final List<Filter> filters = new LinkedList<>();
+    private final List<FilterAndPath> filters = new LinkedList<>();
     private final Map<HttpMethod, List<Route>> routes = new TreeMap<>();
     private final HttpServerConfiguration conf;
 
@@ -92,6 +92,9 @@ public final class Router implements Handler {
         this.conf = conf;
     }
 
+    /**
+     * Get the {@link HttpServerConfiguration} that was used to configure the {@link vest.doctor.http.server.HttpServer}.
+     */
     public HttpServerConfiguration configuration() {
         return conf;
     }
@@ -153,7 +156,7 @@ public final class Router implements Handler {
      */
     public Router filter(String path, Filter filter) {
         String fullPath = conf.getRouterPrefix() + path;
-        filters.add(new FilterAndPath(this, new PathSpec(fullPath, conf.getCaseInsensitiveMatching()), filter));
+        filters.add(new FilterAndPath(new PathSpec(fullPath, conf.getCaseInsensitiveMatching()), filter));
         filters.sort(Prioritized.COMPARATOR);
         return this;
     }
@@ -164,15 +167,23 @@ public final class Router implements Handler {
             request.attribute(DEBUG_START_ATTRIBUTE, System.nanoTime());
             addTraceMessage(request, "request " + request.method() + " " + request.path());
         }
-        Iterator<Filter> iterator = filters.iterator();
+        Iterator<FilterAndPath> iterator = filters.iterator();
         request.attribute(FILTER_ITERATOR, iterator);
         return doNextFilter(request);
     }
 
     private CompletionStage<Response> doNextFilter(Request request) throws Exception {
-        Iterator<Filter> iterator = request.attribute(FILTER_ITERATOR);
-        if (iterator.hasNext()) {
-            return iterator.next().filter(request, this::doNextFilter);
+        Iterator<FilterAndPath> iterator = request.attribute(FILTER_ITERATOR);
+        while (iterator.hasNext()) {
+            FilterAndPath next = iterator.next();
+            PathSpec pathSpec = next.pathSpec();
+            Filter filter = next.filter();
+            Map<String, String> pathParams = pathSpec.matchAndCollect(request);
+            addTraceMessage(request, next, pathParams != null);
+            if (pathParams != null) {
+                request.attribute(Router.PATH_PARAMS, pathParams);
+                return filter.filter(request, this::doNextFilter);
+            }
         }
         return selectHandler(request).handle(request);
     }
@@ -209,7 +220,7 @@ public final class Router implements Handler {
         StringBuilder sb = new StringBuilder("Router:\n");
         if (!filters.isEmpty()) {
             sb.append(" Filters:\n");
-            for (Filter filterAndPath : filters) {
+            for (FilterAndPath filterAndPath : filters) {
                 sb.append("  ").append(filterAndPath).append('\n');
             }
         }
@@ -240,6 +251,15 @@ public final class Router implements Handler {
                     routeMethod + ' ' +
                     route.getPathSpec() + ' ' +
                     route.getHandler());
+        }
+    }
+
+    void addTraceMessage(Request request, FilterAndPath filter, boolean matched) {
+        if (conf.isDebugRequestRouting()) {
+            addTraceMessage(request, "filter " +
+                    (matched ? "match" : "not-matched") + ' ' +
+                    filter.pathSpec() + ' ' +
+                    filter.filter());
         }
     }
 

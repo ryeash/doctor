@@ -4,6 +4,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.EventLoopGroup;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaderNames;
@@ -15,11 +16,12 @@ import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.util.AttributeKey;
 import jakarta.inject.Provider;
-import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 import org.glassfish.jersey.internal.MapPropertiesDelegate;
+import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.server.spi.Container;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vest.doctor.ProviderRegistry;
@@ -41,15 +43,20 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
     public static final String RESOURCE_CONFIG = "doctor.jersey.resourceConfig";
     private static final Logger log = LoggerFactory.getLogger(JerseyChannelAdapter.class);
     private final HttpServerConfiguration httpConfig;
-    private final DoctorJerseyContainer container;
+    private final ApplicationHandler applicationHandler;
+    private final EventLoopGroup workerGroup;
     private final ResourceConfig resourceConfig;
     private final Provider<SecurityContext> securityContextProvider;
     private final Map<String, Provider<Websocket>> websockets;
 
-    public JerseyChannelAdapter(HttpServerConfiguration httpConfig, DoctorJerseyContainer container, ResourceConfig resourceConfig, ProviderRegistry providerRegistry) {
+    public JerseyChannelAdapter(HttpServerConfiguration httpConfig,
+                                Container container,
+                                EventLoopGroup workerGroup,
+                                ProviderRegistry providerRegistry) {
         this.httpConfig = httpConfig;
-        this.container = container;
-        this.resourceConfig = resourceConfig;
+        this.applicationHandler = container.getApplicationHandler();
+        this.workerGroup = workerGroup;
+        this.resourceConfig = container.getConfiguration();
         this.securityContextProvider = providerRegistry.getProviderOpt(SecurityContext.class)
                 .map(p -> (Provider<SecurityContext>) p)
                 .orElse(DefaultSecurityContext.PROVIDER);
@@ -65,11 +72,15 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
         }
 
         if (msg instanceof HttpRequest req) {
+            if (HttpUtil.getContentLength(req, -1L) >= httpConfig.getMaxContentLength()) {
+                sendErrorAndClose(ctx, HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE);
+                return;
+            }
+
             if (HttpUtil.is100ContinueExpected(req)) {
                 ctx.write(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE));
             }
 
-            // upgrade to websocket connection, if requested
             String upgradeHeader = req.headers().get(HttpHeaderNames.UPGRADE);
             if (upgradeHeader != null) {
                 handleWebsocketUpgrade(ctx, req, upgradeHeader);
@@ -83,23 +94,18 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
             } else {
                 stream.reset();
             }
+
             ContainerRequest requestContext = createContainerRequest(ctx, req);
             requestContext.setProperty(NETTY_REQUEST, req);
             requestContext.setProperty(NETTY_SERVLET_REQUEST, new NettyHttpServletRequest(ctx, req));
             requestContext.setProperty(RESOURCE_CONFIG, resourceConfig);
-
             requestContext.setWriter(new NettyResponseWriter(ctx, req));
-            long contentLength = req.headers().contains(HttpHeaderNames.CONTENT_LENGTH) ? HttpUtil.getContentLength(req) : -1L;
             requestContext.setEntityStream(stream);
-
             for (String name : req.headers().names()) {
                 requestContext.headers(name, req.headers().getAll(name));
             }
 
-            if (contentLength >= httpConfig.getMaxContentLength()) {
-                requestContext.abortWith(Response.status(Response.Status.REQUEST_ENTITY_TOO_LARGE).build());
-            }
-            container.handle(requestContext);
+            workerGroup.submit(() -> applicationHandler.handle(requestContext));
         }
 
         if (msg instanceof HttpContent httpContent) {
@@ -107,9 +113,7 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
             if (is != null) {
                 is.append(httpContent);
                 if (is.size() > httpConfig.getMaxContentLength()) {
-                    ctx.write(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE))
-                            .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE)
-                            .addListener(ChannelFutureListener.CLOSE);
+                    sendErrorAndClose(ctx, HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE);
                 }
             }
         }
@@ -165,7 +169,11 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
         } else {
             log.error("upgrading connection to '{}' is not supported", upgradeHeader);
         }
-        DefaultFullHttpResponse nettyResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST);
+        sendErrorAndClose(ctx, HttpResponseStatus.BAD_REQUEST);
+    }
+
+    private static void sendErrorAndClose(ChannelHandlerContext ctx, HttpResponseStatus status) {
+        DefaultFullHttpResponse nettyResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
         nettyResponse.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
         ctx.writeAndFlush(nettyResponse)
                 .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE)
