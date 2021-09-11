@@ -13,6 +13,7 @@ import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
 
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
@@ -65,14 +66,19 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
         }
 
         classBuilder.addMethod("public " + providedType().getSimpleName() + " get()", b -> {
-            b.bind("container", container.getQualifiedName())
-                    .bind("getContainer", ProcessorUtils.getProviderCode(context, container))
-                    .bind("providedType", providedType().getSimpleName())
-                    .bind("call", context.executableCall(this, factoryMethod, "container", Constants.PROVIDER_REGISTRY));
+            b.bind("providedType", providedType().getSimpleName());
+            b.line("try {");
+            if (factoryMethod.getModifiers().contains(Modifier.STATIC)) {
+                b.bind("call", context.executableCall(this, factoryMethod, container.getQualifiedName().toString(), Constants.PROVIDER_REGISTRY));
+                b.line("{{providedType}} instance = {{call}};");
+            } else {
+                b.bind("container", container.getQualifiedName())
+                        .bind("getContainer", ProcessorUtils.getProviderCode(context, container))
+                        .bind("call", context.executableCall(this, factoryMethod, "container", Constants.PROVIDER_REGISTRY));
+                b.line("{{container}} container = {{getContainer}}.get();")
+                        .line("{{providedType}} instance = {{call}};");
+            }
 
-            b.line("try {")
-                    .line("{{container}} container = {{getContainer}}.get();")
-                    .line("{{providedType}} instance = {{call}};");
             if (!markedWith(SkipInjection.class)) {
                 for (NewInstanceCustomizer customizer : context.customizations(NewInstanceCustomizer.class)) {
                     customizer.customize(context, this, b, "instance", Constants.PROVIDER_REGISTRY);

@@ -23,8 +23,8 @@ public class CachedScopeProvider<T> extends DoctorProviderWrapper<T> {
         if (expires == 0 || System.nanoTime() > expires) {
             synchronized (this) {
                 if (temp == expires) {
-                    this.expires = System.nanoTime() + ttlNanos;
                     this.value = delegate.get();
+                    this.expires = System.nanoTime() + ttlNanos;
                 }
             }
         }

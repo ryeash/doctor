@@ -361,7 +361,7 @@ public class ProcessorUtils {
 
             if (ProcessorUtils.isCompatibleWith(context, typeElement, Stream.class)) {
                 TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
-                return getProvidersCode(typeMirror, qualifier, providerRegistryRef);
+                return getProvidersCode(typeMirror, qualifier, providerRegistryRef) + ".map(" + Provider.class.getCanonicalName() + "::get)";
             }
 
             if (variableElement.asType().getKind() == TypeKind.ARRAY) {
