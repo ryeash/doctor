@@ -1,13 +1,13 @@
 package vest.doctor.processor;
 
 import jakarta.inject.Inject;
-import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.Async;
 import vest.doctor.InjectionException;
-import vest.doctor.NewInstanceCustomizer;
-import vest.doctor.ProviderDefinition;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
+import vest.doctor.processing.AnnotationProcessorContext;
+import vest.doctor.processing.NewInstanceCustomizer;
+import vest.doctor.processing.ProviderDefinition;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;

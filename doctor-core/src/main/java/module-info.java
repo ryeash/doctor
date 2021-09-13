@@ -8,4 +8,5 @@ module doctor.core {
     exports vest.doctor.aop;
     exports vest.doctor.event;
     exports vest.doctor.scheduled;
+    exports vest.doctor.processing;
 }

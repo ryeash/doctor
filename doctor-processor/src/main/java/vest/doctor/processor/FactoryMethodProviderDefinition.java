@@ -1,16 +1,16 @@
 package vest.doctor.processor;
 
-import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.CodeProcessingException;
 import vest.doctor.InjectionException;
-import vest.doctor.NewInstanceCustomizer;
-import vest.doctor.ParameterLookupCustomizer;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.SkipInjection;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.Constants;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
+import vest.doctor.processing.AnnotationProcessorContext;
+import vest.doctor.processing.CodeProcessingException;
+import vest.doctor.processing.NewInstanceCustomizer;
+import vest.doctor.processing.ParameterLookupCustomizer;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;

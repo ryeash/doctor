@@ -19,7 +19,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 public @interface Modules {
 
     /**
-     * The modules for which the provider will be active.
+     * The modules for which the provider(s) will be active.
      */
     String[] value();
 }

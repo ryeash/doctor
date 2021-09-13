@@ -1,4 +1,4 @@
-package vest.doctor;
+package vest.doctor.processing;
 
 import java.lang.annotation.Annotation;
 

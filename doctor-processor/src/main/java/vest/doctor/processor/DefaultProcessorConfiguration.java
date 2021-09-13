@@ -2,11 +2,11 @@ package vest.doctor.processor;
 
 import jakarta.inject.Singleton;
 import vest.doctor.Cached;
-import vest.doctor.CustomizationPoint;
 import vest.doctor.Factory;
-import vest.doctor.ProcessorConfiguration;
 import vest.doctor.Prototype;
 import vest.doctor.ThreadLocal;
+import vest.doctor.processing.CustomizationPoint;
+import vest.doctor.processing.ProcessorConfiguration;
 
 import java.lang.annotation.Annotation;
 import java.util.List;

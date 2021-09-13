@@ -1,7 +1,7 @@
 package vest.doctor.http.server.rest;
 
-import vest.doctor.CustomizationPoint;
-import vest.doctor.ProcessorConfiguration;
+import vest.doctor.processing.CustomizationPoint;
+import vest.doctor.processing.ProcessorConfiguration;
 
 import java.lang.annotation.Annotation;
 import java.util.Collections;

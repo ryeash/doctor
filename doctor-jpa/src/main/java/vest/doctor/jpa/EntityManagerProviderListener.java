@@ -1,15 +1,15 @@
 package vest.doctor.jpa;
 
 import vest.doctor.AdHocProvider;
-import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ApplicationLoader;
-import vest.doctor.CodeProcessingException;
-import vest.doctor.ProviderDefinition;
-import vest.doctor.ProviderDefinitionListener;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
+import vest.doctor.processing.AnnotationProcessorContext;
+import vest.doctor.processing.CodeProcessingException;
+import vest.doctor.processing.ProviderDefinition;
+import vest.doctor.processing.ProviderDefinitionListener;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;

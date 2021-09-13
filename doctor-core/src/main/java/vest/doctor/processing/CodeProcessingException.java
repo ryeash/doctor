@@ -1,4 +1,4 @@
-package vest.doctor;
+package vest.doctor.processing;
 
 import vest.doctor.codegen.ProcessorUtils;
 
@@ -7,7 +7,7 @@ import javax.lang.model.element.Element;
 /**
  * General purpose exception to indicate something went wrong during code processing.
  */
-public class CodeProcessingException extends RuntimeException {
+public final class CodeProcessingException extends RuntimeException {
 
     public CodeProcessingException(String message) {
         super(message);

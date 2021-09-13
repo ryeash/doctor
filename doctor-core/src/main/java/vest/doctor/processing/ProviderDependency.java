@@ -1,4 +1,4 @@
-package vest.doctor;
+package vest.doctor.processing;
 
 import javax.lang.model.element.TypeElement;
 

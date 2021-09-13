@@ -1,12 +1,6 @@
 package vest.doctor.processor;
 
-import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.CodeProcessingException;
-import vest.doctor.CustomizationPoint;
 import vest.doctor.Factory;
-import vest.doctor.ProcessorConfiguration;
-import vest.doctor.ProviderCustomizationPoint;
-import vest.doctor.ProviderDefinition;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.TypeInfo;
 import vest.doctor.aop.AspectCoordinator;
@@ -20,6 +14,12 @@ import vest.doctor.aop.MutableMethodArgument;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
+import vest.doctor.processing.AnnotationProcessorContext;
+import vest.doctor.processing.CodeProcessingException;
+import vest.doctor.processing.CustomizationPoint;
+import vest.doctor.processing.ProcessorConfiguration;
+import vest.doctor.processing.ProviderCustomizationPoint;
+import vest.doctor.processing.ProviderDefinition;
 
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;

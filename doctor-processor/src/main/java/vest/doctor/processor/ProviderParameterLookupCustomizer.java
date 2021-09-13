@@ -1,10 +1,10 @@
 package vest.doctor.processor;
 
 import jakarta.inject.Provider;
-import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.ParameterLookupCustomizer;
-import vest.doctor.ProviderDependency;
 import vest.doctor.codegen.ProcessorUtils;
+import vest.doctor.processing.AnnotationProcessorContext;
+import vest.doctor.processing.ParameterLookupCustomizer;
+import vest.doctor.processing.ProviderDependency;
 
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
