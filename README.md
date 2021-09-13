@@ -270,15 +270,16 @@ Messages can be published and consumed via the EventBus.
 Basics of event produce and consume:
 
 ```java
+
 @Singleton
 public class EventExample implements EventConsumer<String> {
 
   private final EventProducer producer;
 
-    @Inject
-    public EventExample(EventProducer producer) {
-      this.producer = producer;
-    }
+  @Inject
+  public EventExample(EventProducer producer) {
+    this.producer = producer;
+  }
 
   @Inject
   @Async
@@ -419,9 +420,9 @@ thing.doSomething() // <- method will be both timed and observed
 
 #### A note on Aspect scoping
 
-In the previous example, the TimingAspect class is marked as @Prototype, but each instance of the aspected class will
-call Provider.get() once. So for the lifetime of the aspected Thing class, only one instance of the TimingAspect will be
-created and used.
+In the previous example, the TimingAspect class is marked as @Prototype, but each instance of the aspect-ed class will
+call Provider.get() once. So for the lifetime of the aspect-ed Thing singleton, only one instance of the TimingAspect
+will be created and used.
 
 ### Aspect Stages
 
