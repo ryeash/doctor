@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -125,9 +126,12 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                 .setClassName(qualifiedClassName)
                 .addImplementsInterface(EndpointLoader.class)
                 .addImportClass(CompletableFuture.class)
+                .addImportClass(CompletionStage.class)
                 .addImportClass(BodyInterchange.class)
+                .addImportClass(EndpointLinker.class)
                 .addImportClass(EndpointLoader.class)
                 .addImportClass(ProviderRegistry.class)
+                .addImportClass(Optional.class)
                 .addImportClass(Request.class)
                 .addImportClass(Response.class)
                 .addImportClass(Router.class)
@@ -173,26 +177,39 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                                  String endpointRef,
                                  ExecutableElement method) {
 
-        String parameters = method.getParameters().stream()
-                .map(p -> parameterWriting(context, p, "request"))
-                .collect(Collectors.joining(", ", "(", ")"));
 
         boolean isVoid = method.getReturnType().getKind() == TypeKind.VOID;
         boolean bodyFuture = isBodyFuture(context, method);
         boolean completableResponse = returnsCompletableResponse(context, method);
 
-        String callMethod = endpointRef + ".get()." + method.getSimpleName() + parameters + ";";
-
+        /**
+         * router.route("GET", "/netty/hello", new EndpointLinker<>(endpoint51,null, bodyInterchange, "") {
+         *             @Override
+         *             protected CompletionStage<Response> handleWithProvider(demo.app.TCNettyEndpoint endpoint, Request request) {
+         *                 return readFutureBody(request, bodyType, bodyInterchange)
+         *                         .thenCompose(body -> {
+         *                             Object result = endpoint.basic(java.util.Optional.ofNullable(request.queryParam("q")).map(java.util.function.Function.identity()), java.util.Optional.ofNullable(request.queryParam("number")).map(java.lang.Integer::parseInt).orElse(null), java.util.Optional.ofNullable(request.queryParam("number")).map(java.lang.Integer::valueOf), (java.util.List<java.io.InputStream>) request.attribute("list"), new vest.doctor.http.server.rest.POJOHelper<>(new demo.app.NettyBeanParam<>(java.util.Optional.ofNullable(request.queryParam("number")).map(java.lang.Integer::parseInt).orElse(null), request)).with(demo.app.NettyBeanParam::setQ, java.util.Optional.ofNullable(request.queryParam("q")).map(java.util.function.Function.identity())).with(demo.app.NettyBeanParam::setNumberViaMethod, java.util.Optional.ofNullable(request.queryParam("number")).map(java.lang.Integer::parseInt).orElse(null)).get());
+         *                             return convertResponse(request, result, bodyInterchange);
+         *                         });
+         *             }
+         *         });
+         */
+        String summary = method.getEnclosingElement().asType() + "#" + method.getSimpleName();
         initialize.line("router.route(\"",
                 ProcessorUtils.escapeStringForCode(httpMethod), '"',
-                ",\"", ProcessorUtils.escapeStringForCode(path), "\", request -> {");
-        initialize.line("TypeInfo typeInfo = ", buildTypeInfoCode(method), ';');
+                ",\"", ProcessorUtils.escapeStringForCode(path), "\", new EndpointLinker<>(",
+                endpointRef, ',', buildTypeInfoCode(method), ',', "bodyInterchange", ",\"", summary, "\") {");
+        initialize.line("@Override protected CompletionStage<Response> handleWithProvider(", method.getEnclosingElement().asType(), " endpoint, Request request, CompletableFuture<?> body) throws Exception {");
 
-        if (bodyFuture) {
-            initialize.line("CompletableFuture<?> body = readFutureBody(request, typeInfo, bodyInterchange);");
+        String parameters = method.getParameters().stream()
+                .map(p -> parameterWriting(context, p, "request"))
+                .collect(Collectors.joining(", ", "(", ")"));
+        String callMethod = "endpoint." + method.getSimpleName() + parameters + ";";
+
+        if (!bodyFuture) {
+            initialize.line("return body.thenCompose(b -> {");
         } else {
-            initialize.line("return readFutureBody(request, typeInfo, bodyInterchange)");
-            initialize.line(".thenCompose(body -> {");
+            initialize.line("CompletableFuture<?> b = body;");
         }
 
         if (isVoid) {
@@ -208,7 +225,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         if (!bodyFuture) {
             initialize.line("});");
         }
-
+        initialize.line("}");
         initialize.line("});");
     }
 
@@ -248,7 +265,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         } else if (parameter.asType().toString().equals(URI.class.getCanonicalName())) {
             return contextRef + ".uri()";
         } else if (annotationSource.getAnnotation(Body.class) != null) {
-            return "(" + parameter.asType() + ") body";
+            return "(" + parameter.asType() + ") b";
         } else if (annotationSource.getAnnotation(Attribute.class) != null) {
             String name = annotationSource.getAnnotation(Attribute.class).value();
             return "(" + parameter.asType() + ") " + contextRef + ".attribute(\"" + name + "\")";
@@ -266,7 +283,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("java.util.Optional.ofNullable(");
+        sb.append("Optional.ofNullable(");
 
         if (annotationSource.getAnnotation(PathParam.class) != null) {
             String name = annotationSource.getAnnotation(PathParam.class).value();
