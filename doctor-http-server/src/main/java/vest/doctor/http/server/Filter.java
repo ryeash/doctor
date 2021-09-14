@@ -46,15 +46,15 @@ public interface Filter extends Prioritized {
 
     class BeforeFilter implements Filter {
 
-        private final UnaryOperator<Request> consumer;
+        private final UnaryOperator<Request> function;
 
-        public BeforeFilter(UnaryOperator<Request> consumer) {
-            this.consumer = consumer;
+        public BeforeFilter(UnaryOperator<Request> function) {
+            this.function = function;
         }
 
         @Override
         public CompletionStage<Response> filter(Request request, FilterChain chain) throws Exception {
-            return chain.next(consumer.apply(request));
+            return chain.next(function.apply(request));
         }
     }
 

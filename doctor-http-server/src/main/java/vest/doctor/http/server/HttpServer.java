@@ -30,9 +30,8 @@ import io.netty.util.concurrent.DefaultThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vest.doctor.http.server.impl.CompositeExceptionHandler;
-import vest.doctor.http.server.impl.NettyHttpServerChannelInitializer;
+import vest.doctor.http.server.impl.HttpServerChannelInitializer;
 import vest.doctor.http.server.impl.ServerRequest;
-import vest.doctor.http.server.impl.ServerSocketChannelInitializer;
 import vest.doctor.http.server.impl.StreamingRequestBody;
 import vest.doctor.http.server.impl.WebsocketHandler;
 
@@ -61,10 +60,10 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
     private final ExceptionHandler exceptionHandler;
 
     public HttpServer(HttpServerConfiguration config, Handler handler) {
-        this(config, handler, new NettyHttpServerChannelInitializer(config, Collections.emptyList()), new CompositeExceptionHandler());
+        this(config, handler, new CompositeExceptionHandler());
     }
 
-    public HttpServer(HttpServerConfiguration config, Handler handler, ServerSocketChannelInitializer channelInitializer, ExceptionHandler exceptionHandler) {
+    public HttpServer(HttpServerConfiguration config, Handler handler, ExceptionHandler exceptionHandler) {
         super();
         if (config.getBindAddresses() == null || config.getBindAddresses().isEmpty()) {
             throw new IllegalArgumentException("can not start without at least one bind address set");
@@ -75,7 +74,6 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
         this.exceptionHandler = exceptionHandler;
         this.bossGroup = new NioEventLoopGroup(config.getTcpManagementThreads(), new DefaultThreadFactory(config.getTcpThreadPrefix(), false));
         this.workerGroup = new NioEventLoopGroup(config.getWorkerThreads(), new DefaultThreadFactory(config.getWorkerThreadPrefix(), true));
-        channelInitializer.setServer(this);
         ServerBootstrap b = new ServerBootstrap()
                 .group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
@@ -83,7 +81,7 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
                 .option(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator())
                 .option(ChannelOption.SO_BACKLOG, config.getSocketBacklog())
                 .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, WriteBufferWaterMark.DEFAULT)
-                .childHandler(channelInitializer);
+                .childHandler(new HttpServerChannelInitializer(this, config, Collections.emptyList()));
 
         this.serverChannels = new LinkedList<>();
         for (InetSocketAddress inetSocketAddress : config.getBindAddresses()) {
@@ -126,7 +124,7 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
                     return;
                 }
 
-                StreamingRequestBody body = new StreamingRequestBody(config.getMaxContentLength());
+                StreamingRequestBody body = new StreamingRequestBody(ctx.alloc().compositeBuffer(128), config.getMaxContentLength());
                 ctx.channel().attr(CONTEXT_BODY).set(body);
                 ServerRequest req = new ServerRequest(request, ctx, workerGroup, body);
                 try {
@@ -187,7 +185,7 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
                     .orElse(null);
             if (ws != null) {
                 // add the websocket handler to the end of the processing pipeline
-                ctx.pipeline().replace(NettyHttpServerChannelInitializer.SERVER_HANDLER, "websocketHandler", new WebsocketHandler(ws));
+                ctx.pipeline().replace(HttpServerChannelInitializer.SERVER_HANDLER, "websocketHandler", new WebsocketHandler(ws));
                 ws.handshake(ctx, request, request.uri());
                 return;
             } else {

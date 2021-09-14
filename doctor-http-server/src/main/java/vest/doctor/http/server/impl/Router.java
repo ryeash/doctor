@@ -120,11 +120,11 @@ public final class Router implements Handler {
      * @return this router
      */
     public Router route(HttpMethod method, String path, Handler handler) {
-        String fullPath = conf.getRouterPrefix() + path;
         if (method.equals(HttpMethod.GET)) {
             // cross list all GETs as HEADs
-            route(HttpMethod.HEAD, fullPath, handler);
+            route(HttpMethod.HEAD, path, handler);
         }
+        String fullPath = conf.getRouterPrefix() + path;
         Route newRoute = new Route(fullPath, conf.getCaseInsensitiveMatching(), handler);
 
         List<Route> routes = this.routes.computeIfAbsent(method, v -> new ArrayList<>());
@@ -167,9 +167,17 @@ public final class Router implements Handler {
             request.attribute(DEBUG_START_ATTRIBUTE, System.nanoTime());
             addTraceMessage(request, "request " + request.method() + " " + request.path());
         }
-        Iterator<FilterAndPath> iterator = filters.iterator();
-        request.attribute(FILTER_ITERATOR, iterator);
-        return doNextFilter(request);
+        if (filters.isEmpty()) {
+            request.attribute(FILTER_ITERATOR, Collections.emptyIterator());
+        } else {
+            Iterator<FilterAndPath> iterator = filters.iterator();
+            request.attribute(FILTER_ITERATOR, iterator);
+        }
+        CompletionStage<Response> response = doNextFilter(request);
+        if (conf.isDebugRequestRouting()) {
+            response.thenAccept(this::attachRouteDebugging);
+        }
+        return response;
     }
 
     private CompletionStage<Response> doNextFilter(Request request) throws Exception {
@@ -199,7 +207,9 @@ public final class Router implements Handler {
             return handler;
         }
         // not found
-        addTraceMessage(request, "no matching route found");
+        if (conf.isDebugRequestRouting()) {
+            addTraceMessage(request, "no matching route found");
+        }
         return NOT_FOUND;
     }
 
@@ -274,5 +284,12 @@ public final class Router implements Handler {
                 .map(duration -> TimeUnit.MICROSECONDS.convert(duration, TimeUnit.NANOSECONDS) + "us")
                 .orElse("");
         trace.add(dur + " " + info);
+    }
+
+    void attachRouteDebugging(Response response) {
+        List<String> tracing = response.request().attribute(DEBUG_ROUTING_ATTRIBUTE);
+        for (int i = 0; i < tracing.size(); i++) {
+            response.header("X-RouteTracing-" + i, tracing.get(i));
+        }
     }
 }
