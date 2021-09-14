@@ -28,10 +28,11 @@ public abstract class EndpointLinker<P> implements Handler {
 
     @Override
     public final CompletionStage<Response> handle(Request request) throws Exception {
-        return handleWithProvider(provider.get(), request, readFutureBody(request));
+        return handleWithProvider(provider.get(), request, readFutureBody(request))
+                .thenCompose(result -> convertResponse(request, result));
     }
 
-    protected abstract CompletionStage<Response> handleWithProvider(P endpoint, Request request, CompletableFuture<?> body) throws Exception;
+    protected abstract CompletionStage<Object> handleWithProvider(P endpoint, Request request, CompletableFuture<?> body) throws Exception;
 
     @Override
     public String toString() {
