@@ -176,24 +176,10 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                                  String path,
                                  String endpointRef,
                                  ExecutableElement method) {
-
-
         boolean isVoid = method.getReturnType().getKind() == TypeKind.VOID;
         boolean bodyFuture = isBodyFuture(context, method);
         boolean completableResponse = ProcessorUtils.isCompatibleWith(context, method.getReturnType(), CompletableFuture.class);
 
-        /**
-         * router.route("GET", "/netty/hello", new EndpointLinker<>(endpoint51,null, bodyInterchange, "") {
-         *             @Override
-         *             protected CompletionStage<Response> handleWithProvider(demo.app.TCNettyEndpoint endpoint, Request request) {
-         *                 return readFutureBody(request, bodyType, bodyInterchange)
-         *                         .thenCompose(body -> {
-         *                             Object result = endpoint.basic(java.util.Optional.ofNullable(request.queryParam("q")).map(java.util.function.Function.identity()), java.util.Optional.ofNullable(request.queryParam("number")).map(java.lang.Integer::parseInt).orElse(null), java.util.Optional.ofNullable(request.queryParam("number")).map(java.lang.Integer::valueOf), (java.util.List<java.io.InputStream>) request.attribute("list"), new vest.doctor.http.server.rest.POJOHelper<>(new demo.app.NettyBeanParam<>(java.util.Optional.ofNullable(request.queryParam("number")).map(java.lang.Integer::parseInt).orElse(null), request)).with(demo.app.NettyBeanParam::setQ, java.util.Optional.ofNullable(request.queryParam("q")).map(java.util.function.Function.identity())).with(demo.app.NettyBeanParam::setNumberViaMethod, java.util.Optional.ofNullable(request.queryParam("number")).map(java.lang.Integer::parseInt).orElse(null)).get());
-         *                             return convertResponse(request, result, bodyInterchange);
-         *                         });
-         *             }
-         *         });
-         */
         String summary = method.getEnclosingElement().asType() + "#" + method.getSimpleName();
         initialize.line("router.route(\"",
                 ProcessorUtils.escapeStringForCode(httpMethod), '"',
@@ -235,15 +221,6 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                     && ProcessorUtils.isCompatibleWith(context, parameter.asType(), CompletableFuture.class)) {
                 return true;
             }
-        }
-        return false;
-    }
-
-    private static boolean returnsCompletableResponse(AnnotationProcessorContext context, ExecutableElement method) {
-        if (ProcessorUtils.isCompatibleWith(context, method.getReturnType(), CompletableFuture.class)) {
-            return GenericInfo.firstParameterizedType(method.getReturnType())
-                    .map(tm -> ProcessorUtils.isCompatibleWith(context, tm, Response.class))
-                    .orElse(false);
         }
         return false;
     }

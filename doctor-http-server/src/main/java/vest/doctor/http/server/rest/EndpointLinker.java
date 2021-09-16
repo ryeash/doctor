@@ -5,7 +5,9 @@ import vest.doctor.TypeInfo;
 import vest.doctor.http.server.Handler;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
+import vest.doctor.http.server.impl.Router;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -37,6 +39,15 @@ public abstract class EndpointLinker<P> implements Handler {
     @Override
     public String toString() {
         return summary;
+    }
+
+    protected String pathParam(Request request, String name) {
+        Map<String, String> map = request.attribute(Router.PATH_PARAMS);
+        if (map == null) {
+            throw new IllegalStateException("path matching did not produce a parameter map?");
+        } else {
+            return map.get(name);
+        }
     }
 
     private CompletableFuture<?> readFutureBody(Request request) {

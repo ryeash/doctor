@@ -3,15 +3,13 @@ package vest.doctor.http.server;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpHeaders;
 
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 
 /**
- * A handle to the request body data. The body data is received asynchronously and users are
- * discouraged from using the blocking input stream returned by {@link #inputStream()}.
+ * A handle to the request body data. The data is received asynchronously.
  */
 public interface RequestBody {
 
@@ -19,11 +17,6 @@ public interface RequestBody {
      * Get a future that will complete when the final bytes are received from the client.
      */
     CompletableFuture<ByteBuf> completionFuture();
-
-    /**
-     * Get a blocking {@link InputStream} that reads the request data bytes.
-     */
-    InputStream inputStream();
 
     /**
      * Attach a function to this body that will receive data chunks as they arrive.
@@ -46,16 +39,20 @@ public interface RequestBody {
     Optional<HttpHeaders> trailingHeaders();
 
     /**
-     * Read the body data into a utf8 string.
+     * Read the body data into a UTF-8 string.
      */
     default CompletableFuture<String> asString() {
-        StringBuilder sb = new StringBuilder();
         return asyncRead((buf, finished) -> {
-            while (buf.readableBytes() > 0) {
-                CharSequence charSequence = buf.readCharSequence(buf.readableBytes(), StandardCharsets.UTF_8);
-                sb.append(charSequence);
+            if (finished) {
+                try {
+                    return buf.toString(StandardCharsets.UTF_8);
+                } finally {
+                    buf.readerIndex(buf.writerIndex());
+                    buf.release();
+                }
+            } else {
+                return null;
             }
-            return finished ? sb.toString() : null;
         });
     }
 

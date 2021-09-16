@@ -174,7 +174,7 @@ public final class Pipeline<O> {
      * @param observer the observer
      * @return the next builder step
      */
-    public Pipeline<O> observe(BiConsumer<Flow.Subscription, O> observer) {
+    public Pipeline<O> observe(BiConsumer<Stage<O, O>, O> observer) {
         return async((s, v, emitter) -> {
             observer.accept(s, v);
             emitter.emit(v);
@@ -236,7 +236,7 @@ public final class Pipeline<O> {
      * @param function the mapper
      * @return the next builder step
      */
-    public <NEXT> Pipeline<NEXT> map(BiFunction<Flow.Subscription, O, NEXT> function) {
+    public <NEXT> Pipeline<NEXT> map(BiFunction<Stage<O, NEXT>, O, NEXT> function) {
         return async((s, v, emitter) -> emitter.emit(function.apply(s, v)));
     }
 
@@ -260,7 +260,7 @@ public final class Pipeline<O> {
      * @param function the mapper
      * @return the next builder step
      */
-    public <NEXT> Pipeline<NEXT> mapFuture(BiFunction<Flow.Subscription, O, CompletionStage<NEXT>> function) {
+    public <NEXT> Pipeline<NEXT> mapFuture(BiFunction<Stage<O, NEXT>, O, CompletionStage<NEXT>> function) {
         return async((s, v, emitter) -> {
             CompletionStage<NEXT> apply = function.apply(s, v);
             apply.whenComplete((next, error) -> {
@@ -291,7 +291,7 @@ public final class Pipeline<O> {
      * @param function the mapper
      * @return the next builder step
      */
-    public <NEXT> Pipeline<NEXT> flatMap(BiFunction<Flow.Subscription, O, Iterable<NEXT>> function) {
+    public <NEXT> Pipeline<NEXT> flatMap(BiFunction<Stage<O, NEXT>, O, Iterable<NEXT>> function) {
         return async((s, v, emitter) -> {
             for (NEXT next : function.apply(s, v)) {
                 emitter.emit(next);
@@ -339,7 +339,7 @@ public final class Pipeline<O> {
      * @param function the mapper
      * @return the next builder step
      */
-    public <NEXT> Pipeline<NEXT> flatten(BiFunction<Flow.Subscription, O, Pipeline<NEXT>> function) {
+    public <NEXT> Pipeline<NEXT> flatten(BiFunction<Stage<O, NEXT>, O, Pipeline<NEXT>> function) {
         return async((s, v, emitter) ->
                 function.apply(s, v)
                         .observe(emitter::emit)
@@ -366,7 +366,7 @@ public final class Pipeline<O> {
      *                  downstream stages
      * @return the next builder step
      */
-    public Pipeline<O> filter(BiPredicate<Flow.Subscription, O> predicate) {
+    public Pipeline<O> filter(BiPredicate<Stage<O, O>, O> predicate) {
         return async((s, v, emitter) -> {
             if (predicate.test(s, v)) {
                 emitter.emit(v);

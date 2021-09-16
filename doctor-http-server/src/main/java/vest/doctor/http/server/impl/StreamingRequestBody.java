@@ -9,7 +9,6 @@ import io.netty.handler.codec.http.LastHttpContent;
 import vest.doctor.http.server.HttpException;
 import vest.doctor.http.server.RequestBody;
 
-import java.io.InputStream;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
@@ -17,7 +16,7 @@ import java.util.function.BiFunction;
 /**
  * A handle to the HTTP request body. Supports asynchronously reading the body data.
  */
-public class StreamingRequestBody extends InputStream implements RequestBody {
+public class StreamingRequestBody implements RequestBody {
     private final CompositeByteBuf composite;
     private final CompletableFuture<ByteBuf> future = new CompletableFuture<>();
     private final long maxLength;
@@ -27,7 +26,7 @@ public class StreamingRequestBody extends InputStream implements RequestBody {
     private BiFunction<ByteBuf, Boolean, ?> dataConsumer;
     private HttpHeaders trailingHeaders;
 
-    private boolean closed = false;
+    private volatile boolean closed = false;
 
     public StreamingRequestBody(CompositeByteBuf compositeByteBuf, long maxLength) {
         this.composite = compositeByteBuf;
@@ -41,18 +40,13 @@ public class StreamingRequestBody extends InputStream implements RequestBody {
     }
 
     @Override
-    public InputStream inputStream() {
-        return this;
-    }
-
-    @Override
     @SuppressWarnings("unchecked")
     public <T> CompletableFuture<T> asyncRead(BiFunction<ByteBuf, Boolean, T> reader) {
         if (this.dataConsumer != null) {
             throw new IllegalStateException("there is already a data consumer attached to this body");
         }
         this.asyncReadFuture = new CompletableFuture<>();
-        asyncReadFuture.whenCompleteAsync((v, err) -> close());
+        asyncReadFuture.whenCompleteAsync((v, err) -> composite.release());
         this.dataConsumer = reader;
         internalAsyncRead();
         return (CompletableFuture<T>) asyncReadFuture;
@@ -99,82 +93,32 @@ public class StreamingRequestBody extends InputStream implements RequestBody {
             ByteBuf buf = content.content();
             int readable = buf.readableBytes();
             if (size + readable >= maxLength) {
+                closed = true;
+                composite.release();
                 throw new HttpException(HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE);
             }
             if (readable > 0) {
                 synchronized (composite) {
                     composite.addComponent(true, buf);
                     size += readable;
+                    composite.notifyAll();
                 }
             }
 
-            if (content instanceof LastHttpContent) {
-                this.trailingHeaders = ((LastHttpContent) content).trailingHeaders();
+            if (content instanceof LastHttpContent last) {
+                this.trailingHeaders = last.trailingHeaders();
                 future.complete(composite);
             }
             internalAsyncRead();
         } finally {
-            synchronized (this) {
-                notifyAll();
+            synchronized (composite) {
+                composite.notifyAll();
             }
         }
-    }
-
-    @Override
-    public int read() {
-        readWait();
-        if (composite.readableBytes() <= 0) {
-            return -1;
-        } else {
-            try {
-                return composite.readByte();
-            } finally {
-                composite.discardReadComponents();
-            }
-        }
-    }
-
-    @Override
-    public int read(byte[] b, int off, int len) {
-        readWait();
-        if (composite.readableBytes() <= 0) {
-            return -1;
-        } else {
-            int toRead = Math.min(len, composite.readableBytes());
-            composite.readBytes(b, off, toRead);
-            composite.discardReadComponents();
-            return toRead;
-        }
-    }
-
-    @Override
-    public int available() {
-        return composite.readableBytes();
-    }
-
-    @Override
-    public void close() {
-        this.closed = true;
-        composite.release();
     }
 
     @Override
     public String toString() {
         return "StreamingBody{" + composite + ", done?:" + future.isDone() + "}";
-    }
-
-    private void readWait() {
-        if (closed) {
-            return;
-        }
-        while (!future.isDone() && composite.readableBytes() <= 0) {
-            synchronized (composite) {
-                try {
-                    wait(1000);
-                } catch (InterruptedException e) {
-                    // ignored
-                }
-            }
-        }
     }
 }

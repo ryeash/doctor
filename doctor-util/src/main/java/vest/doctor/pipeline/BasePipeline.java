@@ -1,5 +1,6 @@
 package vest.doctor.pipeline;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
@@ -57,6 +58,21 @@ class BasePipeline<I, O> implements Stage<I, O> {
     @Override
     public Optional<Stage<?, I>> upstream() {
         return source.upstream();
+    }
+
+    @Override
+    public Map<String, Object> attributes() {
+        return last.attributes();
+    }
+
+    @Override
+    public <T> T attribute(String name) {
+        return last.attribute(name);
+    }
+
+    @Override
+    public void attribute(String name, Object value) {
+        last.attribute(name, value);
     }
 
     @Override
