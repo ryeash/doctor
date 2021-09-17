@@ -1,4 +1,6 @@
-package vest.doctor;
+package vest.doctor.processing;
+
+import vest.doctor.Prioritized;
 
 import javax.lang.model.type.TypeMirror;
 

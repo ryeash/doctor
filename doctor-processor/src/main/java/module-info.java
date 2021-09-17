@@ -1,5 +1,7 @@
+import vest.doctor.processing.ProcessorConfiguration;
+
 module doctor.processor {
-    uses vest.doctor.ProcessorConfiguration;
+    uses ProcessorConfiguration;
 
     requires static java.compiler;
 

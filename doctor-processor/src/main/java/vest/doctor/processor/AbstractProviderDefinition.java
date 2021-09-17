@@ -1,20 +1,20 @@
 package vest.doctor.processor;
 
 import jakarta.inject.Provider;
-import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.CodeProcessingException;
 import vest.doctor.DoctorProvider;
 import vest.doctor.ExplicitProvidedTypes;
 import vest.doctor.InjectionException;
 import vest.doctor.Modules;
-import vest.doctor.ProviderDefinition;
-import vest.doctor.ProviderDependency;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.AnnotationClassValueVisitor;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.Constants;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
+import vest.doctor.processing.AnnotationProcessorContext;
+import vest.doctor.processing.CodeProcessingException;
+import vest.doctor.processing.ProviderDefinition;
+import vest.doctor.processing.ProviderDependency;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;

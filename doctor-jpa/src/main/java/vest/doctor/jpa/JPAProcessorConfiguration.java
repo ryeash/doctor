@@ -1,7 +1,7 @@
 package vest.doctor.jpa;
 
-import vest.doctor.CustomizationPoint;
-import vest.doctor.ProcessorConfiguration;
+import vest.doctor.processing.CustomizationPoint;
+import vest.doctor.processing.ProcessorConfiguration;
 
 import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceContexts;

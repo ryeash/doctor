@@ -13,14 +13,14 @@ public class AspectCoordinator implements Before, Around, After {
 
     public AspectCoordinator(Aspect... delegates) {
         for (Aspect delegate : delegates) {
-            if (delegate instanceof Before) {
-                befores.add((Before) delegate);
+            if (delegate instanceof Before before) {
+                befores.add(before);
             }
-            if (delegate instanceof Around) {
-                arounds.add((Around) delegate);
+            if (delegate instanceof Around around) {
+                arounds.add(around);
             }
-            if (delegate instanceof After) {
-                afters.add((After) delegate);
+            if (delegate instanceof After after) {
+                afters.add(after);
             }
         }
     }

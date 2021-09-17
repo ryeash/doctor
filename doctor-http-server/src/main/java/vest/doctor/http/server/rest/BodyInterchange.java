@@ -47,16 +47,15 @@ public final class BodyInterchange {
     public CompletableFuture<Response> write(Request request, Object data) {
         if (data == null) {
             return request.createResponse().body(ResponseBody.empty()).wrapFuture();
-        } else if (data instanceof CompletableFuture) {
-            return ((CompletableFuture<?>) data).thenCompose(d -> write(request, d));
-        } else if (data instanceof Response) {
-            return ((Response) data).wrapFuture();
-        } else if (data instanceof ResponseBody) {
-            return request.createResponse().body((ResponseBody) data).wrapFuture();
-        } else if (data instanceof File) {
-            return request.createResponse().body(ResponseBody.sendFile((File) data)).wrapFuture();
-        } else if (data instanceof R) {
-            R r = (R) data;
+        } else if (data instanceof CompletableFuture<?> future) {
+            return future.thenCompose(d -> write(request, d));
+        } else if (data instanceof Response response) {
+            return response.wrapFuture();
+        } else if (data instanceof ResponseBody body) {
+            return request.createResponse().body(body).wrapFuture();
+        } else if (data instanceof File file) {
+            return request.createResponse().body(ResponseBody.sendFile(file)).wrapFuture();
+        } else if (data instanceof R r) {
             return write(request, r.body()).thenApply(r::applyTo);
         } else {
             Response response = request.createResponse();

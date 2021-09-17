@@ -1,8 +1,8 @@
 package vest.doctor.processor;
 
-import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.StringConversionGenerator;
 import vest.doctor.codegen.ProcessorUtils;
+import vest.doctor.processing.AnnotationProcessorContext;
+import vest.doctor.processing.StringConversionGenerator;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;

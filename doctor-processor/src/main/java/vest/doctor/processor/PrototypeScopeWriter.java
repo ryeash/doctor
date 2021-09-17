@@ -1,9 +1,9 @@
 package vest.doctor.processor;
 
-import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.Prototype;
-import vest.doctor.ProviderDefinition;
-import vest.doctor.ScopeWriter;
+import vest.doctor.processing.AnnotationProcessorContext;
+import vest.doctor.processing.ProviderDefinition;
+import vest.doctor.processing.ScopeWriter;
 
 import java.lang.annotation.Annotation;
 

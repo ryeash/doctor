@@ -1,9 +1,9 @@
 package vest.doctor.processor;
 
 import jakarta.inject.Provider;
-import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.StringConversionGenerator;
 import vest.doctor.codegen.ProcessorUtils;
+import vest.doctor.processing.AnnotationProcessorContext;
+import vest.doctor.processing.StringConversionGenerator;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;

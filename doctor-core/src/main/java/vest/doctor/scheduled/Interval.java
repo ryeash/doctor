@@ -34,10 +34,6 @@ public class Interval {
 
     private static final Pattern INTERVAL_REGEX = Pattern.compile("^([0-9]+)\\s*([a-zA-Z]+)?");
 
-    public static boolean matches(String intervalString) {
-        return INTERVAL_REGEX.matcher(intervalString).matches();
-    }
-
     private final long magnitude;
     private final TimeUnit unit;
 

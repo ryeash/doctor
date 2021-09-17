@@ -11,6 +11,7 @@ import vest.doctor.DoctorProvider;
 import vest.doctor.ProviderRegistry;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 @Singleton
 public class TCProviderInject {
@@ -21,12 +22,14 @@ public class TCProviderInject {
                             @Named("pourOver") Provider<CoffeeMaker> pourOverProvider,
                             @Named("pourOver") DoctorProvider<CoffeeMaker> pourOverDoctorProvider,
                             List<CoffeeMaker> coffeeMakers,
+                            Stream<CoffeeMaker> coffeeMakerStream,
                             CoffeeMaker[] coffeeMakersArr) {
         Assert.assertEquals(coffeeMakerProvider.get().brew(), "french pressing");
         Assert.assertEquals(coffeeMakerDoctorProvider.get().brew(), "french pressing");
         Assert.assertEquals(pourOverProvider.get().brew(), "pouring over");
         Assert.assertEquals(pourOverDoctorProvider.get().brew(), "pouring over");
         Assert.assertEquals(coffeeMakers.size(), 4);
+        Assert.assertEquals(coffeeMakerStream.count(), 4L);
         Assert.assertEquals(coffeeMakersArr.length, 4);
     }
 

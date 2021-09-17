@@ -1,4 +1,6 @@
-package vest.doctor;
+package vest.doctor.processing;
+
+import vest.doctor.Prioritized;
 
 /**
  * Base marker class for the customizations used by the {@link AnnotationProcessorContext} implementation.

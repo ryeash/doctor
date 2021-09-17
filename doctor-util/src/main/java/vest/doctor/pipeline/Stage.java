@@ -1,5 +1,6 @@
 package vest.doctor.pipeline;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
@@ -49,4 +50,10 @@ public interface Stage<IN, OUT> extends Flow.Subscription, Flow.Processor<IN, OU
      * @return the optional upstream stage
      */
     Optional<Stage<?, IN>> upstream();
+
+    Map<String, Object> attributes();
+
+    <T> T attribute(String name);
+
+    void attribute(String name, Object value);
 }

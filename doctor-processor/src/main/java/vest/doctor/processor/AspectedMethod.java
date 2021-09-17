@@ -1,7 +1,5 @@
 package vest.doctor.processor;
 
-import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.ProviderDefinition;
 import vest.doctor.aop.Aspect;
 import vest.doctor.aop.AspectCoordinator;
 import vest.doctor.aop.Aspects;
@@ -13,6 +11,8 @@ import vest.doctor.codegen.Constants;
 import vest.doctor.codegen.GenericInfo;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
+import vest.doctor.processing.AnnotationProcessorContext;
+import vest.doctor.processing.ProviderDefinition;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;

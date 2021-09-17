@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 /**
  * Information about the type of a parameter or field.
  */
-public class TypeInfo {
+public final class TypeInfo {
     private final Class<?> rawType;
     private final List<TypeInfo> parameterTypes;
 

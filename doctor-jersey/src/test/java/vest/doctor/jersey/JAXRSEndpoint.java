@@ -1,6 +1,7 @@
 package vest.doctor.jersey;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
+import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,19 +29,19 @@ import vest.doctor.ProviderRegistry;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 @Singleton
 @Path("/jaxrs")
 public class JAXRSEndpoint {
 
-    private final ExecutorService background = Executors.newFixedThreadPool(3);
-
     @GET
     @Path("/get")
     public String get(@Context HttpServletRequest request,
-                      @Provided ProviderRegistry providerRegistry) {
+                      @Provided ProviderRegistry providerRegistry,
+                      @Attribute("start") long start) {
+        Assert.assertNotNull(request);
+        Assert.assertTrue(start > 0);
         Assert.assertNotNull(providerRegistry);
         return "ok";
     }
@@ -61,7 +62,9 @@ public class JAXRSEndpoint {
 
     @GET
     @Path("/async")
-    public void async(@Suspended AsyncResponse ar) {
+    public void async(@Suspended AsyncResponse ar,
+                      @Provided @Named("default") ExecutorService executorService) {
+        Assert.assertNotNull(executorService);
         CompletableFuture.supplyAsync(() -> {
                     try {
                         TimeUnit.MILLISECONDS.sleep(100);
@@ -69,7 +72,7 @@ public class JAXRSEndpoint {
                         e.printStackTrace();
                     }
                     return "async";
-                }, background)
+                }, executorService)
                 .thenApply(Response.ok()::entity)
                 .thenApply(Response.ResponseBuilder::build)
                 .thenAccept(ar::resume);

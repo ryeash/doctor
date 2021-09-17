@@ -1,4 +1,6 @@
-package vest.doctor;
+package vest.doctor.processing;
+
+import vest.doctor.ProviderRegistry;
 
 import javax.annotation.processing.Filer;
 import javax.annotation.processing.Messager;

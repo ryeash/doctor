@@ -46,18 +46,18 @@ public abstract class AbstractWebsocket implements Websocket {
      */
     @Override
     public final void onMessage(ChannelHandlerContext ctx, WebSocketFrame frame) throws Exception {
-        if (frame instanceof TextWebSocketFrame) {
-            onTextMessage(ctx, ((TextWebSocketFrame) frame));
-        } else if (frame instanceof BinaryWebSocketFrame) {
-            onBinaryMessage(ctx, (BinaryWebSocketFrame) frame);
-        } else if (frame instanceof ContinuationWebSocketFrame) {
-            onContinuationMessage(ctx, (ContinuationWebSocketFrame) frame);
-        } else if (frame instanceof PingWebSocketFrame) {
-            onPingMessage(ctx, (PingWebSocketFrame) frame);
-        } else if (frame instanceof PongWebSocketFrame) {
-            onPongMessage(ctx, (PongWebSocketFrame) frame);
-        } else if (frame instanceof CloseWebSocketFrame) {
-            onCloseMessage(ctx, (CloseWebSocketFrame) frame);
+        if (frame instanceof TextWebSocketFrame text) {
+            onTextMessage(ctx, text);
+        } else if (frame instanceof BinaryWebSocketFrame binary) {
+            onBinaryMessage(ctx, binary);
+        } else if (frame instanceof ContinuationWebSocketFrame cont) {
+            onContinuationMessage(ctx, cont);
+        } else if (frame instanceof PingWebSocketFrame ping) {
+            onPingMessage(ctx, ping);
+        } else if (frame instanceof PongWebSocketFrame pong) {
+            onPongMessage(ctx, pong);
+        } else if (frame instanceof CloseWebSocketFrame close) {
+            onCloseMessage(ctx, close);
         } else {
             throw new IllegalArgumentException("unsupported websocket frame: " + frame);
         }

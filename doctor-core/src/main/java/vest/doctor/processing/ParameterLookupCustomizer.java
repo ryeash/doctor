@@ -1,4 +1,7 @@
-package vest.doctor;
+package vest.doctor.processing;
+
+import vest.doctor.Prioritized;
+import vest.doctor.ProviderRegistry;
 
 import javax.lang.model.element.VariableElement;
 

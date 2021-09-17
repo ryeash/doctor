@@ -1,4 +1,4 @@
-package vest.doctor;
+package vest.doctor.processing;
 
 /**
  * Notified for each {@link ProviderDefinition} that is created during annotation processing.

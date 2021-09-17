@@ -1,5 +1,6 @@
 package vest.doctor.pipeline;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
@@ -82,8 +83,8 @@ public abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
         if (downstream != null) {
             throw new IllegalStateException("this stage has already been subscribed");
         }
-        if (subscriber instanceof Stage) {
-            downstream = (Stage<OUT, ?>) subscriber;
+        if (subscriber instanceof Stage stage) {
+            downstream = stage;
         } else {
             downstream = new SubscriberToStage<>(this, subscriber);
         }
@@ -108,5 +109,20 @@ public abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
     @Override
     public Optional<Stage<?, IN>> upstream() {
         return Optional.ofNullable(upstream);
+    }
+
+    @Override
+    public Map<String, Object> attributes() {
+        return upstream.attributes();
+    }
+
+    @Override
+    public <T> T attribute(String name) {
+        return upstream.attribute(name);
+    }
+
+    @Override
+    public void attribute(String name, Object value) {
+        upstream.attribute(name, value);
     }
 }

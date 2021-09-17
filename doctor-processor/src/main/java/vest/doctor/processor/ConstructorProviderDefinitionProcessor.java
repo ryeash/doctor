@@ -1,10 +1,10 @@
 package vest.doctor.processor;
 
-import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.CodeProcessingException;
-import vest.doctor.ProviderDefinition;
-import vest.doctor.ProviderDefinitionProcessor;
 import vest.doctor.codegen.ProcessorUtils;
+import vest.doctor.processing.AnnotationProcessorContext;
+import vest.doctor.processing.CodeProcessingException;
+import vest.doctor.processing.ProviderDefinition;
+import vest.doctor.processing.ProviderDefinitionProcessor;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;

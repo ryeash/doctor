@@ -4,10 +4,10 @@ import jakarta.inject.Named;
 import jakarta.inject.Provider;
 import jakarta.inject.Qualifier;
 import jakarta.inject.Scope;
-import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.CodeProcessingException;
-import vest.doctor.ProviderDefinition;
-import vest.doctor.ProviderDependency;
+import vest.doctor.processing.AnnotationProcessorContext;
+import vest.doctor.processing.CodeProcessingException;
+import vest.doctor.processing.ProviderDefinition;
+import vest.doctor.processing.ProviderDependency;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
@@ -361,7 +361,7 @@ public class ProcessorUtils {
 
             if (ProcessorUtils.isCompatibleWith(context, typeElement, Stream.class)) {
                 TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
-                return getProvidersCode(typeMirror, qualifier, providerRegistryRef);
+                return getProvidersCode(typeMirror, qualifier, providerRegistryRef) + ".map(" + Provider.class.getCanonicalName() + "::get)";
             }
 
             if (variableElement.asType().getKind() == TypeKind.ARRAY) {

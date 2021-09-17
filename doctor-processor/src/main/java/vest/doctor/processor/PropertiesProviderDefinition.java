@@ -1,7 +1,5 @@
 package vest.doctor.processor;
 
-import vest.doctor.AnnotationProcessorContext;
-import vest.doctor.CodeProcessingException;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.Properties;
 import vest.doctor.Property;
@@ -9,6 +7,8 @@ import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
+import vest.doctor.processing.AnnotationProcessorContext;
+import vest.doctor.processing.CodeProcessingException;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;

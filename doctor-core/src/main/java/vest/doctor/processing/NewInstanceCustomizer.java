@@ -1,6 +1,8 @@
-package vest.doctor;
+package vest.doctor.processing;
 
 import jakarta.inject.Provider;
+import vest.doctor.Prioritized;
+import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.MethodBuilder;
 
 /**

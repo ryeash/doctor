@@ -4,14 +4,9 @@ import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
-import vest.doctor.AnnotationProcessorContext;
 import vest.doctor.ApplicationLoader;
-import vest.doctor.CodeProcessingException;
 import vest.doctor.ExplicitProvidedTypes;
-import vest.doctor.ProviderDefinition;
-import vest.doctor.ProviderDefinitionListener;
 import vest.doctor.ProviderRegistry;
-import vest.doctor.StringConversionGenerator;
 import vest.doctor.TypeInfo;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.Constants;
@@ -23,6 +18,11 @@ import vest.doctor.http.server.Handler;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.impl.Router;
+import vest.doctor.processing.AnnotationProcessorContext;
+import vest.doctor.processing.CodeProcessingException;
+import vest.doctor.processing.ProviderDefinition;
+import vest.doctor.processing.ProviderDefinitionListener;
+import vest.doctor.processing.StringConversionGenerator;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -125,9 +126,12 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                 .setClassName(qualifiedClassName)
                 .addImplementsInterface(EndpointLoader.class)
                 .addImportClass(CompletableFuture.class)
+                .addImportClass(CompletionStage.class)
                 .addImportClass(BodyInterchange.class)
+                .addImportClass(EndpointLinker.class)
                 .addImportClass(EndpointLoader.class)
                 .addImportClass(ProviderRegistry.class)
+                .addImportClass(Optional.class)
                 .addImportClass(Request.class)
                 .addImportClass(Response.class)
                 .addImportClass(Router.class)
@@ -172,43 +176,42 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                                  String path,
                                  String endpointRef,
                                  ExecutableElement method) {
+        boolean isVoid = method.getReturnType().getKind() == TypeKind.VOID;
+        boolean bodyFuture = isBodyFuture(context, method);
+        boolean completableResponse = ProcessorUtils.isCompatibleWith(context, method.getReturnType(), CompletableFuture.class);
+
+        String summary = method.getEnclosingElement().asType() + "#" + method.getSimpleName();
+        initialize.line("router.route(\"",
+                ProcessorUtils.escapeStringForCode(httpMethod), '"',
+                ",\"", ProcessorUtils.escapeStringForCode(path), "\", new EndpointLinker<>(",
+                endpointRef, ',', buildTypeInfoCode(method), ',', "bodyInterchange", ",\"", summary, "\") {");
+        initialize.line("@Override protected CompletionStage<Object> handleWithProvider(", method.getEnclosingElement().asType(), " endpoint, Request request, CompletableFuture<?> body) throws Exception {");
 
         String parameters = method.getParameters().stream()
                 .map(p -> parameterWriting(context, p, "request"))
-                .collect(Collectors.joining(", ", "(", ")"));
-
-        boolean isVoid = method.getReturnType().getKind() == TypeKind.VOID;
-        boolean bodyFuture = isBodyFuture(context, method);
-        boolean completableResponse = returnsCompletableResponse(context, method);
-
-        String callMethod = endpointRef + ".get()." + method.getSimpleName() + parameters + ";";
-
-        initialize.line("router.route(\"",
-                ProcessorUtils.escapeStringForCode(httpMethod), '"',
-                ",\"", ProcessorUtils.escapeStringForCode(path), "\", request -> {");
-        initialize.line("TypeInfo typeInfo = ", buildTypeInfoCode(method), ';');
+                .collect(Collectors.joining(",\n", "(", ")"));
+        String callMethod = "endpoint." + method.getSimpleName() + parameters + ";";
 
         if (bodyFuture) {
-            initialize.line("CompletableFuture<?> body = readFutureBody(request, typeInfo, bodyInterchange);");
+            initialize.line("CompletableFuture<?> b = body;");
         } else {
-            initialize.line("return readFutureBody(request, typeInfo, bodyInterchange)");
-            initialize.line(".thenCompose(body -> {");
+            String chainMethod = completableResponse ? "thenCompose" : "thenApply";
+            initialize.line("return body.", chainMethod, "(b -> {");
         }
 
         if (isVoid) {
             initialize.line(callMethod);
-            initialize.line("return convertResponse(request, null, bodyInterchange);");
+            initialize.line("return null;");
         } else if (completableResponse) {
-            initialize.line("return ", callMethod);
+            initialize.line("return (CompletionStage) ", callMethod);
         } else {
-            initialize.line("Object result = ", callMethod);
-            initialize.line("return convertResponse(request, result, bodyInterchange);");
+            initialize.line("return ", callMethod);
         }
 
         if (!bodyFuture) {
             initialize.line("});");
         }
-
+        initialize.line("}");
         initialize.line("});");
     }
 
@@ -222,19 +225,10 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         return false;
     }
 
-    private static boolean returnsCompletableResponse(AnnotationProcessorContext context, ExecutableElement method) {
-        if (ProcessorUtils.isCompatibleWith(context, method.getReturnType(), CompletableFuture.class)) {
-            return GenericInfo.firstParameterizedType(method.getReturnType())
-                    .map(tm -> ProcessorUtils.isCompatibleWith(context, tm, Response.class))
-                    .orElse(false);
-        }
-        return false;
-    }
-
     private static final List<Class<? extends Annotation>> SUPPORTED_PARAMS = List.of(Body.class, Attribute.class, PathParam.class, QueryParam.class, HeaderParam.class, CookieParam.class, BeanParam.class);
     private static final List<Class<?>> SUPPORTED_CLASSES = List.of(Request.class, URI.class);
 
-    public static String parameterWriting(AnnotationProcessorContext context, VariableElement parameter, String contextRef) {
+    private static String parameterWriting(AnnotationProcessorContext context, VariableElement parameter, String contextRef) {
         try {
             return parameterWriting(context, parameter, parameter, contextRef);
         } catch (Throwable t) {
@@ -248,10 +242,10 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         } else if (parameter.asType().toString().equals(URI.class.getCanonicalName())) {
             return contextRef + ".uri()";
         } else if (annotationSource.getAnnotation(Body.class) != null) {
-            return "(" + parameter.asType() + ") body";
+            return "(" + parameter.asType() + ") b";
         } else if (annotationSource.getAnnotation(Attribute.class) != null) {
             String name = annotationSource.getAnnotation(Attribute.class).value();
-            return "(" + parameter.asType() + ") " + contextRef + ".attribute(\"" + name + "\")";
+            return contextRef + ".attribute(\"" + name + "\")";
         } else if (annotationSource.getAnnotation(BeanParam.class) != null) {
             return beanParameterCode(context, parameter, contextRef);
         } else if (annotationSource.getAnnotation(Provided.class) != null) {
@@ -266,7 +260,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("java.util.Optional.ofNullable(");
+        sb.append("Optional.ofNullable(");
 
         if (annotationSource.getAnnotation(PathParam.class) != null) {
             String name = annotationSource.getAnnotation(PathParam.class).value();

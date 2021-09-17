@@ -150,8 +150,7 @@ public class TestAppConfig {
         }
 
         @Override
-        public void close() throws Exception {
-
+        public void close() {
         }
     }
 }

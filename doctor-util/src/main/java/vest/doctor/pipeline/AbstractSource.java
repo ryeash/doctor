@@ -1,6 +1,8 @@
 package vest.doctor.pipeline;
 
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicLong;
@@ -13,6 +15,7 @@ public abstract class AbstractSource<IN> extends AbstractStage<IN, IN> {
     protected ExecutorService executorService;
     protected final AtomicLong requested = new AtomicLong(0);
     protected final AtomicReference<PipelineState> state = new AtomicReference<>(PipelineState.UNSUBSCRIBED);
+    protected final Map<String, Object> attributes = new ConcurrentSkipListMap<>();
 
     public AbstractSource() {
         super(null);
@@ -58,6 +61,22 @@ public abstract class AbstractSource<IN> extends AbstractStage<IN, IN> {
     @Override
     public ExecutorService executorService() {
         return executorService != null ? executorService : Pipeline.COMMON;
+    }
+
+    @Override
+    public Map<String, Object> attributes() {
+        return attributes;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T attribute(String name) {
+        return (T) attributes.get(name);
+    }
+
+    @Override
+    public void attribute(String name, Object value) {
+        attributes.put(name, value);
     }
 
     protected PipelineState state() {
