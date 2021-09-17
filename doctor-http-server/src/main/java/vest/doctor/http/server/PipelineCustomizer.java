@@ -5,7 +5,7 @@ import vest.doctor.Prioritized;
 import vest.doctor.http.server.impl.HttpServerChannelInitializer;
 
 /**
- * A listener that will get notified for various events in the netty http server.
+ * Customizes the channel pipeline used for the netty http channels.
  */
 public interface PipelineCustomizer extends Prioritized {
 
