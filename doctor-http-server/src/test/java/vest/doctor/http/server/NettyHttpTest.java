@@ -60,17 +60,17 @@ public class NettyHttpTest {
                     response.headers().set(HttpHeaderNames.SERVER, "doctor");
                     return response;
                 })
-                .getSync("/", request -> {
+                .getSync("/", (request, body) -> {
                     System.out.println(request);
                     return request.createResponse().body(ResponseBody.of("ok"));
                 })
-                .getSync("/hello/{name}", request -> {
+                .getSync("/hello/{name}", (request, body) -> {
                     Map<String, String> pathParams = request.attribute(Router.PATH_PARAMS);
                     return request.createResponse()
                             .body(ResponseBody.of(pathParams.get("name")));
                 })
-                .getSync("/empty", request -> request.createResponse().body(ResponseBody.empty()))
-                .getSync("/stream", request -> {
+                .getSync("/empty", (request, body) -> request.createResponse().body(ResponseBody.empty()))
+                .getSync("/stream", (request, body) -> {
                     byte[] bytes = new byte[1024];
                     Arrays.fill(bytes, (byte) 'a');
                     return request.createResponse().body(ResponseBody.of(new ByteArrayInputStream(bytes)));
@@ -83,9 +83,9 @@ public class NettyHttpTest {
                     f.completeExceptionally(new RuntimeException("I threw an error"));
                     return f;
                 })
-                .postSync("/readablebody", request ->
+                .postSync("/readablebody", (request, body) ->
                         request.createResponse()
-                                .body(ResponseBody.of(request.body().asString().join())))
+                                .body(ResponseBody.of(body.toString(StandardCharsets.UTF_8))))
                 .post("/", request -> request.body()
                         .asString()
                         .thenApply(ResponseBody::of)

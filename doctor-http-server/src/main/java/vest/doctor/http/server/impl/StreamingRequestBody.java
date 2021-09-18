@@ -1,124 +1,105 @@
 package vest.doctor.http.server.impl;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.util.ReferenceCounted;
 import vest.doctor.http.server.HttpException;
 import vest.doctor.http.server.RequestBody;
 
-import java.util.Optional;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiFunction;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
 /**
  * A handle to the HTTP request body. Supports asynchronously reading the body data.
  */
 public class StreamingRequestBody implements RequestBody {
-    private final CompositeByteBuf composite;
-    private final CompletableFuture<ByteBuf> future = new CompletableFuture<>();
+    private final ByteBufAllocator alloc;
     private final long maxLength;
-    private long size;
+    private final AtomicLong size;
 
-    private CompletableFuture<Object> asyncReadFuture;
-    private BiFunction<ByteBuf, Boolean, ?> dataConsumer;
-    private HttpHeaders trailingHeaders;
+    private volatile CompletableFuture<Object> future;
+    private Function<HttpContent, ?> reader;
+    private final AtomicBoolean finished = new AtomicBoolean(false);
 
-    private volatile boolean closed = false;
-
-    public StreamingRequestBody(CompositeByteBuf compositeByteBuf, long maxLength) {
-        this.composite = compositeByteBuf;
+    public StreamingRequestBody(ChannelHandlerContext ctx, long maxLength) {
+        this.alloc = ctx.alloc();
         this.maxLength = maxLength;
-        this.size = 0;
+        this.size = new AtomicLong(0);
     }
 
     @Override
     public CompletableFuture<ByteBuf> completionFuture() {
-        return future;
+        CompositeByteBuf buf = alloc.compositeBuffer(128);
+        return asyncRead(content -> {
+            if (content.content().isReadable()) {
+                buf.addComponent(true, content.content());
+            }
+            return buf;
+        });
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> CompletableFuture<T> asyncRead(BiFunction<ByteBuf, Boolean, T> reader) {
-        if (this.dataConsumer != null) {
-            throw new IllegalStateException("there is already a data consumer attached to this body");
+    public <T> CompletableFuture<T> asyncRead(Function<HttpContent, T> reader) {
+        if (this.future != null) {
+            throw new IllegalStateException("body is already being consumed");
         }
-        this.asyncReadFuture = new CompletableFuture<>();
-        asyncReadFuture.whenCompleteAsync((v, err) -> composite.release());
-        this.dataConsumer = reader;
-        internalAsyncRead();
-        return (CompletableFuture<T>) asyncReadFuture;
-    }
-
-    private void internalAsyncRead() {
-        if (dataConsumer == null) {
-            return;
-        }
-        synchronized (composite) {
-            try {
-                Object result = dataConsumer.apply(composite, future.isDone());
-                if (composite.refCnt() > 0) {
-                    composite.discardReadComponents();
-                }
-                if (result != null) {
-                    asyncReadFuture.complete(result);
-                }
-            } catch (Throwable t) {
-                future.completeExceptionally(t);
-                if (asyncReadFuture != null) {
-                    asyncReadFuture.completeExceptionally(t);
-                }
-            }
-        }
-    }
-
-    /**
-     * Get the trailing headers attached to the last content. If the body has not been fully read, or there
-     * were no trailing headers, the returned optional will be empty.
-     *
-     * @return the optional trailing headers
-     */
-    public Optional<HttpHeaders> trailingHeaders() {
-        return Optional.ofNullable(trailingHeaders).filter(h -> !h.isEmpty());
+        CompletableFuture<T> future = new CompletableFuture<>();
+        this.future = (CompletableFuture<Object>) future;
+        this.reader = reader;
+        return future;
     }
 
     public void append(HttpContent content) {
         try {
-            if (closed) {
-                content.release();
-                return;
-            }
-            ByteBuf buf = content.content();
-            int readable = buf.readableBytes();
-            if (size + readable >= maxLength) {
-                closed = true;
-                composite.release();
-                throw new HttpException(HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE);
-            }
-            if (readable > 0) {
-                synchronized (composite) {
-                    composite.addComponent(true, buf);
-                    size += readable;
-                    composite.notifyAll();
+            synchronized (finished) {
+                if (finished.get()) {
+                    throw new IllegalStateException("no more content expected for request");
+                }
+                if (size.addAndGet(content.content().readableBytes()) >= maxLength) {
+                    throw new HttpException(HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE);
+                }
+                if (reader != null) {
+                    Object apply = reader.apply(content);
+                    if (content instanceof LastHttpContent) {
+                        finished.set(true);
+                        future.complete(apply);
+                    }
                 }
             }
-
-            if (content instanceof LastHttpContent last) {
-                this.trailingHeaders = last.trailingHeaders();
-                future.complete(composite);
-            }
-            internalAsyncRead();
-        } finally {
-            synchronized (composite) {
-                composite.notifyAll();
-            }
+        } catch (Throwable t) {
+            reader = null;
+            future.completeExceptionally(t);
         }
     }
 
     @Override
-    public String toString() {
-        return "StreamingBody{" + composite + ", done?:" + future.isDone() + "}";
+    public CompletableFuture<String> asString() {
+        return completionFuture()
+                .thenApply(buf -> {
+                    try {
+                        return buf.toString(StandardCharsets.UTF_8);
+                    } finally {
+                        buf.release();
+                    }
+                });
+    }
+
+    @Override
+    public CompletableFuture<Void> ignored() {
+        return asyncRead(ReferenceCounted::release).thenApply(b -> null);
+    }
+
+    @Override
+    public boolean readerAttached() {
+        return future != null;
     }
 }

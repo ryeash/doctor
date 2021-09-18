@@ -1,5 +1,7 @@
 package vest.doctor.http.server;
 
+import io.netty.buffer.ByteBuf;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -11,9 +13,16 @@ public interface SynchronousHandler extends Handler {
 
     @Override
     default CompletionStage<Response> handle(Request request) {
-        return request.body()
-                .completionFuture()
-                .thenCombineAsync(CompletableFuture.completedFuture(request), (body, req) -> handleSync(req), request.pool());
+        CompletableFuture<ByteBuf> futureBody = request.body().completionFuture();
+        return futureBody.thenCombineAsync(CompletableFuture.completedFuture(request), (body, req) -> {
+            try {
+                return handleSync(req, body);
+            } finally {
+                if (body.refCnt() > 0) {
+                    body.release();
+                }
+            }
+        }, request.pool());
     }
 
     /**
@@ -22,5 +31,5 @@ public interface SynchronousHandler extends Handler {
      * @param request the request
      * @return a {@link Response}
      */
-    Response handleSync(Request request);
+    Response handleSync(Request request, ByteBuf body);
 }

@@ -58,6 +58,22 @@ public final class TypeInfo {
         return parameterTypes != null && !parameterTypes.isEmpty();
     }
 
+    public boolean matches(Class<?> type, Class<?>... parameterTypes) {
+        if (type.isAssignableFrom(rawType)) {
+            if (this.parameterTypes.size() == parameterTypes.length) {
+                for (int i = 0; i < this.parameterTypes.size(); i++) {
+                    Class<?> t = parameterTypes[i];
+                    Class<?> compare = this.parameterTypes.get(i).rawType;
+                    if (!t.isAssignableFrom(compare)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder(rawType.getName());

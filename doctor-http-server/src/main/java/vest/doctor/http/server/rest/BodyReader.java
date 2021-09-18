@@ -13,6 +13,8 @@ public interface BodyReader extends Prioritized {
 
     /**
      * Determine if this reader instance can deserialize the expected object from the http body.
+     * If this method returns true, the {@link #read(Request, TypeInfo)} method will be called to
+     * deserialize the request body data.
      *
      * @param request  the request context
      * @param typeInfo information about the target type for the deserialized data

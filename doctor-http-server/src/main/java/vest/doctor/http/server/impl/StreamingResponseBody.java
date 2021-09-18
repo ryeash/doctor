@@ -38,7 +38,7 @@ public class StreamingResponseBody implements ResponseBody {
     private void close(Future<?> future) {
         try {
             closeable.close();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             // ignored
         }
     }

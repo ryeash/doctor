@@ -257,6 +257,7 @@ public class NettyTest extends Assert {
     @Test
     public void futureResponse() {
         req()
+                .body("response")
                 .get("/netty/fullresponse")
                 .then()
                 .statusCode(200)
@@ -271,11 +272,6 @@ public class NettyTest extends Assert {
                 .statusCode(200)
                 .body(equalTo("rawhandler"));
     }
-
-//    @Test
-//    public void waitAReallyLongTIme() throws InterruptedException {
-//        Thread.sleep(1000000);
-//    }
 
     @Test
     public void ws() throws Exception {

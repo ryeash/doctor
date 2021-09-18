@@ -21,20 +21,30 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class DefaultReaderWriter implements BodyReader, BodyWriter {
 
+    private final List<Class<?>> SUPPORTED_TYPES = List.of(
+            ByteBuf.class,
+            RequestBody.class,
+            InputStream.class,
+            byte[].class,
+            CharSequence.class,
+            ByteBuffer.class,
+            MultiPartData.class);
+
     @Override
     public boolean canRead(Request request, TypeInfo typeInfo) {
         Class<?> rawType = typeInfo.getRawType();
-        return ByteBuf.class.isAssignableFrom(rawType)
-                || RequestBody.class.isAssignableFrom(rawType)
-                || InputStream.class.isAssignableFrom(rawType)
-                || byte[].class.isAssignableFrom(rawType)
-                || CharSequence.class.isAssignableFrom(rawType)
-                || ByteBuffer.class.isAssignableFrom(rawType)
-                || MultiPartData.class.isAssignableFrom(rawType);
+        for (Class<?> supportedType : SUPPORTED_TYPES) {
+            if (supportedType.isAssignableFrom(rawType)) {
+                return true;
+            }
+        }
+        return CompletableFuture.class.isAssignableFrom(rawType)
+                && canRead(request, typeInfo.getParameterTypes().get(0));
     }
 
     @Override
@@ -45,15 +55,15 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
 
     private Object convertStandard(Request request, TypeInfo typeInfo) {
         Class<?> rawType = typeInfo.getRawType();
-        if (ByteBuf.class.isAssignableFrom(rawType)) {
+        if (typeInfo.matches(ByteBuf.class)) {
             return request.body().completionFuture();
-        } else if (RequestBody.class.isAssignableFrom(rawType)) {
+        } else if (typeInfo.matches(RequestBody.class)) {
             return CompletableFuture.completedFuture(request.body());
-        } else if (InputStream.class.isAssignableFrom(rawType)) {
+        } else if (typeInfo.matches(InputStream.class)) {
             return request.body()
                     .completionFuture()
                     .thenApply(ByteBufInputStream::new);
-        } else if (byte[].class.isAssignableFrom(rawType)) {
+        } else if (typeInfo.matches(byte[].class)) {
             return request.body()
                     .completionFuture()
                     .thenApply(buf -> {
@@ -61,16 +71,20 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
                         buf.readBytes(bytes);
                         return bytes;
                     });
-        } else if (CharSequence.class.isAssignableFrom(rawType)) {
+        } else if (typeInfo.matches(CharSequence.class)) {
             return request.body().asString();
-        } else if (ByteBuffer.class.isAssignableFrom(rawType)) {
+        } else if (typeInfo.matches(ByteBuffer.class)) {
             return request.body()
                     .completionFuture()
                     .thenApply(ByteBuf::nioBuffer);
-        } else if (MultiPartData.class.isAssignableFrom(rawType)) {
+        } else if (typeInfo.matches(MultiPartData.class)) {
             return CompletableFuture.completedFuture(request.multiPartBody());
+        } else if (CompletableFuture.class.isAssignableFrom(rawType)) {
+            return convertStandard(request, typeInfo.getParameterTypes().get(0));
         } else {
-            throw new UnsupportedOperationException();
+            CompletableFuture<?> future = new CompletableFuture<>();
+            future.completeExceptionally(new UnsupportedOperationException("parameter type is not supported: " + typeInfo));
+            return future;
         }
     }
 

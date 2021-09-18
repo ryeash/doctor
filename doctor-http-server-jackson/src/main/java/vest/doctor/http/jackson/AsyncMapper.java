@@ -6,6 +6,8 @@ import com.fasterxml.jackson.core.async.ByteArrayFeeder;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.LastHttpContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +50,9 @@ class AsyncMapper<T> {
         stack = new LinkedList<>();
     }
 
-    public T feed(ByteBuf buf, boolean finished) {
+    public T feed(HttpContent content) {
+        boolean finished = content instanceof LastHttpContent;
+        ByteBuf buf = content.content();
         byte[] b = new byte[1024];
         T result = null;
         while (buf.readableBytes() > 0) {

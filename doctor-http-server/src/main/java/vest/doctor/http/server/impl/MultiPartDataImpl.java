@@ -2,7 +2,7 @@ package vest.doctor.http.server.impl;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.handler.codec.http.DefaultHttpContent;
+import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.LastHttpContent;
@@ -14,7 +14,6 @@ import vest.doctor.http.server.HttpException;
 import vest.doctor.http.server.MultiPartData;
 import vest.doctor.http.server.RequestBody;
 
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
@@ -47,7 +46,7 @@ class MultiPartDataImpl implements MultiPartData {
         this.consumer = consumer;
 
         if (valid) {
-            return body.asyncRead(this::nextData);
+            return body.asyncRead(this::nextData).thenApply(o -> true);
         } else {
             CompletableFuture<Boolean> future = new CompletableFuture<>();
             future.completeExceptionally(new HttpException(HttpResponseStatus.BAD_REQUEST, "expecting a multipart request"));
@@ -55,12 +54,9 @@ class MultiPartDataImpl implements MultiPartData {
         }
     }
 
-    private Boolean nextData(ByteBuf buf, boolean finished) {
+    private Object nextData(HttpContent content) {
         try {
-            decoder.offer(new DefaultHttpContent(buf));
-            if (finished) {
-                decoder.offer(LastHttpContent.EMPTY_LAST_CONTENT);
-            }
+            decoder.offer(content);
             InterfaceHttpData next;
             while ((next = decoder.next()) != null) {
                 String type = next.getHttpDataType().name();
@@ -83,11 +79,11 @@ class MultiPartDataImpl implements MultiPartData {
             decoder.destroy();
             throw t;
         } finally {
-            if (finished) {
+            if (content instanceof LastHttpContent) {
                 decoder.destroy();
             }
         }
-        return finished ? true : null;
+        return null;
     }
 
     @Override
@@ -95,42 +91,6 @@ class MultiPartDataImpl implements MultiPartData {
         return "MultiPartData{consuming=" + (consumer != null) + ", " + '}';
     }
 
-    private static final class PartImpl implements Part {
-        private final String type;
-        private final String name;
-        private final ByteBuf data;
-        private final boolean last;
-
-        public PartImpl(String type, String name, ByteBuf data, boolean last) {
-            this.type = type;
-            this.name = name;
-            this.data = data;
-            this.last = last;
-        }
-
-        public String getType() {
-            return type;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public ByteBuf getData() {
-            return data;
-        }
-
-        public boolean isLast() {
-            return last;
-        }
-
-        @Override
-        public String toString() {
-            return "Part{" +
-                    "type='" + type + '\'' +
-                    ", name='" + name + '\'' +
-                    ", data=" + data.toString(StandardCharsets.UTF_8) +
-                    '}';
-        }
+    private record PartImpl(String type, String name, ByteBuf data, boolean last) implements Part {
     }
 }

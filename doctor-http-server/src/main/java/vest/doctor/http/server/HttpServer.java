@@ -124,7 +124,7 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
                     return;
                 }
 
-                StreamingRequestBody body = new StreamingRequestBody(ctx.alloc().compositeBuffer(128), config.getMaxContentLength());
+                StreamingRequestBody body = new StreamingRequestBody(ctx, config.getMaxContentLength());
                 ctx.channel().attr(CONTEXT_BODY).set(body);
                 ServerRequest req = new ServerRequest(request, ctx, workerGroup, body);
                 try {

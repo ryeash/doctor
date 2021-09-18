@@ -143,9 +143,9 @@ public class TCNettyEndpoint {
 
     @GET
     @Path("/fullresponse")
-    public CompletableFuture<Response> responder(Request request) {
-        return request.body()
-                .completionFuture()
-                .thenApplyAsync(v -> request.createResponse().body(ResponseBody.of("response")));
+    public CompletableFuture<Response> responder(Response response, @Body CompletableFuture<String> body) {
+        return body
+                .thenApply(ResponseBody::of)
+                .thenApplyAsync(response::body);
     }
 }

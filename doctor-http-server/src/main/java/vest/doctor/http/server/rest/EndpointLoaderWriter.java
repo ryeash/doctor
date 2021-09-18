@@ -239,6 +239,8 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
     private static String parameterWriting(AnnotationProcessorContext context, VariableElement parameter, Element annotationSource, String contextRef) {
         if (parameter.asType().toString().equals(Request.class.getCanonicalName())) {
             return contextRef;
+        } else if (parameter.asType().toString().equals(Response.class.getCanonicalName())) {
+            return contextRef + ".createResponse()";
         } else if (parameter.asType().toString().equals(URI.class.getCanonicalName())) {
             return contextRef + ".uri()";
         } else if (annotationSource.getAnnotation(Body.class) != null) {

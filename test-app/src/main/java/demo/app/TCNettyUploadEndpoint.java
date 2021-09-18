@@ -22,7 +22,7 @@ public class TCNettyUploadEndpoint {
     public CompletableFuture<?> upload(Request request, @Body MultiPartData body) {
         log.info("{}", request);
         return body.receive(part -> {
-            log.info("{} {} {}", part.getType(), part.getName(), part.getData().toString(StandardCharsets.UTF_8));
+            log.info("{} {} {}", part.type(), part.name(), part.data().toString(StandardCharsets.UTF_8));
         });
     }
 

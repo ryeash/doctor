@@ -31,22 +31,22 @@ public interface MultiPartData {
         /**
          * The type of the part, one of: FileUpload, Attribute, or InternalAttribute.
          */
-        String getType();
+        String type();
 
         /**
          * The name of the part.
          */
-        String getName();
+        String name();
 
         /**
          * Get the byte data for the part.
          */
-        ByteBuf getData();
+        ByteBuf data();
 
         /**
          * If this is the last part that will be received. When true, no further
          * Parts will be read, and type, name and data will all be empty.
          */
-        boolean isLast();
+        boolean last();
     }
 }
