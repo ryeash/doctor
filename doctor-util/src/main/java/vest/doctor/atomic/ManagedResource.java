@@ -30,7 +30,7 @@ public interface ManagedResource<R> {
     /**
      * Create a new {@link ManagedResource} for which borrow actions will be given
      * shared access to the borrowed resource that is potentially being used concurrently
-     * by up to <code>concurrentLimit</code> threads.
+     * by up to <code>concurrentLimit</code> other actions.
      *
      * @param concurrentLimit the maximum number of threads that will be allowed to borrow
      *                        the resource concurrently
