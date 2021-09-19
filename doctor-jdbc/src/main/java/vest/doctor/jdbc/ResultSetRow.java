@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -222,7 +223,7 @@ public class ResultSetRow implements Row {
 
     @Override
     public Collection<String> columnNames() {
-        return columnMap.keySet();
+        return Collections.unmodifiableSet(columnMap.keySet());
     }
 
     @Override

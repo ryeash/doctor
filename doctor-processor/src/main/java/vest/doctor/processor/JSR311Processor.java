@@ -93,6 +93,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     private MethodBuilder stage5;
 
     private final Map<Class<?>, Collection<String>> serviceImplementations = new HashMap<>();
+    private final DependencyGraph graph = new DependencyGraph();
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -176,7 +177,6 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 if (provDef != null) {
                     errorChecking(provDef);
                     claimed = true;
-                    typesToDependencies.computeIfAbsent(provDef.asDependency(), d -> new HashSet<>());
                     providerDefinitions.add(provDef);
                     for (ProviderDefinitionListener providerDefinitionListener : customizations(ProviderDefinitionListener.class)) {
                         providerDefinitionListener.process(this, provDef);
@@ -242,17 +242,9 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
         return idGenerator.incrementAndGet();
     }
 
-    private final Map<ProviderDependency, Set<ProviderDependency>> typesToDependencies = new HashMap<>();
-
     @Override
     public void registerDependency(ProviderDependency target, ProviderDependency dependency) {
-        if (target == null) {
-            throw new CodeProcessingException("cannot register dependency for null target");
-        }
-        if (dependency == null) {
-            throw new CodeProcessingException("cannot register null dependency for " + target);
-        }
-        typesToDependencies.computeIfAbsent(target, t -> new HashSet<>()).add(dependency);
+        graph.registerDependency(target, dependency);
     }
 
     @Override
@@ -370,7 +362,8 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
     }
 
     private void compileTimeDependencyCheck() {
-        for (Map.Entry<ProviderDependency, Set<ProviderDependency>> entry : typesToDependencies.entrySet()) {
+        // missing provider check
+        for (Map.Entry<ProviderDependency, Set<ProviderDependency>> entry : graph.getMap().entrySet()) {
             ProviderDependency target = entry.getKey();
             for (ProviderDependency dependency : entry.getValue()) {
                 if (dependency != null && dependency.required() && !isProvided(dependency)) {
