@@ -42,7 +42,7 @@ public final record PipelineSubscription<I, O>(CompletableFuture<O> future, Stag
     }
 
     /**
-     * Call{@link Stage#cancel()} on the subscribed pipeline.
+     * Call {@link Stage#cancel()} on the subscribed pipeline.
      *
      * @return this subscription
      */

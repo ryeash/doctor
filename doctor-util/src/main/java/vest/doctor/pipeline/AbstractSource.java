@@ -86,7 +86,7 @@ public abstract class AbstractSource<IN> extends AbstractStage<IN, IN> {
 
     protected void stateCheck(PipelineState expected) {
         if (state.get() != expected) {
-            throw new IllegalStateException("state was not expected " + state.get() + " != " + expected);
+            throw new IllegalStateException("state check failed: " + state.get() + " != " + expected);
         }
     }
 

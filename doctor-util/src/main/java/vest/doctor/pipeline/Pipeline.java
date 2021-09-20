@@ -545,8 +545,9 @@ public final class Pipeline<I, O> {
      * @return this builder
      */
     public Pipeline<I, O> attachFuture(Consumer<CompletableFuture<O>> futureTask) {
-        CompletionListenerStage<O> f = new CompletionListenerStage<>(stage);
-        futureTask.accept(f.future());
+        CompletableFuture<O> future = new CompletableFuture<>();
+        CompletionListenerStage<O> f = new CompletionListenerStage<>(stage, future);
+        futureTask.accept(future);
         return chain(f);
     }
 
@@ -587,13 +588,14 @@ public final class Pipeline<I, O> {
      * @return a {@link PipelineSubscription} attached to the pipeline
      */
     public PipelineSubscription<I, O> subscribe(long initialRequestCount, ExecutorService executorService) {
-        CompletionListenerStage<O> listener = new CompletionListenerStage<>(stage);
+        CompletableFuture<O> future = new CompletableFuture<>();
+        CompletionListenerStage<O> listener = new CompletionListenerStage<>(stage, future);
         Stage<I, O> agg = chain(listener).toStage();
         agg.executor(Objects.requireNonNull(executorService));
         agg.onSubscribe(agg);
         agg.request(initialRequestCount);
         markSubscribed();
-        return new PipelineSubscription<>(listener.future(), agg);
+        return new PipelineSubscription<>(future, agg);
     }
 
     /**

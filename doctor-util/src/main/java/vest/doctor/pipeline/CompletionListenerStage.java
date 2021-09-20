@@ -6,10 +6,11 @@ import java.util.concurrent.atomic.AtomicReference;
 final class CompletionListenerStage<IN> extends AbstractStage<IN, IN> {
 
     private final AtomicReference<IN> lastVal = new AtomicReference<>();
-    private final CompletableFuture<IN> future = new CompletableFuture<>();
+    private final CompletableFuture<IN> future;
 
-    public CompletionListenerStage(Stage<?, IN> upstream) {
+    public CompletionListenerStage(Stage<?, IN> upstream, CompletableFuture<IN> future) {
         super(upstream);
+        this.future = future;
     }
 
     @Override

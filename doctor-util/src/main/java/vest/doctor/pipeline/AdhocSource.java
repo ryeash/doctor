@@ -2,6 +2,7 @@ package vest.doctor.pipeline;
 
 class AdhocSource<IN> extends AbstractSource<IN> {
 
+
     @Override
     protected void handleItem(IN value) {
         stateCheck(PipelineState.SUBSCRIBED);
