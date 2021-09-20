@@ -31,6 +31,7 @@ final class CompletionListenerStage<IN> extends AbstractStage<IN, IN> {
     @Override
     public void onError(Throwable throwable) {
         future.completeExceptionally(throwable);
+        cancel();
     }
 
     public CompletableFuture<IN> future() {

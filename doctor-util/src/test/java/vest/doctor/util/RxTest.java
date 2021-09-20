@@ -2,14 +2,15 @@ package vest.doctor.util;
 
 import org.testng.annotations.Test;
 import vest.doctor.pipeline.Pipeline;
-import vest.doctor.pipeline.Stage;
 import vest.doctor.tuple.Tuple2;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -23,21 +24,24 @@ public class RxTest extends BaseUtilTest {
     public void basicObserve() {
         Pipeline.iterate(strings)
                 .observe(expect(5, (it, string) -> assertEquals(string, strings.get(it))))
-                .subscribeJoin();
+                .subscribe()
+                .join();
     }
 
     public void basicMap() {
         Pipeline.iterate(strings)
                 .map(String::length)
                 .observe(expect(5, (it, length) -> assertEquals((int) length, strings.get(it).length())))
-                .subscribeJoin();
+                .subscribe()
+                .join();
     }
 
     public void futureMap() {
         Pipeline.iterate(strings)
                 .mapFuture(s -> CompletableFuture.completedFuture(s.length()))
                 .observe(expect(5, (it, length) -> assertEquals((int) length, strings.get(it).length())))
-                .subscribeJoin();
+                .subscribe()
+                .join();
     }
 
     public void basicFlatMap() {
@@ -45,7 +49,8 @@ public class RxTest extends BaseUtilTest {
         Pipeline.of(test)
                 .flatMap(string -> string.chars().mapToObj(Character::toString).collect(Collectors.toList()))
                 .observe(expect(4, (it, c) -> assertEquals(c, "" + test.charAt(it))))
-                .subscribeJoin();
+                .subscribe()
+                .join();
     }
 
     public void basicFlatStream() {
@@ -53,42 +58,45 @@ public class RxTest extends BaseUtilTest {
         Pipeline.of(test)
                 .flatStream(string -> string.chars().mapToObj(Character::toString))
                 .observe(expect(4, (it, c) -> assertEquals(c, "" + test.charAt(it))))
-                .subscribeJoin();
+                .subscribe()
+                .join();
     }
 
     public void basicFilter() {
         Pipeline.iterate(strings)
                 .filter(s -> s.length() == 5)
                 .observe(expect(3, (it, string) -> assertEquals(string.length(), 5)))
-                .subscribeJoin();
+                .subscribe()
+                .join();
     }
 
     public void basicCollect() {
         Pipeline.iterate(strings)
                 .collect(Collectors.toList())
                 .observe(expect(1, (it, list) -> assertEquals(list, strings)))
-                .subscribeJoin();
+                .subscribe()
+                .join();
     }
 
     public void collectFuture() {
         List<String> list = Pipeline.iterate(strings)
                 .collect(Collectors.toList())
-                .subscribeFuture()
+                .subscribe()
                 .join();
         assertEquals(list, strings);
     }
 
     public void adhocSource() {
-        Stage<Object, String> stage = Pipeline.adHoc(String.class)
+        Pipeline.adHoc(String.class)
                 .buffer()
                 .observe(expect(3, (it, c) -> assertNotNull(c)))
-                .toStage();
-        CompletableFuture<String> future = Pipeline.from(stage).subscribeFuture();
-        stage.onNext("alpha");
-        stage.onNext("bravo");
-        stage.onNext("charlie");
-        stage.onComplete();
-        future.join();
+                .subscribe()
+                .publish("alpha")
+                .publish("bravo")
+                .publish("charlie")
+                .complete()
+                .future()
+                .join();
     }
 
     public void basicBackpressure() {
@@ -99,7 +107,8 @@ public class RxTest extends BaseUtilTest {
                     assertEquals(value, strings.get(andIncrement));
                     subscription.request(1);
                 })
-                .subscribeJoin(1);
+                .subscribe(1)
+                .join();
         assertEquals(c.get(), 5);
     }
 
@@ -114,7 +123,8 @@ public class RxTest extends BaseUtilTest {
                             System.out.println("second observer: " + it + " " + length);
                         })))
                 .observe(expect(5, (it, string) -> assertEquals(string, strings.get(it))))
-                .subscribeJoin();
+                .subscribe()
+                .join();
         Clock.sleepQuietly(100);
     }
 
@@ -124,14 +134,16 @@ public class RxTest extends BaseUtilTest {
                 .observe(expect(5, (it, v) -> assertEquals(v, strings.get(it))))
                 .map(String::length)
                 .observe(expect(5, (it, v) -> assertEquals((int) v, strings.get(it).length())))
-                .subscribeJoin(Executors.newSingleThreadExecutor());
+                .subscribe(Executors.newSingleThreadExecutor())
+                .join();
 
         Pipeline.iterate(strings)
                 .buffer(-1)
                 .observe(expect(5, (it, v) -> assertEquals(v, strings.get(it))))
                 .map(String::length)
                 .observe(expect(5, (it, v) -> assertEquals((int) v, strings.get(it).length())))
-                .subscribeJoin(Executors.newSingleThreadExecutor());
+                .subscribe(Executors.newSingleThreadExecutor())
+                .join();
     }
 
     public void basicAsync() {
@@ -144,7 +156,8 @@ public class RxTest extends BaseUtilTest {
                 .attachFuture(finished::set)
                 .observe(l -> System.out.println(Thread.currentThread().getName() + " string length: " + l))
                 .observe(expect(5, (it, v) -> assertEquals(v.second().intValue(), v.first().length())))
-                .subscribeJoin();
+                .subscribe()
+                .join();
         finished.get().join();
         Clock.sleepQuietly(100);
     }
@@ -153,7 +166,8 @@ public class RxTest extends BaseUtilTest {
         CompletableFuture<String> future = new CompletableFuture<>();
         CompletableFuture<String> completed = Pipeline.completable(future)
                 .observe(expect(1, (it, v) -> assertEquals(v, "test")))
-                .subscribeFuture();
+                .subscribe()
+                .future();
         future.complete("test");
         completed.join();
     }
@@ -162,7 +176,7 @@ public class RxTest extends BaseUtilTest {
         Byte b = Pipeline.of("string")
                 .map(s -> s.getBytes()[100])
                 .recover(error -> (byte) 0xFF)
-                .subscribeFuture()
+                .subscribe()
                 .join();
         assertEquals(b.byteValue(), (byte) 0xFF);
     }
@@ -178,13 +192,15 @@ public class RxTest extends BaseUtilTest {
                 .observe(expect(5, (it, l) -> assertEquals(it.intValue(), l.intValue())))
                 .observe(expect(5, (it, l) -> assertEquals(it.intValue(), l.intValue())))
                 .observe(expect(5, (it, l) -> assertEquals(it.intValue(), l.intValue())))
-                .subscribeJoin();
+                .subscribe()
+                .join();
     }
 
     public void errorInPipe() {
         assertThrows(() -> Pipeline.of("string")
                 .map(s -> s.getBytes()[100])
-                .subscribeJoin());
+                .subscribe()
+                .join());
     }
 
     public void skipLimit() {
@@ -193,7 +209,8 @@ public class RxTest extends BaseUtilTest {
                 .limit(3)
                 .collect(Collectors.toList())
                 .observe(expect(1, (it, l) -> assertEquals(l, Arrays.asList("bravo", "charlie", "delta"))))
-                .subscribeJoin();
+                .subscribe()
+                .join();
     }
 
     public void takeWhile() {
@@ -201,7 +218,8 @@ public class RxTest extends BaseUtilTest {
                 .takeWhile(s -> !s.equals("charlie"))
                 .collect(Collectors.toList())
                 .observe(expect(1, (it, l) -> assertEquals(l, Arrays.asList("alpha", "bravo"))))
-                .subscribeJoin();
+                .subscribe()
+                .join();
     }
 
     public void dropWhile() {
@@ -209,6 +227,16 @@ public class RxTest extends BaseUtilTest {
                 .dropWhile(s -> !s.equals("charlie"))
                 .collect(Collectors.toList())
                 .observe(expect(1, (it, l) -> assertEquals(l, Arrays.asList("charlie", "delta", "foxtrot"))))
-                .subscribeJoin();
+                .subscribe()
+                .join();
+    }
+
+    public void supplierSource() {
+        Set<Integer> numbers = Pipeline.supply(() -> ThreadLocalRandom.current().nextInt(0, 10))
+                .takeWhile(i -> i != 5)
+                .collect(Collectors.toSet())
+                .subscribe()
+                .join();
+        assertFalse(numbers.contains(5));
     }
 }

@@ -33,6 +33,7 @@ public abstract class AbstractStage<IN, OUT> implements Stage<IN, OUT> {
     @Override
     public void cancel() {
         downstream = null;
+        upstream().ifPresent(Stage::cancel);
     }
 
     @Override

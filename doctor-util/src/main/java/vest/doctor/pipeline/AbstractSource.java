@@ -24,6 +24,7 @@ public abstract class AbstractSource<IN> extends AbstractStage<IN, IN> {
     @Override
     public void cancel() {
         stateChange(PipelineState.SUBSCRIBED, PipelineState.CANCELLED);
+        requested.set(0);
         super.cancel();
     }
 
