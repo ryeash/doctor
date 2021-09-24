@@ -187,6 +187,7 @@ public class Workflow<START, O> {
         return chain(new StepProcessor<>(new Step.VarArgs2Step<>(attach1, attach2, action)));
     }
 
+    @SuppressWarnings("unused")
     public <NEXT> Workflow<START, NEXT> signal(Class<? extends NEXT> outputType, Consumer<Signal<O, NEXT>> action) {
         return chain(new SignalProcessor<>(action));
     }
