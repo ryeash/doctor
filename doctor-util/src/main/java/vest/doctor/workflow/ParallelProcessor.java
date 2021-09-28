@@ -71,7 +71,7 @@ class ParallelProcessor<T> extends AbstractProcessor<T, T> {
 
         @Override
         public void cancel() {
-            delegate.cancel();
+            background.submit(delegate::cancel);
         }
     }
 }

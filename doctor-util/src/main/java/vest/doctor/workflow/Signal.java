@@ -6,7 +6,7 @@ import java.util.concurrent.Flow;
 public interface Signal<IN, OUT> {
 
     enum Type {
-        SUBSCRIBED, VALUE, ERROR, COMPLETED, CANCELED
+        SUBSCRIBED, VALUE, ERROR, COMPLETED, REQUESTED, CANCELED
     }
 
     IN value();
@@ -17,5 +17,9 @@ public interface Signal<IN, OUT> {
 
     Flow.Subscription subscription();
 
+    long requested();
+
     Optional<Flow.Subscriber<OUT>> downstream();
+
+    void doDefaultAction();
 }

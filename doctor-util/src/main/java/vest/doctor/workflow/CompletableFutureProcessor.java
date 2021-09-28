@@ -21,7 +21,6 @@ final class CompletableFutureProcessor<IN> extends AbstractProcessor<IN, IN> {
     public void onError(Throwable throwable) {
         future.completeExceptionally(throwable);
         super.onError(throwable);
-        subscription.cancel();
     }
 
     @Override

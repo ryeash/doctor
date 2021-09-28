@@ -2,13 +2,15 @@ package vest.doctor.util;
 
 import org.testng.annotations.Test;
 import vest.doctor.tuple.Tuple2;
+import vest.doctor.workflow.Signal;
 import vest.doctor.workflow.Workflow;
+import vest.doctor.workflow.WorkflowHandle;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Flow;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -132,7 +134,7 @@ public class WorkflowTest extends BaseUtilTest {
     }
 
     public void complex() {
-        Workflow.iterate(strings)
+        WorkflowHandle<String, Long> handle = Workflow.iterate(strings)
                 .flatMapStream(string -> string.chars().mapToObj(Character::toString))
                 .keep(c -> c.equals("a"))
                 .observe(expect(5, (it, c) -> assertEquals(c, "a")))
@@ -142,8 +144,9 @@ public class WorkflowTest extends BaseUtilTest {
                 .observe(expect(5, (it, l) -> assertEquals(it.intValue(), l.intValue())))
                 .observe(expect(5, (it, l) -> assertEquals(it.intValue(), l.intValue())))
                 .observe(expect(5, (it, l) -> assertEquals(it.intValue(), l.intValue())))
-                .subscribe()
-                .join();
+                .subscribe();
+        System.out.println(handle);
+        handle.join();
     }
 
     public void errorInPipe() {
@@ -192,16 +195,32 @@ public class WorkflowTest extends BaseUtilTest {
     public void signal() {
         Workflow.iterate(strings)
                 .signal(Integer.class, s -> {
-                    switch (s.type()) {
-                        case VALUE -> {
-                            Integer len = s.value().length();
-                            s.downstream().ifPresent(d -> d.onNext(len));
-                        }
-                        case COMPLETED -> s.downstream().ifPresent(Flow.Subscriber::onComplete);
+                    if (s.type() == Signal.Type.VALUE) {
+                        Integer len = s.value().length();
+                        s.downstream().ifPresent(d -> d.onNext(len));
+                    } else {
+                        s.doDefaultAction();
                     }
                 })
                 .observe(expect(5, (it, l) -> assertEquals((int) l, strings.get(it).length())))
                 .subscribe()
+                .join();
+    }
+
+    public void timeout() {
+        assertThrows(() -> Workflow.adhoc(String.class)
+                .timeout(Executors.newSingleThreadScheduledExecutor(), Duration.ofMillis(100))
+                .observe(expect(0, (it, s) -> {
+                }))
+                .subscribe()
+                .join());
+
+        Workflow.adhoc(String.class)
+                .timeout(Executors.newSingleThreadScheduledExecutor(), Duration.ofMillis(100))
+                .observe(expect(1, (it, s) -> assertEquals(s, "a")))
+                .subscribe()
+                .publish("a")
+                .finish()
                 .join();
     }
 }

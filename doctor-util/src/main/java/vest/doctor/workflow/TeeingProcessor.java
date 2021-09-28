@@ -12,11 +12,10 @@ class TeeingProcessor<T> extends AbstractProcessor<T, T> {
 
     @Override
     public void onSubscribe(Flow.Subscription subscription) {
+        super.onSubscribe(subscription);
         try {
-            super.onSubscribe(subscription);
             delegate.onSubscribe(subscription);
         } catch (Throwable t) {
-            onError(t);
             delegate.onError(t);
         }
     }
@@ -24,33 +23,30 @@ class TeeingProcessor<T> extends AbstractProcessor<T, T> {
     @Override
     public void onNext(T item) {
         try {
-            delegate.onNext(item);
-            publishDownstream(item);
+            super.publishDownstream(item);
         } catch (Throwable t) {
-            onError(t);
-            delegate.onError(t);
+            super.onError(t);
+        }
+        try {
+            delegate.onNext(item);
+        } catch (Throwable t) {
+            delegate.onNext(item);
         }
     }
 
     @Override
     public void onError(Throwable throwable) {
-        try {
-            delegate.onError(throwable);
-            super.onError(throwable);
-        } catch (Throwable t) {
-            onError(t);
-            delegate.onError(t);
-        }
+        super.onError(throwable);
+        delegate.onError(throwable);
     }
 
     @Override
     public void onComplete() {
         try {
             delegate.onComplete();
-            super.onComplete();
         } catch (Throwable t) {
-            onError(t);
             delegate.onError(t);
         }
+        super.onComplete();
     }
 }

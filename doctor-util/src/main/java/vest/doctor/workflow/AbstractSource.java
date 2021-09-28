@@ -23,13 +23,10 @@ public abstract class AbstractSource<T> implements Source<T> {
     @Override
     public void subscribe(Flow.Subscriber<? super T> subscriber) {
         if (this.subscriber != null) {
-            RuntimeException t = new IllegalStateException("this source has already been subscribed");
-            subscriber.onError(t);
-            throw t;
+            throw new IllegalStateException("this source has already been subscribed");
         }
         stateChange(WorkflowState.UNSUBSCRIBED, WorkflowState.SUBSCRIBED);
         this.subscriber = subscriber;
-        this.subscriber.onSubscribe(this);
     }
 
     @Override
@@ -82,6 +79,16 @@ public abstract class AbstractSource<T> implements Source<T> {
     @Override
     public void onComplete() {
         stateChange(WorkflowState.SUBSCRIBED, WorkflowState.COMPLETED);
+    }
+
+    @Override
+    public void startSubscription() {
+        subscriber.onSubscribe(this);
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "->" + (subscriber != null ? subscriber : "end");
     }
 
     protected final void stateCheck(WorkflowState expected) {

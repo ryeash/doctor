@@ -15,4 +15,9 @@ final class StepProcessor<IN, OUT> extends AbstractProcessor<IN, OUT> {
             onError(t);
         }
     }
+
+    @Override
+    public String toString() {
+        return "Step(" + action.getClass().getSimpleName() + ")->" + (subscriber != null ? subscriber : "end");
+    }
 }

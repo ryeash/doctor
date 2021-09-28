@@ -4,6 +4,7 @@ import vest.doctor.tuple.Tuple2;
 import vest.doctor.tuple.Tuple3;
 import vest.doctor.tuple.Tuple3Consumer;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -11,6 +12,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
@@ -49,10 +51,16 @@ public class Workflow<START, O> {
 
     private final Source<START> source;
     private final Flow.Publisher<O> current;
+    private ExecutorService executorService = DEFAULT;
 
     Workflow(Source<START> source, Flow.Publisher<O> step) {
         this.source = Objects.requireNonNull(source);
         this.current = Objects.requireNonNull(step);
+    }
+
+    public Workflow<START, O> defaultExecutorService(ExecutorService executorService) {
+        this.executorService = executorService;
+        return this;
     }
 
     public Workflow<START, O> observe(Consumer<O> consumer) {
@@ -165,6 +173,7 @@ public class Workflow<START, O> {
         return chain(new TeeingProcessor<>(subscriber));
     }
 
+    // TODO
     public Workflow<START, O> tee(Workflow<O, ?> workflow) {
         return chain(new TeeingProcessor<>(workflow.subscribe().source()));
     }
@@ -177,6 +186,14 @@ public class Workflow<START, O> {
                 // ignored
             }
         });
+    }
+
+    public Workflow<START, O> requestOnSubscribe(long n) {
+        return chain(new SubscriptionHookProcessor<>(s -> s.request(n)));
+    }
+
+    public Workflow<START, O> subscriptionHook(Consumer<Flow.Subscription> action) {
+        return chain(new SubscriptionHookProcessor<>(action));
     }
 
     public <A, NEXT> Workflow<START, NEXT> with(A attach, Tuple3Consumer<Tuple2<A, O>, Flow.Subscription, Emitter<NEXT>> action) {
@@ -192,31 +209,33 @@ public class Workflow<START, O> {
         return chain(new SignalProcessor<>(action));
     }
 
+    public Workflow<START, O> timeout(ScheduledExecutorService scheduledExecutorService, Duration timeout) {
+        return chain(new TimeoutProcessor<>(scheduledExecutorService, timeout));
+    }
+
     public WorkflowHandle<START, O> subscribe() {
-        return subscribe(Long.MAX_VALUE, DEFAULT);
+        return subscribe(Long.MAX_VALUE, executorService);
     }
 
     public WorkflowHandle<START, O> subscribe(long initialRequest) {
-        return subscribe(initialRequest, DEFAULT);
+        return subscribe(initialRequest, executorService);
     }
 
     public WorkflowHandle<START, O> subscribe(long initialRequest, ExecutorService executorService) {
-        if (initialRequest <= 0) {
-            throw new IllegalStateException("initial requested items must be greater than 0");
-        }
         CompletableFuture<O> future = new CompletableFuture<>();
-        Workflow<START, O> chain = chain(new CompletableFutureProcessor<>(future));
-
+        chain(new CompletableFutureProcessor<>(future))
+                .requestOnSubscribe(initialRequest);
+        WorkflowHandle<START, O> wh = new WorkflowHandle<>(source, future);
         source.executorService(executorService);
-        source.request(initialRequest);
-        return new WorkflowHandle<>(chain.source, future);
+        source.startSubscription();
+        return wh;
     }
 
     public Flow.Processor<START, O> asProcessor() {
         return new CombinedProcessor<>(source, current);
     }
 
-    static final class CountdownPredicate<IN> implements Predicate<IN> {
+    private static final class CountdownPredicate<IN> implements Predicate<IN> {
 
         private final AtomicLong counter;
 

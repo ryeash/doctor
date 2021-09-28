@@ -12,7 +12,6 @@ public abstract class AbstractProcessor<IN, OUT> implements Flow.Processor<IN, O
             throw new IllegalStateException("this processor has already been subscribed");
         }
         this.subscriber = subscriber;
-        subscriber.onSubscribe(subscription);
     }
 
     @Override
@@ -21,6 +20,13 @@ public abstract class AbstractProcessor<IN, OUT> implements Flow.Processor<IN, O
             throw new IllegalStateException("onSubscribe for this processor has already been called");
         }
         this.subscription = subscription;
+        if (subscriber != null) {
+            try {
+                subscriber.onSubscribe(subscription);
+            } catch (Throwable t) {
+                onError(t);
+            }
+        }
     }
 
     @Override
@@ -41,9 +47,18 @@ public abstract class AbstractProcessor<IN, OUT> implements Flow.Processor<IN, O
         }
     }
 
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "->" + (subscriber != null ? subscriber : "end");
+    }
+
     protected void publishDownstream(OUT item) {
         if (subscriber != null) {
-            subscriber.onNext(item);
+            try {
+                subscriber.onNext(item);
+            } catch (Throwable t) {
+                subscriber.onError(t);
+            }
         }
     }
 }

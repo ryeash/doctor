@@ -18,4 +18,9 @@ public record WorkflowHandle<IN, OUT>(Source<IN> source,
     public OUT join() {
         return future.join();
     }
+
+    @Override
+    public String toString() {
+        return source.toString();
+    }
 }
