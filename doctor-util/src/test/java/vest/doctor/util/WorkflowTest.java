@@ -105,9 +105,9 @@ public class WorkflowTest extends BaseUtilTest {
                                 System.out.println("first observer: " + it + " " + string)))
                         .delay(10, TimeUnit.MILLISECONDS)
                         .map(String::length)
-                        .observe(i -> latch.countDown())
                         .observe(expect(5, (it, length) ->
-                                System.out.println("second observer: " + it + " " + length))))
+                                System.out.println("second observer: " + it + " " + length)))
+                        .observe(i -> latch.countDown()))
                 .observe(expect(5, (it, string) -> assertEquals(string, strings.get(it))))
                 .subscribe()
                 .join();
