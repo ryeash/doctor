@@ -11,7 +11,7 @@ public class TCCustomCloseable {
 
     public static boolean closed = false;
 
-    public void destroy() {
+    public void destroy() throws Exception {
         closed = true;
     }
 }

@@ -23,7 +23,7 @@ public interface BodyReader extends Prioritized {
     boolean canRead(Request request, TypeInfo typeInfo);
 
     /**
-     * Read the body of the http request to the expected type.
+     * Read the body of the http request as the expected type.
      *
      * @param request  the request context
      * @param typeInfo information about the target type for the deserialized data

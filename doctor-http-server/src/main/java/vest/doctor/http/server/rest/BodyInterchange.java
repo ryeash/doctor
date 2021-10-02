@@ -13,11 +13,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Combines the {@link BodyReader BodyReaders} and {@link BodyWriter BodyWriters} that are provided
+ * by a {@link ProviderRegistry} to provide an aggregate read/write mechanism for HTTP body data.
+ */
 public final class BodyInterchange {
     private final List<BodyReader> readers;
     private final List<BodyWriter> writers;
 
-    public BodyInterchange(ProviderRegistry providerRegistry) {
+    BodyInterchange(ProviderRegistry providerRegistry) {
         DefaultReaderWriter defaultRW = new DefaultReaderWriter();
 
         this.readers = new ArrayList<>();
@@ -35,6 +39,13 @@ public final class BodyInterchange {
         writers.sort(Prioritized.COMPARATOR);
     }
 
+    /**
+     * Read the body data from the request.
+     *
+     * @param request  the request
+     * @param typeInfo the type info for the target parameter
+     * @return the asynchronous result of reading the body data into the desired type
+     */
     public <T> CompletableFuture<T> read(Request request, TypeInfo typeInfo) {
         for (BodyReader reader : readers) {
             if (reader.canRead(request, typeInfo)) {
@@ -44,6 +55,13 @@ public final class BodyInterchange {
         throw new UnsupportedOperationException("unsupported request body type: " + typeInfo);
     }
 
+    /**
+     * Create a {@link Response} for the given request and body data.
+     *
+     * @param request the request
+     * @param data    the body response
+     * @return the asynchronous response to the request
+     */
     public CompletableFuture<Response> write(Request request, Object data) {
         if (data == null) {
             return request.createResponse().body(ResponseBody.empty()).wrapFuture();
