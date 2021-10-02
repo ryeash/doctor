@@ -75,7 +75,7 @@ public interface Request {
     /**
      * Receive a multipart body from the client.
      *
-     * @return the multi part body uploaded from the client
+     * @return the multi-part body uploaded from the client
      */
     MultiPartData multiPartBody();
 

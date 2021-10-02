@@ -34,13 +34,13 @@ public class ProviderParameterLookupCustomizer implements ParameterLookupCustomi
                 || ProcessorUtils.isCompatibleWith(context, typeElement, Iterable.class)
                 || ProcessorUtils.isCompatibleWith(context, typeElement, Stream.class)) {
             TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
-            return ProcessorUtils.getProviderCode(typeMirror.toString(), qualifier) + ";";
+            return ProcessorUtils.getProviderCode(typeMirror, qualifier) + ";";
         }
 
         if (variableElement.asType().getKind() == TypeKind.ARRAY) {
-            return ProcessorUtils.getProviderCode(typeElement.getQualifiedName().toString(), qualifier) + ";";
+            return ProcessorUtils.getProviderCode(typeElement, qualifier) + ";";
         }
-        return ProcessorUtils.getProviderCode(variableElement.asType().toString(), qualifier) + ";";
+        return ProcessorUtils.getProviderCode(variableElement.asType(), qualifier) + ";";
     }
 
     @Override

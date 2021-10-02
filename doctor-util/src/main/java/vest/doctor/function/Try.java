@@ -438,10 +438,7 @@ public final class Try<T> {
      * @return an {@link Optional} representing the result of the try
      */
     public Optional<T> toOptional() {
-        if (isFailure()) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable(result);
+        return isFailure() ? Optional.empty() : Optional.ofNullable(result);
     }
 
     /**

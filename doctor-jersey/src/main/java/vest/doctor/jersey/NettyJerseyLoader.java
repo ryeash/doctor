@@ -20,6 +20,7 @@ import vest.doctor.ConfigurationFacade;
 import vest.doctor.CustomThreadFactory;
 import vest.doctor.DoctorProvider;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.runtime.LoggingUncaughtExceptionHandler;
 
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -52,8 +53,8 @@ public final class NettyJerseyLoader implements ApplicationLoader {
 
         HttpServerConfiguration httpConfig = buildConf(providerRegistry);
 
-        EventLoopGroup bossGroup = new NioEventLoopGroup(httpConfig.getTcpManagementThreads(), new CustomThreadFactory(true, httpConfig.getTcpThreadNameFormat(), LoggingUncaughtExceptionHandler.INSTANCE, JerseyChannelAdapter.class.getClassLoader()));
-        EventLoopGroup workerGroup = new NioEventLoopGroup(httpConfig.getWorkerThreads(), new CustomThreadFactory(true, httpConfig.getWorkerThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, JerseyChannelAdapter.class.getClassLoader()));
+        EventLoopGroup bossGroup = new NioEventLoopGroup(httpConfig.getTcpManagementThreads(), new CustomThreadFactory(true, httpConfig.getTcpThreadNameFormat(), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()));
+        EventLoopGroup workerGroup = new NioEventLoopGroup(httpConfig.getWorkerThreads(), new CustomThreadFactory(true, httpConfig.getWorkerThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()));
         DoctorJerseyContainer container = new DoctorJerseyContainer(config, workerGroup);
 
         ServerBootstrap b = new ServerBootstrap()

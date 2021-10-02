@@ -1,5 +1,5 @@
-package vest.doctor.pipeline;
+package vest.doctor.workflow;
 
-public enum PipelineState {
+public enum WorkflowState {
     UNSUBSCRIBED, SUBSCRIBED, COMPLETED, CANCELLED, ERROR
 }

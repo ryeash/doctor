@@ -136,6 +136,13 @@ public class TestAppConfig {
     }
 
     @Factory
+    @Singleton
+    @Named("string")
+    public ParameterizedThing<String> parameterizedType() {
+        return new ParameterizedThing<>("worked");
+    }
+
+    @Factory
     @Named("complex-return-type")
     @SuppressWarnings("unchecked")
     public <T extends CoffeeMaker & AutoCloseable> T complexReturnType() {

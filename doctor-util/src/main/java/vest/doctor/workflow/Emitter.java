@@ -1,7 +1,7 @@
-package vest.doctor.pipeline;
+package vest.doctor.workflow;
 
 /**
- * Emitter of values to downstream stages.
+ * Emitter of values to downstream processors.
  */
 @FunctionalInterface
 public interface Emitter<T> {

@@ -38,7 +38,7 @@
             <version>${slf4j.version}</version>
         </dependency>
         <dependency>
-            <artifactId>doctor-core</artifactId>
+            <artifactId>doctor-runtime</artifactId>
             <groupId>${project.groupId}</groupId>
             <version>${project.version}</version>
         </dependency>
@@ -77,12 +77,6 @@
 
         <dependency>
             <artifactId>doctor-processor</artifactId>
-            <groupId>${project.groupId}</groupId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <artifactId>doctor-runtime</artifactId>
             <groupId>${project.groupId}</groupId>
             <version>${project.version}</version>
             <scope>test</scope>
