@@ -122,6 +122,7 @@ public class WorkflowTest extends BaseUtilTest {
                 .observe(expect(5, (it, v) -> assertEquals(v.second().intValue(), v.first().length())))
                 .subscribe()
                 .join();
+        Clock.sleepQuietly(100);
     }
 
     public void basicRecover() {
