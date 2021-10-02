@@ -1,18 +1,13 @@
 package vest.doctor.util;
 
 import org.testng.annotations.Test;
-import vest.doctor.tuple.Tuple2;
 import vest.doctor.workflow.Signal;
 import vest.doctor.workflow.Workflow;
 
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
@@ -96,38 +91,38 @@ public class WorkflowTest extends BaseUtilTest {
         assertEquals(c.get(), 5);
     }
 
-    public void basicBranch() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(strings.size());
-        Workflow.iterate(strings)
-                .tee(Workflow.adhoc(String.class)
-                        .parallel(Executors.newFixedThreadPool(4))
-                        .observe(expect(5, (it, string) ->
-                                System.out.println("first observer: " + it + " " + string)))
-                        .delay(10, TimeUnit.MILLISECONDS)
-                        .map(String::length)
-                        .observe(expect(5, (it, length) ->
-                                System.out.println("second observer: " + it + " " + length)))
-                        .observe(i -> latch.countDown()))
-                .observe(expect(5, (it, string) -> assertEquals(string, strings.get(it))))
-                .subscribe()
-                .join();
-        assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
-    }
+//    public void basicBranch() throws InterruptedException {
+//        CountDownLatch latch = new CountDownLatch(strings.size());
+//        Workflow.iterate(strings)
+//                .tee(Workflow.adhoc(String.class)
+//                        .parallel(Executors.newFixedThreadPool(4))
+//                        .observe(expect(5, (it, string) ->
+//                                System.out.println("first observer: " + it + " " + string)))
+//                        .delay(10, TimeUnit.MILLISECONDS)
+//                        .map(String::length)
+//                        .observe(expect(5, (it, length) ->
+//                                System.out.println("second observer: " + it + " " + length)))
+//                        .observe(i -> latch.countDown()))
+//                .observe(expect(5, (it, string) -> assertEquals(string, strings.get(it))))
+//                .subscribe()
+//                .join();
+//        assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
+//    }
 
-    public void basicAsync() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(strings.size());
-        Workflow.iterate(strings)
-                .<Tuple2<String, Integer>>chain((string, subscription, emitter) -> {
-                    CompletableFuture.supplyAsync(string::length, ForkJoinPool.commonPool())
-                            .thenAccept(l -> emitter.emit(Tuple2.of(string, l)));
-                })
-                .observe(l -> System.out.println(Thread.currentThread().getName() + " string length: " + l))
-                .observe(expect(5, (it, v) -> assertEquals(v.second().intValue(), v.first().length())))
-                .observe(v -> latch.countDown())
-                .subscribe()
-                .join();
-        assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
-    }
+//    public void basicAsync() throws InterruptedException {
+//        CountDownLatch latch = new CountDownLatch(strings.size());
+//        Workflow.iterate(strings)
+//                .<Tuple2<String, Integer>>chain((string, subscription, emitter) -> {
+//                    CompletableFuture.supplyAsync(string::length, ForkJoinPool.commonPool())
+//                            .thenAccept(l -> emitter.emit(Tuple2.of(string, l)));
+//                })
+//                .observe(l -> System.out.println(Thread.currentThread().getName() + " string length: " + l))
+//                .observe(expect(5, (it, v) -> assertEquals(v.second().intValue(), v.first().length())))
+//                .observe(v -> latch.countDown())
+//                .subscribe()
+//                .join();
+//        assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
+//    }
 
     public void basicRecover() {
         Byte b = Workflow.of("string")
