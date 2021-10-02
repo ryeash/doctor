@@ -111,7 +111,7 @@ public class WorkflowTest extends BaseUtilTest {
                 .observe(expect(5, (it, string) -> assertEquals(string, strings.get(it))))
                 .subscribe()
                 .join();
-        latch.await(1000, TimeUnit.MILLISECONDS);
+        assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
     }
 
     public void basicAsync() throws InterruptedException {
@@ -126,7 +126,7 @@ public class WorkflowTest extends BaseUtilTest {
                 .observe(v -> latch.countDown())
                 .subscribe()
                 .join();
-        latch.await(1000, TimeUnit.MILLISECONDS);
+        assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
     }
 
     public void basicRecover() {
