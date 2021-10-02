@@ -146,7 +146,7 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                 .addImportClass(ProviderRegistry.class)
                 .addImportClass(Provider.class)
                 .addImportClass(List.class)
-                .addImportClass(providedType().getQualifiedName().toString())
+                .addImportClass(ProcessorUtils.typeWithoutParameters(providedType().asType()))
                 .addImportClass(DoctorProvider.class)
                 .addImportClass(InjectionException.class)
                 .addImplementsInterface(DoctorProvider.class.getSimpleName() + "<" + providedType().getSimpleName() + ">")
@@ -171,9 +171,9 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
         List<TypeElement> allProvidedTypes = getAllProvidedTypes();
         if (!allProvidedTypes.isEmpty()) {
             classBuilder.addField("private final List<Class<?>> allTypes = " + allProvidedTypes.stream()
-                    .map(TypeElement::getQualifiedName)
-                    .map(n -> n + ".class")
-                    .collect(AS_LIST))
+                            .map(TypeElement::getQualifiedName)
+                            .map(n -> n + ".class")
+                            .collect(AS_LIST))
                     .addMethod("public List<Class<?>> allProvidedTypes()", b -> b.line("return allTypes;"));
         } else {
             throw new CodeProcessingException("all providers must provide at least one type: " + this);
@@ -182,22 +182,22 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
         List<? extends AnnotationMirror> annotationMirrors = annotationSource().getAnnotationMirrors();
         if (!annotationMirrors.isEmpty()) {
             classBuilder.addField("private final List<Class<? extends Annotation>> allAnnotations = " + annotationMirrors.stream()
-                    .map(AnnotationMirror::getAnnotationType)
-                    .map(DeclaredType::toString)
-                    .map(n -> n + ".class")
-                    .collect(AS_LIST))
+                            .map(AnnotationMirror::getAnnotationType)
+                            .map(DeclaredType::toString)
+                            .map(n -> n + ".class")
+                            .collect(AS_LIST))
                     .addMethod("public List<Class<? extends Annotation>> allAnnotationTypes()", b -> b.line("return allAnnotations;"));
         }
 
         List<String> modules = modules();
         if (!modules.isEmpty()) {
             classBuilder.addField("private final List<String> modules = " + modules.stream()
-                    .filter(Objects::nonNull)
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .distinct()
-                    .map(m -> '"' + m + '"')
-                    .collect(AS_LIST))
+                            .filter(Objects::nonNull)
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty())
+                            .distinct()
+                            .map(m -> '"' + m + '"')
+                            .collect(AS_LIST))
                     .addMethod("public List<String> modules()", b -> b.line("return modules;"));
         }
 

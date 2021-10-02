@@ -244,4 +244,10 @@ public class DoctorTest extends Assert {
     public void ignoredClass() {
         assertFalse(doctor.getProviderOpt(TCIgnoredClass.class).isPresent());
     }
+
+    @Test
+    public void parameterized() {
+        TCParamterizedInject instance = doctor.getInstance(TCParamterizedInject.class);
+        assertEquals(instance.getInjectedList().getValue(), "worked");
+    }
 }

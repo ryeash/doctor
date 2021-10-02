@@ -4,7 +4,7 @@ import java.util.Comparator;
 
 /**
  * Marker interface to indicate that implementations are to be sorted according to their priority relative to other
- * like types objects. Lower priority sorts first.
+ * like-typed objects. Lower priority sorts first.
  */
 public interface Prioritized {
 
@@ -12,7 +12,7 @@ public interface Prioritized {
     Comparator<Prioritized> COMPARATOR = Comparator.comparingInt(Prioritized::priority);
 
     /**
-     * The priority for this object.
+     * The priority for this object. By default, lower values will sort before higher values.
      *
      * @default 1000
      */

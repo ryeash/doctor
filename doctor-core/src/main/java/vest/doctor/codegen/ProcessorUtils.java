@@ -260,9 +260,18 @@ public class ProcessorUtils {
         return getProviderCode(injectableType.getQualifiedName().toString(), getQualifier(context, injectableType));
     }
 
+    public static String getProviderCode(TypeElement type, String qualifier) {
+        return getProviderCode(type.asType(), qualifier);
+    }
+
+    public static String getProviderCode(TypeMirror type, String qualifier) {
+        return getProviderCode(typeWithoutParameters(type), qualifier);
+    }
+
     public static String getProviderCode(String type, String qualifier) {
         return Constants.PROVIDER_REGISTRY + ".getProvider(" + type + ".class" + ", " + qualifier + ")";
     }
+
 
     public static String uniqueHash() {
         UUID uuid = UUID.randomUUID();
@@ -368,8 +377,8 @@ public class ProcessorUtils {
                 TypeMirror typeMirror = typeElement.asType();
                 return getProvidersCode(typeMirror, qualifier, providerRegistryRef) + ".map(" + Provider.class.getCanonicalName() + "::get)" + ".toArray(" + typeMirror + "[]::new)";
             }
-
-            return providerRegistryRef + ".getInstance(" + variableElement.asType() + ".class, " + qualifier + ")";
+            String type = ProcessorUtils.typeWithoutParameters(variableElement.asType());
+            return providerRegistryRef + ".getInstance(" + type + ".class, " + qualifier + ")";
         } catch (CodeProcessingException e) {
             throw new CodeProcessingException("error wiring parameter", variableElement, e);
         }
@@ -377,8 +386,8 @@ public class ProcessorUtils {
 
     private static String getProvidersCode(TypeMirror typeMirror, String qualifier, String providerRegistryRef) {
         return Objects.equals(qualifier, null)
-                ? providerRegistryRef + ".getProviders(" + typeMirror + ".class)"
-                : providerRegistryRef + ".getProviders(" + typeMirror + ".class, " + qualifier + ")";
+                ? providerRegistryRef + ".getProviders(" + ProcessorUtils.typeWithoutParameters(typeMirror) + ".class)"
+                : providerRegistryRef + ".getProviders(" + ProcessorUtils.typeWithoutParameters(typeMirror) + ".class, " + qualifier + ")";
     }
 
     public static TypeMirror unwrapJustOne(TypeMirror mirror) {
