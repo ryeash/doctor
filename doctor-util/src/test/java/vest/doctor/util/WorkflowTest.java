@@ -4,12 +4,12 @@ import org.testng.annotations.Test;
 import vest.doctor.tuple.Tuple2;
 import vest.doctor.workflow.Signal;
 import vest.doctor.workflow.Workflow;
-import vest.doctor.workflow.WorkflowHandle;
 
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
@@ -96,7 +96,8 @@ public class WorkflowTest extends BaseUtilTest {
         assertEquals(c.get(), 5);
     }
 
-    public void basicBranch() {
+    public void basicBranch() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(strings.size());
         Workflow.iterate(strings)
                 .tee(Workflow.adhoc(String.class)
                         .parallel(Executors.newFixedThreadPool(4))
@@ -104,15 +105,17 @@ public class WorkflowTest extends BaseUtilTest {
                                 System.out.println("first observer: " + it + " " + string)))
                         .delay(10, TimeUnit.MILLISECONDS)
                         .map(String::length)
+                        .observe(i -> latch.countDown())
                         .observe(expect(5, (it, length) ->
                                 System.out.println("second observer: " + it + " " + length))))
                 .observe(expect(5, (it, string) -> assertEquals(string, strings.get(it))))
                 .subscribe()
                 .join();
-        Clock.sleepQuietly(100);
+        latch.await(1000, TimeUnit.MILLISECONDS);
     }
 
-    public void basicAsync() {
+    public void basicAsync() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(strings.size());
         Workflow.iterate(strings)
                 .<Tuple2<String, Integer>>chain((string, subscription, emitter) -> {
                     CompletableFuture.supplyAsync(string::length, ForkJoinPool.commonPool())
@@ -120,9 +123,10 @@ public class WorkflowTest extends BaseUtilTest {
                 })
                 .observe(l -> System.out.println(Thread.currentThread().getName() + " string length: " + l))
                 .observe(expect(5, (it, v) -> assertEquals(v.second().intValue(), v.first().length())))
+                .observe(v -> latch.countDown())
                 .subscribe()
                 .join();
-        Clock.sleepQuietly(100);
+        latch.await(1000, TimeUnit.MILLISECONDS);
     }
 
     public void basicRecover() {
@@ -135,7 +139,7 @@ public class WorkflowTest extends BaseUtilTest {
     }
 
     public void complex() {
-        WorkflowHandle<String, Long> handle = Workflow.iterate(strings)
+        Workflow.iterate(strings)
                 .flatMapStream(string -> string.chars().mapToObj(Character::toString))
                 .keep(c -> c.equals("a"))
                 .observe(expect(5, (it, c) -> assertEquals(c, "a")))
@@ -145,9 +149,8 @@ public class WorkflowTest extends BaseUtilTest {
                 .observe(expect(5, (it, l) -> assertEquals(it.intValue(), l.intValue())))
                 .observe(expect(5, (it, l) -> assertEquals(it.intValue(), l.intValue())))
                 .observe(expect(5, (it, l) -> assertEquals(it.intValue(), l.intValue())))
-                .subscribe();
-        System.out.println(handle);
-        handle.join();
+                .subscribe()
+                .join();
     }
 
     public void errorInPipe() {
