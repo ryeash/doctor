@@ -42,13 +42,6 @@ public final class EventBus implements EventProducer {
                 "]}";
     }
 
-    private static final class ConsumerHolder<T> {
-        private final Class<T> type;
-        private final EventConsumer<?> consumer;
-
-        private ConsumerHolder(Class<T> type, EventConsumer<T> consumer) {
-            this.type = type;
-            this.consumer = consumer;
-        }
+    private static record ConsumerHolder<T>(Class<T> type, EventConsumer<?> consumer) {
     }
 }
