@@ -8,7 +8,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StreamTokenizer;
 import java.io.UncheckedIOException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -50,15 +49,19 @@ import static java.io.StreamTokenizer.TT_EOL;
  */
 public class StructuredConfigurationSource implements ConfigurationSource {
 
-    private final URL propertyFile;
+    private final FileLocation propertyFile;
     private final String levelDelimiter;
     private Map<String, String> properties;
 
-    public StructuredConfigurationSource(URL url) {
+    public StructuredConfigurationSource(String location) {
+        this(new FileLocation(location));
+    }
+
+    public StructuredConfigurationSource(FileLocation url) {
         this(url, ".");
     }
 
-    public StructuredConfigurationSource(URL url, String levelDelimiter) {
+    public StructuredConfigurationSource(FileLocation url, String levelDelimiter) {
         this.propertyFile = Objects.requireNonNull(url, "the configuration url can not be null");
         this.levelDelimiter = levelDelimiter;
         reload();
@@ -76,7 +79,7 @@ public class StructuredConfigurationSource implements ConfigurationSource {
 
     @Override
     public void reload() {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(propertyFile.openStream(), StandardCharsets.UTF_8))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(propertyFile.toURL().openStream(), StandardCharsets.UTF_8))) {
             this.properties = parseStructuredPropertiesFile(reader, levelDelimiter);
         } catch (IOException e) {
             throw new UncheckedIOException("Error reading structured properties file", e);

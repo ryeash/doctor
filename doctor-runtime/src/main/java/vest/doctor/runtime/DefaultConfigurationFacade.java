@@ -3,9 +3,6 @@ package vest.doctor.runtime;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.ConfigurationSource;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -50,13 +47,7 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
 
         facade.getList(DefaultConfigurationFacade.PROPERTIES, Function.identity())
                 .stream()
-                .map(props -> {
-                    try {
-                        return new File(props).toURI().toURL();
-                    } catch (IOException e) {
-                        throw new UncheckedIOException("error reading properties file: " + props, e);
-                    }
-                })
+                .map(FileLocation::new)
                 .map(StructuredConfigurationSource::new)
                 .forEach(facade::addSource);
         return facade;
@@ -248,14 +239,9 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
         List<String> split = new ArrayList<>();
         int i = 0;
         int next;
-        while (i >= 0) {
-            next = str.indexOf(LIST_DELIMITER, i);
-            if (next < 0) {
-                break;
-            } else {
-                split.add(str.substring(i, next).trim());
-                i = next + 1;
-            }
+        while ((next = str.indexOf(LIST_DELIMITER, i)) >= 0) {
+            split.add(str.substring(i, next).trim());
+            i = next + 1;
         }
         split.add(str.substring(i).trim());
         return split;

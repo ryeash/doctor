@@ -280,15 +280,9 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
             throw new CodeProcessingException("unsupported parameter - missing supported route parameter annotation", parameter);
         }
         sb.append(")");
-
         sb.append(".map(");
-        try {
-            sb.append(getStringConversion(context, target));
-        } catch (Throwable t) {
-            throw new CodeProcessingException("unable to handle endpoint parameter", parameter, t);
-        }
+        sb.append(getStringConversion(context, target));
         sb.append(")");
-
         if (!isOptional) {
             sb.append(".orElse(null)");
         }
@@ -314,7 +308,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
             if (supportedParam(field)) {
                 ExecutableElement setter = findCorrespondingSetter(context, field, beanType);
                 VariableElement setterParameter = setter.getParameters().get(0);
-                sb.append(".with(").append(beanType).append("::").append(setter.getSimpleName()).append(", ").append(parameterWriting(context, setterParameter, field, contextRef)).append(")");
+                sb.append("\n.with(").append(beanType).append("::").append(setter.getSimpleName()).append(", ").append(parameterWriting(context, setterParameter, field, contextRef)).append(")");
             }
         }
         for (ExecutableElement method : ElementFilter.methodsIn(beanType.getEnclosedElements())) {

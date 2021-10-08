@@ -2,9 +2,6 @@ package vest.doctor.runtime;
 
 import vest.doctor.ConfigurationFacade;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Objects;
 
 /**
@@ -21,7 +18,18 @@ public final class Main {
     public static void main(String[] args) {
         Args a = new Args(args);
         String modules = a.option("modules", 'm');
-        doctor = new Doctor(mainConfig(a), DefaultConfigurationFacade.split(modules), new ArgsLoader(a));
+        String properties = a.option("properties", 'p', "");
+
+        ConfigurationFacade facade = new DefaultConfigurationFacade()
+                .addSource(new EnvironmentVariablesConfigurationSource())
+                .addSource(new SystemPropertiesConfigurationSource());
+
+        DefaultConfigurationFacade.split(properties.trim())
+                .stream()
+                .map(FileLocation::new)
+                .map(StructuredConfigurationSource::new)
+                .forEach(facade::addSource);
+        doctor = new Doctor(facade, DefaultConfigurationFacade.split(modules), new ArgsLoader(a));
     }
 
     /**
@@ -32,26 +40,4 @@ public final class Main {
     public static Doctor doctor() {
         return Objects.requireNonNull(doctor, Main.class.getCanonicalName() + " was not used as the main class");
     }
-
-    private static ConfigurationFacade mainConfig(Args args) {
-        String properties = args.option("properties", 'p', "");
-
-        ConfigurationFacade facade = new DefaultConfigurationFacade()
-                .addSource(new EnvironmentVariablesConfigurationSource())
-                .addSource(new SystemPropertiesConfigurationSource());
-
-        DefaultConfigurationFacade.split(properties.trim())
-                .stream()
-                .map(props -> {
-                    try {
-                        return new File(props).toURI().toURL();
-                    } catch (IOException e) {
-                        throw new UncheckedIOException("error reading properties file: " + props, e);
-                    }
-                })
-                .map(StructuredConfigurationSource::new)
-                .forEach(facade::addSource);
-        return facade;
-    }
-
 }

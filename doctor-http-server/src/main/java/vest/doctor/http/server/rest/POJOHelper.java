@@ -3,6 +3,9 @@ package vest.doctor.http.server.rest;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
+/**
+ * Used internally to assist the code generator when building {@link BeanParam} parameters.
+ */
 public final class POJOHelper<T> {
     private final T value;
 

@@ -58,4 +58,14 @@ public abstract class DoctorProviderWrapper<T> implements DoctorProvider<T> {
     public String toString() {
         return getClass().getSimpleName() + '(' + delegate + ')';
     }
+
+    @Override
+    public int hashCode() {
+        return delegate.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return delegate.equals(obj);
+    }
 }

@@ -42,7 +42,6 @@ import javax.tools.StandardLocation;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.annotation.Annotation;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -123,16 +122,17 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 .setClassName(generatedPackage + ".AppLoaderImpl")
                 .addImplementsInterface(ApplicationLoader.class)
                 .addImportClass(List.class)
-                .addImportClass(ArrayList.class)
+                .addImportClass(LinkedList.class)
                 .addImportClass(Objects.class)
                 .addImportClass(ProviderRegistry.class)
                 .addImportClass(Provider.class)
                 .addImportClass(DoctorProvider.class)
                 .addImportClass(PrimaryProviderWrapper.class)
                 .addImportClass(ShutdownContainer.class)
-                .addField("private final List<", DoctorProvider.class, "<?>> eagerList = new ArrayList<>()");
+                .addField("private final List<", DoctorProvider.class, "<?>> eagerList = new LinkedList<>()");
         this.stage3 = appLoader.newMethod("public void stage3(", ProviderRegistry.class, " {{providerRegistry}})");
         this.stage5 = appLoader.newMethod("public void stage5(", ProviderRegistry.class, " {{providerRegistry}})");
+        stage5.line("eagerList.stream().filter(Objects::nonNull).forEach(", Provider.class, "::get);");
     }
 
     private void loadConf(ProcessorConfiguration processorConfiguration) {
@@ -155,7 +155,6 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
 
         if (roundEnv.processingOver()) {
             customizationPoints.forEach(c -> c.finish(this));
-            stage5.line("eagerList.stream().filter(Objects::nonNull).forEach(", Provider.class, "::get);");
             appLoader.writeClass(filer());
             addServiceImplementation(ApplicationLoader.class, appLoader.getFullyQualifiedClassName());
             writeServicesResource();
