@@ -8,7 +8,14 @@ import java.util.Comparator;
  */
 public interface Prioritized {
 
+    /**
+     * The default priority for a prioritized type.
+     */
     int DEFAULT_PRIORITY = 1000;
+
+    /**
+     * Default comparator for prioritized types. Sorts in ascending order, e.g. [1, 2, 3].
+     */
     Comparator<Prioritized> COMPARATOR = Comparator.comparingInt(Prioritized::priority);
 
     /**

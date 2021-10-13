@@ -4,7 +4,7 @@ import java.util.Optional;
 import java.util.concurrent.Flow;
 import java.util.function.Consumer;
 
-public class SignalProcessor<IN, OUT> extends AbstractProcessor<IN, OUT> {
+final class SignalProcessor<IN, OUT> extends AbstractProcessor<IN, OUT> {
 
     private final Consumer<Signal<IN, OUT>> action;
 

@@ -7,9 +7,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marks a method as a factory for an object. The method will be turned into an instance of {@link DoctorProvider},
- * and be made available for injection elsewhere. The method must have a scope annotation and must return a non-void,
- * non-null value.
+ * Marks a method as a factory for an object. The method will be turned into an instance of
+ * {@link DoctorProvider},  and it's return value will be made available for injection elsewhere.
+ * The method must have a scope annotation and must return a non-void, non-null value.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

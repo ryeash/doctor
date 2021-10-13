@@ -6,7 +6,7 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-public abstract class AbstractSource<T> implements Source<T> {
+abstract class AbstractSource<T> implements Source<T> {
 
     protected final AtomicLong requested = new AtomicLong(0);
     private final AtomicReference<WorkflowState> state = new AtomicReference<>(WorkflowState.UNSUBSCRIBED);
@@ -34,7 +34,7 @@ public abstract class AbstractSource<T> implements Source<T> {
         if (n <= 0) {
             onError(new IllegalArgumentException("requested demand must greater than 0"));
         }
-        stateCheck(WorkflowState.SUBSCRIBED);
+        checkSubscribed();
         requested.accumulateAndGet(n, (current, increment) -> {
             long r = current + increment;
             if (((current ^ r) & (increment ^ r)) < 0) {
@@ -65,7 +65,7 @@ public abstract class AbstractSource<T> implements Source<T> {
     @Override
     public void onNext(T value) {
         Objects.requireNonNull(value, "null values are not allowed to be published");
-        stateCheck(WorkflowState.SUBSCRIBED);
+        checkSubscribed();
     }
 
     @Override
@@ -91,9 +91,9 @@ public abstract class AbstractSource<T> implements Source<T> {
         return getClass().getSimpleName() + "->" + (subscriber != null ? subscriber : "end");
     }
 
-    protected final void stateCheck(WorkflowState expected) {
-        if (state.get() != expected) {
-            throw new IllegalStateException("state check failed: " + state.get() + " != " + expected);
+    protected final void checkSubscribed() {
+        if (state.get() != WorkflowState.SUBSCRIBED) {
+            throw new IllegalStateException("state check failed: " + state.get() + " != " + WorkflowState.SUBSCRIBED);
         }
     }
 

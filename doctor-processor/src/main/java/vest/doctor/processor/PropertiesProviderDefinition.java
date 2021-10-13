@@ -44,10 +44,8 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
 
         impl.addImportClass(ProviderRegistry.class);
         impl.addField("private final ", ProviderRegistry.class.getSimpleName(), " {{providerRegistry}}");
-        impl.addField("private final ", ConfigurationFacade.class.getSimpleName(), " configurationFacade");
         MethodBuilder constructor = impl.newMethod("public ", implClass, "(", ProviderRegistry.class, " {{providerRegistry}})");
         constructor.line("this.{{providerRegistry}} = {{providerRegistry}};");
-        constructor.line("this.configurationFacade = {{providerRegistry}}.configuration();");
 
         for (ExecutableElement method : ProcessorUtils.allMethods(context, providedType())) {
             if (method.getAnnotation(Property.class) != null) {

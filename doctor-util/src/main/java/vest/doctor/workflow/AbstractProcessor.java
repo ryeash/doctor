@@ -1,8 +1,9 @@
 package vest.doctor.workflow;
 
+import java.util.Objects;
 import java.util.concurrent.Flow;
 
-public abstract class AbstractProcessor<IN, OUT> implements Flow.Processor<IN, OUT> {
+abstract class AbstractProcessor<IN, OUT> implements Flow.Processor<IN, OUT> {
     protected Flow.Subscription subscription;
     protected Flow.Subscriber<? super OUT> subscriber;
 
@@ -19,7 +20,7 @@ public abstract class AbstractProcessor<IN, OUT> implements Flow.Processor<IN, O
         if (this.subscription != null) {
             throw new IllegalStateException("onSubscribe for this processor has already been called");
         }
-        this.subscription = subscription;
+        this.subscription = Objects.requireNonNull(subscription);
         if (subscriber != null) {
             try {
                 subscriber.onSubscribe(subscription);

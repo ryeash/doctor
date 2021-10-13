@@ -2,7 +2,7 @@ package vest.doctor.workflow;
 
 import java.util.concurrent.Flow;
 
-class TeeingProcessor<T> extends AbstractProcessor<T, T> {
+final class TeeingProcessor<T> extends AbstractProcessor<T, T> {
 
     private final Flow.Subscriber<T> delegate;
 

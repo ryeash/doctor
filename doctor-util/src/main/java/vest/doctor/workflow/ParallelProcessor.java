@@ -7,7 +7,7 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-class ParallelProcessor<T> extends AbstractProcessor<T, T> {
+final class ParallelProcessor<T> extends AbstractProcessor<T, T> {
 
     private final AtomicBoolean completed = new AtomicBoolean(false);
     private final AtomicInteger active = new AtomicInteger(0);

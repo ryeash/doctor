@@ -32,6 +32,7 @@ import javax.lang.model.util.ElementFilter;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -108,6 +109,7 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
         constructor.line("this.delegate = delegate;");
         constructor.line("this.beanProvider = beanProvider;");
 
+        Map<String, String> initializedAspects = new HashMap<>();
         ProcessorUtils.allUniqueMethods(context, providerDefinition.providedType())
                 .forEach(method -> {
                     Set<Modifier> modifiers = method.getModifiers();
@@ -115,7 +117,7 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
                     if (modifiers.contains(Modifier.FINAL) || modifiers.contains(Modifier.PRIVATE) || modifiers.contains(Modifier.STATIC)) {
                         return;
                     }
-                    AspectedMethod aspectedMethod = new AspectedMethod(context, method, providerDefinition);
+                    AspectedMethod aspectedMethod = new AspectedMethod(context, method, providerDefinition, initializedAspects);
 
                     String methodBody;
                     if (aspectedMethod.shouldAOP()) {
@@ -130,8 +132,6 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
                     classBuilder.addMethod(buildMethodDeclaration(method), mb -> mb.line(methodBody));
                 });
         classBuilder.writeClass(context.filer());
-
-        AspectedMethod.clearCache();
 
         return delegateQualifiedClassName;
     }

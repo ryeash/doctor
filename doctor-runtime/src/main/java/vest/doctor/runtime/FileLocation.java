@@ -38,7 +38,7 @@ public class FileLocation {
     public URL toURL() {
         try {
             if (location.startsWith(CLASSPATH)) {
-                for (int i = 0; i < 3; i++) {
+                for (int i = 0; i < 2; i++) {
                     URL url = ClassLoader.getSystemResource(location.substring(CLASSPATH.length() + i));
                     if (url != null) {
                         return url;
@@ -57,6 +57,24 @@ public class FileLocation {
         }
     }
 
+    /**
+     * Determine if this file location is valid by attempting to open a stream to the source.
+     */
+    @SuppressWarnings("unused")
+    public boolean valid() {
+        try (InputStream is = toURL().openStream()) {
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /**
+     * Fully read the file to a string.
+     *
+     * @return a string representation of the contents of the file
+     * @throws UncheckedIOException for any IO error
+     */
     public String readToString() {
         StringBuilder sb = new StringBuilder();
         int read;

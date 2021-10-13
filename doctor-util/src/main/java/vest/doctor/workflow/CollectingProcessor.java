@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.stream.Collector;
 
 
-public class CollectingProcessor<IN, A, C> extends AbstractProcessor<IN, C> {
+final class CollectingProcessor<IN, A, C> extends AbstractProcessor<IN, C> {
     private final Collector<IN, A, C> collector;
     private final List<A> allA = new LinkedList<>();
     private final ThreadLocal<A> localA;

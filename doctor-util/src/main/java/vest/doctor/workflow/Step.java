@@ -14,9 +14,22 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+/**
+ * A basic step in a workflow. Does not deal with any control signals for the Flow, just items in and out.
+ *
+ * @param <IN>  the input type into the step
+ * @param <OUT> the output type from the step
+ */
 @FunctionalInterface
 public interface Step<IN, OUT> {
 
+    /**
+     * Accept and process an item.
+     *
+     * @param item         the item
+     * @param subscription the {@link Flow.Subscription}
+     * @param emitter      the emitter for outputting values to downstream {@link Flow.Subscriber subscribers}
+     */
     void accept(IN item, Flow.Subscription subscription, Emitter<OUT> emitter);
 
     record Observer1<IN>(Consumer<IN> action) implements Step<IN, IN> {
@@ -54,14 +67,16 @@ public interface Step<IN, OUT> {
     record StreamFlatMapper1<IN, OUT>(Function<IN, Stream<OUT>> mapper) implements Step<IN, OUT> {
         @Override
         public void accept(IN in, Flow.Subscription subscription, Emitter<OUT> emitter) {
-            mapper.apply(in).forEach(emitter::emit);
+            mapper.apply(in)
+                    .forEach(emitter::emit);
         }
     }
 
     record StreamFlatMapper2<IN, OUT>(BiFunction<IN, Flow.Subscription, Stream<OUT>> mapper) implements Step<IN, OUT> {
         @Override
         public void accept(IN in, Flow.Subscription subscription, Emitter<OUT> emitter) {
-            mapper.apply(in, subscription).forEach(emitter::emit);
+            mapper.apply(in, subscription)
+                    .forEach(emitter::emit);
         }
     }
 
@@ -87,7 +102,6 @@ public interface Step<IN, OUT> {
 
     record VarArgs1Step<A, IN, OUT>(A attached1,
                                     Tuple3Consumer<Tuple2<A, IN>, Flow.Subscription, Emitter<OUT>> action) implements Step<IN, OUT> {
-
         @Override
         public void accept(IN item, Flow.Subscription subscription, Emitter<OUT> emitter) {
             action.accept(Tuple.of(attached1, item), subscription, emitter);
@@ -97,7 +111,6 @@ public interface Step<IN, OUT> {
     record VarArgs2Step<A, B, IN, OUT>(A attached1,
                                        B attached2,
                                        Tuple3Consumer<Tuple3<A, B, IN>, Flow.Subscription, Emitter<OUT>> action) implements Step<IN, OUT> {
-
         @Override
         public void accept(IN item, Flow.Subscription subscription, Emitter<OUT> emitter) {
             action.accept(Tuple.of(attached1, attached2, item), subscription, emitter);

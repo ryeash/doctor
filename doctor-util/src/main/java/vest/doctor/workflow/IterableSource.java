@@ -3,7 +3,7 @@ package vest.doctor.workflow;
 import java.util.Iterator;
 import java.util.Objects;
 
-public class IterableSource<IN> extends AbstractSource<IN> {
+final class IterableSource<IN> extends AbstractSource<IN> {
 
     private final Iterator<IN> iterator;
 

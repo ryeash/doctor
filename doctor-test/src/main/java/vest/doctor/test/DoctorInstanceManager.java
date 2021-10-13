@@ -36,8 +36,13 @@ final class DoctorInstanceManager implements AutoCloseable {
         }
     }
 
+    public int size() {
+        return instances.size();
+    }
+
     @Override
     public void close() {
         instances.values().forEach(Doctor::close);
+        instances.clear();
     }
 }
