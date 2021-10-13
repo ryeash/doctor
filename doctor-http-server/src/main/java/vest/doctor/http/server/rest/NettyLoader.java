@@ -8,7 +8,6 @@ import vest.doctor.AdHocProvider;
 import vest.doctor.ApplicationLoader;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.ProviderRegistry;
-import vest.doctor.event.ApplicationStarted;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.EventProducer;
 import vest.doctor.event.ServiceStarted;
@@ -74,12 +73,8 @@ public class NettyLoader implements ApplicationLoader {
 
         providerRegistry.register(new AdHocProvider<>(HttpServer.class, server, null));
 
-        providerRegistry.getInstanceOpt(EventBus.class)
-                .ifPresent(bus -> {
-                    bus.addConsumer(ApplicationStarted.class, event -> {
-                        bus.publish(new ServiceStarted("netty-http", server));
-                    });
-                });
+        Optional<EventBus> eventBusOpt = providerRegistry.getInstanceOpt(EventBus.class);
+        eventBusOpt.ifPresent(eventBus -> eventBus.publish(new ServiceStarted("netty-http", server)));
 
         providerRegistry.shutdownContainer().register(() -> {
             server.close();

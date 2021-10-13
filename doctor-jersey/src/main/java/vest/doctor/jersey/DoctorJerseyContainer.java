@@ -3,7 +3,6 @@ package vest.doctor.jersey;
 import io.netty.channel.EventLoopGroup;
 import jakarta.ws.rs.core.Application;
 import org.glassfish.jersey.server.ApplicationHandler;
-import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.spi.Container;
 
@@ -35,9 +34,5 @@ final class DoctorJerseyContainer implements Container {
     @Override
     public void reload(ResourceConfig configuration) {
         throw new UnsupportedOperationException();
-    }
-
-    public void handle(ContainerRequest requestContext) {
-        workerGroup.execute(() -> applicationHandler.handle(requestContext));
     }
 }

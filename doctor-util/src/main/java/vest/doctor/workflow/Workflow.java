@@ -437,18 +437,6 @@ public class Workflow<START, O> {
     }
 
     /**
-     * Add a signal stage.
-     *
-     * @param outputType the output type from the signal stage
-     * @param action     the signal action
-     * @return the next workflow stage
-     */
-    @SuppressWarnings("unused")
-    public <NEXT> Workflow<START, NEXT> signal(Class<? extends NEXT> outputType, Consumer<Signal<O, NEXT>> action) {
-        return chain(new SignalProcessor<>(action));
-    }
-
-    /**
      * Add a timeout stage to the workflow. A timeout stage will automatically cause a {@link java.util.concurrent.TimeoutException}
      * if an item has not been received within the timeout duration.
      *

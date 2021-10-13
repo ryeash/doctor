@@ -20,6 +20,10 @@ import vest.doctor.ConfigurationFacade;
 import vest.doctor.CustomThreadFactory;
 import vest.doctor.DoctorProvider;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.event.EventBus;
+import vest.doctor.event.EventProducer;
+import vest.doctor.event.ServiceStarted;
+import vest.doctor.event.ServiceStopped;
 import vest.doctor.runtime.LoggingUncaughtExceptionHandler;
 
 import java.io.File;
@@ -27,6 +31,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -81,6 +86,15 @@ public final class NettyJerseyLoader implements ApplicationLoader {
                     workerGroup.shutdownGracefully();
                 });
         ServerHolder holder = new ServerHolder(channels);
+
+        Optional<EventBus> eventBusOpt = providerRegistry.getInstanceOpt(EventBus.class);
+        eventBusOpt.ifPresent(eventBus -> eventBus.publish(new ServiceStarted("netty-jersey-http", holder)));
+
+        providerRegistry.shutdownContainer().register(() -> {
+            holder.close();
+            providerRegistry.getInstance(EventProducer.class)
+                    .publish(new ServiceStopped("netty-jersey-http", holder));
+        });
         Runtime.getRuntime().addShutdownHook(new Thread(holder::close, "netty-server-shutdown"));
     }
 
@@ -128,7 +142,7 @@ public final class NettyJerseyLoader implements ApplicationLoader {
         return conf;
     }
 
-    private record ServerHolder(List<Channel> channels) implements AutoCloseable {
+    public record ServerHolder(List<Channel> channels) implements AutoCloseable {
         @Override
         public void close() {
             for (Channel channel : channels) {

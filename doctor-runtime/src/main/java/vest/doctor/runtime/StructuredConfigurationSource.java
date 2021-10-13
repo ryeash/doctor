@@ -36,13 +36,14 @@ import static java.io.StreamTokenizer.TT_EOL;
  * </pre>
  * </code>
  * This will be parsed as <code>root.child.propertyName = propertyValue</code>.
- * <p>
+ * <pre>
  * Reserved characters:
  * '{' : used to nest a level deeper in the structure
  * '}' : used to close a nested structure
  * '=' & ':' : sets the value of a property, e.g. name = value OR name: value
  * ';' : can be used to signify the end of a line (though it is not necessary)
- * <p>
+ * '#' : comments
+ * </pre>
  * Quoted strings using either ' or " can be used to escape reserved characters
  * e.g. name = "value contains { } = : and ;"
  * Quotes are necessary when interpolating values, i.e. values like: http://${referenced.property}/

@@ -18,7 +18,7 @@ final class DoctorInstanceManager implements AutoCloseable {
         return DoctorInstanceManagerSingletonHolder.INSTANCE;
     }
 
-    private final Map<TestConfiguration, Doctor> instances = new ConcurrentHashMap<>(4, 1, 1);
+    private final Map<TestConfiguration, Doctor> instances = new ConcurrentHashMap<>(4, 1, 2);
 
     public Doctor getOrCreate(TestConfiguration doctorConfig) {
         return instances.computeIfAbsent(doctorConfig, this::create);

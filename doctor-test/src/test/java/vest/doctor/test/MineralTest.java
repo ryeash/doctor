@@ -3,7 +3,9 @@ package vest.doctor.test;
 import jakarta.inject.Inject;
 import org.testng.annotations.Test;
 
-@TestConfiguration(modules = {"minerals"})
+@TestConfiguration(
+        modules = {"minerals"},
+        configurationBuilder = TestConfigurationFacadeBuilder.class)
 public class MineralTest extends AbstractDoctorTest {
 
     @Inject

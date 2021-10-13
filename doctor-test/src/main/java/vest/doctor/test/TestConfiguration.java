@@ -1,5 +1,6 @@
 package vest.doctor.test;
 
+import vest.doctor.ConfigurationFacade;
 import vest.doctor.runtime.Doctor;
 
 import java.lang.annotation.Documented;
@@ -7,6 +8,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.function.Supplier;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
@@ -31,13 +33,13 @@ public @interface TestConfiguration {
 
     /**
      * Set the configuration builder that will build the {@link vest.doctor.ConfigurationFacade}
-     * used with the doctor instance.
+     * used with the doctor instance. The class must have a public zero-arg constructor.
      */
-    Class<? extends ConfigurationFacadeBuilder> configurationBuilder() default DefaultConfigurationFacadeBuilder.class;
+    Class<? extends Supplier<? extends ConfigurationFacade>> configurationBuilder() default DefaultConfigurationFacadeBuilder.class;
 
     /**
      * Adds additional property files to the configuration facade
-     * (built from {@link #configurationBuilder()}). The properties files will be loaded
+     * (built from {@link #configurationBuilder()}). The property files will be loaded
      * as {@link vest.doctor.runtime.StructuredConfigurationSource StructuredConfigurationSources}.
      */
     String[] propertyFiles() default {};

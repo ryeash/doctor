@@ -19,7 +19,11 @@ final class SubscriptionHookProcessor<T> extends AbstractProcessor<T, T> {
         this.subscription = subscription;
         action.accept(subscription);
         if (subscriber != null) {
-            subscriber.onSubscribe(subscription);
+            try {
+                subscriber.onSubscribe(subscription);
+            } catch (Throwable t) {
+                onError(t);
+            }
         }
     }
 
