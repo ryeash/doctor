@@ -7,13 +7,14 @@ import jakarta.inject.Singleton;
 import vest.doctor.http.server.impl.AbstractWebsocket;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @Singleton
 public class TCNettyWebsocket extends AbstractWebsocket {
 
     @Override
-    public String path() {
-        return "/grumpy";
+    public List<String> paths() {
+        return List.of("/grumpy");
     }
 
     @Override

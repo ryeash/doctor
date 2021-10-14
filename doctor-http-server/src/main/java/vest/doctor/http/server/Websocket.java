@@ -4,15 +4,17 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 
+import java.util.List;
+
 /**
  * Interface defining the contract for a websocket endpoint.
  */
 public interface Websocket {
 
     /**
-     * Comma delimited list of paths to bind this websocket to.
+     * List of paths to bind this websocket to.
      */
-    String path();
+    List<String> paths();
 
     /**
      * Called when the HttpServer accepts a new websocket connection. Defaults to a no-op.

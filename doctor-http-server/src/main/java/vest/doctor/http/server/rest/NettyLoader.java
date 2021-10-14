@@ -26,7 +26,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class NettyLoader implements ApplicationLoader {
 
@@ -52,11 +51,9 @@ public class NettyLoader implements ApplicationLoader {
         providerRegistry.getProviders(Websocket.class)
                 .forEach(ws -> {
                     Websocket websocket = ws.get();
-                    List<String> paths = Optional.ofNullable(websocket.path())
-                            .map(String::trim)
-                            .map(s -> s.split(","))
+                    List<String> paths = Optional.ofNullable(websocket.paths())
                             .stream()
-                            .flatMap(Stream::of)
+                            .flatMap(List::stream)
                             .map(String::trim)
                             .filter(s -> !s.isEmpty())
                             .collect(Collectors.toList());

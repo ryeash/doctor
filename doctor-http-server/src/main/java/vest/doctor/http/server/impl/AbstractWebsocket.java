@@ -3,6 +3,7 @@ package vest.doctor.http.server.impl;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
@@ -15,7 +16,6 @@ import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory;
 import io.netty.util.AttributeKey;
-import io.netty.util.concurrent.Future;
 import vest.doctor.http.server.Websocket;
 
 import java.io.InputStream;
@@ -186,18 +186,18 @@ public abstract class AbstractWebsocket implements Websocket {
     }
 
     /**
-     * Send a websocket frame.
+     * Send a websocket frame to the client.
      *
-     * @param ctx   The context to send the message to
+     * @param ctx   The channel to send the message on
      * @param frame The frame to send
      * @return a future representing the future completed send of data
      */
     protected CompletableFuture<Void> send(ChannelHandlerContext ctx, WebSocketFrame frame) {
-        CompletableFuture<Future<?>> future = new CompletableFuture<>();
+        CompletableFuture<ChannelFuture> future = new CompletableFuture<>();
         ctx.channel()
                 .eventLoop()
                 .submit(() -> ctx.writeAndFlush(frame))
-                .addListener(future::complete);
+                .addListener(new CompletableFutureListener<>(future));
         return future.thenApply(f -> null);
     }
 
@@ -208,7 +208,7 @@ public abstract class AbstractWebsocket implements Websocket {
      *
      * @param ctx The websocket channel context to close
      */
-    public void close(ChannelHandlerContext ctx) {
+    protected void close(ChannelHandlerContext ctx) {
         close(ctx, 1000, "server closed");
     }
 
