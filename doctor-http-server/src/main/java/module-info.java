@@ -11,6 +11,7 @@ module doctor.http.server {
     requires io.netty.transport;
     requires io.netty.common;
     requires org.slf4j;
+    requires doctor.runtime;
 
     exports vest.doctor.http.server;
     exports vest.doctor.http.server.impl;

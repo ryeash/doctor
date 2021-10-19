@@ -72,7 +72,7 @@ public class JerseyTest {
                 .statusCode(503);
     }
 
-    @Test
+    @Test(invocationCount = 5)
     public void pojo() {
         User user = new User();
         user.setName("user");

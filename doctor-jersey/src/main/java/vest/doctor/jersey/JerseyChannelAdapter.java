@@ -4,7 +4,6 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.EventLoopGroup;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaderNames;
@@ -24,14 +23,22 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.spi.Container;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import vest.doctor.CustomThreadFactory;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.http.server.HttpServerConfiguration;
+import vest.doctor.http.server.Websocket;
+import vest.doctor.http.server.impl.WebsocketHandler;
+import vest.doctor.runtime.LoggingUncaughtExceptionHandler;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static vest.doctor.jersey.DoctorChannelInitializer.JERSEY_ADAPTER_NAME;
 
@@ -41,81 +48,91 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
     public static final String NETTY_REQUEST = "doctor.netty.request";
     public static final String NETTY_SERVLET_REQUEST = "doctor.netty.servlet.request";
     public static final String RESOURCE_CONFIG = "doctor.jersey.resourceConfig";
+
     private static final Logger log = LoggerFactory.getLogger(JerseyChannelAdapter.class);
     private final HttpServerConfiguration httpConfig;
     private final ApplicationHandler applicationHandler;
-    private final EventLoopGroup workerGroup;
     private final ResourceConfig resourceConfig;
     private final Provider<SecurityContext> securityContextProvider;
     private final Map<String, Provider<Websocket>> websockets;
+    private final ExecutorService workerGroup;
 
     public JerseyChannelAdapter(HttpServerConfiguration httpConfig,
                                 Container container,
-                                EventLoopGroup workerGroup,
                                 ProviderRegistry providerRegistry) {
         this.httpConfig = httpConfig;
         this.applicationHandler = container.getApplicationHandler();
-        this.workerGroup = workerGroup;
         this.resourceConfig = container.getConfiguration();
         this.securityContextProvider = providerRegistry.getProviderOpt(SecurityContext.class)
                 .map(p -> (Provider<SecurityContext>) p)
                 .orElse(DefaultSecurityContext.PROVIDER);
-        this.websockets = providerRegistry.getProviders(Websocket.class)
-                .collect(Collectors.toUnmodifiableMap(p -> p.get().path(), Function.identity()));
+
+        this.websockets = new HashMap<>();
+        providerRegistry.getProviders(Websocket.class)
+                .forEach(w -> {
+                    List<String> paths = w.get().paths();
+                    for (String path : paths) {
+                        websockets.put(path, w);
+                    }
+                });
+        this.workerGroup = Executors.newFixedThreadPool(httpConfig.getWorkerThreads(), new CustomThreadFactory(true, httpConfig.getWorkerThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()));
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        if (!(msg instanceof HttpObject)) {
-            log.error("unhandled object type: " + msg);
-            ctx.close();
-        }
-
-        if (msg instanceof HttpRequest req) {
-            if (HttpUtil.getContentLength(req, -1L) >= httpConfig.getMaxContentLength()) {
-                sendErrorAndClose(ctx, HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE);
-                return;
+        try {
+            if (!(msg instanceof HttpObject)) {
+                log.error("unhandled object type: " + msg);
+                ctx.close();
             }
 
-            if (HttpUtil.is100ContinueExpected(req)) {
-                ctx.write(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE));
-            }
-
-            String upgradeHeader = req.headers().get(HttpHeaderNames.UPGRADE);
-            if (upgradeHeader != null) {
-                handleWebsocketUpgrade(ctx, req, upgradeHeader);
-                return;
-            }
-
-            QueuedBufInputStream stream = ctx.channel().attr(INPUT_STREAM).get();
-            if (stream == null) {
-                stream = new QueuedBufInputStream();
-                ctx.channel().attr(INPUT_STREAM).set(stream);
-            } else {
-                stream.reset();
-            }
-
-            ContainerRequest requestContext = createContainerRequest(ctx, req);
-            requestContext.setProperty(NETTY_REQUEST, req);
-            requestContext.setProperty(NETTY_SERVLET_REQUEST, new NettyHttpServletRequest(ctx, req));
-            requestContext.setProperty(RESOURCE_CONFIG, resourceConfig);
-            requestContext.setWriter(new NettyResponseWriter(ctx, req));
-            requestContext.setEntityStream(stream);
-            for (String name : req.headers().names()) {
-                requestContext.headers(name, req.headers().getAll(name));
-            }
-
-            workerGroup.submit(() -> applicationHandler.handle(requestContext));
-        }
-
-        if (msg instanceof HttpContent httpContent) {
-            QueuedBufInputStream is = ctx.channel().attr(INPUT_STREAM).get();
-            if (is != null) {
-                is.append(httpContent);
-                if (is.size() > httpConfig.getMaxContentLength()) {
+            if (msg instanceof HttpRequest req) {
+                if (HttpUtil.getContentLength(req, -1L) >= httpConfig.getMaxContentLength()) {
                     sendErrorAndClose(ctx, HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE);
+                    return;
+                }
+
+                if (HttpUtil.is100ContinueExpected(req)) {
+                    ctx.write(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE));
+                }
+
+                String upgradeHeader = req.headers().get(HttpHeaderNames.UPGRADE);
+                if (upgradeHeader != null) {
+                    handleWebsocketUpgrade(ctx, req, upgradeHeader);
+                    return;
+                }
+
+                QueuedBufInputStream stream = new QueuedBufInputStream();
+                QueuedBufInputStream old = ctx.channel().attr(INPUT_STREAM).getAndSet(stream);
+                if (old != null) {
+                    old.close();
+                }
+
+                ContainerRequest requestContext = createContainerRequest(ctx, req);
+                requestContext.setProperty(NETTY_REQUEST, req);
+                requestContext.setProperty(NETTY_SERVLET_REQUEST, new NettyHttpServletRequest(ctx, req));
+                requestContext.setProperty(RESOURCE_CONFIG, resourceConfig);
+                requestContext.setWriter(new NettyResponseWriter(ctx, req));
+                requestContext.setEntityStream(stream);
+                for (String name : req.headers().names()) {
+                    requestContext.headers(name, req.headers().getAll(name));
+                }
+                CompletableFuture.completedFuture(requestContext)
+                        .thenAcceptAsync(applicationHandler::handle, workerGroup);
+            }
+
+            if (msg instanceof HttpContent httpContent) {
+                QueuedBufInputStream is = ctx.channel().attr(INPUT_STREAM).get();
+                if (is != null) {
+//                    HttpContent dupe = httpContent.retainedDuplicate();
+                    is.append(httpContent);
+                    if (is.size() > httpConfig.getMaxContentLength()) {
+                        sendErrorAndClose(ctx, HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE);
+                    }
                 }
             }
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
     }
 

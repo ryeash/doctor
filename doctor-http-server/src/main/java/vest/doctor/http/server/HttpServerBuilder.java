@@ -26,10 +26,10 @@ public final class HttpServerBuilder {
     }
 
     /**
-     * @see HttpServerConfiguration#setTcpThreadPrefix(String)
+     * @see HttpServerConfiguration#setTcpThreadFormat(String)
      */
-    public HttpServerBuilder setTcpThreadPrefix(String tcpThreadPrefix) {
-        config.setTcpThreadPrefix(tcpThreadPrefix);
+    public HttpServerBuilder setTcpThreadFormat(String tcpThreadPrefix) {
+        config.setTcpThreadFormat(tcpThreadPrefix);
         return this;
     }
 
@@ -42,10 +42,10 @@ public final class HttpServerBuilder {
     }
 
     /**
-     * @see HttpServerConfiguration#setWorkerThreadPrefix(String)
+     * @see HttpServerConfiguration#setWorkerThreadFormat(String)
      */
-    public HttpServerBuilder setWorkerThreadPrefix(String workerThreadPrefix) {
-        config.setWorkerThreadPrefix(workerThreadPrefix);
+    public HttpServerBuilder setWorkerThreadFormat(String workerThreadPrefix) {
+        config.setWorkerThreadFormat(workerThreadPrefix);
         return this;
     }
 

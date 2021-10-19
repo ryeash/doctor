@@ -103,6 +103,7 @@ final class NettyResponseWriter implements ContainerResponseWriter {
     public void failure(Throwable error) {
         log.error("error in response writer", error);
         DefaultFullHttpResponse response = new DefaultFullHttpResponse(req.protocolVersion(), HttpResponseStatus.INTERNAL_SERVER_ERROR);
+        response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
     }
 

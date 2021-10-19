@@ -2,7 +2,6 @@ package vest.doctor.jersey;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpContentCompressor;
 import io.netty.handler.codec.http.HttpContentDecompressor;
@@ -10,6 +9,7 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import org.glassfish.jersey.server.spi.Container;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.http.server.HttpServerConfiguration;
 
 /**
  * Netty {@link ChannelInitializer} that binds together the netty http handling with the jersey handling.
@@ -21,11 +21,10 @@ final class DoctorChannelInitializer extends ChannelInitializer<SocketChannel> {
     private final JerseyChannelAdapter jerseyChannelAdapter;
 
     public DoctorChannelInitializer(HttpServerConfiguration config,
-                                    EventLoopGroup workerGroup,
                                     Container container,
                                     ProviderRegistry providerRegistry) {
         this.config = config;
-        this.jerseyChannelAdapter = new JerseyChannelAdapter(config, container, workerGroup, providerRegistry);
+        this.jerseyChannelAdapter = new JerseyChannelAdapter(config, container, providerRegistry);
     }
 
     @Override

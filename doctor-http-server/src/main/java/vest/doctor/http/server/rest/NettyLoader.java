@@ -85,9 +85,9 @@ public class NettyLoader implements ApplicationLoader {
 
         HttpServerConfiguration conf = new HttpServerConfiguration();
         conf.setTcpManagementThreads(httpConf.get("tcp.threads", 1, Integer::valueOf));
-        conf.setTcpThreadPrefix(httpConf.get("tcp.threadPrefix", "netty-tcp"));
+        conf.setTcpThreadFormat(httpConf.get("tcp.threadPrefix", "netty-tcp"));
         conf.setWorkerThreads(httpConf.get("worker.threads", 16, Integer::valueOf));
-        conf.setWorkerThreadPrefix(httpConf.get("worker.threadPrefix", "netty-worker"));
+        conf.setWorkerThreadFormat(httpConf.get("worker.threadPrefix", "netty-worker"));
         conf.setSocketBacklog(httpConf.get("tcp.socketBacklog", 1024, Integer::valueOf));
 
         List<InetSocketAddress> bind = httpConf.getList("bind", Function.identity())

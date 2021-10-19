@@ -26,14 +26,15 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.util.AttributeKey;
-import io.netty.util.concurrent.DefaultThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import vest.doctor.CustomThreadFactory;
 import vest.doctor.http.server.impl.CompositeExceptionHandler;
 import vest.doctor.http.server.impl.HttpServerChannelInitializer;
 import vest.doctor.http.server.impl.ServerRequest;
 import vest.doctor.http.server.impl.StreamingRequestBody;
 import vest.doctor.http.server.impl.WebsocketHandler;
+import vest.doctor.runtime.LoggingUncaughtExceptionHandler;
 
 import java.net.InetSocketAddress;
 import java.util.Collections;
@@ -72,8 +73,8 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
         this.handler = handler;
         this.websockets = new HashMap<>();
         this.exceptionHandler = exceptionHandler;
-        this.bossGroup = new NioEventLoopGroup(config.getTcpManagementThreads(), new DefaultThreadFactory(config.getTcpThreadPrefix(), false));
-        this.workerGroup = new NioEventLoopGroup(config.getWorkerThreads(), new DefaultThreadFactory(config.getWorkerThreadPrefix(), true));
+        this.bossGroup = new NioEventLoopGroup(config.getTcpManagementThreads(), new CustomThreadFactory(false, config.getTcpThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()));
+        this.workerGroup = new NioEventLoopGroup(config.getWorkerThreads(), new CustomThreadFactory(true, config.getWorkerThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()));
         ServerBootstrap b = new ServerBootstrap()
                 .group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
@@ -122,6 +123,10 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
                 if (upgradeHeader != null) {
                     handleWebsocketUpgrade(ctx, request, upgradeHeader);
                     return;
+                }
+
+                if (HttpUtil.is100ContinueExpected(request)) {
+                    ctx.write(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE));
                 }
 
                 StreamingRequestBody body = new StreamingRequestBody(ctx, config.getMaxContentLength());

@@ -20,7 +20,7 @@ public class HttpServerConfiguration {
     /**
      * The thread prefix / pool name to use for the main TCP management event loop group.
      */
-    private String tcpThreadPrefix = "netty-tcp";
+    private String tcpThreadFormat = "netty-tcp-%d";
 
     /**
      * The number of threads used to handle requests.
@@ -30,7 +30,7 @@ public class HttpServerConfiguration {
     /**
      * The thread prefix / pool name to use for the worker thread event loop group.
      */
-    private String workerThreadPrefix = "netty-worker";
+    private String workerThreadFormat = "netty-worker-%d";
 
     /**
      * The maximum queue length for incoming connection indications;
@@ -107,12 +107,12 @@ public class HttpServerConfiguration {
         this.tcpManagementThreads = tcpManagementThreads;
     }
 
-    public String getTcpThreadPrefix() {
-        return tcpThreadPrefix;
+    public String getTcpThreadFormat() {
+        return tcpThreadFormat;
     }
 
-    public void setTcpThreadPrefix(String tcpThreadPrefix) {
-        this.tcpThreadPrefix = tcpThreadPrefix;
+    public void setTcpThreadFormat(String tcpThreadFormat) {
+        this.tcpThreadFormat = tcpThreadFormat;
     }
 
     public int getWorkerThreads() {
@@ -123,12 +123,12 @@ public class HttpServerConfiguration {
         this.workerThreads = workerThreads;
     }
 
-    public String getWorkerThreadPrefix() {
-        return workerThreadPrefix;
+    public String getWorkerThreadFormat() {
+        return workerThreadFormat;
     }
 
-    public void setWorkerThreadPrefix(String workerThreadPrefix) {
-        this.workerThreadPrefix = workerThreadPrefix;
+    public void setWorkerThreadFormat(String workerThreadFormat) {
+        this.workerThreadFormat = workerThreadFormat;
     }
 
     public int getSocketBacklog() {
