@@ -13,6 +13,7 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.AttributeKey;
 import jakarta.inject.Provider;
 import jakarta.ws.rs.core.SecurityContext;
@@ -27,6 +28,8 @@ import vest.doctor.CustomThreadFactory;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.http.server.HttpServerConfiguration;
 import vest.doctor.http.server.Websocket;
+import vest.doctor.http.server.impl.HttpServerChannelInitializer;
+import vest.doctor.http.server.impl.PathSpec;
 import vest.doctor.http.server.impl.WebsocketHandler;
 import vest.doctor.runtime.LoggingUncaughtExceptionHandler;
 
@@ -35,12 +38,10 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import static vest.doctor.jersey.DoctorChannelInitializer.JERSEY_ADAPTER_NAME;
+import java.util.function.Supplier;
 
 @Sharable
 final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
@@ -54,7 +55,7 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
     private final ApplicationHandler applicationHandler;
     private final ResourceConfig resourceConfig;
     private final Provider<SecurityContext> securityContextProvider;
-    private final Map<String, Provider<Websocket>> websockets;
+    private final Map<PathSpec, Supplier<Websocket>> websockets;
     private final ExecutorService workerGroup;
 
     public JerseyChannelAdapter(HttpServerConfiguration httpConfig,
@@ -72,7 +73,7 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
                 .forEach(w -> {
                     List<String> paths = w.get().paths();
                     for (String path : paths) {
-                        websockets.put(path, w);
+                        websockets.put(new PathSpec(path, httpConfig.getCaseInsensitiveMatching()), w::get);
                     }
                 });
         this.workerGroup = Executors.newFixedThreadPool(httpConfig.getWorkerThreads(), new CustomThreadFactory(true, httpConfig.getWorkerThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()));
@@ -124,7 +125,6 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
             if (msg instanceof HttpContent httpContent) {
                 QueuedBufInputStream is = ctx.channel().attr(INPUT_STREAM).get();
                 if (is != null) {
-//                    HttpContent dupe = httpContent.retainedDuplicate();
                     is.append(httpContent);
                     if (is.size() > httpConfig.getMaxContentLength()) {
                         sendErrorAndClose(ctx, HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE);
@@ -172,17 +172,18 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
 
     private void handleWebsocketUpgrade(ChannelHandlerContext ctx, HttpRequest request, String upgradeHeader) {
         if (HttpHeaderValues.WEBSOCKET.contentEqualsIgnoreCase(upgradeHeader)) {
-            Websocket ws = Optional.ofNullable(websockets.get(request.uri()))
-                    .map(Provider::get)
-                    .orElse(null);
-            if (ws != null) {
-                // add the websocket handler to the end of the processing pipeline
-                ctx.pipeline().replace(JERSEY_ADAPTER_NAME, "websocketHandler", new WebsocketHandler(ws));
-                ws.handshake(ctx, request, request.uri());
-                return;
-            } else {
-                log.error("no websocket handler has been registered for path {}", request.uri());
+            QueryStringDecoder qsd = new QueryStringDecoder(request.uri());
+            for (Map.Entry<PathSpec, Supplier<Websocket>> entry : websockets.entrySet()) {
+                Map<String, String> pathParams = entry.getKey().matchAndCollect(qsd.rawPath());
+                if (pathParams != null) {
+                    Websocket ws = entry.getValue().get();
+                    // add the websocket handler to the end of the processing pipeline
+                    ctx.pipeline().replace(HttpServerChannelInitializer.SERVER_HANDLER, "websocketHandler", new WebsocketHandler(ws));
+                    ws.handshake(ctx, request, qsd.rawPath(), pathParams);
+                    return;
+                }
             }
+            log.error("no websocket handler has been registered for path {}", request.uri());
         } else {
             log.error("upgrading connection to '{}' is not supported", upgradeHeader);
         }

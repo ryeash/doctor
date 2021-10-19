@@ -19,6 +19,7 @@ import io.netty.util.AttributeKey;
 import vest.doctor.http.server.Websocket;
 
 import java.io.InputStream;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -32,7 +33,7 @@ public abstract class AbstractWebsocket implements Websocket {
     private static final WebSocketServerHandshakerFactory HANDSHAKER_FACTORY = new WebSocketServerHandshakerFactory("/*", null, false);
 
     @Override
-    public void connect(ChannelHandlerContext ctx, String path) {
+    public void connect(ChannelHandlerContext ctx, String path, Map<String, String> params) {
         // default to no-op
     }
 
@@ -225,7 +226,7 @@ public abstract class AbstractWebsocket implements Websocket {
     }
 
     @Override
-    public final void handshake(ChannelHandlerContext ctx, HttpRequest request, String path) {
+    public final void handshake(ChannelHandlerContext ctx, HttpRequest request, String path, Map<String, String> params) {
         WebSocketServerHandshaker handshaker = HANDSHAKER_FACTORY.newHandshaker(request);
         if (handshaker == null) {
             WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
@@ -234,7 +235,7 @@ public abstract class AbstractWebsocket implements Websocket {
             ctx.channel().attr(WS_PATH).set(request.uri());
             handshaker.handshake(ctx.channel(), request).addListener(future -> {
                 if (future.isSuccess()) {
-                    connect(ctx, path);
+                    connect(ctx, path, params);
                 }
             });
         }

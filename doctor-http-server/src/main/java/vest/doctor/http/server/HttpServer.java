@@ -25,12 +25,14 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vest.doctor.CustomThreadFactory;
 import vest.doctor.http.server.impl.CompositeExceptionHandler;
 import vest.doctor.http.server.impl.HttpServerChannelInitializer;
+import vest.doctor.http.server.impl.PathSpec;
 import vest.doctor.http.server.impl.ServerRequest;
 import vest.doctor.http.server.impl.StreamingRequestBody;
 import vest.doctor.http.server.impl.WebsocketHandler;
@@ -42,7 +44,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
@@ -57,7 +58,7 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
     private final EventLoopGroup workerGroup;
     private final List<Channel> serverChannels;
     private final Handler handler;
-    private final Map<String, Supplier<Websocket>> websockets;
+    private final Map<PathSpec, Supplier<Websocket>> websockets;
     private final ExceptionHandler exceptionHandler;
 
     public HttpServer(HttpServerConfiguration config, Handler handler) {
@@ -92,10 +93,11 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
     }
 
     public void addWebsocket(String uri, Supplier<Websocket> websocket) {
-        if (websockets.containsKey(uri)) {
+        PathSpec pathSpec = new PathSpec(uri, config.getCaseInsensitiveMatching());
+        if (websockets.containsKey(pathSpec)) {
             throw new IllegalArgumentException("there is already a websocket registered for " + uri);
         }
-        websockets.put(uri, websocket);
+        websockets.put(pathSpec, websocket);
     }
 
     @Override
@@ -185,17 +187,18 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
 
     private void handleWebsocketUpgrade(ChannelHandlerContext ctx, HttpRequest request, String upgradeHeader) {
         if (HttpHeaderValues.WEBSOCKET.contentEqualsIgnoreCase(upgradeHeader)) {
-            Websocket ws = Optional.ofNullable(websockets.get(request.uri()))
-                    .map(Supplier::get)
-                    .orElse(null);
-            if (ws != null) {
-                // add the websocket handler to the end of the processing pipeline
-                ctx.pipeline().replace(HttpServerChannelInitializer.SERVER_HANDLER, "websocketHandler", new WebsocketHandler(ws));
-                ws.handshake(ctx, request, request.uri());
-                return;
-            } else {
-                log.error("no websocket handler has been registered for path {}", request.uri());
+            QueryStringDecoder qsd = new QueryStringDecoder(request.uri());
+            for (Map.Entry<PathSpec, Supplier<Websocket>> entry : websockets.entrySet()) {
+                Map<String, String> pathParams = entry.getKey().matchAndCollect(qsd.rawPath());
+                if (pathParams != null) {
+                    Websocket ws = entry.getValue().get();
+                    // add the websocket handler to the end of the processing pipeline
+                    ctx.pipeline().replace(HttpServerChannelInitializer.SERVER_HANDLER, "websocketHandler", new WebsocketHandler(ws));
+                    ws.handshake(ctx, request, qsd.rawPath(), pathParams);
+                    return;
+                }
             }
+            log.error("no websocket handler has been registered for path {}", request.uri());
         } else {
             log.error("upgrading connection to '{}' is not supported", upgradeHeader);
         }
@@ -225,8 +228,8 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
         sb.append("Handler: ").append(handler).append("\n");
         if (!websockets.isEmpty()) {
             sb.append("Websockets:\n");
-            for (Map.Entry<String, Supplier<Websocket>> entry : websockets.entrySet()) {
-                sb.append("  ").append(entry.getKey()).append(" -> ").append(entry.getValue().get()).append("\n");
+            for (Map.Entry<PathSpec, Supplier<Websocket>> entry : websockets.entrySet()) {
+                sb.append("  ").append(entry.getKey().getPath()).append(" -> ").append(entry.getValue().get()).append("\n");
             }
         }
         sb.append("ExceptionHandler: ").append(exceptionHandler);

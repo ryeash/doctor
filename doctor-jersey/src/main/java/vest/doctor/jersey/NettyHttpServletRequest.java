@@ -19,6 +19,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.Part;
+import vest.doctor.http.server.impl.HttpServerChannelInitializer;
 
 import java.io.BufferedReader;
 import java.io.UnsupportedEncodingException;
@@ -373,7 +374,7 @@ final class NettyHttpServletRequest implements HttpServletRequest {
 
     @Override
     public boolean isSecure() {
-        return ctx.pipeline().get(DoctorChannelInitializer.SSL_CONTEXT) != null;
+        return ctx.pipeline().get(HttpServerChannelInitializer.SSL_CONTEXT) != null;
     }
 
     @Override

@@ -14,6 +14,8 @@ import vest.doctor.event.EventProducer;
 import vest.doctor.event.ServiceStarted;
 import vest.doctor.event.ServiceStopped;
 import vest.doctor.http.server.HttpServerConfiguration;
+import vest.doctor.http.server.PipelineCustomizer;
+import vest.doctor.http.server.impl.HttpServerChannelInitializer;
 
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -48,7 +50,13 @@ public final class NettyJerseyLoader implements ApplicationLoader {
         HttpServerConfiguration httpConfig = init(providerRegistry);
 
         DoctorJerseyContainer container = new DoctorJerseyContainer(config);
-        JerseyHttpServer jerseyHttpServer = new JerseyHttpServer(httpConfig, new DoctorChannelInitializer(httpConfig, container, providerRegistry));
+//        JerseyHttpServer jerseyHttpServer = new JerseyHttpServer(httpConfig, new DoctorChannelInitializer(httpConfig, container, providerRegistry));
+
+        List<PipelineCustomizer> pipelineCustomizers = providerRegistry.getProviders(PipelineCustomizer.class)
+                .map(DoctorProvider::get)
+                .collect(Collectors.toList());
+        JerseyHttpServer jerseyHttpServer = new JerseyHttpServer(httpConfig, new HttpServerChannelInitializer(new JerseyChannelAdapter(httpConfig, container, providerRegistry), httpConfig, pipelineCustomizers));
+
 
         Optional<EventBus> eventBusOpt = providerRegistry.getInstanceOpt(EventBus.class);
         eventBusOpt.ifPresent(eventBus -> eventBus.publish(new ServiceStarted("netty-jersey-http", jerseyHttpServer)));

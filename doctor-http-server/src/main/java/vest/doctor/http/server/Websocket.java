@@ -5,6 +5,7 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Interface defining the contract for a websocket endpoint.
@@ -22,7 +23,7 @@ public interface Websocket {
      * @param ctx  The client connection context
      * @param path The path that the websocket client connected to
      */
-    void connect(ChannelHandlerContext ctx, String path);
+    void connect(ChannelHandlerContext ctx, String path, Map<String, String> params);
 
     /**
      * Called when a message is received from the client. If the implementation throws
@@ -50,5 +51,5 @@ public interface Websocket {
      * @param request The http request that initiated the websocket handshake
      * @param path    The request path
      */
-    void handshake(ChannelHandlerContext ctx, HttpRequest request, String path);
+    void handshake(ChannelHandlerContext ctx, HttpRequest request, String path, Map<String, String> params);
 }

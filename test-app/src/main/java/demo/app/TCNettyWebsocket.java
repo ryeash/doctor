@@ -8,6 +8,7 @@ import vest.doctor.http.server.impl.AbstractWebsocket;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 @Singleton
 public class TCNettyWebsocket extends AbstractWebsocket {
@@ -18,7 +19,7 @@ public class TCNettyWebsocket extends AbstractWebsocket {
     }
 
     @Override
-    public void connect(ChannelHandlerContext ctx, String path) {
+    public void connect(ChannelHandlerContext ctx, String path, Map<String, String> params) {
         System.out.println("NEW WEBSOCKET CONNECTION ACCEPTED");
     }
 

@@ -24,9 +24,8 @@ public final class PathSpec implements Comparable<PathSpec> {
         if (path.isEmpty()) {
             throw new IllegalArgumentException("the route path may not be empty");
         }
-        Objects.requireNonNull(path, "route path uri may not be null");
 
-        this.path = path;
+        this.path = Objects.requireNonNull(path, "route path uri may not be null");
         this.paramNames = new ArrayList<>(3);
 
         // pre-process to handle '*'
@@ -88,6 +87,23 @@ public final class PathSpec implements Comparable<PathSpec> {
             params.put(name, group);
         }
         return params;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        PathSpec pathSpec = (PathSpec) o;
+        return Objects.equals(path, pathSpec.path);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(path);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package vest.doctor.http.server.impl;
 
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
@@ -7,7 +8,6 @@ import io.netty.handler.codec.http.HttpContentCompressor;
 import io.netty.handler.codec.http.HttpContentDecompressor;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.stream.ChunkedWriteHandler;
-import vest.doctor.http.server.HttpServer;
 import vest.doctor.http.server.HttpServerConfiguration;
 import vest.doctor.http.server.PipelineCustomizer;
 
@@ -22,11 +22,11 @@ public final class HttpServerChannelInitializer extends ChannelInitializer<Socke
     public static final String CHUNKED_WRITE_HANDLER = "chunkedWriteHandler";
     public static final String SERVER_HANDLER = "serverHandler";
 
-    private final HttpServer server;
+    private final ChannelHandler server;
     private final HttpServerConfiguration config;
     private final List<PipelineCustomizer> customizers;
 
-    public HttpServerChannelInitializer(HttpServer server, HttpServerConfiguration config, List<PipelineCustomizer> customizers) {
+    public HttpServerChannelInitializer(ChannelHandler server, HttpServerConfiguration config, List<PipelineCustomizer> customizers) {
         this.server = server;
         this.config = config;
         this.customizers = customizers;
