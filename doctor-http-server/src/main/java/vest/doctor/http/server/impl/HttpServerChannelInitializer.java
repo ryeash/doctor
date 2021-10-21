@@ -4,6 +4,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.codec.compression.StandardCompressionOptions;
 import io.netty.handler.codec.http.HttpContentCompressor;
 import io.netty.handler.codec.http.HttpContentDecompressor;
 import io.netty.handler.codec.http.HttpServerCodec;
@@ -45,7 +46,7 @@ public final class HttpServerChannelInitializer extends ChannelInitializer<Socke
                 config.isValidateHeaders(),
                 config.getInitialBufferSize()));
         p.addLast(HTTP_CONTENT_DECOMPRESSOR, new HttpContentDecompressor());
-        p.addLast(HTTP_CONTENT_COMPRESSOR, new HttpContentCompressor(6, 15, 8, 812));
+        p.addLast(HTTP_CONTENT_COMPRESSOR, new HttpContentCompressor(812, StandardCompressionOptions.gzip(6, 15, 8)));
         p.addLast(CHUNKED_WRITE_HANDLER, new ChunkedWriteHandler());
         p.addLast(SERVER_HANDLER, server);
         for (PipelineCustomizer customizer : customizers) {

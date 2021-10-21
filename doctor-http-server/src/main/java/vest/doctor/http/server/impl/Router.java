@@ -125,14 +125,14 @@ public final class Router implements Handler {
             route(HttpMethod.HEAD, path, handler);
         }
         String fullPath = conf.getRouterPrefix() + path;
-        Route newRoute = new Route(fullPath, conf.getCaseInsensitiveMatching(), handler);
+        Route newRoute = new Route(new PathSpec(fullPath, conf.getCaseInsensitiveMatching()), handler);
 
         List<Route> routes = this.routes.computeIfAbsent(method, v -> new ArrayList<>());
-        if (routes.stream().anyMatch(r -> r.getPathSpec().getPattern().toString().equals(newRoute.getPathSpec().getPattern().toString()))) {
+        if (routes.stream().anyMatch(r -> r.pathSpec().getPattern().toString().equals(newRoute.pathSpec().getPattern().toString()))) {
             throw new IllegalArgumentException("attempted to register duplicate path for " + method + " " + path);
         }
         routes.add(newRoute);
-        routes.sort(Comparator.comparing(Route::getPathSpec));
+        routes.sort(Comparator.comparing(Route::pathSpec));
         return this;
     }
 
@@ -215,11 +215,11 @@ public final class Router implements Handler {
 
     private Handler selectHandler(Request request, HttpMethod method) {
         for (Route route : routes.getOrDefault(method, Collections.emptyList())) {
-            Map<String, String> pathParams = route.getPathSpec().matchAndCollect(request);
+            Map<String, String> pathParams = route.pathSpec().matchAndCollect(request);
             addTraceMessage(request, method.name(), route, pathParams != null);
             if (pathParams != null) {
                 request.attribute(PATH_PARAMS, pathParams);
-                return route.getHandler();
+                return route.handler();
             }
         }
         return null;
@@ -241,9 +241,9 @@ public final class Router implements Handler {
             }
             sb.append("  ").append(entry.getKey()).append('\n');
             for (Route route : entry.getValue()) {
-                sb.append("   ").append(route.getPathSpec())
+                sb.append("   ").append(route.pathSpec())
                         .append(' ')
-                        .append(route.getHandler()).append('\n');
+                        .append(route.handler()).append('\n');
             }
         }
         return sb.toString();
@@ -259,8 +259,8 @@ public final class Router implements Handler {
             addTraceMessage(request, "route " +
                     (matched ? "match" : "not-matched") + ' ' +
                     routeMethod + ' ' +
-                    route.getPathSpec() + ' ' +
-                    route.getHandler());
+                    route.pathSpec() + ' ' +
+                    route.handler());
         }
     }
 
@@ -291,5 +291,8 @@ public final class Router implements Handler {
         for (int i = 0; i < tracing.size(); i++) {
             response.header("X-RouteTracing-" + i, tracing.get(i));
         }
+    }
+
+    final record Route(PathSpec pathSpec, Handler handler) {
     }
 }
