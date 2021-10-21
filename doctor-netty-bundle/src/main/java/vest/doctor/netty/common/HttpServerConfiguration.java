@@ -1,14 +1,13 @@
-package vest.doctor.http.server;
+package vest.doctor.netty.common;
 
 import io.netty.handler.ssl.SslContext;
-import vest.doctor.http.server.impl.Router;
 
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Configuration for {@link HttpServer}.
+ * Configuration for netty http components.
  */
 public class HttpServerConfiguration {
     /**
@@ -82,22 +81,6 @@ public class HttpServerConfiguration {
      * The maximum allowed size for request bodies.
      */
     private int maxContentLength = 8388608;
-
-    /**
-     * Whether to match routes in {@link vest.doctor.http.server.impl.Router}
-     * using case-insensitive regular expressions.
-     */
-    private boolean caseInsensitiveMatching = true;
-
-    /**
-     * Whether to add debug headers to the response when routing requests.
-     */
-    private boolean debugRequestRouting = false;
-
-    /**
-     * The prefix to prepend to all routes and filters registered with the {@link Router}.
-     */
-    private String routerPrefix = "";
 
     public int getTcpManagementThreads() {
         return tcpManagementThreads;
@@ -208,29 +191,5 @@ public class HttpServerConfiguration {
 
     public void setMaxContentLength(int maxContentLength) {
         this.maxContentLength = maxContentLength;
-    }
-
-    public boolean getCaseInsensitiveMatching() {
-        return caseInsensitiveMatching;
-    }
-
-    public void setCaseInsensitiveMatching(boolean caseInsensitiveMatching) {
-        this.caseInsensitiveMatching = caseInsensitiveMatching;
-    }
-
-    public boolean isDebugRequestRouting() {
-        return debugRequestRouting;
-    }
-
-    public void setDebugRequestRouting(boolean debugRequestRouting) {
-        this.debugRequestRouting = debugRequestRouting;
-    }
-
-    public String getRouterPrefix() {
-        return routerPrefix;
-    }
-
-    public void setRouterPrefix(String routerPrefix) {
-        this.routerPrefix = routerPrefix;
     }
 }

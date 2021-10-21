@@ -2,11 +2,13 @@ package vest.doctor.http.server.impl;
 
 import io.netty.handler.codec.http.HttpMethod;
 import vest.doctor.Prioritized;
+import vest.doctor.http.server.DoctorHttpServerConfiguration;
 import vest.doctor.http.server.Filter;
 import vest.doctor.http.server.Handler;
-import vest.doctor.http.server.HttpServerConfiguration;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
+import vest.doctor.netty.common.HttpServerConfiguration;
+import vest.doctor.netty.common.PathSpec;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -83,12 +85,12 @@ public final class Router implements Handler {
     private static final Handler NOT_FOUND = new NotFound();
     private final List<FilterAndPath> filters = new LinkedList<>();
     private final Map<HttpMethod, List<Route>> routes = new TreeMap<>();
-    private final HttpServerConfiguration conf;
+    private final DoctorHttpServerConfiguration conf;
 
     /**
      * Create a new Router, equivalent to <code>new Router(true)</code>
      */
-    public Router(HttpServerConfiguration conf) {
+    public Router(DoctorHttpServerConfiguration conf) {
         this.conf = conf;
     }
 
@@ -186,7 +188,7 @@ public final class Router implements Handler {
             FilterAndPath next = iterator.next();
             PathSpec pathSpec = next.pathSpec();
             Filter filter = next.filter();
-            Map<String, String> pathParams = pathSpec.matchAndCollect(request);
+            Map<String, String> pathParams = matchAndCollect(pathSpec, request);
             addTraceMessage(request, next, pathParams != null);
             if (pathParams != null) {
                 request.attribute(Router.PATH_PARAMS, pathParams);
@@ -215,7 +217,7 @@ public final class Router implements Handler {
 
     private Handler selectHandler(Request request, HttpMethod method) {
         for (Route route : routes.getOrDefault(method, Collections.emptyList())) {
-            Map<String, String> pathParams = route.pathSpec().matchAndCollect(request);
+            Map<String, String> pathParams = matchAndCollect(route.pathSpec(), request);
             addTraceMessage(request, method.name(), route, pathParams != null);
             if (pathParams != null) {
                 request.attribute(PATH_PARAMS, pathParams);
@@ -223,6 +225,11 @@ public final class Router implements Handler {
             }
         }
         return null;
+    }
+
+    private Map<String, String> matchAndCollect(PathSpec pathSpec, Request request) {
+        String path = Router.attributeOrElse(request, Router.PATH_OVERRIDE, request.path());
+        return pathSpec.matchAndCollect(path);
     }
 
     @Override

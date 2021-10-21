@@ -3,6 +3,7 @@ package vest.doctor.http.server;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.ssl.SslContext;
 import vest.doctor.http.server.impl.Router;
+import vest.doctor.netty.common.HttpServerConfiguration;
 
 import java.net.InetSocketAddress;
 import java.util.function.Consumer;
@@ -14,7 +15,7 @@ import java.util.function.UnaryOperator;
  */
 public final class HttpServerBuilder {
 
-    private final HttpServerConfiguration config = new HttpServerConfiguration();
+    private final DoctorHttpServerConfiguration config = new DoctorHttpServerConfiguration();
     private final Router router = new Router(config);
 
     /**
@@ -122,7 +123,7 @@ public final class HttpServerBuilder {
     }
 
     /**
-     * @see HttpServerConfiguration#setCaseInsensitiveMatching(boolean)
+     * @see DoctorHttpServerConfiguration#setCaseInsensitiveMatching(boolean)
      */
     public HttpServerBuilder setCaseInsensitiveMatching(boolean caseInsensitiveMatching) {
         config.setCaseInsensitiveMatching(caseInsensitiveMatching);

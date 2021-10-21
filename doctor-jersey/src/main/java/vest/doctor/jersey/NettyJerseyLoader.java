@@ -13,9 +13,9 @@ import vest.doctor.event.EventBus;
 import vest.doctor.event.EventProducer;
 import vest.doctor.event.ServiceStarted;
 import vest.doctor.event.ServiceStopped;
-import vest.doctor.http.server.HttpServerConfiguration;
-import vest.doctor.http.server.PipelineCustomizer;
-import vest.doctor.http.server.impl.HttpServerChannelInitializer;
+import vest.doctor.netty.common.HttpServerChannelInitializer;
+import vest.doctor.netty.common.HttpServerConfiguration;
+import vest.doctor.netty.common.PipelineCustomizer;
 
 import java.io.File;
 import java.net.InetSocketAddress;

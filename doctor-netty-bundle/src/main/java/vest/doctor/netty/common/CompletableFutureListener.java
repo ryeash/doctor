@@ -1,4 +1,4 @@
-package vest.doctor.http.server.impl;
+package vest.doctor.netty.common;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;

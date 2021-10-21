@@ -1,4 +1,4 @@
-package vest.doctor.http.server;
+package vest.doctor.netty.common;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpRequest;

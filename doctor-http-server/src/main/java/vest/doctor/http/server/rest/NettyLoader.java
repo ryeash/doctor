@@ -12,12 +12,12 @@ import vest.doctor.event.EventBus;
 import vest.doctor.event.EventProducer;
 import vest.doctor.event.ServiceStarted;
 import vest.doctor.event.ServiceStopped;
+import vest.doctor.http.server.DoctorHttpServerConfiguration;
 import vest.doctor.http.server.ExceptionHandler;
 import vest.doctor.http.server.HttpServer;
-import vest.doctor.http.server.HttpServerConfiguration;
-import vest.doctor.http.server.Websocket;
 import vest.doctor.http.server.impl.CompositeExceptionHandler;
 import vest.doctor.http.server.impl.Router;
+import vest.doctor.netty.common.Websocket;
 
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -31,7 +31,7 @@ public class NettyLoader implements ApplicationLoader {
 
     @Override
     public void stage4(ProviderRegistry providerRegistry) {
-        HttpServerConfiguration conf = buildConf(providerRegistry);
+        DoctorHttpServerConfiguration conf = buildConf(providerRegistry);
         if (conf.getBindAddresses().isEmpty()) {
             return;
         }
@@ -80,10 +80,10 @@ public class NettyLoader implements ApplicationLoader {
         });
     }
 
-    private HttpServerConfiguration buildConf(ProviderRegistry providerRegistry) {
+    private DoctorHttpServerConfiguration buildConf(ProviderRegistry providerRegistry) {
         ConfigurationFacade httpConf = providerRegistry.configuration().subsection("doctor.netty.http.");
 
-        HttpServerConfiguration conf = new HttpServerConfiguration();
+        DoctorHttpServerConfiguration conf = new DoctorHttpServerConfiguration();
         conf.setTcpManagementThreads(httpConf.get("tcp.threads", 1, Integer::valueOf));
         conf.setTcpThreadFormat(httpConf.get("tcp.threadPrefix", "netty-tcp"));
         conf.setWorkerThreads(httpConf.get("worker.threads", 16, Integer::valueOf));

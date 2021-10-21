@@ -12,7 +12,7 @@ import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import vest.doctor.CustomThreadFactory;
-import vest.doctor.http.server.HttpServerConfiguration;
+import vest.doctor.netty.common.HttpServerConfiguration;
 import vest.doctor.runtime.LoggingUncaughtExceptionHandler;
 
 import java.util.List;

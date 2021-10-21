@@ -19,7 +19,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.Part;
-import vest.doctor.http.server.impl.HttpServerChannelInitializer;
+import vest.doctor.netty.common.HttpServerChannelInitializer;
 
 import java.io.BufferedReader;
 import java.io.UnsupportedEncodingException;

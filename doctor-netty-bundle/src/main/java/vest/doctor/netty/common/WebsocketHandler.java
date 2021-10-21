@@ -1,11 +1,10 @@
-package vest.doctor.http.server.impl;
+package vest.doctor.netty.common;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import vest.doctor.http.server.Websocket;
 
 /**
  * Internally used to manage the reception of websocket frames.

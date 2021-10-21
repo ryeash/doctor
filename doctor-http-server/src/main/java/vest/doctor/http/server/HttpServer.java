@@ -31,11 +31,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vest.doctor.CustomThreadFactory;
 import vest.doctor.http.server.impl.CompositeExceptionHandler;
-import vest.doctor.http.server.impl.HttpServerChannelInitializer;
-import vest.doctor.http.server.impl.PathSpec;
 import vest.doctor.http.server.impl.ServerRequest;
 import vest.doctor.http.server.impl.StreamingRequestBody;
-import vest.doctor.http.server.impl.WebsocketHandler;
+import vest.doctor.netty.common.HttpServerChannelInitializer;
+import vest.doctor.netty.common.PathSpec;
+import vest.doctor.netty.common.Websocket;
+import vest.doctor.netty.common.WebsocketHandler;
 import vest.doctor.runtime.LoggingUncaughtExceptionHandler;
 
 import java.net.InetSocketAddress;
@@ -53,7 +54,7 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
     private static final AttributeKey<StreamingRequestBody> CONTEXT_BODY = AttributeKey.newInstance("doctor.netty.contextBody");
     private static final Logger log = LoggerFactory.getLogger(HttpServer.class);
 
-    private final HttpServerConfiguration config;
+    private final DoctorHttpServerConfiguration config;
     private final EventLoopGroup bossGroup;
     private final EventLoopGroup workerGroup;
     private final List<Channel> serverChannels;
@@ -61,11 +62,11 @@ public class HttpServer extends SimpleChannelInboundHandler<HttpObject> implemen
     private final Map<PathSpec, Supplier<Websocket>> websockets;
     private final ExceptionHandler exceptionHandler;
 
-    public HttpServer(HttpServerConfiguration config, Handler handler) {
+    public HttpServer(DoctorHttpServerConfiguration config, Handler handler) {
         this(config, handler, new CompositeExceptionHandler());
     }
 
-    public HttpServer(HttpServerConfiguration config, Handler handler, ExceptionHandler exceptionHandler) {
+    public HttpServer(DoctorHttpServerConfiguration config, Handler handler, ExceptionHandler exceptionHandler) {
         super();
         if (config.getBindAddresses() == null || config.getBindAddresses().isEmpty()) {
             throw new IllegalArgumentException("can not start without at least one bind address set");

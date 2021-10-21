@@ -1,6 +1,4 @@
-package vest.doctor.http.server.impl;
-
-import vest.doctor.http.server.Request;
+package vest.doctor.netty.common;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -58,11 +56,6 @@ public final class PathSpec implements Comparable<PathSpec> {
 
     public Pattern getPattern() {
         return pattern;
-    }
-
-    Map<String, String> matchAndCollect(Request request) {
-        String path = Router.attributeOrElse(request, Router.PATH_OVERRIDE, request.path());
-        return matchAndCollect(path);
     }
 
     /**

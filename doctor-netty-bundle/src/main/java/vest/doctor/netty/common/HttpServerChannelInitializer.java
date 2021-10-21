@@ -1,4 +1,4 @@
-package vest.doctor.http.server.impl;
+package vest.doctor.netty.common;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
@@ -9,8 +9,6 @@ import io.netty.handler.codec.http.HttpContentCompressor;
 import io.netty.handler.codec.http.HttpContentDecompressor;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.stream.ChunkedWriteHandler;
-import vest.doctor.http.server.HttpServerConfiguration;
-import vest.doctor.http.server.PipelineCustomizer;
 
 import java.util.List;
 

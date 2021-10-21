@@ -26,11 +26,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vest.doctor.CustomThreadFactory;
 import vest.doctor.ProviderRegistry;
-import vest.doctor.http.server.HttpServerConfiguration;
-import vest.doctor.http.server.Websocket;
-import vest.doctor.http.server.impl.HttpServerChannelInitializer;
-import vest.doctor.http.server.impl.PathSpec;
-import vest.doctor.http.server.impl.WebsocketHandler;
+import vest.doctor.netty.common.HttpServerChannelInitializer;
+import vest.doctor.netty.common.HttpServerConfiguration;
+import vest.doctor.netty.common.PathSpec;
+import vest.doctor.netty.common.Websocket;
+import vest.doctor.netty.common.WebsocketHandler;
 import vest.doctor.runtime.LoggingUncaughtExceptionHandler;
 
 import java.net.InetSocketAddress;
@@ -73,7 +73,7 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
                 .forEach(w -> {
                     List<String> paths = w.get().paths();
                     for (String path : paths) {
-                        websockets.put(new PathSpec(path, httpConfig.getCaseInsensitiveMatching()), w::get);
+                        websockets.put(new PathSpec(path, true), w::get);
                     }
                 });
         this.workerGroup = Executors.newFixedThreadPool(httpConfig.getWorkerThreads(), new CustomThreadFactory(true, httpConfig.getWorkerThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()));
