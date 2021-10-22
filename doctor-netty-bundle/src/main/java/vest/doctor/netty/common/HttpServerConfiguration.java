@@ -82,6 +82,11 @@ public class HttpServerConfiguration {
      */
     private int maxContentLength = 8388608;
 
+    /**
+     * The PipelineCustomizers to apply to the netty pipeline.
+     */
+    private List<PipelineCustomizer> pipelineCustomizers;
+
     public int getTcpManagementThreads() {
         return tcpManagementThreads;
     }
@@ -191,5 +196,13 @@ public class HttpServerConfiguration {
 
     public void setMaxContentLength(int maxContentLength) {
         this.maxContentLength = maxContentLength;
+    }
+
+    public List<PipelineCustomizer> getPipelineCustomizers() {
+        return pipelineCustomizers;
+    }
+
+    public void setPipelineCustomizers(List<PipelineCustomizer> pipelineCustomizers) {
+        this.pipelineCustomizers = pipelineCustomizers;
     }
 }

@@ -10,6 +10,7 @@ module doctor.netty.bundle {
     requires org.slf4j;
 
     requires doctor.core;
+    requires doctor.runtime;
 
     exports vest.doctor.netty.common;
 }

@@ -2,10 +2,16 @@ package vest.doctor.http.server;
 
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.ssl.SslContext;
+import vest.doctor.http.server.impl.CompositeExceptionHandler;
+import vest.doctor.http.server.impl.DoctorHttpHandler;
 import vest.doctor.http.server.impl.Router;
 import vest.doctor.netty.common.HttpServerConfiguration;
+import vest.doctor.netty.common.NettyHttpServer;
+import vest.doctor.netty.common.PipelineCustomizer;
 
 import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
@@ -127,6 +133,22 @@ public final class HttpServerBuilder {
      */
     public HttpServerBuilder setCaseInsensitiveMatching(boolean caseInsensitiveMatching) {
         config.setCaseInsensitiveMatching(caseInsensitiveMatching);
+        return this;
+    }
+
+    /**
+     * @see DoctorHttpServerConfiguration#setPipelineCustomizers(List)
+     */
+    public HttpServerBuilder setPipelineCustomizers(List<PipelineCustomizer> pipelineCustomizers) {
+        config.setPipelineCustomizers(pipelineCustomizers);
+        return this;
+    }
+
+    /**
+     * @see DoctorHttpServerConfiguration#setExceptionHandler(ExceptionHandler)
+     */
+    public HttpServerBuilder setExceptionHandler(ExceptionHandler exceptionHandler) {
+        config.setExceptionHandler(exceptionHandler);
         return this;
     }
 
@@ -342,7 +364,13 @@ public final class HttpServerBuilder {
      *
      * @return a new {@link HttpServer} started and ready to receive requests
      */
-    public HttpServer start() {
-        return new HttpServer(config, router);
+    public NettyHttpServer start() {
+        if (config.getBindAddresses() == null || config.getBindAddresses().isEmpty()) {
+            throw new IllegalArgumentException("can not start without at least one bind address set");
+        }
+        DoctorHttpHandler doctorHttpHandler = new DoctorHttpHandler(config, router, Optional.ofNullable(config.getExceptionHandler()).orElseGet(CompositeExceptionHandler::new));
+        return new NettyHttpServer(config, doctorHttpHandler, true);
+
+//        return new HttpServer(config, router);
     }
 }

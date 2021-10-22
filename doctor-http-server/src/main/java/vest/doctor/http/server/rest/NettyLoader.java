@@ -14,9 +14,11 @@ import vest.doctor.event.ServiceStarted;
 import vest.doctor.event.ServiceStopped;
 import vest.doctor.http.server.DoctorHttpServerConfiguration;
 import vest.doctor.http.server.ExceptionHandler;
-import vest.doctor.http.server.HttpServer;
 import vest.doctor.http.server.impl.CompositeExceptionHandler;
+import vest.doctor.http.server.impl.DoctorHttpHandler;
 import vest.doctor.http.server.impl.Router;
+import vest.doctor.netty.common.NettyHttpServer;
+import vest.doctor.netty.common.PipelineCustomizer;
 import vest.doctor.netty.common.Websocket;
 
 import java.io.File;
@@ -45,30 +47,23 @@ public class NettyLoader implements ApplicationLoader {
         providerRegistry.getProviders(ExceptionHandler.class)
                 .map(Provider::get)
                 .forEach(compositeExceptionHandler::addHandler);
+        conf.setExceptionHandler(compositeExceptionHandler);
 
-        HttpServer server = new HttpServer(conf, router, compositeExceptionHandler);
+        List<PipelineCustomizer> pipelineCustomizers = providerRegistry.getProviders(PipelineCustomizer.class)
+                .map(Provider::get)
+                .collect(Collectors.toList());
+        conf.setPipelineCustomizers(pipelineCustomizers);
+
+        DoctorHttpHandler doctorHttpHandler = new DoctorHttpHandler(conf, router, compositeExceptionHandler);
+        NettyHttpServer server = new NettyHttpServer(
+                conf,
+                doctorHttpHandler,
+                false);
 
         providerRegistry.getProviders(Websocket.class)
-                .forEach(ws -> {
-                    Websocket websocket = ws.get();
-                    List<String> paths = Optional.ofNullable(websocket.paths())
-                            .stream()
-                            .flatMap(List::stream)
-                            .map(String::trim)
-                            .filter(s -> !s.isEmpty())
-                            .collect(Collectors.toList());
-                    if (paths.isEmpty()) {
-                        throw new IllegalArgumentException("empty websocket path " + ws.type());
-                    }
-                    for (String p : paths) {
-                        if (p == null || p.isEmpty()) {
-                            throw new IllegalArgumentException("empty websocket path " + ws.type());
-                        }
-                        server.addWebsocket(p, ws::get);
-                    }
-                });
+                .forEach(ws -> doctorHttpHandler.addWebsocket(ws::get));
 
-        providerRegistry.register(new AdHocProvider<>(HttpServer.class, server, null));
+        providerRegistry.register(new AdHocProvider<>(NettyHttpServer.class, server, null));
 
         Optional<EventBus> eventBusOpt = providerRegistry.getInstanceOpt(EventBus.class);
         eventBusOpt.ifPresent(eventBus -> eventBus.publish(new ServiceStarted("netty-http", server)));
@@ -85,9 +80,9 @@ public class NettyLoader implements ApplicationLoader {
 
         DoctorHttpServerConfiguration conf = new DoctorHttpServerConfiguration();
         conf.setTcpManagementThreads(httpConf.get("tcp.threads", 1, Integer::valueOf));
-        conf.setTcpThreadFormat(httpConf.get("tcp.threadPrefix", "netty-tcp"));
+        conf.setTcpThreadFormat(httpConf.get("tcp.threadNameFormat", "netty-tcp-%d"));
         conf.setWorkerThreads(httpConf.get("worker.threads", 16, Integer::valueOf));
-        conf.setWorkerThreadFormat(httpConf.get("worker.threadPrefix", "netty-worker"));
+        conf.setWorkerThreadFormat(httpConf.get("worker.threadNameFormat", "netty-worker-%d"));
         conf.setSocketBacklog(httpConf.get("tcp.socketBacklog", 1024, Integer::valueOf));
 
         List<InetSocketAddress> bind = httpConf.getList("bind", Function.identity())

@@ -24,6 +24,11 @@ public class DoctorHttpServerConfiguration extends HttpServerConfiguration {
      */
     private String routerPrefix = "";
 
+    /**
+     * The exception handler to use.
+     */
+    private ExceptionHandler exceptionHandler;
+
     public boolean getCaseInsensitiveMatching() {
         return caseInsensitiveMatching;
     }
@@ -46,5 +51,13 @@ public class DoctorHttpServerConfiguration extends HttpServerConfiguration {
 
     public void setRouterPrefix(String routerPrefix) {
         this.routerPrefix = routerPrefix;
+    }
+
+    public ExceptionHandler getExceptionHandler() {
+        return exceptionHandler;
+    }
+
+    public void setExceptionHandler(ExceptionHandler exceptionHandler) {
+        this.exceptionHandler = exceptionHandler;
     }
 }

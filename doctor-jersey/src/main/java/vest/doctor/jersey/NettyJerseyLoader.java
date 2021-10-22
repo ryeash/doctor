@@ -13,8 +13,8 @@ import vest.doctor.event.EventBus;
 import vest.doctor.event.EventProducer;
 import vest.doctor.event.ServiceStarted;
 import vest.doctor.event.ServiceStopped;
-import vest.doctor.netty.common.HttpServerChannelInitializer;
 import vest.doctor.netty.common.HttpServerConfiguration;
+import vest.doctor.netty.common.NettyHttpServer;
 import vest.doctor.netty.common.PipelineCustomizer;
 
 import java.io.File;
@@ -50,21 +50,23 @@ public final class NettyJerseyLoader implements ApplicationLoader {
         HttpServerConfiguration httpConfig = init(providerRegistry);
 
         DoctorJerseyContainer container = new DoctorJerseyContainer(config);
-//        JerseyHttpServer jerseyHttpServer = new JerseyHttpServer(httpConfig, new DoctorChannelInitializer(httpConfig, container, providerRegistry));
-
         List<PipelineCustomizer> pipelineCustomizers = providerRegistry.getProviders(PipelineCustomizer.class)
                 .map(DoctorProvider::get)
                 .collect(Collectors.toList());
-        JerseyHttpServer jerseyHttpServer = new JerseyHttpServer(httpConfig, new HttpServerChannelInitializer(new JerseyChannelAdapter(httpConfig, container, providerRegistry), httpConfig, pipelineCustomizers));
-
+        pipelineCustomizers.add(new HttpAggregatorCustomizer(httpConfig.getMaxContentLength()));
+        httpConfig.setPipelineCustomizers(pipelineCustomizers);
+        NettyHttpServer httpServer = new NettyHttpServer(
+                httpConfig,
+                new JerseyChannelAdapter(httpConfig, container, providerRegistry),
+                false);
 
         Optional<EventBus> eventBusOpt = providerRegistry.getInstanceOpt(EventBus.class);
-        eventBusOpt.ifPresent(eventBus -> eventBus.publish(new ServiceStarted("netty-jersey-http", jerseyHttpServer)));
+        eventBusOpt.ifPresent(eventBus -> eventBus.publish(new ServiceStarted("netty-jersey-http", httpServer)));
 
         providerRegistry.shutdownContainer().register(() -> {
-            jerseyHttpServer.close();
+            httpServer.close();
             providerRegistry.getInstance(EventProducer.class)
-                    .publish(new ServiceStopped("netty-jersey-http", jerseyHttpServer));
+                    .publish(new ServiceStopped("netty-jersey-http", httpServer));
         });
         Runtime.getRuntime().addShutdownHook(new Thread(() -> container.getApplicationHandler().onShutdown(container), "netty-server-shutdown"));
     }
