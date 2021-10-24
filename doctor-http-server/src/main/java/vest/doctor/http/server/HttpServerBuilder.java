@@ -137,6 +137,14 @@ public final class HttpServerBuilder {
     }
 
     /**
+     * @see HttpServerConfiguration#setMinGzipSize(int)
+     */
+    public HttpServerBuilder setMinGzipSize(int minGzipSize) {
+        config.setMinGzipSize(minGzipSize);
+        return this;
+    }
+
+    /**
      * @see DoctorHttpServerConfiguration#setPipelineCustomizers(List)
      */
     public HttpServerBuilder setPipelineCustomizers(List<PipelineCustomizer> pipelineCustomizers) {
@@ -360,9 +368,9 @@ public final class HttpServerBuilder {
     }
 
     /**
-     * Start the {@link HttpServer} instance with the current config and routing.
+     * Start the {@link NettyHttpServer} instance with the current config and routing.
      *
-     * @return a new {@link HttpServer} started and ready to receive requests
+     * @return a new {@link NettyHttpServer} started and ready to receive requests
      */
     public NettyHttpServer start() {
         if (config.getBindAddresses() == null || config.getBindAddresses().isEmpty()) {
@@ -370,7 +378,5 @@ public final class HttpServerBuilder {
         }
         DoctorHttpHandler doctorHttpHandler = new DoctorHttpHandler(config, router, Optional.ofNullable(config.getExceptionHandler()).orElseGet(CompositeExceptionHandler::new));
         return new NettyHttpServer(config, doctorHttpHandler, true);
-
-//        return new HttpServer(config, router);
     }
 }

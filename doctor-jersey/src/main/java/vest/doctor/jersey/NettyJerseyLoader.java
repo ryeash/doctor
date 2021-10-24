@@ -50,11 +50,6 @@ public final class NettyJerseyLoader implements ApplicationLoader {
         HttpServerConfiguration httpConfig = init(providerRegistry);
 
         DoctorJerseyContainer container = new DoctorJerseyContainer(config);
-        List<PipelineCustomizer> pipelineCustomizers = providerRegistry.getProviders(PipelineCustomizer.class)
-                .map(DoctorProvider::get)
-                .collect(Collectors.toList());
-        pipelineCustomizers.add(new HttpAggregatorCustomizer(httpConfig.getMaxContentLength()));
-        httpConfig.setPipelineCustomizers(pipelineCustomizers);
         NettyHttpServer httpServer = new NettyHttpServer(
                 httpConfig,
                 new JerseyChannelAdapter(httpConfig, container, providerRegistry),
@@ -73,15 +68,15 @@ public final class NettyJerseyLoader implements ApplicationLoader {
 
     public HttpServerConfiguration init(ProviderRegistry providerRegistry) {
         HttpServerConfiguration httpConfig = new HttpServerConfiguration();
-        ConfigurationFacade httpConf = providerRegistry.configuration().subsection("doctor.jersey.http.");
+        ConfigurationFacade cf = providerRegistry.configuration().subsection("doctor.jersey.http.");
 
-        httpConfig.setTcpManagementThreads(httpConf.get("tcp.threads", 1, Integer::valueOf));
-        httpConfig.setTcpThreadFormat(httpConf.get("tcp.threadFormat", "netty-jersey-tcp-%d"));
-        httpConfig.setWorkerThreads(httpConf.get("worker.threads", 16, Integer::valueOf));
-        httpConfig.setWorkerThreadFormat(httpConf.get("worker.threadFormat", "netty-jersey-worker-%d"));
-        httpConfig.setSocketBacklog(httpConf.get("tcp.socketBacklog", 1024, Integer::valueOf));
+        httpConfig.setTcpManagementThreads(cf.get("tcp.threads", 1, Integer::valueOf));
+        httpConfig.setTcpThreadFormat(cf.get("tcp.threadFormat", "netty-jersey-tcp-%d"));
+        httpConfig.setWorkerThreads(cf.get("worker.threads", 16, Integer::valueOf));
+        httpConfig.setWorkerThreadFormat(cf.get("worker.threadFormat", "netty-jersey-worker-%d"));
+        httpConfig.setSocketBacklog(cf.get("tcp.socketBacklog", 1024, Integer::valueOf));
 
-        List<InetSocketAddress> bind = httpConf.getList("bind", List.of("localhost:9998"), Function.identity())
+        List<InetSocketAddress> bind = cf.getList("bind", List.of("localhost:9998"), Function.identity())
                 .stream()
                 .map(s -> s.split(":"))
                 .map(hp -> new InetSocketAddress(hp[0].trim(), Integer.parseInt(hp[1].trim())))
@@ -89,16 +84,16 @@ public final class NettyJerseyLoader implements ApplicationLoader {
         httpConfig.setBindAddresses(bind);
 
         try {
-            if (httpConf.get("ssl.selfSigned", false, Boolean::valueOf)) {
+            if (cf.get("ssl.selfSigned", false, Boolean::valueOf)) {
                 SelfSignedCertificate ssc = new SelfSignedCertificate();
                 SslContext sslContext = SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey()).build();
                 httpConfig.setSslContext(sslContext);
             }
 
-            String keyCertChainFile = httpConf.get("ssl.keyCertChainFile");
+            String keyCertChainFile = cf.get("ssl.keyCertChainFile");
             if (keyCertChainFile != null && !keyCertChainFile.isEmpty()) {
-                String keyFile = Objects.requireNonNull(httpConf.get("ssl.keyFile"), "missing ssl key file configuration");
-                String keyPassword = httpConf.get("ssl.keyPassword");
+                String keyFile = Objects.requireNonNull(cf.get("ssl.keyFile"), "missing ssl key file configuration");
+                String keyPassword = cf.get("ssl.keyPassword");
                 SslContext sslContext = SslContextBuilder.forServer(new File(keyCertChainFile), new File(keyFile), keyPassword).build();
                 httpConfig.setSslContext(sslContext);
             }
@@ -106,12 +101,19 @@ public final class NettyJerseyLoader implements ApplicationLoader {
             throw new RuntimeException("error configuring ssl", t);
         }
 
-        httpConfig.setMaxInitialLineLength(httpConf.get("maxInitialLineLength", 8192, Integer::valueOf));
-        httpConfig.setMaxHeaderSize(httpConf.get("maxHeaderSize", 8192, Integer::valueOf));
-        httpConfig.setMaxChunkSize(httpConf.get("maxChunkSize", 8192, Integer::valueOf));
-        httpConfig.setValidateHeaders(httpConf.get("validateHeaders", false, Boolean::valueOf));
-        httpConfig.setInitialBufferSize(httpConf.get("initialBufferSize", 8192, Integer::valueOf));
-        httpConfig.setMaxContentLength(httpConf.get("maxContentLength", 8388608, Integer::valueOf));
+        httpConfig.setMaxInitialLineLength(cf.get("maxInitialLineLength", 8192, Integer::valueOf));
+        httpConfig.setMaxHeaderSize(cf.get("maxHeaderSize", 8192, Integer::valueOf));
+        httpConfig.setMaxChunkSize(cf.get("maxChunkSize", 8192, Integer::valueOf));
+        httpConfig.setValidateHeaders(cf.get("validateHeaders", false, Boolean::valueOf));
+        httpConfig.setInitialBufferSize(cf.get("initialBufferSize", 8192, Integer::valueOf));
+        httpConfig.setMaxContentLength(cf.get("maxContentLength", 8388608, Integer::valueOf));
+        httpConfig.setMinGzipSize(cf.get("minGzipSize", 812, Integer::valueOf));
+
+        List<PipelineCustomizer> pipelineCustomizers = providerRegistry.getProviders(PipelineCustomizer.class)
+                .map(DoctorProvider::get)
+                .collect(Collectors.toList());
+        pipelineCustomizers.add(new HttpAggregatorCustomizer(httpConfig.getMaxContentLength()));
+        httpConfig.setPipelineCustomizers(pipelineCustomizers);
         return httpConfig;
     }
 }

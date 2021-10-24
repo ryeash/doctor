@@ -57,9 +57,7 @@ public final class WebsocketRouter {
     }
 
     public void eachRoute(BiConsumer<PathSpec, Websocket> consumer) {
-        websockets.forEach((spec, supplier) -> {
-            consumer.accept(spec, supplier.get());
-        });
+        websockets.forEach((spec, supplier) -> consumer.accept(spec, supplier.get()));
     }
 
     public int size() {

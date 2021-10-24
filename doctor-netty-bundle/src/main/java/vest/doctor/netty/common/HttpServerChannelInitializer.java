@@ -10,8 +10,6 @@ import io.netty.handler.codec.http.HttpContentDecompressor;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.stream.ChunkedWriteHandler;
 
-import java.util.List;
-
 public final class HttpServerChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     public static final String SSL_CONTEXT = "sslContext";
@@ -23,12 +21,10 @@ public final class HttpServerChannelInitializer extends ChannelInitializer<Socke
 
     private final ChannelHandler server;
     private final HttpServerConfiguration config;
-    private final List<PipelineCustomizer> customizers;
 
-    public HttpServerChannelInitializer(ChannelHandler server, HttpServerConfiguration config, List<PipelineCustomizer> customizers) {
+    public HttpServerChannelInitializer(ChannelHandler server, HttpServerConfiguration config) {
         this.server = server;
         this.config = config;
-        this.customizers = customizers;
     }
 
     @Override
@@ -44,11 +40,13 @@ public final class HttpServerChannelInitializer extends ChannelInitializer<Socke
                 config.isValidateHeaders(),
                 config.getInitialBufferSize()));
         p.addLast(HTTP_CONTENT_DECOMPRESSOR, new HttpContentDecompressor());
-        p.addLast(HTTP_CONTENT_COMPRESSOR, new HttpContentCompressor(812, StandardCompressionOptions.gzip(6, 15, 8)));
+        p.addLast(HTTP_CONTENT_COMPRESSOR, new HttpContentCompressor(config.getMinGzipSize(), StandardCompressionOptions.gzip(6, 15, 8)));
         p.addLast(CHUNKED_WRITE_HANDLER, new ChunkedWriteHandler());
         p.addLast(SERVER_HANDLER, server);
-        for (PipelineCustomizer customizer : customizers) {
-            customizer.customize(p);
+        if (config.getPipelineCustomizers() != null) {
+            for (PipelineCustomizer pipelineCustomizer : config.getPipelineCustomizers()) {
+                pipelineCustomizer.customize(p);
+            }
         }
     }
 }

@@ -49,11 +49,6 @@ public class NettyLoader implements ApplicationLoader {
                 .forEach(compositeExceptionHandler::addHandler);
         conf.setExceptionHandler(compositeExceptionHandler);
 
-        List<PipelineCustomizer> pipelineCustomizers = providerRegistry.getProviders(PipelineCustomizer.class)
-                .map(Provider::get)
-                .collect(Collectors.toList());
-        conf.setPipelineCustomizers(pipelineCustomizers);
-
         DoctorHttpHandler doctorHttpHandler = new DoctorHttpHandler(conf, router, compositeExceptionHandler);
         NettyHttpServer server = new NettyHttpServer(
                 conf,
@@ -116,10 +111,16 @@ public class NettyLoader implements ApplicationLoader {
         conf.setValidateHeaders(httpConf.get("validateHeaders", false, Boolean::valueOf));
         conf.setInitialBufferSize(httpConf.get("initialBufferSize", 8192, Integer::valueOf));
         conf.setMaxContentLength(httpConf.get("maxContentLength", 8388608, Integer::valueOf));
+        conf.setMinGzipSize(httpConf.get("minGzipSize", 812, Integer::valueOf));
 
         conf.setCaseInsensitiveMatching(httpConf.get("caseInsensitiveMatching", false, Boolean::valueOf));
         conf.setDebugRequestRouting(httpConf.get("debugRequestRouting", false, Boolean::valueOf));
         conf.setRouterPrefix(httpConf.get("routePrefix", ""));
+
+        List<PipelineCustomizer> pipelineCustomizers = providerRegistry.getProviders(PipelineCustomizer.class)
+                .map(Provider::get)
+                .collect(Collectors.toList());
+        conf.setPipelineCustomizers(pipelineCustomizers);
         return conf;
     }
 

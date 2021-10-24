@@ -83,6 +83,11 @@ public class HttpServerConfiguration {
     private int maxContentLength = 8388608;
 
     /**
+     * The minimum response size to enable gzip-ing the response body.
+     */
+    private int minGzipSize = 812;
+
+    /**
      * The PipelineCustomizers to apply to the netty pipeline.
      */
     private List<PipelineCustomizer> pipelineCustomizers;
@@ -196,6 +201,14 @@ public class HttpServerConfiguration {
 
     public void setMaxContentLength(int maxContentLength) {
         this.maxContentLength = maxContentLength;
+    }
+
+    public int getMinGzipSize() {
+        return minGzipSize;
+    }
+
+    public void setMinGzipSize(int minGzipSize) {
+        this.minGzipSize = minGzipSize;
     }
 
     public List<PipelineCustomizer> getPipelineCustomizers() {

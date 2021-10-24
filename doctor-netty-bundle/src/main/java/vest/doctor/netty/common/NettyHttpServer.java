@@ -16,9 +16,7 @@ import org.slf4j.LoggerFactory;
 import vest.doctor.CustomThreadFactory;
 import vest.doctor.runtime.LoggingUncaughtExceptionHandler;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class NettyHttpServer implements AutoCloseable {
@@ -44,7 +42,7 @@ public class NettyHttpServer implements AutoCloseable {
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .option(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator())
                 .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, WriteBufferWaterMark.DEFAULT)
-                .childHandler(new HttpServerChannelInitializer(handler, httpConfig, Optional.ofNullable(httpConfig.getPipelineCustomizers()).orElse(Collections.emptyList())));
+                .childHandler(new HttpServerChannelInitializer(handler, httpConfig));
 
         this.serverChannels = httpConfig.getBindAddresses()
                 .stream()
