@@ -106,7 +106,7 @@ public class TCNettyEndpoint {
 
     @Endpoint(method = HttpMethod.GET, path = "/paramtest/{normal}/{custom:\\d+}")
     public String paramtest(@Param(type = Param.Type.Path, name = "normal") String normal,
-                            @Param(type = Param.Type.Path, name = "custom") int custom,
+                            @Param(type = Param.Type.Path) int custom,
                             @Param(type = Provided) @Named("pourOver") CoffeeMaker pourOver) {
         return normal + " " + custom + " " + pourOver.brew();
     }

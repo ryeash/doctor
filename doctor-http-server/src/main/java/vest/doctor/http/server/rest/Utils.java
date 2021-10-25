@@ -1,6 +1,10 @@
 package vest.doctor.http.server.rest;
 
+import vest.doctor.http.server.Request;
+import vest.doctor.http.server.impl.Router;
+
 import java.io.File;
+import java.util.Map;
 
 public class Utils {
 
@@ -51,5 +55,14 @@ public class Utils {
             case "bin" -> "application/octet-stream";
             default -> "text/plain";
         };
+    }
+
+    public static String pathParam(Request request, String name) {
+        Map<String, String> map = request.attribute(Router.PATH_PARAMS);
+        if (map == null) {
+            throw new IllegalStateException("path matching did not produce a parameter map?");
+        } else {
+            return map.get(name);
+        }
     }
 }

@@ -141,6 +141,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                 .addImportClass(Response.class)
                 .addImportClass(Router.class)
                 .addImportClass(TypeInfo.class)
+                .addImportClass(Utils.class)
                 .addImportClass(Inject.class)
                 .addImportClass(Singleton.class)
                 .addImportClass(Named.class)
@@ -174,12 +175,12 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         boolean bodyFuture = isBodyFuture(context, method);
         boolean completableResponse = ProcessorUtils.isCompatibleWith(context, method.getReturnType(), CompletableFuture.class);
 
-        String summary = method.getEnclosingElement().asType() + "#" + method.getSimpleName();
+        String summary = method.getEnclosingElement().asType() + "#" + method.getSimpleName() + method.getParameters().stream().map(VariableElement::asType).map(String::valueOf).collect(Collectors.joining(", ", "(", ")"));
         initialize.line("router.route(\"",
                 ProcessorUtils.escapeStringForCode(httpMethod), '"',
                 ",\"", ProcessorUtils.escapeStringForCode(path), "\", new EndpointLinker<>(",
-                endpointRef, ',', buildTypeInfoCode(method), ',', "bodyInterchange", ",\"", summary, "\") {");
-        initialize.line("@Override protected CompletionStage<Object> handleWithProvider(", method.getEnclosingElement().asType(), " endpoint, Request request, CompletableFuture<?> body) throws Exception {");
+                endpointRef, ',', buildTypeInfoCode(method), ',', "bodyInterchange", ",\"", summary, "\",");
+        initialize.line("(endpoint, request, body) -> {");
 
         String parameters = method.getParameters().stream()
                 .map(p -> parameterWriting(context, p, "request"))
@@ -205,8 +206,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         if (!bodyFuture) {
             initialize.line("});");
         }
-        initialize.line("}");
-        initialize.line("});");
+        initialize.line("}));");
     }
 
     private static boolean isBodyFuture(AnnotationProcessorContext context, ExecutableElement method) {
@@ -271,7 +271,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         sb.append("Optional.ofNullable(");
 
         switch (type) {
-            case Path -> sb.append("pathParam(").append(contextRef).append(",\"").append(name).append("\")");
+            case Path -> sb.append("Utils.pathParam(").append(contextRef).append(",\"").append(name).append("\")");
             case Query -> sb.append(contextRef).append(".queryParam(\"").append(name).append("\")");
             case Header -> sb.append(contextRef).append(".headers().get(\"").append(name).append("\")");
             case Cookie -> sb.append(contextRef).append(".cookie(\"").append(name).append("\").value()");
