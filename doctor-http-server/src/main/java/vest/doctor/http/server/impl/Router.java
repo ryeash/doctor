@@ -1,12 +1,12 @@
 package vest.doctor.http.server.impl;
 
-import io.netty.handler.codec.http.HttpMethod;
 import vest.doctor.Prioritized;
 import vest.doctor.http.server.DoctorHttpServerConfiguration;
 import vest.doctor.http.server.Filter;
 import vest.doctor.http.server.Handler;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
+import vest.doctor.http.server.rest.HttpMethod;
 import vest.doctor.netty.common.HttpServerConfiguration;
 import vest.doctor.netty.common.PathSpec;
 
@@ -21,8 +21,6 @@ import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-
-import static vest.doctor.http.server.rest.ANY.ANY_METHOD_NAME;
 
 /**
  * A handler that uses path specifications to route to handlers internally.
@@ -76,7 +74,7 @@ public final class Router implements Handler {
     /**
      * The ANY method. This method can be used to create a route that responds to any HTTP method.
      */
-    public static final HttpMethod ANY = HttpMethod.valueOf(ANY_METHOD_NAME);
+    public static final io.netty.handler.codec.http.HttpMethod ANY = io.netty.handler.codec.http.HttpMethod.valueOf(HttpMethod.ANY);
 
     private static final String DEBUG_ROUTING_ATTRIBUTE = "doctor.netty.router.debugInfo";
     private static final String DEBUG_START_ATTRIBUTE = "doctor.netty.router.debugStart";
@@ -84,7 +82,7 @@ public final class Router implements Handler {
 
     private static final Handler NOT_FOUND = new NotFound();
     private final List<FilterAndPath> filters = new LinkedList<>();
-    private final Map<HttpMethod, List<Route>> routes = new TreeMap<>();
+    private final Map<io.netty.handler.codec.http.HttpMethod, List<Route>> routes = new TreeMap<>();
     private final DoctorHttpServerConfiguration conf;
 
     /**
@@ -95,7 +93,7 @@ public final class Router implements Handler {
     }
 
     /**
-     * Get the {@link HttpServerConfiguration} that was used to configure the {@link vest.doctor.http.server.HttpServer}.
+     * Get the {@link HttpServerConfiguration} that was used to configure the {@link vest.doctor.netty.common.NettyHttpServer}.
      */
     public HttpServerConfiguration configuration() {
         return conf;
@@ -110,7 +108,7 @@ public final class Router implements Handler {
      * @return this router
      */
     public Router route(String method, String path, Handler handler) {
-        return route(HttpMethod.valueOf(method), path, handler);
+        return route(io.netty.handler.codec.http.HttpMethod.valueOf(method), path, handler);
     }
 
     /**
@@ -121,10 +119,10 @@ public final class Router implements Handler {
      * @param handler the handler that will be routed for the given method and path
      * @return this router
      */
-    public Router route(HttpMethod method, String path, Handler handler) {
-        if (method.equals(HttpMethod.GET)) {
+    public Router route(io.netty.handler.codec.http.HttpMethod method, String path, Handler handler) {
+        if (method.equals(io.netty.handler.codec.http.HttpMethod.GET)) {
             // cross list all GETs as HEADs
-            route(HttpMethod.HEAD, path, handler);
+            route(io.netty.handler.codec.http.HttpMethod.HEAD, path, handler);
         }
         String fullPath = conf.getRouterPrefix() + path;
         Route newRoute = new Route(new PathSpec(fullPath, conf.getCaseInsensitiveMatching()), handler);
@@ -199,7 +197,7 @@ public final class Router implements Handler {
     }
 
     private Handler selectHandler(Request request) {
-        HttpMethod httpMethod = attributeOrElse(request, METHOD_OVERRIDE, request.method());
+        io.netty.handler.codec.http.HttpMethod httpMethod = attributeOrElse(request, METHOD_OVERRIDE, request.method());
         Handler handler = selectHandler(request, httpMethod);
         if (handler != null) {
             return handler;
@@ -215,7 +213,7 @@ public final class Router implements Handler {
         return NOT_FOUND;
     }
 
-    private Handler selectHandler(Request request, HttpMethod method) {
+    private Handler selectHandler(Request request, io.netty.handler.codec.http.HttpMethod method) {
         for (Route route : routes.getOrDefault(method, Collections.emptyList())) {
             Map<String, String> pathParams = matchAndCollect(route.pathSpec(), request);
             addTraceMessage(request, method.name(), route, pathParams != null);
@@ -242,8 +240,8 @@ public final class Router implements Handler {
             }
         }
         sb.append(" Routes:\n");
-        for (Map.Entry<HttpMethod, List<Route>> entry : routes.entrySet()) {
-            if (entry.getKey().equals(HttpMethod.HEAD)) {
+        for (Map.Entry<io.netty.handler.codec.http.HttpMethod, List<Route>> entry : routes.entrySet()) {
+            if (entry.getKey().equals(io.netty.handler.codec.http.HttpMethod.HEAD)) {
                 continue;
             }
             sb.append("  ").append(entry.getKey()).append('\n');

@@ -18,6 +18,7 @@ import vest.doctor.http.server.Handler;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.impl.Router;
+import vest.doctor.http.server.rest.Param.Type;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
 import vest.doctor.processing.ProviderDefinition;
@@ -32,7 +33,6 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
-import java.lang.annotation.Annotation;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashSet;
@@ -44,6 +44,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+
+import static vest.doctor.http.server.rest.Param.Type.Body;
 
 public class EndpointLoaderWriter implements ProviderDefinitionListener {
 
@@ -74,9 +76,10 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
 
         if (ProcessorUtils.isCompatibleWith(context, providerDefinition.providedType(), Handler.class)) {
             List<String> methods = ProcessorUtils.methodMatchingSignature(context, providerDefinition.providedType(), "handle", Request.class)
-                    .map(EndpointLoaderWriter::getHttpMethods)
-                    .filter(l -> !l.isEmpty())
-                    .orElse(Collections.singletonList(ANY.ANY_METHOD_NAME));
+                    .map(m -> m.getAnnotation(Endpoint.class))
+                    .map(Endpoint::method)
+                    .map(List::of)
+                    .orElse(Collections.singletonList(HttpMethod.ANY));
             for (String root : roots) {
                 for (String method : methods) {
                     stage5.line("router.route(\"",
@@ -90,17 +93,19 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                     .stream()
                     .filter(m -> m.getModifiers().contains(Modifier.PUBLIC))
                     .filter(processedMethods::add)
+                    .filter(m -> m.getAnnotation(Endpoint.class) != null)
                     .forEach(method -> {
-                        List<String> methods = getHttpMethods(method);
-                        if (!methods.isEmpty()) {
-                            String[] paths = Optional.ofNullable(method.getAnnotation(Path.class)).map(Path::value).orElse(new String[]{""});
-                            List<String> fullPaths = paths(roots, paths);
-
-                            for (String httMethod : methods) {
-                                for (String fullPath : fullPaths) {
-                                    addRoute(stage5, context, httMethod, fullPath, endpointRef, method);
-                                    hasRoutes.set(true);
-                                }
+                        Endpoint endpoint = method.getAnnotation(Endpoint.class);
+                        if (endpoint.method().length == 0) {
+                            throw new CodeProcessingException("endpoints must have at least one method", method);
+                        }
+                        if (endpoint.path().length == 0) {
+                            throw new CodeProcessingException("endpoints must have at least one path", method);
+                        }
+                        for (String fullPath : paths(roots, endpoint.path())) {
+                            for (String httMethod : endpoint.method()) {
+                                addRoute(stage5, context, httMethod, fullPath, endpointRef, method);
+                                hasRoutes.set(true);
                             }
                         }
                     });
@@ -147,17 +152,6 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         stage5.line("Router router = {{providerRegistry}}.getInstance(Router.class);");
         stage5.line("BodyInterchange bodyInterchange = {{providerRegistry}}.getInstance(BodyInterchange.class);");
 
-    }
-
-    private static List<String> getHttpMethods(ExecutableElement method) {
-        return method.getAnnotationMirrors()
-                .stream()
-                .flatMap(methodAnnotation -> methodAnnotation.getAnnotationType().asElement().getAnnotationMirrors().stream())
-                .filter(annotation -> annotation.getAnnotationType().toString().equals(HttpMethod.class.getCanonicalName()))
-                .flatMap(httpMethodAnnotation -> httpMethodAnnotation.getElementValues().entrySet().stream())
-                .filter(entry -> entry.getKey().getSimpleName().toString().equals(Constants.ANNOTATION_VALUE))
-                .map(entry -> entry.getValue().getValue().toString())
-                .collect(Collectors.toList());
     }
 
     private static List<String> paths(String[] roots, String[] paths) {
@@ -217,7 +211,9 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
 
     private static boolean isBodyFuture(AnnotationProcessorContext context, ExecutableElement method) {
         for (VariableElement parameter : method.getParameters()) {
-            if (parameter.getAnnotation(Body.class) != null
+            Param param = parameter.getAnnotation(Param.class);
+            if (param != null
+                    && param.type() == Body
                     && ProcessorUtils.isCompatibleWith(context, parameter.asType(), CompletableFuture.class)) {
                 return true;
             }
@@ -225,8 +221,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         return false;
     }
 
-    private static final List<Class<? extends Annotation>> SUPPORTED_PARAMS = List.of(Body.class, Attribute.class, PathParam.class, QueryParam.class, HeaderParam.class, CookieParam.class, BeanParam.class);
-    private static final List<Class<?>> SUPPORTED_CLASSES = List.of(Request.class, URI.class);
+    private static final List<Class<?>> SUPPORTED_CLASSES = List.of(Request.class, Response.class, URI.class);
 
     private static String parameterWriting(AnnotationProcessorContext context, VariableElement parameter, String contextRef) {
         try {
@@ -243,41 +238,44 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
             return contextRef + ".createResponse()";
         } else if (parameter.asType().toString().equals(URI.class.getCanonicalName())) {
             return contextRef + ".uri()";
-        } else if (annotationSource.getAnnotation(Body.class) != null) {
-            return "(" + parameter.asType() + ") b";
-        } else if (annotationSource.getAnnotation(Attribute.class) != null) {
-            String name = annotationSource.getAnnotation(Attribute.class).value();
-            return contextRef + ".attribute(\"" + name + "\")";
-        } else if (annotationSource.getAnnotation(BeanParam.class) != null) {
-            return beanParameterCode(context, parameter, contextRef);
-        } else if (annotationSource.getAnnotation(Provided.class) != null) {
-            return ProcessorUtils.providerLookupCode(context, parameter, Constants.PROVIDER_REGISTRY);
+        }
+
+
+        Param param = annotationSource.getAnnotation(Param.class);
+        if (param == null) {
+            throw new CodeProcessingException("unsupported parameter - missing @Param annotation", parameter);
+        }
+        Type type = param.type();
+        String name = Optional.ofNullable(param.name())
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .orElse(parameter.getSimpleName().toString());
+        switch (type) {
+            case Body:
+                return "(" + parameter.asType() + ") b";
+            case Attribute:
+                return contextRef + ".attribute(\"" + name + "\")";
+            case Bean:
+                return beanParameterCode(context, parameter, contextRef);
+            case Provided:
+                return ProcessorUtils.providerLookupCode(context, parameter, Constants.PROVIDER_REGISTRY);
         }
 
         TypeMirror target = parameter.asType();
-        boolean isOptional = target.toString().startsWith(Optional.class.getCanonicalName());
-
+        boolean isOptional = ProcessorUtils.isCompatibleWith(context, target, Optional.class);
         if (isOptional) {
-            target = GenericInfo.firstParameterizedType(target).orElse(null);
+            target = GenericInfo.firstParameterizedType(target)
+                    .orElseThrow(() -> new CodeProcessingException("missing type for Optional", parameter));
         }
-
         StringBuilder sb = new StringBuilder();
         sb.append("Optional.ofNullable(");
 
-        if (annotationSource.getAnnotation(PathParam.class) != null) {
-            String name = annotationSource.getAnnotation(PathParam.class).value();
-            sb.append("pathParam(").append(contextRef).append(",\"").append(name).append("\")");
-        } else if (annotationSource.getAnnotation(QueryParam.class) != null) {
-            String name = annotationSource.getAnnotation(QueryParam.class).value();
-            sb.append(contextRef).append(".queryParam(\"").append(name).append("\")");
-        } else if (annotationSource.getAnnotation(HeaderParam.class) != null) {
-            String name = annotationSource.getAnnotation(HeaderParam.class).value();
-            sb.append(contextRef).append(".headers().get(\"").append(name).append("\")");
-        } else if (annotationSource.getAnnotation(CookieParam.class) != null) {
-            String name = annotationSource.getAnnotation(CookieParam.class).value();
-            sb.append(contextRef).append(".cookie(\"").append(name).append("\").value()");
-        } else {
-            throw new CodeProcessingException("unsupported parameter - missing supported route parameter annotation", parameter);
+        switch (type) {
+            case Path -> sb.append("pathParam(").append(contextRef).append(",\"").append(name).append("\")");
+            case Query -> sb.append(contextRef).append(".queryParam(\"").append(name).append("\")");
+            case Header -> sb.append(contextRef).append(".headers().get(\"").append(name).append("\")");
+            case Cookie -> sb.append(contextRef).append(".cookie(\"").append(name).append("\").value()");
+            default -> throw new CodeProcessingException("unsupported parameter - missing supported route parameter annotation", parameter);
         }
         sb.append(")");
         sb.append(".map(");
@@ -342,10 +340,8 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
     }
 
     private static boolean supportedParam(Element e) {
-        for (Class<? extends Annotation> supportedParam : SUPPORTED_PARAMS) {
-            if (e.getAnnotation(supportedParam) != null) {
-                return true;
-            }
+        if (e.getAnnotation(Param.class) != null) {
+            return true;
         }
         for (Class<?> supportedClass : SUPPORTED_CLASSES) {
             if (e.asType().toString().equals(supportedClass.getCanonicalName())) {
@@ -386,11 +382,17 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
     public static String buildTypeInfoCode(ExecutableElement method) {
         return method.getParameters()
                 .stream()
-                .filter(m -> m.getAnnotation(Body.class) != null)
+                .filter(m -> getParamType(m) == Body)
                 .map(VariableElement::asType)
                 .map(GenericInfo::new)
                 .map(ProcessorUtils::newTypeInfo)
                 .findFirst()
                 .orElse("null");
+    }
+
+    private static Type getParamType(Element element) {
+        return Optional.ofNullable(element.getAnnotation(Param.class))
+                .map(Param::type)
+                .orElse(null);
     }
 }

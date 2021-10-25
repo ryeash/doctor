@@ -7,15 +7,20 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Route parameter annotation that directs the router to build the value from a request header.
+ * Mark a method as an HTTP endpoint.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.PARAMETER, ElementType.FIELD, ElementType.METHOD})
-public @interface HeaderParam {
+@Target({ElementType.TYPE, ElementType.METHOD})
+public @interface Endpoint {
 
     /**
-     * The name of the header.
+     * The HTTP method that the endpoint responds to.
      */
-    String value();
+    String[] method() default {HttpMethod.GET};
+
+    /**
+     * The uri path for the endpoint.
+     */
+    String[] path() default {""};
 }

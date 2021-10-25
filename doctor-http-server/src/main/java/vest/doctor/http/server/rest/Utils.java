@@ -36,6 +36,7 @@ public class Utils {
         String ext = file.substring(extStart + 1);
         return switch (ext) {
             case "html", "htm" -> "text/html";
+            case "xhtml" -> "application/xhtml+xml";
             case "json", "jsn" -> "application/json";
             case "js", "javascript" -> "text/javascript";
             case "xml" -> "application/xml";
