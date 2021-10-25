@@ -16,6 +16,7 @@ import vest.doctor.event.ServiceStopped;
 import vest.doctor.netty.common.HttpServerConfiguration;
 import vest.doctor.netty.common.NettyHttpServer;
 import vest.doctor.netty.common.PipelineCustomizer;
+import vest.doctor.netty.common.ServerBootstrapCustomizer;
 
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -114,6 +115,11 @@ public final class NettyJerseyLoader implements ApplicationLoader {
                 .collect(Collectors.toList());
         pipelineCustomizers.add(new HttpAggregatorCustomizer(httpConfig.getMaxContentLength()));
         httpConfig.setPipelineCustomizers(pipelineCustomizers);
+
+        List<ServerBootstrapCustomizer> serverBootstrapCustomizers = providerRegistry.getProviders(ServerBootstrapCustomizer.class)
+                .map(DoctorProvider::get)
+                .collect(Collectors.toList());
+        httpConfig.setServerBootstrapCustomizers(serverBootstrapCustomizers);
         return httpConfig;
     }
 }

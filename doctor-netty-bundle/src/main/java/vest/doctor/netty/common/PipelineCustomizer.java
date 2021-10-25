@@ -6,6 +6,7 @@ import vest.doctor.Prioritized;
 /**
  * Customizes the channel pipeline used for the netty http channels.
  */
+@FunctionalInterface
 public interface PipelineCustomizer extends Prioritized {
 
     /**

@@ -7,6 +7,7 @@ import jakarta.inject.Provider;
 import vest.doctor.AdHocProvider;
 import vest.doctor.ApplicationLoader;
 import vest.doctor.ConfigurationFacade;
+import vest.doctor.DoctorProvider;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.EventProducer;
@@ -19,6 +20,7 @@ import vest.doctor.http.server.impl.DoctorHttpHandler;
 import vest.doctor.http.server.impl.Router;
 import vest.doctor.netty.common.NettyHttpServer;
 import vest.doctor.netty.common.PipelineCustomizer;
+import vest.doctor.netty.common.ServerBootstrapCustomizer;
 import vest.doctor.netty.common.Websocket;
 
 import java.io.File;
@@ -50,13 +52,12 @@ public class NettyLoader implements ApplicationLoader {
         conf.setExceptionHandler(compositeExceptionHandler);
 
         DoctorHttpHandler doctorHttpHandler = new DoctorHttpHandler(conf, router, compositeExceptionHandler);
+        providerRegistry.getProviders(Websocket.class)
+                .forEach(ws -> doctorHttpHandler.addWebsocket(ws::get));
         NettyHttpServer server = new NettyHttpServer(
                 conf,
                 doctorHttpHandler,
                 false);
-
-        providerRegistry.getProviders(Websocket.class)
-                .forEach(ws -> doctorHttpHandler.addWebsocket(ws::get));
 
         providerRegistry.register(new AdHocProvider<>(NettyHttpServer.class, server, null));
 
@@ -121,6 +122,11 @@ public class NettyLoader implements ApplicationLoader {
                 .map(Provider::get)
                 .collect(Collectors.toList());
         conf.setPipelineCustomizers(pipelineCustomizers);
+
+        List<ServerBootstrapCustomizer> serverBootstrapCustomizers = providerRegistry.getProviders(ServerBootstrapCustomizer.class)
+                .map(DoctorProvider::get)
+                .collect(Collectors.toList());
+        conf.setServerBootstrapCustomizers(serverBootstrapCustomizers);
         return conf;
     }
 

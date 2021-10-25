@@ -29,24 +29,30 @@ public class NettyHttpServer implements AutoCloseable {
     public NettyHttpServer(HttpServerConfiguration httpConfig, ChannelHandler handler, boolean useChildGroup) {
         this.bossGroup = new NioEventLoopGroup(httpConfig.getTcpManagementThreads(), new CustomThreadFactory(false, httpConfig.getTcpThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()));
 
-        ServerBootstrap b = new ServerBootstrap();
+        ServerBootstrap bootstrap = new ServerBootstrap();
         if (useChildGroup) {
             this.workerGroup = new NioEventLoopGroup(httpConfig.getWorkerThreads(), new CustomThreadFactory(true, httpConfig.getWorkerThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()));
-            b.group(bossGroup, workerGroup);
+            bootstrap.group(bossGroup, workerGroup);
         } else {
             this.workerGroup = null;
-            b.group(bossGroup);
+            bootstrap.group(bossGroup);
         }
-        b.channelFactory(NioServerSocketChannel::new)
+        bootstrap.channelFactory(NioServerSocketChannel::new)
                 .option(ChannelOption.SO_BACKLOG, httpConfig.getSocketBacklog())
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .option(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator())
                 .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, WriteBufferWaterMark.DEFAULT)
                 .childHandler(new HttpServerChannelInitializer(handler, httpConfig));
 
+        if (httpConfig.getServerBootstrapCustomizers() != null) {
+            for (ServerBootstrapCustomizer customizer : httpConfig.getServerBootstrapCustomizers()) {
+                customizer.customize(bootstrap);
+            }
+        }
+
         this.serverChannels = httpConfig.getBindAddresses()
                 .stream()
-                .map(b::bind)
+                .map(bootstrap::bind)
                 .map(ChannelFuture::syncUninterruptibly)
                 .map(ChannelFuture::channel)
                 .collect(Collectors.toList());

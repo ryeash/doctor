@@ -5,7 +5,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 
 import java.util.concurrent.CompletableFuture;
 
-public class CompletableFutureListener<T> implements GenericFutureListener<Future<T>> {
+public final class CompletableFutureListener<T> implements GenericFutureListener<Future<T>> {
 
     private final CompletableFuture<T> future;
 

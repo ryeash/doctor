@@ -92,6 +92,11 @@ public class HttpServerConfiguration {
      */
     private List<PipelineCustomizer> pipelineCustomizers;
 
+    /**
+     * The ServerBoostrapCustomizers to apply to the netty http server.
+     */
+    private List<ServerBootstrapCustomizer> serverBootstrapCustomizers;
+
     public int getTcpManagementThreads() {
         return tcpManagementThreads;
     }
@@ -217,5 +222,13 @@ public class HttpServerConfiguration {
 
     public void setPipelineCustomizers(List<PipelineCustomizer> pipelineCustomizers) {
         this.pipelineCustomizers = pipelineCustomizers;
+    }
+
+    public List<ServerBootstrapCustomizer> getServerBootstrapCustomizers() {
+        return serverBootstrapCustomizers;
+    }
+
+    public void setServerBootstrapCustomizers(List<ServerBootstrapCustomizer> serverBootstrapCustomizers) {
+        this.serverBootstrapCustomizers = serverBootstrapCustomizers;
     }
 }

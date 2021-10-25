@@ -1,5 +1,8 @@
 package vest.doctor.http.server.rest;
 
+/**
+ * Holds constants for the basic HTTP methods.
+ */
 public final class HttpMethod {
 
     public static final String GET = "GET";
