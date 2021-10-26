@@ -11,6 +11,7 @@ import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
 
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
@@ -50,14 +51,14 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
         for (ExecutableElement method : ProcessorUtils.allMethods(context, providedType())) {
             if (method.getAnnotation(Property.class) != null) {
                 if (method.getParameters().size() > 0) {
-                    throw new CodeProcessingException("@Property methods in @Properties definition interfaces may not have parameter", method);
+                    throw new CodeProcessingException("@Property methods in @Properties definition interfaces may not have parameters", method);
                 }
-                MethodBuilder mb = impl.newMethod("@Override public " + method.getReturnType() + " " + method.getSimpleName() + "()");
+                MethodBuilder mb = impl.newMethod("@Override public ", method.getReturnType(), " ", method.getSimpleName(), "()");
                 TypeMirror returnType = method.getReturnType();
                 String propertyName = propertyPrefix + method.getAnnotation(Property.class).value();
                 String code = PropertyCodeGen.getPropertyCode(context, method, propertyName, returnType, PROVIDER_REGISTRY);
                 mb.line("return " + code + ";");
-            } else if (!method.isDefault()) {
+            } else if (!method.isDefault() && !method.getModifiers().contains(Modifier.STATIC)) {
                 throw new CodeProcessingException("all non-default methods defined in a @Properties interface must have a @Property annotation", method);
             }
         }

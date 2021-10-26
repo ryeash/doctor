@@ -20,8 +20,9 @@ public interface Websocket {
     /**
      * Called when the HttpServer accepts a new websocket connection. Defaults to a no-op.
      *
-     * @param ctx  The client connection context
-     * @param path The path that the websocket client connected to
+     * @param ctx    The client connection context
+     * @param path   The path that the websocket client connected to
+     * @param params The path params extracted from the request path
      */
     void connect(ChannelHandlerContext ctx, String path, Map<String, String> params);
 

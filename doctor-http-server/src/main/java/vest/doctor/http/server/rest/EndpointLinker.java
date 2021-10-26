@@ -12,13 +12,13 @@ import java.util.concurrent.CompletionStage;
 /**
  * Used internally to link a provider to a route.
  */
-public class EndpointLinker<P> implements Handler {
+public final class EndpointLinker<P> implements Handler {
 
-    protected final Provider<P> provider;
-    protected final TypeInfo bodyType;
-    protected final BodyInterchange bodyInterchange;
-    protected final String summary;
-    protected final EndpointHandler<P> endpointHandler;
+    private final Provider<P> provider;
+    private final TypeInfo bodyType;
+    private final BodyInterchange bodyInterchange;
+    private final String summary;
+    private final EndpointHandler<P> endpointHandler;
 
     public EndpointLinker(Provider<P> provider, TypeInfo bodyType, BodyInterchange bodyInterchange, String summary, EndpointHandler<P> endpointHandler) {
         this.provider = provider;
@@ -29,7 +29,7 @@ public class EndpointLinker<P> implements Handler {
     }
 
     @Override
-    public final CompletionStage<Response> handle(Request request) throws Exception {
+    public CompletionStage<Response> handle(Request request) throws Exception {
         return endpointHandler.handle(provider.get(), request, readFutureBody(request))
                 .thenCompose(result -> convertResponse(request, result));
     }

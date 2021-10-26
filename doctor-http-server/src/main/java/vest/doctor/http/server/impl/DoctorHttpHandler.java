@@ -26,6 +26,8 @@ import vest.doctor.http.server.Response;
 import vest.doctor.netty.common.Websocket;
 import vest.doctor.netty.common.WebsocketRouter;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
@@ -82,11 +84,10 @@ public class DoctorHttpHandler extends SimpleChannelInboundHandler<HttpObject> {
                 ServerRequest req = new ServerRequest(request, ctx, ctx.executor(), body);
                 try {
                     handler.handle(req)
-                            .exceptionally(error -> handleError(req, error))
+                            .exceptionallyCompose(error -> handleError(req, error))
                             .thenAccept(response -> writeResponse(response.request(), response));
                 } catch (Throwable t) {
-                    Response errorResponse = handleError(req, t);
-                    writeResponse(req, errorResponse);
+                    handleError(req, t).thenAccept(errorResponse -> writeResponse(req, errorResponse));
                 }
             }
 
@@ -103,14 +104,14 @@ public class DoctorHttpHandler extends SimpleChannelInboundHandler<HttpObject> {
         }
     }
 
-    private Response handleError(Request request, Throwable error) {
+    private CompletionStage<Response> handleError(Request request, Throwable error) {
         try {
             return exceptionHandler.handle(request, error);
         } catch (Throwable fatal) {
             log.error("error mapping exception", fatal);
             log.error("original exception", error);
             request.channelContext().close();
-            return request.createResponse().status(500);
+            return CompletableFuture.completedFuture(request.createResponse().status(500));
         }
     }
 

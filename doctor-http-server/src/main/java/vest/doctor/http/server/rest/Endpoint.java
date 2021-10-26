@@ -20,7 +20,7 @@ public @interface Endpoint {
     String[] method() default {HttpMethod.GET};
 
     /**
-     * The uri path for the endpoint.
+     * The uri paths for the endpoint.
      */
     String[] path() default {""};
 }
