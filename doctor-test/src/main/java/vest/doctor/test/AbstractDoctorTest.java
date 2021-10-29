@@ -32,7 +32,7 @@ import java.util.stream.Stream;
 /**
  * Base test for testing applications based on {@link Doctor}. Automatically configures
  * a doctor instance using the {@link TestConfiguration} annotation. The annotation is required
- * and if it is missing the testing will fail to start with an {@link IllegalStateException}.
+ * and the testing will fail to start with an {@link IllegalStateException} if missing.
  */
 public abstract class AbstractDoctorTest extends Assert {
 

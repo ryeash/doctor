@@ -4,17 +4,10 @@ import demo.app.dao.DAO;
 import demo.app.dao.User;
 import demo.app.ignored.TCIgnoredClass;
 import jakarta.inject.Provider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.event.EventProducer;
 import vest.doctor.event.ReloadConfiguration;
-import vest.doctor.runtime.DefaultConfigurationFacade;
-import vest.doctor.runtime.Doctor;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -26,39 +19,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class DoctorTest extends Assert {
-
-    protected final Logger log = LoggerFactory.getLogger(getClass());
-    public Doctor doctor;
-
-    @BeforeClass(alwaysRun = true)
-    public void start() {
-        if (doctor == null) {
-            System.setProperty("qualifierInterpolation", "interpolated");
-            System.setProperty("doctor.app.properties", "test-override.props,test.props");
-
-            doctor = Doctor.load(DefaultConfigurationFacade.defaultConfigurationFacade()
-                    .addSource(new TCConfigReload()));
-        }
-    }
-
-    @AfterClass(alwaysRun = true)
-    public void shutdown() {
-        log.info("{}", doctor);
-        doctor.close();
-        assertTrue(TCCloseable.closed);
-        assertTrue(TCCustomCloseable.closed);
-    }
+public class DoctorTest extends AbstractTestAppTest {
 
     @Test
     public void getInstance() {
-        CoffeeMaker cm = doctor.getInstance(CoffeeMaker.class);
+        CoffeeMaker cm = providerRegistry().getInstance(CoffeeMaker.class);
         assertEquals(cm.brew(), "french pressing");
     }
 
     @Test
     public void injectedMethods() {
-        TCInjectMethods instance = doctor.getInstance(TCInjectMethods.class);
+        TCInjectMethods instance = providerRegistry().getInstance(TCInjectMethods.class);
         assertTrue(instance.injected);
     }
 
@@ -69,7 +40,7 @@ public class DoctorTest extends Assert {
 
     @Test
     public void event() throws InterruptedException {
-        TCEvent event = doctor.getInstance(TCEvent.class);
+        TCEvent event = providerRegistry().getInstance(TCEvent.class);
         assertTrue(event.eventListened);
         Thread.sleep(5);
         assertEquals(event.messageReceived, "test");
@@ -77,53 +48,45 @@ public class DoctorTest extends Assert {
 
     @Test
     public void modules() {
-        try (Doctor doc = Doctor.load("dev")) {
-            CoffeeMaker cm = doc.getInstance(CoffeeMaker.class, "modules-test");
-            assertEquals(cm.brew(), "dev");
-        }
-
-        try (Doctor doc = Doctor.load("test")) {
-            assertEquals(doc.getInstance(CoffeeMaker.class, "modules-test").brew(), "test");
-            assertEquals(doc.getInstance(CoffeeMaker.class, "class-level-module").brew(), "module-qualified");
-            assertTrue(doctor.getProviderOpt(CoffeeMaker.class, "modules-test").isEmpty());
-            assertTrue(doctor.getProviderOpt(CoffeeMaker.class, "class-level-module").isEmpty());
-        }
+        // No modules defined see Dev and Test ModuleTest
+        assertTrue(providerRegistry().getProviderOpt(CoffeeMaker.class, "modules-test").isEmpty());
+        assertTrue(providerRegistry().getProviderOpt(CoffeeMaker.class, "class-level-module").isEmpty());
     }
 
     @Test
     public void primary() {
-        assertEquals(doctor.getInstance(TCPrimary.class), doctor.getInstance(TCPrimary.class, "primary"));
-        doctor.getInstance(OutputStream.class, "using-primary-test");
+        assertEquals(providerRegistry().getInstance(TCPrimary.class), providerRegistry().getInstance(TCPrimary.class, "primary"));
+        providerRegistry().getInstance(OutputStream.class, "using-primary-test");
     }
 
     @Test
     public void configuration() {
-        ConfigurationFacade conf = doctor.configuration();
+        ConfigurationFacade conf = providerRegistry().configuration();
         assertEquals(conf.get("string"), "value");
         assertEquals((int) conf.<Integer>get("number", Integer::valueOf), 42);
         assertTrue(conf.get("boolean", Boolean::valueOf));
         assertEquals(conf.get("override.this"), "overridden");
 
-        List<String> dbProps = doctor.configuration().subsection("db.")
+        List<String> dbProps = providerRegistry().configuration().subsection("db.")
                 .propertyNames().collect(Collectors.toList());
         assertEquals(dbProps, List.of("url", "username", "password"));
     }
 
     @Test
     public void properties() {
-        doctor.getInstance(TCProperties.class);
+        providerRegistry().getInstance(TCProperties.class);
     }
 
     @Test
     public void skipInjection() {
-        assertFalse(doctor.getInstance(TCSkipInjection.class).injected);
+        assertFalse(providerRegistry().getInstance(TCSkipInjection.class).injected);
     }
 
     @Test
     public void scope() throws ExecutionException, InterruptedException {
-        Set<TCScope> singleton = IntStream.range(0, 100).parallel().mapToObj(i -> doctor.getInstance(TCScope.class, "singleton")).collect(Collectors.toSet());
+        Set<TCScope> singleton = IntStream.range(0, 100).parallel().mapToObj(i -> providerRegistry().getInstance(TCScope.class, "singleton")).collect(Collectors.toSet());
         assertEquals(singleton.size(), 1);
-        Set<TCScope> prototype = IntStream.range(0, 100).parallel().mapToObj(i -> doctor.getInstance(TCScope.class, "prototype")).collect(Collectors.toSet());
+        Set<TCScope> prototype = IntStream.range(0, 100).parallel().mapToObj(i -> providerRegistry().getInstance(TCScope.class, "prototype")).collect(Collectors.toSet());
         assertEquals(prototype.size(), 100);
 
         Set<TCScope> threadLocal = Executors.newWorkStealingPool(3).submit(() ->
@@ -133,7 +96,7 @@ public class DoctorTest extends Assert {
                     } catch (InterruptedException e) {
                         // ignored
                     }
-                    return doctor.getInstance(TCScope.class, "threadLocal");
+                    return providerRegistry().getInstance(TCScope.class, "threadLocal");
                 }).collect(Collectors.toSet())).get();
         assertEquals(threadLocal.size(), 3);
 
@@ -145,7 +108,7 @@ public class DoctorTest extends Assert {
                     } catch (Throwable t) {
                         // no-op
                     }
-                    return doctor.getInstance(TCScope.class, "cached");
+                    return providerRegistry().getInstance(TCScope.class, "cached");
                 })
                 .collect(Collectors.toSet());
         assertTrue(cached.size() < 100 && cached.size() > 5);
@@ -153,7 +116,7 @@ public class DoctorTest extends Assert {
 
     @Test
     public void scheduled() throws InterruptedException {
-        TCScheduled instance = doctor.getInstance(TCScheduled.class);
+        TCScheduled instance = providerRegistry().getInstance(TCScheduled.class);
         TimeUnit.MILLISECONDS.sleep(110);
         assertTrue(instance.every10Milliseconds.get() >= 10, "" + instance.every10Milliseconds);
         assertTrue(instance.every50Milliseconds.get() >= 2, "" + instance.every50Milliseconds);
@@ -163,29 +126,29 @@ public class DoctorTest extends Assert {
 
     @Test
     public void providerInjection() {
-        TCProviderInject instance = doctor.getInstance(TCProviderInject.class);
+        TCProviderInject instance = providerRegistry().getInstance(TCProviderInject.class);
         assertTrue(instance.postConstructCalled);
     }
 
     @Test
     public void qualifierInterpolation() {
-        TCQualifierInterpolation instance = doctor.getInstance(TCQualifierInterpolation.class, "name-interpolated");
+        TCQualifierInterpolation instance = providerRegistry().getInstance(TCQualifierInterpolation.class, "name-interpolated");
         assertNotNull(instance);
     }
 
     @Test
     public void customQualifiers() {
-        doctor.getInstance(TCCustomQualifierHolder.class);
+        providerRegistry().getInstance(TCCustomQualifierHolder.class);
     }
 
     @Test
     public void optional() {
-        doctor.getProvider(TCOptionalDependencies.class);
+        providerRegistry().getProvider(TCOptionalDependencies.class);
     }
 
     @Test
     public void providersWithAnnotation() {
-        List<Object> collect = doctor.getProvidersWithAnnotation(Service.class).map(Provider::get).collect(Collectors.toList());
+        List<Object> collect = providerRegistry().getProvidersWithAnnotation(Service.class).map(Provider::get).collect(Collectors.toList());
         assertEquals(collect.size(), 2);
         for (Object o : collect) {
             assertTrue(o instanceof TCService1 || o instanceof TCService2);
@@ -194,28 +157,28 @@ public class DoctorTest extends Assert {
 
     @Test
     public void injectedMethodsTest() {
-        TCInjectedMethodsC instance = doctor.getInstance(TCInjectedMethodsC.class);
+        TCInjectedMethodsC instance = providerRegistry().getInstance(TCInjectedMethodsC.class);
         assertNotNull(instance.coffeeMaker);
         assertTrue(instance.injectedEmpty);
         assertNotEquals(instance.injectAsync, Thread.currentThread().getName());
-        TCInjectedMethodsM instance1 = doctor.getInstance(TCInjectedMethodsM.class);
+        TCInjectedMethodsM instance1 = providerRegistry().getInstance(TCInjectedMethodsM.class);
         assertNotNull(instance1.coffeeMaker);
         assertTrue(instance1.injectedEmpty);
     }
 
     @Test
     public void aspects() throws IOException {
-        TCAspects instance = doctor.getInstance(TCAspects.class);
+        TCAspects instance = providerRegistry().getInstance(TCAspects.class);
         instance.execute("name", List.of("a", "b"));
         assertEquals(instance.parrot("hi"), "hi altered42M");
 
-        CoffeeMaker aspect = doctor.getInstance(CoffeeMaker.class, "coffee-aspect");
+        CoffeeMaker aspect = providerRegistry().getInstance(CoffeeMaker.class, "coffee-aspect");
         assertEquals(aspect.brew(), "french pressing altered1L");
     }
 
     @Test
     public void dao() {
-        DAO dao = doctor.getInstance(DAO.class);
+        DAO dao = providerRegistry().getInstance(DAO.class);
         User user = new User();
         user.setId(1L);
         user.setFirstName("doug");
@@ -229,25 +192,25 @@ public class DoctorTest extends Assert {
 
     @Test
     public void configurationReload() {
-        EventProducer instance = doctor.getInstance(EventProducer.class);
+        EventProducer instance = providerRegistry().getInstance(EventProducer.class);
         instance.publish(new ReloadConfiguration());
         assertTrue(TCConfigReload.reloaded);
     }
 
     @Test
     public void staticFactory() {
-        Object str = doctor.getInstance(Object.class, "static");
+        Object str = providerRegistry().getInstance(Object.class, "static");
         assertEquals(str, "static");
     }
 
     @Test
     public void ignoredClass() {
-        assertFalse(doctor.getProviderOpt(TCIgnoredClass.class).isPresent());
+        assertFalse(providerRegistry().getProviderOpt(TCIgnoredClass.class).isPresent());
     }
 
     @Test
     public void parameterized() {
-        TCParamterizedInject instance = doctor.getInstance(TCParamterizedInject.class);
+        TCParamterizedInject instance = providerRegistry().getInstance(TCParamterizedInject.class);
         assertEquals(instance.getInjectedList().getValue(), "worked");
     }
 }
