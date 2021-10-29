@@ -47,7 +47,7 @@ final class NettyHttpServletRequest implements HttpServletRequest {
     private final QueryStringDecoder queryStringDecoder;
     private final Map<String, Object> attributes = new HashMap<>();
 
-    public NettyHttpServletRequest(ChannelHandlerContext ctx, HttpRequest request) {
+    NettyHttpServletRequest(ChannelHandlerContext ctx, HttpRequest request) {
         this.ctx = ctx;
         this.request = request;
         this.queryStringDecoder = new QueryStringDecoder(request.uri());

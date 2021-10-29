@@ -5,7 +5,7 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import vest.doctor.netty.common.HttpServerChannelInitializer;
 import vest.doctor.netty.common.PipelineCustomizer;
 
-public record HttpAggregatorCustomizer(int maxLength) implements PipelineCustomizer {
+record HttpAggregatorCustomizer(int maxLength) implements PipelineCustomizer {
 
     public static final String HTTP_AGGREGATOR = "httpAggregator";
 

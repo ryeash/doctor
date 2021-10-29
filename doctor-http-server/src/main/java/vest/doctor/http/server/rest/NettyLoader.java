@@ -78,9 +78,9 @@ public class NettyLoader implements ApplicationLoader {
         DoctorHttpServerConfiguration conf = new DoctorHttpServerConfiguration();
         conf.setTcpManagementThreads(httpConf.get("tcp.threads", 1, Integer::valueOf));
         conf.setTcpThreadFormat(httpConf.get("tcp.threadNameFormat", "netty-tcp-%d"));
+        conf.setSocketBacklog(httpConf.get("tcp.socketBacklog", 1024, Integer::valueOf));
         conf.setWorkerThreads(httpConf.get("worker.threads", 16, Integer::valueOf));
         conf.setWorkerThreadFormat(httpConf.get("worker.threadNameFormat", "netty-worker-%d"));
-        conf.setSocketBacklog(httpConf.get("tcp.socketBacklog", 1024, Integer::valueOf));
 
         List<InetSocketAddress> bind = httpConf.getList("bind", Function.identity())
                 .stream()

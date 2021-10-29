@@ -23,6 +23,7 @@ import vest.doctor.netty.common.Websocket;
 import vest.doctor.netty.common.WebsocketRouter;
 import vest.doctor.runtime.LoggingUncaughtExceptionHandler;
 
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
@@ -43,9 +44,9 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
     private final WebsocketRouter wsRouter = new WebsocketRouter();
     private final ExecutorService workerGroup;
 
-    public JerseyChannelAdapter(HttpServerConfiguration httpConfig,
-                                Container container,
-                                ProviderRegistry providerRegistry) {
+    JerseyChannelAdapter(HttpServerConfiguration httpConfig,
+                         Container container,
+                         ProviderRegistry providerRegistry) {
         this.httpConfig = httpConfig;
         this.applicationHandler = container.getApplicationHandler();
         this.resourceConfig = container.getConfiguration();
@@ -66,12 +67,14 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
                 return;
             }
 
+            InputStream entityStream = new ByteBufInputStream(req.content(), true);
+
             ContainerRequest requestContext = createContainerRequest(ctx, req);
             requestContext.setProperty(NETTY_REQUEST, req);
             requestContext.setProperty(NETTY_SERVLET_REQUEST, new NettyHttpServletRequest(ctx, req));
             requestContext.setProperty(RESOURCE_CONFIG, resourceConfig);
-            requestContext.setWriter(new NettyResponseWriter(ctx, req));
-            requestContext.setEntityStream(new ByteBufInputStream(req.content(), true));
+            requestContext.setWriter(new NettyResponseWriter(ctx, req, entityStream));
+            requestContext.setEntityStream(entityStream);
             for (String name : req.headers().names()) {
                 requestContext.headers(name, req.headers().getAll(name));
             }
@@ -84,7 +87,7 @@ final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
                         }
                     });
         } else {
-            log.error("unhandled object type: " + msg);
+            log.error("unhandled object type: {}", msg);
             ctx.close();
         }
     }

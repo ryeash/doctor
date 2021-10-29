@@ -6,7 +6,7 @@ import org.glassfish.hk2.api.Factory;
 /**
  * Wraps a {@link Provider} to turn it into a {@link Factory}
  */
-public record ProviderFactoryBridge<T>(Provider<T> provider) implements Factory<T> {
+record ProviderFactoryBridge<T>(Provider<T> provider) implements Factory<T> {
 
     @Override
     public T provide() {

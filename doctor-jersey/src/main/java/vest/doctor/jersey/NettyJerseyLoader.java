@@ -73,9 +73,9 @@ public final class NettyJerseyLoader implements ApplicationLoader {
 
         httpConfig.setTcpManagementThreads(cf.get("tcp.threads", 1, Integer::valueOf));
         httpConfig.setTcpThreadFormat(cf.get("tcp.threadFormat", "netty-jersey-tcp-%d"));
+        httpConfig.setSocketBacklog(cf.get("tcp.socketBacklog", 1024, Integer::valueOf));
         httpConfig.setWorkerThreads(cf.get("worker.threads", 16, Integer::valueOf));
         httpConfig.setWorkerThreadFormat(cf.get("worker.threadFormat", "netty-jersey-worker-%d"));
-        httpConfig.setSocketBacklog(cf.get("tcp.socketBacklog", 1024, Integer::valueOf));
 
         List<InetSocketAddress> bind = cf.getList("bind", List.of("localhost:9998"), Function.identity())
                 .stream()
