@@ -2,6 +2,7 @@ package vest.doctor.http.server.impl;
 
 import vest.doctor.Prioritized;
 import vest.doctor.http.server.Filter;
+import vest.doctor.netty.common.PathSpec;
 
 final record FilterAndPath(PathSpec pathSpec, Filter filter) implements Prioritized {
     @Override

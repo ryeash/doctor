@@ -4,7 +4,6 @@ import vest.doctor.ConfigurationSource;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URI;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.stream.Stream;
@@ -14,10 +13,14 @@ import java.util.stream.Stream;
  */
 public class PropertiesFileConfigurationSource implements ConfigurationSource {
 
-    private final String propertiesFileLocation;
+    private final FileLocation propertiesFileLocation;
     private Properties properties;
 
-    public PropertiesFileConfigurationSource(String propertiesFileLocation) {
+    public PropertiesFileConfigurationSource(String location) {
+        this(new FileLocation(location));
+    }
+
+    public PropertiesFileConfigurationSource(FileLocation propertiesFileLocation) {
         this.propertiesFileLocation = Objects.requireNonNull(propertiesFileLocation);
         reload();
     }
@@ -26,7 +29,7 @@ public class PropertiesFileConfigurationSource implements ConfigurationSource {
     public void reload() {
         Properties properties = new Properties();
         try {
-            properties.load(URI.create(propertiesFileLocation).toURL().openStream());
+            properties.load(propertiesFileLocation.toURL().openStream());
         } catch (IOException e) {
             throw new UncheckedIOException("error reading properties file: " + propertiesFileLocation, e);
         }

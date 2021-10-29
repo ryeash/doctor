@@ -2,9 +2,16 @@ package vest.doctor.http.server;
 
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.ssl.SslContext;
+import vest.doctor.http.server.impl.CompositeExceptionHandler;
+import vest.doctor.http.server.impl.DoctorHttpHandler;
 import vest.doctor.http.server.impl.Router;
+import vest.doctor.netty.common.HttpServerConfiguration;
+import vest.doctor.netty.common.NettyHttpServer;
+import vest.doctor.netty.common.PipelineCustomizer;
 
 import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
@@ -14,7 +21,7 @@ import java.util.function.UnaryOperator;
  */
 public final class HttpServerBuilder {
 
-    private final HttpServerConfiguration config = new HttpServerConfiguration();
+    private final DoctorHttpServerConfiguration config = new DoctorHttpServerConfiguration();
     private final Router router = new Router(config);
 
     /**
@@ -26,10 +33,10 @@ public final class HttpServerBuilder {
     }
 
     /**
-     * @see HttpServerConfiguration#setTcpThreadPrefix(String)
+     * @see HttpServerConfiguration#setTcpThreadFormat(String)
      */
-    public HttpServerBuilder setTcpThreadPrefix(String tcpThreadPrefix) {
-        config.setTcpThreadPrefix(tcpThreadPrefix);
+    public HttpServerBuilder setTcpThreadFormat(String tcpThreadPrefix) {
+        config.setTcpThreadFormat(tcpThreadPrefix);
         return this;
     }
 
@@ -42,10 +49,10 @@ public final class HttpServerBuilder {
     }
 
     /**
-     * @see HttpServerConfiguration#setWorkerThreadPrefix(String)
+     * @see HttpServerConfiguration#setWorkerThreadFormat(String)
      */
-    public HttpServerBuilder setWorkerThreadPrefix(String workerThreadPrefix) {
-        config.setWorkerThreadPrefix(workerThreadPrefix);
+    public HttpServerBuilder setWorkerThreadFormat(String workerThreadPrefix) {
+        config.setWorkerThreadFormat(workerThreadPrefix);
         return this;
     }
 
@@ -122,10 +129,34 @@ public final class HttpServerBuilder {
     }
 
     /**
-     * @see HttpServerConfiguration#setCaseInsensitiveMatching(boolean)
+     * @see DoctorHttpServerConfiguration#setCaseInsensitiveMatching(boolean)
      */
     public HttpServerBuilder setCaseInsensitiveMatching(boolean caseInsensitiveMatching) {
         config.setCaseInsensitiveMatching(caseInsensitiveMatching);
+        return this;
+    }
+
+    /**
+     * @see HttpServerConfiguration#setMinGzipSize(int)
+     */
+    public HttpServerBuilder setMinGzipSize(int minGzipSize) {
+        config.setMinGzipSize(minGzipSize);
+        return this;
+    }
+
+    /**
+     * @see DoctorHttpServerConfiguration#setPipelineCustomizers(List)
+     */
+    public HttpServerBuilder setPipelineCustomizers(List<PipelineCustomizer> pipelineCustomizers) {
+        config.setPipelineCustomizers(pipelineCustomizers);
+        return this;
+    }
+
+    /**
+     * @see DoctorHttpServerConfiguration#setExceptionHandler(ExceptionHandler)
+     */
+    public HttpServerBuilder setExceptionHandler(ExceptionHandler exceptionHandler) {
+        config.setExceptionHandler(exceptionHandler);
         return this;
     }
 
@@ -337,11 +368,15 @@ public final class HttpServerBuilder {
     }
 
     /**
-     * Start the {@link HttpServer} instance with the current config and routing.
+     * Start the {@link NettyHttpServer} instance with the current config and routing.
      *
-     * @return a new {@link HttpServer} started and ready to receive requests
+     * @return a new {@link NettyHttpServer} started and ready to receive requests
      */
-    public HttpServer start() {
-        return new HttpServer(config, router);
+    public NettyHttpServer start() {
+        if (config.getBindAddresses() == null || config.getBindAddresses().isEmpty()) {
+            throw new IllegalArgumentException("can not start without at least one bind address set");
+        }
+        DoctorHttpHandler doctorHttpHandler = new DoctorHttpHandler(config, router, Optional.ofNullable(config.getExceptionHandler()).orElseGet(CompositeExceptionHandler::new));
+        return new NettyHttpServer(config, doctorHttpHandler, true);
     }
 }

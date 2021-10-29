@@ -7,18 +7,21 @@ import jakarta.inject.Provider;
 import vest.doctor.AdHocProvider;
 import vest.doctor.ApplicationLoader;
 import vest.doctor.ConfigurationFacade;
+import vest.doctor.DoctorProvider;
 import vest.doctor.ProviderRegistry;
-import vest.doctor.event.ApplicationStarted;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.EventProducer;
 import vest.doctor.event.ServiceStarted;
 import vest.doctor.event.ServiceStopped;
+import vest.doctor.http.server.DoctorHttpServerConfiguration;
 import vest.doctor.http.server.ExceptionHandler;
-import vest.doctor.http.server.HttpServer;
-import vest.doctor.http.server.HttpServerConfiguration;
-import vest.doctor.http.server.Websocket;
 import vest.doctor.http.server.impl.CompositeExceptionHandler;
+import vest.doctor.http.server.impl.DoctorHttpHandler;
 import vest.doctor.http.server.impl.Router;
+import vest.doctor.netty.common.NettyHttpServer;
+import vest.doctor.netty.common.PipelineCustomizer;
+import vest.doctor.netty.common.ServerBootstrapCustomizer;
+import vest.doctor.netty.common.Websocket;
 
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -27,14 +30,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class NettyLoader implements ApplicationLoader {
 
     @Override
     public void stage4(ProviderRegistry providerRegistry) {
-        HttpServerConfiguration conf = buildConf(providerRegistry);
-        if (conf.getBindAddresses().isEmpty()) {
+        DoctorHttpServerConfiguration conf = buildConf(providerRegistry);
+        if (conf.getBindAddresses() == null || conf.getBindAddresses().isEmpty()) {
             return;
         }
         BodyInterchange bodyInterchange = new BodyInterchange(providerRegistry);
@@ -47,39 +49,20 @@ public class NettyLoader implements ApplicationLoader {
         providerRegistry.getProviders(ExceptionHandler.class)
                 .map(Provider::get)
                 .forEach(compositeExceptionHandler::addHandler);
+        conf.setExceptionHandler(compositeExceptionHandler);
 
-        HttpServer server = new HttpServer(conf, router, compositeExceptionHandler);
-
+        DoctorHttpHandler doctorHttpHandler = new DoctorHttpHandler(conf, router, compositeExceptionHandler);
         providerRegistry.getProviders(Websocket.class)
-                .forEach(ws -> {
-                    Websocket websocket = ws.get();
-                    List<String> paths = Optional.ofNullable(websocket.path())
-                            .map(String::trim)
-                            .map(s -> s.split(","))
-                            .stream()
-                            .flatMap(Stream::of)
-                            .map(String::trim)
-                            .filter(s -> !s.isEmpty())
-                            .collect(Collectors.toList());
-                    if (paths.isEmpty()) {
-                        throw new IllegalArgumentException("empty websocket path " + ws.type());
-                    }
-                    for (String p : paths) {
-                        if (p == null || p.isEmpty()) {
-                            throw new IllegalArgumentException("empty websocket path " + ws.type());
-                        }
-                        server.addWebsocket(p, ws::get);
-                    }
-                });
+                .forEach(ws -> doctorHttpHandler.addWebsocket(ws::get));
+        NettyHttpServer server = new NettyHttpServer(
+                conf,
+                doctorHttpHandler,
+                false);
 
-        providerRegistry.register(new AdHocProvider<>(HttpServer.class, server, null));
+        providerRegistry.register(new AdHocProvider<>(NettyHttpServer.class, server, null));
 
-        providerRegistry.getInstanceOpt(EventBus.class)
-                .ifPresent(bus -> {
-                    bus.addConsumer(ApplicationStarted.class, event -> {
-                        bus.publish(new ServiceStarted("netty-http", server));
-                    });
-                });
+        Optional<EventBus> eventBusOpt = providerRegistry.getInstanceOpt(EventBus.class);
+        eventBusOpt.ifPresent(eventBus -> eventBus.publish(new ServiceStarted("netty-http", server)));
 
         providerRegistry.shutdownContainer().register(() -> {
             server.close();
@@ -88,15 +71,15 @@ public class NettyLoader implements ApplicationLoader {
         });
     }
 
-    private HttpServerConfiguration buildConf(ProviderRegistry providerRegistry) {
+    private DoctorHttpServerConfiguration buildConf(ProviderRegistry providerRegistry) {
         ConfigurationFacade httpConf = providerRegistry.configuration().subsection("doctor.netty.http.");
 
-        HttpServerConfiguration conf = new HttpServerConfiguration();
+        DoctorHttpServerConfiguration conf = new DoctorHttpServerConfiguration();
         conf.setTcpManagementThreads(httpConf.get("tcp.threads", 1, Integer::valueOf));
-        conf.setTcpThreadPrefix(httpConf.get("tcp.threadPrefix", "netty-tcp"));
-        conf.setWorkerThreads(httpConf.get("worker.threads", 16, Integer::valueOf));
-        conf.setWorkerThreadPrefix(httpConf.get("worker.threadPrefix", "netty-worker"));
+        conf.setTcpThreadFormat(httpConf.get("tcp.threadNameFormat", "netty-tcp-%d"));
         conf.setSocketBacklog(httpConf.get("tcp.socketBacklog", 1024, Integer::valueOf));
+        conf.setWorkerThreads(httpConf.get("worker.threads", 16, Integer::valueOf));
+        conf.setWorkerThreadFormat(httpConf.get("worker.threadNameFormat", "netty-worker-%d"));
 
         List<InetSocketAddress> bind = httpConf.getList("bind", Function.identity())
                 .stream()
@@ -129,10 +112,21 @@ public class NettyLoader implements ApplicationLoader {
         conf.setValidateHeaders(httpConf.get("validateHeaders", false, Boolean::valueOf));
         conf.setInitialBufferSize(httpConf.get("initialBufferSize", 8192, Integer::valueOf));
         conf.setMaxContentLength(httpConf.get("maxContentLength", 8388608, Integer::valueOf));
+        conf.setMinGzipSize(httpConf.get("minGzipSize", 812, Integer::valueOf));
 
         conf.setCaseInsensitiveMatching(httpConf.get("caseInsensitiveMatching", false, Boolean::valueOf));
         conf.setDebugRequestRouting(httpConf.get("debugRequestRouting", false, Boolean::valueOf));
         conf.setRouterPrefix(httpConf.get("routePrefix", ""));
+
+        List<PipelineCustomizer> pipelineCustomizers = providerRegistry.getProviders(PipelineCustomizer.class)
+                .map(Provider::get)
+                .collect(Collectors.toList());
+        conf.setPipelineCustomizers(pipelineCustomizers);
+
+        List<ServerBootstrapCustomizer> serverBootstrapCustomizers = providerRegistry.getProviders(ServerBootstrapCustomizer.class)
+                .map(DoctorProvider::get)
+                .collect(Collectors.toList());
+        conf.setServerBootstrapCustomizers(serverBootstrapCustomizers);
         return conf;
     }
 

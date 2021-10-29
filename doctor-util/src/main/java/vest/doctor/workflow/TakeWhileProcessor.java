@@ -2,7 +2,7 @@ package vest.doctor.workflow;
 
 import java.util.function.Predicate;
 
-public class TakeWhileProcessor<IN> extends AbstractProcessor<IN, IN> {
+final class TakeWhileProcessor<IN> extends AbstractProcessor<IN, IN> {
 
     private final Predicate<IN> takeWhileTrue;
     private final boolean includeLast;

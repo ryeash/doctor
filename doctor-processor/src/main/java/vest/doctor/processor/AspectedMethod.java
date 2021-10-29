@@ -20,7 +20,6 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -29,22 +28,17 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 final class AspectedMethod {
-    private static final Map<String, String> initializedAspectsMap = new HashMap<>();
-
-    public static void clearCache() {
-        initializedAspectsMap.clear();
-    }
-
     private final AnnotationProcessorContext context;
     private final ExecutableElement method;
     private final List<TypeElement> aspectClasses;
     private final String aspectClassUniqueKey;
-
+    private final Map<String, String> initializedAspectsMap;
     private final String uniqueFieldPrefix;
 
-    public AspectedMethod(AnnotationProcessorContext context, ExecutableElement method, ProviderDefinition providerDefinition) {
+    public AspectedMethod(AnnotationProcessorContext context, ExecutableElement method, ProviderDefinition providerDefinition, Map<String, String> initializedAspectsMap) {
         this.context = context;
         this.method = method;
+        this.initializedAspectsMap = initializedAspectsMap;
         this.aspectClasses = Stream.of(providerDefinition.annotationSource(), method.getEnclosingElement(), method)
                 .map(AspectedMethod::getAspects)
                 .filter(Objects::nonNull)

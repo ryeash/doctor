@@ -20,7 +20,6 @@ import org.glassfish.jersey.server.internal.inject.MultivaluedParameterExtractor
 import org.glassfish.jersey.server.internal.routing.UriRoutingContext;
 import org.glassfish.jersey.server.model.Parameter;
 
-import java.util.Arrays;
 import java.util.function.Function;
 
 @Singleton
@@ -53,6 +52,11 @@ public final class ContextParamsProvider extends AbstractValueParamProvider {
     }
 
     private static boolean typeMatch(Class<?> type, Class<?>... isMatch) {
-        return Arrays.asList(isMatch).contains(type);
+        for (Class<?> match : isMatch) {
+            if (match.equals(type)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

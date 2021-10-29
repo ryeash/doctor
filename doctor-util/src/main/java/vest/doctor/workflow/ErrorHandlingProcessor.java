@@ -1,6 +1,6 @@
 package vest.doctor.workflow;
 
-class ErrorHandlingProcessor<IN> extends AbstractProcessor<IN, IN> {
+final class ErrorHandlingProcessor<IN> extends AbstractProcessor<IN, IN> {
 
     private final ErrorHandler<IN> errorHandler;
 

@@ -5,49 +5,38 @@ import vest.doctor.TypeInfo;
 import vest.doctor.http.server.Handler;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
-import vest.doctor.http.server.impl.Router;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
  * Used internally to link a provider to a route.
  */
-public abstract class EndpointLinker<P> implements Handler {
+public final class EndpointLinker<P> implements Handler {
 
-    protected final Provider<P> provider;
-    protected final TypeInfo bodyType;
-    protected final BodyInterchange bodyInterchange;
-    protected final String summary;
+    private final Provider<P> provider;
+    private final TypeInfo bodyType;
+    private final BodyInterchange bodyInterchange;
+    private final String summary;
+    private final EndpointHandler<P> endpointHandler;
 
-    public EndpointLinker(Provider<P> provider, TypeInfo bodyType, BodyInterchange bodyInterchange, String summary) {
+    public EndpointLinker(Provider<P> provider, TypeInfo bodyType, BodyInterchange bodyInterchange, String summary, EndpointHandler<P> endpointHandler) {
         this.provider = provider;
         this.bodyType = bodyType;
         this.bodyInterchange = bodyInterchange;
         this.summary = summary;
+        this.endpointHandler = endpointHandler;
     }
 
     @Override
-    public final CompletionStage<Response> handle(Request request) throws Exception {
-        return handleWithProvider(provider.get(), request, readFutureBody(request))
+    public CompletionStage<Response> handle(Request request) throws Exception {
+        return endpointHandler.handle(provider.get(), request, readFutureBody(request))
                 .thenCompose(result -> convertResponse(request, result));
     }
-
-    protected abstract CompletionStage<Object> handleWithProvider(P endpoint, Request request, CompletableFuture<?> body) throws Exception;
 
     @Override
     public String toString() {
         return summary;
-    }
-
-    protected String pathParam(Request request, String name) {
-        Map<String, String> map = request.attribute(Router.PATH_PARAMS);
-        if (map == null) {
-            throw new IllegalStateException("path matching did not produce a parameter map?");
-        } else {
-            return map.get(name);
-        }
     }
 
     private CompletableFuture<?> readFutureBody(Request request) {

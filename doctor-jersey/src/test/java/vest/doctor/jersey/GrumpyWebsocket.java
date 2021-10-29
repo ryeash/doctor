@@ -4,15 +4,17 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import jakarta.inject.Singleton;
+import vest.doctor.netty.common.AbstractWebsocket;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @Singleton
 public class GrumpyWebsocket extends AbstractWebsocket {
 
     @Override
-    public String path() {
-        return "/grumpy";
+    public List<String> paths() {
+        return List.of("/grumpy");
     }
 
     @Override

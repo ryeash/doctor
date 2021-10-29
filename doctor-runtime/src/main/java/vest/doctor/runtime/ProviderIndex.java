@@ -71,6 +71,7 @@ final class ProviderIndex {
                 .stream()
                 .flatMap(Collection::stream)
                 .flatMap(Collection::stream)
+                .distinct()
                 .map(p -> (DoctorProvider<T>) p);
     }
 

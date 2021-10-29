@@ -3,19 +3,21 @@ package demo.app;
 import jakarta.inject.Inject;
 import org.testng.Assert;
 import vest.doctor.http.server.Request;
-import vest.doctor.http.server.rest.QueryParam;
+import vest.doctor.http.server.rest.Param;
 
 import java.util.Optional;
 
+import static vest.doctor.http.server.rest.Param.Type.Query;
+
 public class NettyBeanParam<T> {
 
-    @QueryParam("q")
+    @Param(type = Query, name = "q")
     private Optional<String> q;
     private int num;
     private int numberViaMethod;
 
     @Inject
-    public NettyBeanParam(@QueryParam("number") int num,
+    public NettyBeanParam(@Param(type = Query, name = "number") int num,
                           Request requestContext) {
         this.num = num;
         Assert.assertNotNull(requestContext);
@@ -41,7 +43,7 @@ public class NettyBeanParam<T> {
         return numberViaMethod;
     }
 
-    @QueryParam("number")
+    @Param(type = Query, name = "number")
     public NettyBeanParam<T> setNumberViaMethod(int numberViaMethod) {
         this.numberViaMethod = numberViaMethod;
         return this;

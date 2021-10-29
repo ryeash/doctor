@@ -7,7 +7,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class TimeoutProcessor<T> extends AbstractProcessor<T, T> {
+final class TimeoutProcessor<T> extends AbstractProcessor<T, T> {
 
     private final ScheduledExecutorService executorService;
     private final long timeoutMillis;

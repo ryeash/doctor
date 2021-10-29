@@ -19,10 +19,11 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * Links {@link Provided} parameters, the {@link ProviderRegistry}, and the jersey parameter lookup subsystem together
- * such that anything provided via the {@link ProviderRegistry} is injectable into request handler methods.
+ * Supports the {@link Provided} and {@link Attribute} parameter annotations.
  * <p>
- * Supports the {@link Attribute} annotation to pull values from {@link ContainerRequestContext#getProperty(String)}.
+ * {@link Provided} allows anything provided via the {@link ProviderRegistry} to be injectable into request handler methods.
+ * <p>
+ * {@link Attribute} supports pulling values from {@link ContainerRequestContext#getProperty(String)}.
  */
 @Singleton
 public final class DoctorCustomValueParamProvider extends AbstractValueParamProvider {
@@ -39,12 +40,12 @@ public final class DoctorCustomValueParamProvider extends AbstractValueParamProv
     public Function<ContainerRequest, ?> createValueProvider(Parameter parameter) {
         if (parameter.isAnnotationPresent(Provided.class)) {
             Class<?> type = parameter.getRawType();
-            String name = Optional.ofNullable(parameter.getAnnotation(Named.class))
+            String qualifier = Optional.ofNullable(parameter.getAnnotation(Named.class))
                     .map(Named::value)
                     .or(() -> getQualifier(parameter).map(String::valueOf))
                     .orElse(null);
-            if (providerRegistry.hasProvider(type, name)) {
-                return cr -> providerRegistry.getInstance(type, name);
+            if (providerRegistry.hasProvider(type, qualifier)) {
+                return cr -> providerRegistry.getInstance(type, qualifier);
             } else {
                 throw new InjectionException("unsatisfied dependency " + type + " for " + parameter, null);
             }

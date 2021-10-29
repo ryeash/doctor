@@ -43,14 +43,9 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-codec-http</artifactId>
-            <version>${netty.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-handler</artifactId>
-            <version>${netty.version}</version>
+            <artifactId>doctor-netty-bundle</artifactId>
+            <groupId>${project.groupId}</groupId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>jakarta.servlet</groupId>

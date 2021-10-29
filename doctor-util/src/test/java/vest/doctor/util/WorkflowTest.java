@@ -1,7 +1,6 @@
 package vest.doctor.util;
 
 import org.testng.annotations.Test;
-import vest.doctor.workflow.Signal;
 import vest.doctor.workflow.Workflow;
 
 import java.time.Duration;
@@ -187,21 +186,6 @@ public class WorkflowTest extends BaseUtilTest {
         Workflow.iterate(strings)
                 .parallel(Executors.newSingleThreadExecutor())
                 .observe(s -> System.out.println(Thread.currentThread() + " " + s))
-                .subscribe()
-                .join();
-    }
-
-    public void signal() {
-        Workflow.iterate(strings)
-                .signal(Integer.class, s -> {
-                    if (s.type() == Signal.Type.VALUE) {
-                        Integer len = s.value().length();
-                        s.downstream().ifPresent(d -> d.onNext(len));
-                    } else {
-                        s.doDefaultAction();
-                    }
-                })
-                .observe(expect(5, (it, l) -> assertEquals((int) l, strings.get(it).length())))
                 .subscribe()
                 .join();
     }

@@ -21,7 +21,7 @@ final class DoctorBinder extends AbstractBinder {
     protected void configure() {
         providerRegistry.allProviders()
                 .forEach(p -> {
-                    ServiceBindingBuilder<?> builder = bindFactory(new ProviderFactory<>(p))
+                    ServiceBindingBuilder<?> builder = bindFactory(new ProviderFactoryBridge<>(p))
                             .proxy(false)
                             .proxyForSameScope(false);
                     p.allProvidedTypes().forEach(builder::to);

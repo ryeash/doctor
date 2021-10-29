@@ -6,7 +6,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.stream.ChunkedInput;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -66,7 +65,7 @@ final class QueuedBufOutputStream extends OutputStream implements ChunkedInput<B
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         queue.add(LAST);
     }
 

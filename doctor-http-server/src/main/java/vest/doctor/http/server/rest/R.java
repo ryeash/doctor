@@ -227,7 +227,7 @@ public class R {
             r.header(HttpHeaderNames.LAST_MODIFIED, new Date(file.lastModified()));
         }
         if (file.getName().endsWith(".gz")) {
-            r.header(HttpHeaderNames.CONTENT_ENCODING, "gzip");
+            r.header(HttpHeaderNames.CONTENT_ENCODING, HttpHeaderValues.GZIP);
             r.header(HttpHeaderNames.CONTENT_TYPE, "application/gzip");
         } else {
             r.header(HttpHeaderNames.CONTENT_ENCODING, "");

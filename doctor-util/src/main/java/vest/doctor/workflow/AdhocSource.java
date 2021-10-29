@@ -4,7 +4,7 @@ import java.nio.BufferOverflowException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class AdhocSource<IN> extends AbstractSource<IN> {
+final class AdhocSource<IN> extends AbstractSource<IN> {
 
     private static final Object FINAL = new Object();
     private final BlockingQueue<IN> buffer;

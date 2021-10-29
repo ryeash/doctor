@@ -10,6 +10,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import vest.doctor.http.server.impl.Router;
+import vest.doctor.netty.common.NettyHttpServer;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -31,7 +32,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 public class NettyHttpTest {
-    HttpServer server;
+    NettyHttpServer server;
 
     @BeforeClass(alwaysRun = true)
     public void initServer() {

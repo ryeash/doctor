@@ -1,17 +1,19 @@
 package vest.doctor.http.server.rest;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
 /**
- * Meta-annotation that defines the string name for an HTTP method.
+ * Holds constants for the standard HTTP methods.
  */
-@Documented
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.ANNOTATION_TYPE})
-public @interface HttpMethod {
-    String value();
+public final class HttpMethod {
+
+    public static final String GET = "GET";
+    public static final String POST = "POST";
+    public static final String PUT = "PUT";
+    public static final String DELETE = "DELETE";
+    public static final String OPTIONS = "OPTIONS";
+    public static final String TRACE = "TRACE";
+    public static final String PATCH = "PATCH";
+    public static final String ANY = "_ANY_";
+
+    private HttpMethod() {
+    }
 }

@@ -1,6 +1,6 @@
 # doctor
 
-Compile time dependency injection processor for JDK 15.
+Compile time dependency injection processor for JDK 17.
 
 ## Getting Started
 
@@ -72,16 +72,16 @@ public class BookDao {
 
 > ##### Notes on factory return types
 >
-> Parameterized types are not allowed as factory return types, e.g.:
+> Parameterized types are allowed as factory return types as long as the factory is qualified, e.g.:
 > ```java
 > @Factory
-> public List<String> stringsFactory(){
+> @Named("stringThing") // <-- required or else it's a compilation error
+> public List<String> parameterizedFactory(){
 >   return List.of("a", "b", "c");
 > }
 > ```
-> This will cause a compilation error.
 >
-> Multi-type type parameters, however, _are_ supported, e.g.:
+> Multi-type type parameters are supported, e.g.:
 > ```java
 > @Factory
 > public <T extends BookDao & PurchaseDao> T multiDaoFactory(){
@@ -313,7 +313,8 @@ public class AsyncDemo {
 
 ### Properties and Configuration
 
-Configuration is orchestrated via the ConfigurationFacade class.
+Configuration is orchestrated via the
+[ConfigurationFacade](doctor-core/src/main/java/vest/doctor/ConfigurationFacade.java) class.
 
 #### [@Property]((doctor-core/src/main/java/vest/doctor/Property.java))
 

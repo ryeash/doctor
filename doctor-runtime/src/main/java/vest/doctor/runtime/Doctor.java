@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -107,10 +108,10 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
     private final ProviderIndex providerIndex;
     private final ConfigurationFacade configurationFacade;
     private final ShutdownContainer shutdownContainer;
-    private boolean closed = false;
+    private final AtomicBoolean closed = new AtomicBoolean(false);
 
     /**
-     * Create a new Doctor instance. Loading all available providers and services automatically.
+     * Create a new Doctor instance, loading all available providers and services automatically.
      *
      * @param configurationFacade the configuration for the application
      * @param activeModules       the active modules
@@ -241,8 +242,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
 
     @Override
     public void close() {
-        if (!closed) {
-            closed = true;
+        if (closed.compareAndSet(false, true)) {
             getProviderOpt(EventProducer.class, null)
                     .map(Provider::get)
                     .ifPresent(ep -> ep.publish(new ApplicationShutdown(this)));

@@ -134,16 +134,7 @@ public class Tuple implements Serializable, Comparable<Tuple>, Iterable<Object> 
 
     @Override
     public int compareTo(Tuple o) {
-        int minArity = Math.min(arity(), o.arity());
-        for (int i = 0; i < minArity; i++) {
-            Object a = values[i];
-            Object b = o.values[i];
-            int c = Objects.compare(a, b, ANY_OBJECT);
-            if (c != 0) {
-                return c;
-            }
-        }
-        return Objects.compare(arity(), o.arity(), Integer::compare);
+        return Arrays.compare(values, o.values, ANY_OBJECT);
     }
 
     @Override

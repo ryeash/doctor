@@ -14,10 +14,10 @@ import java.math.BigInteger;
 import java.net.URI;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 public class StandardConversionGenerator implements StringConversionGenerator {
 
@@ -26,9 +26,7 @@ public class StandardConversionGenerator implements StringConversionGenerator {
     static {
         CLASS_TO_CONVERTER = new HashMap<>();
 
-        Stream.of(Boolean.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class)
-                .forEach(c -> CLASS_TO_CONVERTER.put(c.getCanonicalName(), valueOfCode(c)));
-
+        // primitives
         CLASS_TO_CONVERTER.put("boolean", Boolean.class.getCanonicalName() + "::parseBoolean");
         CLASS_TO_CONVERTER.put("byte", Byte.class.getCanonicalName() + "::parseByte");
         CLASS_TO_CONVERTER.put("short", Short.class.getCanonicalName() + "::parseShort");
@@ -36,11 +34,16 @@ public class StandardConversionGenerator implements StringConversionGenerator {
         CLASS_TO_CONVERTER.put("long", Long.class.getCanonicalName() + "::parseLong");
         CLASS_TO_CONVERTER.put("float", Float.class.getCanonicalName() + "::parseFloat");
         CLASS_TO_CONVERTER.put("double", Double.class.getCanonicalName() + "::parseDouble");
-        CLASS_TO_CONVERTER.put("char", "str -> str.length() > 0 ? str.charAt(0) : (char) -1");
+        CLASS_TO_CONVERTER.put("char", "__str -> __str.length() > 0 ? __str.charAt(0) : (char) -1");
 
+        // wrappers
+        List.of(Boolean.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class)
+                .forEach(c -> CLASS_TO_CONVERTER.put(c.getCanonicalName(), valueOfCode(c)));
+
+        // misc
         CLASS_TO_CONVERTER.put(String.class.getCanonicalName(), "java.util.function.Function.identity()");
         CLASS_TO_CONVERTER.put(CharSequence.class.getCanonicalName(), "java.util.function.Function.identity()");
-        CLASS_TO_CONVERTER.put(Character.class.getCanonicalName(), "str -> str.length() > 0 ? str.charAt(0) : null");
+        CLASS_TO_CONVERTER.put(Character.class.getCanonicalName(), "__str -> __str.length() > 0 ? __str.charAt(0) : null");
         CLASS_TO_CONVERTER.put(BigDecimal.class.getCanonicalName(), BigDecimal.class.getCanonicalName() + "::new");
         CLASS_TO_CONVERTER.put(BigInteger.class.getCanonicalName(), BigInteger.class.getCanonicalName() + "::new");
         CLASS_TO_CONVERTER.put(Number.class.getCanonicalName(), BigDecimal.class.getCanonicalName() + "::new");
@@ -78,7 +81,7 @@ public class StandardConversionGenerator implements StringConversionGenerator {
         for (ExecutableElement constructor : ElementFilter.constructorsIn(typeElement.getEnclosedElements())) {
             if (constructor.getParameters().size() == 1
                     && constructor.getModifiers().contains(Modifier.PUBLIC)
-                    && ProcessorUtils.isCompatibleWith(context, context.toTypeElement(constructor.getParameters().get(0).asType()), String.class)
+                    && ProcessorUtils.isCompatibleWith(context, context.toTypeElement(constructor.getParameters().get(0).asType()), CharSequence.class)
                     && constructor.getThrownTypes().isEmpty()) {
                 return true;
             }

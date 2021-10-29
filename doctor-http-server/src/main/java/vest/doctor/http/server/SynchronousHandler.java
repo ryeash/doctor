@@ -13,16 +13,17 @@ public interface SynchronousHandler extends Handler {
 
     @Override
     default CompletionStage<Response> handle(Request request) {
-        CompletableFuture<ByteBuf> futureBody = request.body().completionFuture();
-        return futureBody.thenCombineAsync(CompletableFuture.completedFuture(request), (body, req) -> {
-            try {
-                return handleSync(req, body);
-            } finally {
-                if (body.refCnt() > 0) {
-                    body.release();
-                }
-            }
-        }, request.pool());
+        return request.body()
+                .completionFuture()
+                .thenCombineAsync(CompletableFuture.completedFuture(request), (body, req) -> {
+                    try {
+                        return handleSync(req, body);
+                    } finally {
+                        if (body.refCnt() > 0) {
+                            body.release();
+                        }
+                    }
+                }, request.pool());
     }
 
     /**
