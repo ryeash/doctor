@@ -1,6 +1,6 @@
 doctor-jersey
 -------------
-A JAX-RS HTTP server provider backed by netty and jersey.
+A JAX-RS HTTP server provider backed by netty and jersey, and wired together using doctor injection.
 
 ## Unsupported JAX-RS features
 

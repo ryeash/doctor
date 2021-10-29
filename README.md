@@ -72,11 +72,11 @@ public class BookDao {
 
 > ##### Notes on factory return types
 >
-> Parameterized types are allowed as factory return types so long as the factory is qualified, e.g.:
+> Parameterized types are allowed as factory return types as long as the factory is qualified, e.g.:
 > ```java
 > @Factory
 > @Named("stringThing") // <-- required or else it's a compilation error
-> public ParameterizedThing<String> parameterizedFactory(){
+> public List<String> parameterizedFactory(){
 >   return List.of("a", "b", "c");
 > }
 > ```

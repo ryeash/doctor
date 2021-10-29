@@ -35,11 +35,10 @@ public class NettyLoader implements ApplicationLoader {
 
     @Override
     public void stage4(ProviderRegistry providerRegistry) {
-        String binds = providerRegistry.configuration().get("doctor.netty.http.bind");
-        if (binds == null || binds.isEmpty()) {
+        DoctorHttpServerConfiguration conf = buildConf(providerRegistry);
+        if (conf.getBindAddresses() == null || conf.getBindAddresses().isEmpty()) {
             return;
         }
-        DoctorHttpServerConfiguration conf = buildConf(providerRegistry);
         BodyInterchange bodyInterchange = new BodyInterchange(providerRegistry);
         providerRegistry.register(new AdHocProvider<>(BodyInterchange.class, bodyInterchange, null));
 

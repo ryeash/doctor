@@ -7,7 +7,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Route parameter annotation the directs the router to pull a value from a cookie.
+ * Annotates endpoint parameters to indicate from which part of the HTTP request to get the value.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

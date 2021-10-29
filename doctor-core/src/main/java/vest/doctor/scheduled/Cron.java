@@ -46,7 +46,7 @@ import java.util.stream.Stream;
  * - Month: the first 3 letters of the english month name, all caps, are supported for the month expression, e.g. `JAN`, `NOV`, etc.
  * - Day of week: the first 3 letter of the english day name, all caps, are supported for the day of week, e.g. `MON`, `SAT`
  *
- * There are built in macros supported with pre-defined cron expressions:
+ * There are built in macros with pre-defined cron expressions:
  * <code>@yearly</code>: "0 0 0 1 JAN *" - every year at midnight on January 1st
  * <code>@monthly</code>: "0 0 0 1 * *" - every month at midnight of the 1st day
  * <code>@weekly</code>: "0 0 0 * * SUN" - every week at midnight on Sunday

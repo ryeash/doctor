@@ -1,7 +1,7 @@
 package vest.doctor.http.server.rest;
 
 /**
- * Holds constants for the basic HTTP methods.
+ * Holds constants for the standard HTTP methods.
  */
 public final class HttpMethod {
 

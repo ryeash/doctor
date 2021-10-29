@@ -31,6 +31,11 @@ public final class NettyJerseyLoader implements ApplicationLoader {
 
     @Override
     public void stage5(ProviderRegistry providerRegistry) {
+        HttpServerConfiguration httpConfig = init(providerRegistry);
+        if (httpConfig.getBindAddresses() == null || httpConfig.getBindAddresses().isEmpty()) {
+            return;
+        }
+
         ResourceConfig config = new ResourceConfig();
         for (Map.Entry<Object, Object> entry : providerRegistry.configuration().toProperties().entrySet()) {
             config.property((String) entry.getKey(), entry.getValue());
@@ -48,7 +53,6 @@ public final class NettyJerseyLoader implements ApplicationLoader {
         config.register(ContextParamsProvider.class);
         config.register(new DoctorBinder(providerRegistry));
 
-        HttpServerConfiguration httpConfig = init(providerRegistry);
 
         DoctorJerseyContainer container = new DoctorJerseyContainer(config);
         NettyHttpServer httpServer = new NettyHttpServer(

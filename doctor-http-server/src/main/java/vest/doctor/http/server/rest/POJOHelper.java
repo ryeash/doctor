@@ -4,7 +4,7 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 
 /**
- * Used internally to assist the code generator when building {@link BeanParam} parameters.
+ * Used internally to assist the code generator when building bean parameters.
  */
 public final class POJOHelper<T> {
     private final T value;
