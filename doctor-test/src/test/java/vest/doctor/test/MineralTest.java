@@ -14,6 +14,13 @@ public class MineralTest extends AbstractDoctorTest {
     @Inject
     private Diamond diamond;
 
+    private boolean injectedMethod = false;
+
+    @Inject
+    private void injectedMethod() {
+        injectedMethod = true;
+    }
+
     @Test
     public void granite() {
         assertEquals(granite.hardness(), 7);
@@ -22,5 +29,10 @@ public class MineralTest extends AbstractDoctorTest {
     @Test
     public void diamond() {
         assertEquals(diamond.hardness(), 10);
+    }
+
+    @Test
+    public void checkMethodInjection() {
+        assertTrue(injectedMethod);
     }
 }

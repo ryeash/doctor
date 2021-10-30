@@ -95,7 +95,7 @@ public abstract class AbstractDoctorTest extends Assert {
                     params[i] = getInjectValue(providerRegistry, param.getType(), qualifier(param));
                 }
                 Object accessCheckInstance = Modifier.isStatic(declaredMethod.getModifiers()) ? null : instance;
-                if (declaredMethod.canAccess(accessCheckInstance)) {
+                if (!declaredMethod.canAccess(accessCheckInstance)) {
                     declaredMethod.setAccessible(true);
                 }
                 try {
