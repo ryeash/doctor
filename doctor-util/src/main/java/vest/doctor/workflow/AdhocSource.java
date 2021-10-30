@@ -53,7 +53,9 @@ final class AdhocSource<IN> extends AbstractSource<IN> {
     }
 
     private void serviceQueueBackground() {
-        executorService.submit(this::serviceQueue);
+        if (executorService != null) {
+            executorService.submit(this::serviceQueue);
+        }
     }
 
     private void serviceQueue() {

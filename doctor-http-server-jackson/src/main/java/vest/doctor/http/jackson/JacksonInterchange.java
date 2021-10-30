@@ -7,8 +7,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufInputStream;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import vest.doctor.TypeInfo;
 import vest.doctor.http.server.Request;
@@ -16,11 +14,11 @@ import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
 import vest.doctor.http.server.rest.BodyReader;
 import vest.doctor.http.server.rest.BodyWriter;
+import vest.doctor.workflow.Workflow;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 public class JacksonInterchange implements BodyReader, BodyWriter {
@@ -38,28 +36,7 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> CompletableFuture<T> read(Request request, TypeInfo typeInfo) {
-        CompletableFuture<?> future;
-        if (typeInfo.getRawType() == CompletableFuture.class) {
-            future = asyncRead(request, typeInfo);
-        } else {
-            future = request.body().completionFuture().thenApply(buf -> readValue(buf, typeInfo));
-        }
-        return (CompletableFuture<T>) future;
-    }
-
-    private <T> T readValue(ByteBuf buf, TypeInfo typeInfo) {
-        try (InputStream input = new ByteBufInputStream(buf, true)) {
-            return objectMapper.readValue(input, jacksonType(objectMapper, typeInfo));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    private CompletableFuture<?> asyncRead(Request request, TypeInfo typeInfo) {
-        if (!typeInfo.hasParameterizedTypes() || typeInfo.getParameterTypes().size() != 1) {
-            throw new IllegalArgumentException("asynchronous bodies must be CompletableFutures with exactly one parameterized type: " + typeInfo);
-        }
+    public <T> Workflow<?, T> read(Request request, TypeInfo typeInfo) {
         TypeInfo paramType = typeInfo.getParameterTypes().get(0);
         AsyncMapper<?> asyncMapper;
         if (paramType.hasParameterizedTypes()) {
@@ -67,7 +44,11 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
         } else {
             asyncMapper = new AsyncMapper<>(objectMapper, paramType.getRawType());
         }
-        return request.body().asyncRead(asyncMapper::feed);
+        return request.body()
+                .flow()
+                .map(asyncMapper::feed)
+                .keep(Objects::nonNull)
+                .map(o -> (T) o);
     }
 
     @Override

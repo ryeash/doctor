@@ -1,11 +1,9 @@
 package vest.doctor.http.server.rest;
 
 import vest.doctor.http.server.Request;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import vest.doctor.workflow.Workflow;
 
 @FunctionalInterface
 public interface EndpointHandler<P> {
-    CompletionStage<Object> handle(P endpoint, Request request, CompletableFuture<?> body) throws Exception;
+    Workflow<?, Object> handle(P endpoint, Request request, Workflow<?, ?> body) throws Exception;
 }

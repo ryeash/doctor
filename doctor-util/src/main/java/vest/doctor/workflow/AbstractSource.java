@@ -6,10 +6,10 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-abstract class AbstractSource<T> implements Source<T> {
+public abstract class AbstractSource<T> implements Source<T> {
 
     protected final AtomicLong requested = new AtomicLong(0);
-    private final AtomicReference<WorkflowState> state = new AtomicReference<>(WorkflowState.UNSUBSCRIBED);
+    protected final AtomicReference<WorkflowState> state = new AtomicReference<>(WorkflowState.UNSUBSCRIBED);
 
     protected ExecutorService executorService;
     protected Flow.Subscription upstreamSubscription;
@@ -99,7 +99,7 @@ abstract class AbstractSource<T> implements Source<T> {
 
     protected final void stateChange(WorkflowState expected, WorkflowState dest) {
         if (!state.compareAndSet(expected, dest)) {
-            throw new IllegalStateException("failed to change state to " + dest + " incorrect current state " + expected);
+            throw new IllegalStateException("failed to change state to " + dest + " incorrect current state: expected " + expected + " was " + state.get());
         }
     }
 }

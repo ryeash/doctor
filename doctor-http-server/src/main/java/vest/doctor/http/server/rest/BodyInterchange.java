@@ -7,6 +7,7 @@ import vest.doctor.TypeInfo;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
+import vest.doctor.workflow.Workflow;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -46,7 +47,7 @@ public final class BodyInterchange {
      * @param typeInfo the type info for the target parameter
      * @return the asynchronous result of reading the body data into the desired type
      */
-    public <T> CompletableFuture<T> read(Request request, TypeInfo typeInfo) {
+    public <T> Workflow<?, T> read(Request request, TypeInfo typeInfo) {
         for (BodyReader reader : readers) {
             if (reader.canRead(request, typeInfo)) {
                 return reader.read(request, typeInfo);

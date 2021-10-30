@@ -1,19 +1,21 @@
 package vest.doctor.http.server.impl;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
 import vest.doctor.http.server.Handler;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import vest.doctor.workflow.Workflow;
 
 final class NotFound implements Handler {
 
     @Override
-    public CompletionStage<Response> handle(Request request) {
+    public Workflow<?, Response> handle(Request request) {
         return request.body()
                 .ignored()
-                .thenCombine(CompletableFuture.completedFuture(request.createResponse()),
-                        (ignored, resp) -> resp.status(404).body(EmptyBody.INSTANCE));
+                .map(v -> {
+                    return request.createResponse()
+                            .status(HttpResponseStatus.NOT_FOUND)
+                            .body(EmptyBody.INSTANCE);
+                });
     }
 }

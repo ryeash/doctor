@@ -64,6 +64,20 @@ public interface Step<IN, OUT> {
         }
     }
 
+    record MapperAsync1<IN, OUT>(BiConsumer<IN, Emitter<OUT>> action) implements Step<IN, OUT> {
+        @Override
+        public void accept(IN in, Flow.Subscription subscription, Emitter<OUT> emitter) {
+            action.accept(in, emitter);
+        }
+    }
+
+    record MapperAsync2<IN, OUT>(Tuple3Consumer<IN, Flow.Subscription, Emitter<OUT>> action) implements Step<IN, OUT> {
+        @Override
+        public void accept(IN in, Flow.Subscription subscription, Emitter<OUT> emitter) {
+            action.accept(in, subscription, emitter);
+        }
+    }
+
     record StreamFlatMapper1<IN, OUT>(Function<IN, Stream<OUT>> mapper) implements Step<IN, OUT> {
         @Override
         public void accept(IN in, Flow.Subscription subscription, Emitter<OUT> emitter) {

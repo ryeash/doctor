@@ -6,11 +6,11 @@ import java.util.stream.Collector;
 
 
 final class CollectingProcessor<IN, A, C> extends AbstractProcessor<IN, C> {
-    private final Collector<IN, A, C> collector;
+    private final Collector<? super IN, A, C> collector;
     private final List<A> allA = new LinkedList<>();
     private final ThreadLocal<A> localA;
 
-    public CollectingProcessor(Collector<IN, A, C> collector) {
+    public CollectingProcessor(Collector<? super IN, A, C> collector) {
         this.collector = collector;
         this.localA = ThreadLocal.withInitial(this::getIntermediate);
     }

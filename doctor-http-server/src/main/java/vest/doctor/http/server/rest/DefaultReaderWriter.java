@@ -11,6 +11,7 @@ import vest.doctor.http.server.Request;
 import vest.doctor.http.server.RequestBody;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
+import vest.doctor.workflow.Workflow;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,24 +50,24 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> CompletableFuture<T> read(Request request, TypeInfo typeInfo) {
-        return (CompletableFuture<T>) convertStandard(request, typeInfo);
+    public <T> Workflow<?, T> read(Request request, TypeInfo typeInfo) {
+        return convertStandard(request, typeInfo)
+                .map(o -> (T) o);
     }
 
-    private Object convertStandard(Request request, TypeInfo typeInfo) {
-        Class<?> rawType = typeInfo.getRawType();
+    private Workflow<?, ?> convertStandard(Request request, TypeInfo typeInfo) {
         if (typeInfo.matches(ByteBuf.class)) {
-            return request.body().completionFuture();
+            return request.body().asBuffer();
         } else if (typeInfo.matches(RequestBody.class)) {
-            return CompletableFuture.completedFuture(request.body());
+            return Workflow.of(request.body());
         } else if (typeInfo.matches(InputStream.class)) {
             return request.body()
-                    .completionFuture()
-                    .thenApply(ByteBufInputStream::new);
+                    .asBuffer()
+                    .map(buf -> new ByteBufInputStream(buf, true));
         } else if (typeInfo.matches(byte[].class)) {
             return request.body()
-                    .completionFuture()
-                    .thenApply(buf -> {
+                    .asBuffer()
+                    .map(buf -> {
                         byte[] bytes = new byte[buf.readableBytes()];
                         buf.readBytes(bytes);
                         return bytes;
@@ -75,16 +76,14 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
             return request.body().asString();
         } else if (typeInfo.matches(ByteBuffer.class)) {
             return request.body()
-                    .completionFuture()
-                    .thenApply(ByteBuf::nioBuffer);
+                    .asBuffer()
+                    .map(ByteBuf::nioBuffer);
         } else if (typeInfo.matches(MultiPartData.class)) {
-            return CompletableFuture.completedFuture(request.multiPartBody());
-        } else if (CompletableFuture.class.isAssignableFrom(rawType)) {
-            return convertStandard(request, typeInfo.getParameterTypes().get(0));
+            return Workflow.of(request.multiPartBody());
+//        } else if (CompletableFuture.class.isAssignableFrom(rawType)) {
+//            return convertStandard(request, typeInfo.getParameterTypes().get(0));
         } else {
-            CompletableFuture<?> future = new CompletableFuture<>();
-            future.completeExceptionally(new UnsupportedOperationException("parameter type is not supported: " + typeInfo));
-            return future;
+            return Workflow.error(new UnsupportedOperationException("parameter type is not supported: " + typeInfo));
         }
     }
 

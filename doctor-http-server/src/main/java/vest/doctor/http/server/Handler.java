@@ -1,6 +1,6 @@
 package vest.doctor.http.server;
 
-import java.util.concurrent.CompletionStage;
+import vest.doctor.workflow.Workflow;
 
 /**
  * Handles an HTTP request.
@@ -14,5 +14,5 @@ public interface Handler {
      * @param request the request
      * @return an asynchronously produced response
      */
-    CompletionStage<Response> handle(Request request) throws Exception;
+    Workflow<?, Response> handle(Request request) throws Exception;
 }

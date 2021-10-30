@@ -5,6 +5,7 @@ import vest.doctor.TypeInfo;
 import vest.doctor.http.server.Handler;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
+import vest.doctor.workflow.Workflow;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -29,9 +30,9 @@ public final class EndpointLinker<P> implements Handler {
     }
 
     @Override
-    public CompletionStage<Response> handle(Request request) throws Exception {
+    public Workflow<?, Response> handle(Request request) throws Exception {
         return endpointHandler.handle(provider.get(), request, readFutureBody(request))
-                .thenCompose(result -> convertResponse(request, result));
+                .mapFuture(Response.class, result -> convertResponse(request, result));
     }
 
     @Override
@@ -39,7 +40,7 @@ public final class EndpointLinker<P> implements Handler {
         return summary;
     }
 
-    private CompletableFuture<?> readFutureBody(Request request) {
+    private Workflow<?, ?> readFutureBody(Request request) {
         return (bodyType == null)
                 ? request.body().ignored()
                 : bodyInterchange.read(request, bodyType);

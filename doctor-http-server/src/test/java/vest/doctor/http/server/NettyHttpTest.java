@@ -11,6 +11,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import vest.doctor.http.server.impl.Router;
 import vest.doctor.netty.common.NettyHttpServer;
+import vest.doctor.workflow.Workflow;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -22,9 +23,9 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -52,7 +53,7 @@ public class NettyHttpTest {
                 })
                 .filter("/*", ((request, chain) -> {
                     if (Objects.equals(request.queryParam("shortcircuit"), "true")) {
-                        return CompletableFuture.completedFuture(request.createResponse().status(500).body(ResponseBody.of("shortcircuited")));
+                        return Workflow.of(request.createResponse().status(500).body(ResponseBody.of("shortcircuited")));
                     } else {
                         return chain.next(request);
                     }
@@ -79,19 +80,15 @@ public class NettyHttpTest {
                 .get("/exception", request -> {
                     throw new RuntimeException("I threw an error");
                 })
-                .get("/futureexception", request -> {
-                    CompletableFuture<Response> f = new CompletableFuture<>();
-                    f.completeExceptionally(new RuntimeException("I threw an error"));
-                    return f;
-                })
+                .get("/futureexception", request -> Workflow.error(new RuntimeException("I threw an error")))
                 .postSync("/readablebody", (request, body) ->
                         request.createResponse()
                                 .body(ResponseBody.of(body.toString(StandardCharsets.UTF_8))))
                 .post("/", request -> request.body()
                         .asString()
-                        .thenApply(ResponseBody::of)
-                        .thenApply(request.createResponse()::body)
-                        .thenApply(r -> r.header("Content-Type", "text/plain")))
+                        .map((Function<String, ResponseBody>) ResponseBody::of)
+                        .map(request.createResponse()::body)
+                        .observe(r -> r.header("Content-Type", "text/plain")))
                 .start();
         System.out.println(server);
     }
@@ -199,6 +196,7 @@ public class NettyHttpTest {
                 .forEach(i -> req()
                         .body(randomBytes())
                         .post("/")
+//                        .prettyPeek()
                         .then()
                         .statusCode(200));
         System.out.println(TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + "ms");

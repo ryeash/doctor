@@ -9,6 +9,7 @@ import vest.doctor.http.server.Response;
 import vest.doctor.http.server.rest.HttpMethod;
 import vest.doctor.netty.common.HttpServerConfiguration;
 import vest.doctor.netty.common.PathSpec;
+import vest.doctor.workflow.Workflow;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -162,7 +162,7 @@ public final class Router implements Handler {
     }
 
     @Override
-    public CompletionStage<Response> handle(Request request) throws Exception {
+    public Workflow<?, Response> handle(Request request) throws Exception {
         if (conf.isDebugRequestRouting()) {
             request.attribute(DEBUG_START_ATTRIBUTE, System.nanoTime());
             addTraceMessage(request, "request " + request.method() + " " + request.path());
@@ -173,14 +173,14 @@ public final class Router implements Handler {
             Iterator<FilterAndPath> iterator = filters.iterator();
             request.attribute(FILTER_ITERATOR, iterator);
         }
-        CompletionStage<Response> response = doNextFilter(request);
+        Workflow<?, Response> response = doNextFilter(request);
         if (conf.isDebugRequestRouting()) {
-            response.thenAccept(this::attachRouteDebugging);
+            response.observe(this::attachRouteDebugging);
         }
         return response;
     }
 
-    private CompletionStage<Response> doNextFilter(Request request) throws Exception {
+    private Workflow<?, Response> doNextFilter(Request request) throws Exception {
         Iterator<FilterAndPath> iterator = request.attribute(FILTER_ITERATOR);
         while (iterator.hasNext()) {
             FilterAndPath next = iterator.next();

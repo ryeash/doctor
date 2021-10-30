@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 import java.util.concurrent.ForkJoinPool;
@@ -42,8 +43,7 @@ public class Workflow<START, O> {
      */
     @SuppressWarnings("unused")
     public static <T> Workflow<T, T> adhoc(Class<T> type) {
-        AdhocSource<T> adhoc = new AdhocSource<>(Flow.defaultBufferSize());
-        return new Workflow<>(adhoc, adhoc);
+        return from(new AdhocSource<>(Flow.defaultBufferSize()));
     }
 
     /**
@@ -64,8 +64,11 @@ public class Workflow<START, O> {
      * @return a new workflow
      */
     public static <T> Workflow<T, T> iterate(Collection<T> iterable) {
-        Source<T> source = new IterableSource<>(iterable);
-        return new Workflow<>(source, source);
+        return from(new IterableSource<>(iterable));
+    }
+
+    public static <T> Workflow<T, T> error(Throwable error) {
+        return from(new ErrorSource<>(error));
     }
 
     /**
@@ -136,6 +139,19 @@ public class Workflow<START, O> {
      */
     public <NEXT> Workflow<START, NEXT> map(BiFunction<O, Flow.Subscription, NEXT> function) {
         return chain(new Step.Mapper2<>(function));
+    }
+
+    public <NEXT> Workflow<START, NEXT> mapAsync(Class<NEXT> type, BiConsumer<O, Emitter<NEXT>> action) {
+        return chain(new Step.MapperAsync1<>(action));
+    }
+
+    public <NEXT> Workflow<START, NEXT> mapAsync(Class<NEXT> type, Tuple3Consumer<O, Flow.Subscription, Emitter<NEXT>> action) {
+        return chain(new Step.MapperAsync2<>(action));
+    }
+
+    public <NEXT> Workflow<START, NEXT> mapFuture(Class<NEXT> type, Function<O, ? extends CompletionStage<NEXT>> mapper) {
+        return map(mapper)
+                .mapAsync(type, (future, emitter) -> future.thenAccept(emitter::emit));
     }
 
     /**
@@ -306,7 +322,7 @@ public class Workflow<START, O> {
      * @param collector the item collector
      * @return the next workflow stage
      */
-    public <A, C> Workflow<START, C> collect(Collector<O, A, C> collector) {
+    public <A, C> Workflow<START, C> collect(Collector<? super O, A, C> collector) {
         return chain(new CollectingProcessor<>(collector));
     }
 
