@@ -303,4 +303,10 @@ public class NettyTest extends AbstractTestAppTest {
             t.printStackTrace();
         }
     }
+
+
+//    @Test
+//    public void runForever() {
+//        Clock.sleepQuietly(Long.MAX_VALUE);
+//    }
 }

@@ -14,14 +14,9 @@ import vest.doctor.http.server.ResponseBody;
 import vest.doctor.workflow.Workflow;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -80,8 +75,9 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
                     .map(ByteBuf::nioBuffer);
         } else if (typeInfo.matches(MultiPartData.class)) {
             return Workflow.of(request.multiPartBody());
-//        } else if (CompletableFuture.class.isAssignableFrom(rawType)) {
-//            return convertStandard(request, typeInfo.getParameterTypes().get(0));
+        } else if (CompletableFuture.class.isAssignableFrom(typeInfo.getRawType())) {
+            return convertStandard(request, typeInfo.getParameterTypes().get(0))
+                    .map(CompletableFuture::completedFuture);
         } else {
             return Workflow.error(new UnsupportedOperationException("parameter type is not supported: " + typeInfo));
         }
@@ -98,34 +94,24 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
     }
 
     @Override
-    public CompletableFuture<ResponseBody> write(Response response, Object data) {
-        if (data instanceof byte[]) {
+    public ResponseBody write(Response response, Object data) {
+        if (data instanceof byte[] bytes) {
             setContentTypeIfAbsent(response, HttpHeaderValues.APPLICATION_OCTET_STREAM);
-            return CompletableFuture.completedFuture(ResponseBody.of((byte[]) data));
-        } else if (data instanceof InputStream) {
+            return ResponseBody.of(bytes);
+        } else if (data instanceof InputStream is) {
             setContentTypeIfAbsent(response, HttpHeaderValues.APPLICATION_OCTET_STREAM);
-            return CompletableFuture.completedFuture(ResponseBody.of((InputStream) data));
-        } else if (data instanceof CharSequence) {
+            return ResponseBody.of(is);
+        } else if (data instanceof CharSequence chars) {
             setContentTypeIfAbsent(response, HttpHeaderValues.TEXT_PLAIN);
-            return CompletableFuture.completedFuture(ResponseBody.of(data.toString(), response.request().requestCharset(StandardCharsets.UTF_8)));
-        } else if (data instanceof ByteBuf) {
+            return ResponseBody.of(chars.toString(), response.request().requestCharset(StandardCharsets.UTF_8));
+        } else if (data instanceof ByteBuf buf) {
             setContentTypeIfAbsent(response, HttpHeaderValues.APPLICATION_OCTET_STREAM);
-            return CompletableFuture.completedFuture(ResponseBody.of((ByteBuf) data));
-        } else if (data instanceof ByteBuffer) {
+            return ResponseBody.of(buf);
+        } else if (data instanceof ByteBuffer buf) {
             setContentTypeIfAbsent(response, HttpHeaderValues.APPLICATION_OCTET_STREAM);
-            return CompletableFuture.completedFuture(ResponseBody.of(Unpooled.wrappedBuffer((ByteBuffer) data)));
-        } else if (data instanceof File) {
-            try {
-                File file = (File) data;
-                setContentTypeIfAbsent(response, Utils.getContentType(file));
-                FileChannel fc = FileChannel.open(file.toPath(), StandardOpenOption.READ);
-                MappedByteBuffer bb = fc.map(FileChannel.MapMode.READ_ONLY, 0, file.length());
-                ByteBuf body = Unpooled.wrappedBuffer(bb);
-                fc.close();
-                return CompletableFuture.completedFuture(ResponseBody.of(body));
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+            return ResponseBody.of(Unpooled.wrappedBuffer(buf));
+        } else if (data instanceof File file) {
+            return ResponseBody.sendFile(file);
         } else {
             throw new UnsupportedOperationException();
         }

@@ -70,7 +70,8 @@ public abstract class AbstractSource<T> implements Source<T> {
 
     @Override
     public void onError(Throwable throwable) {
-        stateChange(WorkflowState.SUBSCRIBED, WorkflowState.ERROR);
+        state.set(WorkflowState.ERROR);
+//        stateChange(WorkflowState.SUBSCRIBED, WorkflowState.ERROR);
         if (subscriber != null) {
             subscriber.onError(throwable);
         }
@@ -93,13 +94,13 @@ public abstract class AbstractSource<T> implements Source<T> {
 
     protected final void checkSubscribed() {
         if (state.get() != WorkflowState.SUBSCRIBED) {
-            throw new IllegalStateException("state check failed: " + state.get() + " != " + WorkflowState.SUBSCRIBED);
+            onError(new IllegalStateException("state check failed: " + state.get() + " != " + WorkflowState.SUBSCRIBED));
         }
     }
 
     protected final void stateChange(WorkflowState expected, WorkflowState dest) {
         if (!state.compareAndSet(expected, dest)) {
-            throw new IllegalStateException("failed to change state to " + dest + " incorrect current state: expected " + expected + " was " + state.get());
+            onError(new IllegalStateException("failed to change state to " + dest + " incorrect current state: expected " + expected + " was " + state.get()));
         }
     }
 }

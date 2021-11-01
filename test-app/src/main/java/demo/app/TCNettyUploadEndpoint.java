@@ -10,7 +10,6 @@ import vest.doctor.http.server.rest.HttpMethod;
 import vest.doctor.http.server.rest.Param;
 import vest.doctor.http.server.rest.Path;
 
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 
 import static vest.doctor.http.server.rest.Param.Type.Body;
@@ -24,9 +23,15 @@ public class TCNettyUploadEndpoint {
     public CompletableFuture<?> upload(Request request,
                                        @Param(type = Body) MultiPartData body) {
         log.info("{}", request);
-        return body.receive(part -> {
-            log.info("{} {} {}", part.type(), part.name(), part.data().toString(StandardCharsets.UTF_8));
-        });
+        CompletableFuture<?> f = new CompletableFuture<>();
+        body.parts()
+                .observe(p -> {
+                    if (p.last()) {
+                        f.complete(null);
+                    }
+                })
+                .subscribe();
+        return f;
     }
 
 }

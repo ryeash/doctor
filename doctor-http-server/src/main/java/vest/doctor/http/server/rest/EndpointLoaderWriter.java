@@ -61,6 +61,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         }
         initialize(context);
 
+        TypeElement endpointType = providerDefinition.providedType();
         String endpointRef = "endpoint" + context.nextId();
         stage5.line("Provider<", providerDefinition.providedType(), "> ", endpointRef, " = {{providerRegistry}}.getProvider(", providerDefinition.providedType(), ".class, ", providerDefinition.qualifier(), ");");
         String[] roots = Optional.ofNullable(providerDefinition.annotationSource().getAnnotation(Path.class))
@@ -104,7 +105,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                         }
                         for (String fullPath : paths(roots, endpoint.path())) {
                             for (String httMethod : endpoint.method()) {
-                                addRoute(stage5, context, httMethod, fullPath, endpointRef, method);
+                                addRoute(stage5, context, httMethod, fullPath, endpointType, endpointRef, method);
                                 hasRoutes.set(true);
                             }
                         }
@@ -169,10 +170,10 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                                  AnnotationProcessorContext context,
                                  String httpMethod,
                                  String path,
+                                 TypeElement endpointType,
                                  String endpointRef,
                                  ExecutableElement method) {
         boolean isVoid = method.getReturnType().getKind() == TypeKind.VOID;
-        boolean bodyFuture = isBodyFuture(context, method);
         boolean completableResponse = ProcessorUtils.isCompatibleWith(context, method.getReturnType(), CompletableFuture.class);
 
         String summary = method.getEnclosingElement().asType() + "#" + method.getSimpleName() + method.getParameters().stream().map(VariableElement::asType).map(String::valueOf).collect(Collectors.joining(", ", "(", ")"));
@@ -180,32 +181,30 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                 ProcessorUtils.escapeStringForCode(httpMethod), '"',
                 ",\"", ProcessorUtils.escapeStringForCode(path), "\", new EndpointLinker<>(",
                 endpointRef, ',', buildTypeInfoCode(method), ',', "bodyInterchange", ",\"", summary, "\",");
-        initialize.line("(endpoint, request, body) -> {");
+        initialize.line("(ep, req, flow) -> {");
+        initialize.line("return flow.with(ep, req, (tuple, subscription, emitter) -> {");
+        initialize.line(endpointType, " endpoint = tuple.first();");
+        initialize.line("Request request = tuple.second();");
+        initialize.line("Object b = tuple.third();");
 
         String parameters = method.getParameters().stream()
                 .map(p -> parameterWriting(context, p, "request"))
                 .collect(Collectors.joining(",\n", "(", ")"));
         String callMethod = "endpoint." + method.getSimpleName() + parameters + ";";
 
-        if (bodyFuture) {
-            initialize.line("CompletableFuture<?> b = body;");
-        } else {
-            String chainMethod = completableResponse ? "thenCompose" : "thenApply";
-            initialize.line("return body.", chainMethod, "(b -> {");
-        }
-
         if (isVoid) {
             initialize.line(callMethod);
-            initialize.line("return null;");
-        } else if (completableResponse) {
-            initialize.line("return (CompletionStage) ", callMethod);
+            initialize.line("Object result = null;");
         } else {
-            initialize.line("return ", callMethod);
+            initialize.line("Object result = ", callMethod);
         }
+        initialize.line("emitter.emit(result);");
 
-        if (!bodyFuture) {
-            initialize.line("});");
-        }
+//        if (completableResponse) {
+//            initialize.line(".mapFuture(java.util.function.Function.identity())");
+//        }
+
+        initialize.line("});");
         initialize.line("}));");
     }
 

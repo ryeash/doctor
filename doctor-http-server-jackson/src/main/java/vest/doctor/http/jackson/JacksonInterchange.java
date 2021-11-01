@@ -37,18 +37,27 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
     @Override
     @SuppressWarnings("unchecked")
     public <T> Workflow<?, T> read(Request request, TypeInfo typeInfo) {
-        TypeInfo paramType = typeInfo.getParameterTypes().get(0);
-        AsyncMapper<?> asyncMapper;
-        if (paramType.hasParameterizedTypes()) {
-            asyncMapper = new AsyncMapper<>(objectMapper, jacksonType(objectMapper, paramType));
+        if (typeInfo.getRawType() == CompletableFuture.class) {
+            return internalRead(request, typeInfo.getParameterTypes().get(0))
+                    .map(CompletableFuture::completedFuture)
+                    .map(o -> (T) o);
         } else {
-            asyncMapper = new AsyncMapper<>(objectMapper, paramType.getRawType());
+            return internalRead(request, typeInfo)
+                    .map(o -> (T) o);
+        }
+    }
+
+    private Workflow<?, ?> internalRead(Request request, TypeInfo typeInfo) {
+        AsyncMapper<?> asyncMapper;
+        if (typeInfo.hasParameterizedTypes()) {
+            asyncMapper = new AsyncMapper<>(objectMapper, jacksonType(objectMapper, typeInfo));
+        } else {
+            asyncMapper = new AsyncMapper<>(objectMapper, typeInfo.getRawType());
         }
         return request.body()
                 .flow()
                 .map(asyncMapper::feed)
-                .keep(Objects::nonNull)
-                .map(o -> (T) o);
+                .keep(Objects::nonNull);
     }
 
     @Override
@@ -57,13 +66,13 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
     }
 
     @Override
-    public CompletableFuture<ResponseBody> write(Response ctx, Object response) {
+    public ResponseBody write(Response ctx, Object response) {
         try {
             byte[] bytes = objectMapper.writeValueAsBytes(response);
             if (!ctx.headers().contains(HttpHeaderNames.CONTENT_TYPE)) {
                 ctx.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json;charset=utf-8");
             }
-            return CompletableFuture.completedFuture(ResponseBody.of(bytes));
+            return ResponseBody.of(bytes);
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }

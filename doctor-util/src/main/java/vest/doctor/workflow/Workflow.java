@@ -71,6 +71,11 @@ public class Workflow<START, O> {
         return from(new ErrorSource<>(error));
     }
 
+    @SuppressWarnings("unused")
+    public static <T> Workflow<T, T> error(Class<T> type, Throwable error) {
+        return from(new ErrorSource<>(error));
+    }
+
     /**
      * Create a new workflow with the given source.
      *
@@ -149,9 +154,17 @@ public class Workflow<START, O> {
         return chain(new Step.MapperAsync2<>(action));
     }
 
-    public <NEXT> Workflow<START, NEXT> mapFuture(Class<NEXT> type, Function<O, ? extends CompletionStage<NEXT>> mapper) {
+    public <NEXT> Workflow<START, NEXT> mapFuture(Function<O, ? extends CompletionStage<NEXT>> mapper) {
         return map(mapper)
-                .mapAsync(type, (future, emitter) -> future.thenAccept(emitter::emit));
+                .step((future, subscription, emitter) -> future.thenAccept(emitter::emit));
+    }
+
+    public <NEXT> Workflow<START, NEXT> flatten(Function<O, Workflow<?, NEXT>> mapper) {
+        return chain((o, sub, emitter) -> {
+            mapper.apply(o)
+                    .observe(emitter::emit)
+                    .subscribe();
+        });
     }
 
     /**
@@ -196,6 +209,10 @@ public class Workflow<START, O> {
      */
     public <NEXT> Workflow<START, NEXT> flatMapStream(BiFunction<O, Flow.Subscription, Stream<NEXT>> mapper) {
         return chain(new Step.StreamFlatMapper2<>(mapper));
+    }
+
+    public <NEXT> Workflow<START, NEXT> step(Step<O, NEXT> step) {
+        return chain(new StepProcessor<>(step));
     }
 
     /**
@@ -429,6 +446,10 @@ public class Workflow<START, O> {
         return chain(new SubscriptionHookProcessor<>(action));
     }
 
+    public <T> Workflow<START, T> cast(Class<T> type) {
+        return map(type::cast);
+    }
+
     /**
      * Add a stage that will process items with an additional value.
      *
@@ -436,7 +457,7 @@ public class Workflow<START, O> {
      * @param action the action
      * @return the next workflow stage
      */
-    public <A, NEXT> Workflow<START, NEXT> with(A attach, Tuple3Consumer<Tuple2<A, O>, Flow.Subscription, Emitter<NEXT>> action) {
+    public <A, NEXT> Workflow<START, NEXT> with(A attach, Step<Tuple2<A, O>, NEXT> action) {
         return chain(new StepProcessor<>(new Step.VarArgs1Step<>(attach, action)));
     }
 
@@ -448,7 +469,7 @@ public class Workflow<START, O> {
      * @param action  the action
      * @return the next workflow stage
      */
-    public <A, B, NEXT> Workflow<START, NEXT> with(A attach1, B attach2, Tuple3Consumer<Tuple3<A, B, O>, Flow.Subscription, Emitter<NEXT>> action) {
+    public <A, B, NEXT> Workflow<START, NEXT> with(A attach1, B attach2, Step<Tuple3<A, B, O>, NEXT> action) {
         return chain(new StepProcessor<>(new Step.VarArgs2Step<>(attach1, attach2, action)));
     }
 

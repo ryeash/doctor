@@ -13,6 +13,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 /**
  * Combines the {@link BodyReader BodyReaders} and {@link BodyWriter BodyWriters} that are provided
@@ -63,25 +64,33 @@ public final class BodyInterchange {
      * @param data    the body response
      * @return the asynchronous response to the request
      */
-    public CompletableFuture<Response> write(Request request, Object data) {
+    public Workflow<?, Response> write(Request request, Object data) {
         if (data == null) {
-            return request.createResponse().body(ResponseBody.empty()).wrapFuture();
+            return Workflow.of(request.createResponse().body(ResponseBody.empty()));
+        } else if (data instanceof Workflow wf) {
+            return wf.map((o) -> write(request, o));
         } else if (data instanceof CompletableFuture<?> future) {
-            return future.thenCompose(d -> write(request, d));
+            return Workflow.of(future)
+                    .mapFuture(Function.identity())
+                    .observe(o -> System.out.println("FUTURE RESULT: " + o))
+                    .map(o -> write(request, o))
+                    .observe(w -> System.out.println("POST FUTURE MAP: " + w))
+                    .cast(Response.class);
         } else if (data instanceof Response response) {
-            return response.wrapFuture();
+            return Workflow.of(response);
         } else if (data instanceof ResponseBody body) {
-            return request.createResponse().body(body).wrapFuture();
+            return Workflow.of(request.createResponse().body(body));
         } else if (data instanceof File file) {
-            return request.createResponse().body(ResponseBody.sendFile(file)).wrapFuture();
+            return Workflow.of(request.createResponse().body(ResponseBody.sendFile(file)));
         } else if (data instanceof R r) {
-            return write(request, r.body()).thenApply(r::applyTo);
+            return write(request, r.body())
+                    .map(r::applyTo);
         } else {
             Response response = request.createResponse();
             for (BodyWriter writer : writers) {
                 if (writer.canWrite(response, data)) {
-                    return writer.write(response, data)
-                            .thenApply(response::body);
+                    return Workflow.of(response.body(writer.write(response, data)));
+
                 }
             }
             throw new UnsupportedOperationException("unsupported response type: " + response.getClass());

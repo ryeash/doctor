@@ -173,11 +173,7 @@ public final class Router implements Handler {
             Iterator<FilterAndPath> iterator = filters.iterator();
             request.attribute(FILTER_ITERATOR, iterator);
         }
-        Workflow<?, Response> response = doNextFilter(request);
-        if (conf.isDebugRequestRouting()) {
-            response.observe(this::attachRouteDebugging);
-        }
-        return response;
+        return doNextFilter(request);
     }
 
     private Workflow<?, Response> doNextFilter(Request request) throws Exception {
@@ -193,7 +189,9 @@ public final class Router implements Handler {
                 return filter.filter(request, this::doNextFilter);
             }
         }
-        return selectHandler(request).handle(request);
+        return selectHandler(request)
+                .handle(request)
+                .observe(this::attachRouteDebugging);
     }
 
     private Handler selectHandler(Request request) {
@@ -292,6 +290,9 @@ public final class Router implements Handler {
     }
 
     void attachRouteDebugging(Response response) {
+        if (!conf.isDebugRequestRouting()) {
+            return;
+        }
         List<String> tracing = response.request().attribute(DEBUG_ROUTING_ATTRIBUTE);
         for (int i = 0; i < tracing.size(); i++) {
             response.header("X-RouteTracing-" + i, tracing.get(i));

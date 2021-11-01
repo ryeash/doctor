@@ -7,9 +7,6 @@ import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
 import vest.doctor.workflow.Workflow;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-
 /**
  * Used internally to link a provider to a route.
  */
@@ -32,7 +29,9 @@ public final class EndpointLinker<P> implements Handler {
     @Override
     public Workflow<?, Response> handle(Request request) throws Exception {
         return endpointHandler.handle(provider.get(), request, readFutureBody(request))
-                .mapFuture(Response.class, result -> convertResponse(request, result));
+                .flatten(o -> convertResponse(request, o))
+                .cast(Response.class)
+                .observe(r -> System.out.println("RESPONSE GOING OUT THE DOOR"));
     }
 
     @Override
@@ -40,19 +39,13 @@ public final class EndpointLinker<P> implements Handler {
         return summary;
     }
 
-    private Workflow<?, ?> readFutureBody(Request request) {
+    private Workflow<?, Object> readFutureBody(Request request) {
         return (bodyType == null)
                 ? request.body().ignored()
                 : bodyInterchange.read(request, bodyType);
     }
 
-    private CompletionStage<Response> convertResponse(Request request, Object result) {
-        try {
-            return bodyInterchange.write(request, result);
-        } catch (Throwable t) {
-            CompletableFuture<Response> future = new CompletableFuture<>();
-            future.completeExceptionally(t);
-            return future;
-        }
+    private Workflow<?, Response> convertResponse(Request request, Object result) {
+        return bodyInterchange.write(request, result);
     }
 }

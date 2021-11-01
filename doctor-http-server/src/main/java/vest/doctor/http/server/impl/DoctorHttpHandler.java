@@ -83,9 +83,7 @@ public class DoctorHttpHandler extends SimpleChannelInboundHandler<HttpObject> {
 
                 HttpContentSource source = new HttpContentSource();
                 Workflow<HttpContent, HttpContent> bodyData = Workflow.from(source)
-                        .defaultExecutorService(ctx.executor())
-//                        .takeWhile(c -> !(c instanceof LastHttpContent), true)
-                        ;
+                        .defaultExecutorService(ctx.executor());
                 StreamingRequestBody body = new StreamingRequestBody(ctx, bodyData);
                 ctx.channel().attr(CONTEXT_BODY).set(source);
                 ctx.channel().attr(BODY_SIZE).set(new AtomicInteger(0));
@@ -95,16 +93,16 @@ public class DoctorHttpHandler extends SimpleChannelInboundHandler<HttpObject> {
                 try {
                     handle = handler.handle(req);
                 } catch (Throwable t) {
-                    handle = Workflow.<Response>error(t)
+                    handle = Workflow.error(Response.class, t)
                             .defaultExecutorService(ctx.executor());
                 }
+                handle.recover(error -> handleError(req, error))
+                        .observe(this::writeResponse)
+                        .subscribe();
                 // ensure the body flow is subscribed
                 if (!req.body().used()) {
                     req.body().ignored().subscribe();
                 }
-                handle.recover(error -> handleError(req, error))
-                        .observe(response -> writeResponse(response.request(), response))
-                        .subscribe();
             }
 
             if (object instanceof HttpContent content) {
@@ -135,9 +133,10 @@ public class DoctorHttpHandler extends SimpleChannelInboundHandler<HttpObject> {
         }
     }
 
-    private void writeResponse(Request request, Response response) {
+    private void writeResponse(Response response) {
+        ChannelHandlerContext ctx = response.request().channelContext();
+        Request request = response.request();
         try {
-            ChannelHandlerContext ctx = request.channelContext();
             HttpResponse nettyResponse = new DefaultHttpResponse(HTTP_1_1, response.status(), response.headers());
             ctx.write(nettyResponse);
             ChannelFuture f = response.body().writeTo(ctx);
@@ -148,7 +147,7 @@ public class DoctorHttpHandler extends SimpleChannelInboundHandler<HttpObject> {
             }
         } catch (Throwable t) {
             log.error("error writing response", t);
-            request.channelContext().close();
+            ctx.close();
         }
     }
 

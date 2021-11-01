@@ -36,4 +36,9 @@ final class CombinedProcessor<IN, OUT> implements Flow.Processor<IN, OUT> {
     public void subscribe(Flow.Subscriber<? super OUT> subscriber) {
         last.subscribe(subscriber);
     }
+
+    @Override
+    public String toString() {
+        return source.toString();
+    }
 }

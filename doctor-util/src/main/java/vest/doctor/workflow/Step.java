@@ -30,7 +30,7 @@ public interface Step<IN, OUT> {
      * @param subscription the {@link Flow.Subscription}
      * @param emitter      the emitter for outputting values to downstream {@link Flow.Subscriber subscribers}
      */
-    void accept(IN item, Flow.Subscription subscription, Emitter<OUT> emitter);
+    void accept(IN item, Flow.Subscription subscription, Emitter<OUT> emitter) throws Exception;
 
     record Observer1<IN>(Consumer<IN> action) implements Step<IN, IN> {
         @Override
@@ -115,18 +115,18 @@ public interface Step<IN, OUT> {
     }
 
     record VarArgs1Step<A, IN, OUT>(A attached1,
-                                    Tuple3Consumer<Tuple2<A, IN>, Flow.Subscription, Emitter<OUT>> action) implements Step<IN, OUT> {
+                                    Step<Tuple2<A, IN>, OUT> action) implements Step<IN, OUT> {
         @Override
-        public void accept(IN item, Flow.Subscription subscription, Emitter<OUT> emitter) {
+        public void accept(IN item, Flow.Subscription subscription, Emitter<OUT> emitter) throws Exception {
             action.accept(Tuple.of(attached1, item), subscription, emitter);
         }
     }
 
     record VarArgs2Step<A, B, IN, OUT>(A attached1,
                                        B attached2,
-                                       Tuple3Consumer<Tuple3<A, B, IN>, Flow.Subscription, Emitter<OUT>> action) implements Step<IN, OUT> {
+                                       Step<Tuple3<A, B, IN>, OUT> action) implements Step<IN, OUT> {
         @Override
-        public void accept(IN item, Flow.Subscription subscription, Emitter<OUT> emitter) {
+        public void accept(IN item, Flow.Subscription subscription, Emitter<OUT> emitter) throws Exception {
             action.accept(Tuple.of(attached1, attached2, item), subscription, emitter);
         }
     }

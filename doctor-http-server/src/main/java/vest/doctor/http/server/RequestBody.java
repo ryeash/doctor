@@ -25,7 +25,7 @@ public interface RequestBody {
      * Ignore the body data. The returned future will indicate only that the data has been
      * received successfully in its entirety.
      */
-    Workflow<?, Void> ignored();
+    <T> Workflow<?, T> ignored();
 
     boolean used();
 }

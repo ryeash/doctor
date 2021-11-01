@@ -36,7 +36,7 @@ public class StreamingRequestBody implements RequestBody {
                 .collect(Collector.of(alloc::compositeBuffer,
                         (composite, content) -> composite.addComponent(true, content.content()),
                         (a, b) -> a.addComponent(true, b)))
-                .map(cbb -> cbb);
+                .cast(ByteBuf.class);
     }
 
     @Override
@@ -53,7 +53,7 @@ public class StreamingRequestBody implements RequestBody {
     }
 
     @Override
-    public Workflow<?, Void> ignored() {
+    public <T> Workflow<?, T> ignored() {
         return flow()
                 .map(c -> {
                     c.release();
