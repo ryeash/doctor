@@ -2,8 +2,8 @@ package vest.doctor.http.server.rest;
 
 import vest.doctor.Prioritized;
 import vest.doctor.TypeInfo;
+import vest.doctor.flow.Flo;
 import vest.doctor.http.server.Request;
-import vest.doctor.workflow.Workflow;
 
 /**
  * Responsible for deserializing request bodies.
@@ -28,5 +28,5 @@ public interface BodyReader extends Prioritized {
      * @param typeInfo information about the target type for the deserialized data
      * @return the deserialized value
      */
-    <T> Workflow<?, T> read(Request request, TypeInfo typeInfo);
+    <T> Flo<?, T> read(Request request, TypeInfo typeInfo);
 }

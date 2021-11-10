@@ -57,7 +57,7 @@ public class NettyLoader implements ApplicationLoader {
         NettyHttpServer server = new NettyHttpServer(
                 conf,
                 doctorHttpHandler,
-                false);
+                true);
 
         providerRegistry.register(new AdHocProvider<>(NettyHttpServer.class, server, null));
 

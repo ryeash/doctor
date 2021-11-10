@@ -174,7 +174,6 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                                  String endpointRef,
                                  ExecutableElement method) {
         boolean isVoid = method.getReturnType().getKind() == TypeKind.VOID;
-        boolean completableResponse = ProcessorUtils.isCompatibleWith(context, method.getReturnType(), CompletableFuture.class);
 
         String summary = method.getEnclosingElement().asType() + "#" + method.getSimpleName() + method.getParameters().stream().map(VariableElement::asType).map(String::valueOf).collect(Collectors.joining(", ", "(", ")"));
         initialize.line("router.route(\"",
@@ -182,10 +181,10 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                 ",\"", ProcessorUtils.escapeStringForCode(path), "\", new EndpointLinker<>(",
                 endpointRef, ',', buildTypeInfoCode(method), ',', "bodyInterchange", ",\"", summary, "\",");
         initialize.line("(ep, req, flow) -> {");
-        initialize.line("return flow.with(ep, req, (tuple, subscription, emitter) -> {");
-        initialize.line(endpointType, " endpoint = tuple.first();");
-        initialize.line("Request request = tuple.second();");
-        initialize.line("Object b = tuple.third();");
+        initialize.line("return flow.affix(ep, req).step((tuple, subscription, emitter) -> {");
+        initialize.line("Object b = tuple.first();");
+        initialize.line(endpointType, " endpoint = tuple.second();");
+        initialize.line("Request request = tuple.third();");
 
         String parameters = method.getParameters().stream()
                 .map(p -> parameterWriting(context, p, "request"))
@@ -199,25 +198,8 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
             initialize.line("Object result = ", callMethod);
         }
         initialize.line("emitter.emit(result);");
-
-//        if (completableResponse) {
-//            initialize.line(".mapFuture(java.util.function.Function.identity())");
-//        }
-
         initialize.line("});");
         initialize.line("}));");
-    }
-
-    private static boolean isBodyFuture(AnnotationProcessorContext context, ExecutableElement method) {
-        for (VariableElement parameter : method.getParameters()) {
-            Param param = parameter.getAnnotation(Param.class);
-            if (param != null
-                    && param.type() == Body
-                    && ProcessorUtils.isCompatibleWith(context, parameter.asType(), CompletableFuture.class)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static final List<Class<?>> SUPPORTED_CLASSES = List.of(Request.class, Response.class, URI.class);

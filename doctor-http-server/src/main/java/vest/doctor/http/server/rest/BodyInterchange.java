@@ -4,10 +4,10 @@ import jakarta.inject.Provider;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.TypeInfo;
+import vest.doctor.flow.Flo;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
-import vest.doctor.workflow.Workflow;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -48,7 +48,7 @@ public final class BodyInterchange {
      * @param typeInfo the type info for the target parameter
      * @return the asynchronous result of reading the body data into the desired type
      */
-    public <T> Workflow<?, T> read(Request request, TypeInfo typeInfo) {
+    public <T> Flo<?, T> read(Request request, TypeInfo typeInfo) {
         for (BodyReader reader : readers) {
             if (reader.canRead(request, typeInfo)) {
                 return reader.read(request, typeInfo);
@@ -64,24 +64,24 @@ public final class BodyInterchange {
      * @param data    the body response
      * @return the asynchronous response to the request
      */
-    public Workflow<?, Response> write(Request request, Object data) {
+    public Flo<?, Response> write(Request request, Object data) {
         if (data == null) {
-            return Workflow.of(request.createResponse().body(ResponseBody.empty()));
-        } else if (data instanceof Workflow wf) {
+            return Flo.of(request.createResponse().body(ResponseBody.empty()));
+        } else if (data instanceof Flo wf) {
             return wf.map((o) -> write(request, o));
         } else if (data instanceof CompletableFuture<?> future) {
-            return Workflow.of(future)
+            return Flo.of(future)
                     .mapFuture(Function.identity())
                     .observe(o -> System.out.println("FUTURE RESULT: " + o))
-                    .map(o -> write(request, o))
+                    .chain(o -> write(request, o))
                     .observe(w -> System.out.println("POST FUTURE MAP: " + w))
                     .cast(Response.class);
         } else if (data instanceof Response response) {
-            return Workflow.of(response);
+            return Flo.of(response);
         } else if (data instanceof ResponseBody body) {
-            return Workflow.of(request.createResponse().body(body));
+            return Flo.of(request.createResponse().body(body));
         } else if (data instanceof File file) {
-            return Workflow.of(request.createResponse().body(ResponseBody.sendFile(file)));
+            return Flo.of(request.createResponse().body(ResponseBody.sendFile(file)));
         } else if (data instanceof R r) {
             return write(request, r.body())
                     .map(r::applyTo);
@@ -89,7 +89,7 @@ public final class BodyInterchange {
             Response response = request.createResponse();
             for (BodyWriter writer : writers) {
                 if (writer.canWrite(response, data)) {
-                    return Workflow.of(response.body(writer.write(response, data)));
+                    return Flo.of(response.body(writer.write(response, data)));
 
                 }
             }

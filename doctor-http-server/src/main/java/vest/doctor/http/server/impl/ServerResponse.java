@@ -72,4 +72,13 @@ public class ServerResponse implements Response {
     public Request request() {
         return request;
     }
+
+    @Override
+    public String toString() {
+        return "ServerResponse{" +
+                ", status=" + status +
+                ", headers=" + headers +
+                ", body=" + body +
+                '}';
+    }
 }

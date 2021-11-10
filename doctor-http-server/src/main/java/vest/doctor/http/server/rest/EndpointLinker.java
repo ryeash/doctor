@@ -2,10 +2,10 @@ package vest.doctor.http.server.rest;
 
 import jakarta.inject.Provider;
 import vest.doctor.TypeInfo;
+import vest.doctor.flow.Flo;
 import vest.doctor.http.server.Handler;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
-import vest.doctor.workflow.Workflow;
 
 /**
  * Used internally to link a provider to a route.
@@ -27,25 +27,14 @@ public final class EndpointLinker<P> implements Handler {
     }
 
     @Override
-    public Workflow<?, Response> handle(Request request) throws Exception {
-        return endpointHandler.handle(provider.get(), request, readFutureBody(request))
-                .flatten(o -> convertResponse(request, o))
-                .cast(Response.class)
-                .observe(r -> System.out.println("RESPONSE GOING OUT THE DOOR"));
+    public Flo<?, Response> handle(Request request) throws Exception {
+        Flo<?, Object> body = bodyInterchange.read(request, bodyType);
+        return endpointHandler.handle(provider.get(), request, body)
+                .chain(response -> bodyInterchange.write(request, response));
     }
 
     @Override
     public String toString() {
         return summary;
-    }
-
-    private Workflow<?, Object> readFutureBody(Request request) {
-        return (bodyType == null)
-                ? request.body().ignored()
-                : bodyInterchange.read(request, bodyType);
-    }
-
-    private Workflow<?, Response> convertResponse(Request request, Object result) {
-        return bodyInterchange.write(request, result);
     }
 }

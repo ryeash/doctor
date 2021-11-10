@@ -1,7 +1,7 @@
 package vest.doctor.http.server;
 
 import io.netty.buffer.ByteBuf;
-import vest.doctor.workflow.Workflow;
+import vest.doctor.flow.Flo;
 
 /**
  * Synchronous version of the {@link Handler} interface.
@@ -10,7 +10,7 @@ import vest.doctor.workflow.Workflow;
 public interface SynchronousHandler extends Handler {
 
     @Override
-    default Workflow<?, Response> handle(Request request) {
+    default Flo<?, Response> handle(Request request) {
         return request.body()
                 .asBuffer()
                 .map(buffer -> handleSync(request, buffer));

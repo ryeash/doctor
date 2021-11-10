@@ -9,12 +9,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import vest.doctor.TypeInfo;
+import vest.doctor.flow.Flo;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
 import vest.doctor.http.server.rest.BodyReader;
 import vest.doctor.http.server.rest.BodyWriter;
-import vest.doctor.workflow.Workflow;
 
 import java.io.UncheckedIOException;
 import java.util.List;
@@ -36,7 +36,7 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> Workflow<?, T> read(Request request, TypeInfo typeInfo) {
+    public <T> Flo<?, T> read(Request request, TypeInfo typeInfo) {
         if (typeInfo.getRawType() == CompletableFuture.class) {
             return internalRead(request, typeInfo.getParameterTypes().get(0))
                     .map(CompletableFuture::completedFuture)
@@ -47,7 +47,7 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
         }
     }
 
-    private Workflow<?, ?> internalRead(Request request, TypeInfo typeInfo) {
+    private Flo<?, ?> internalRead(Request request, TypeInfo typeInfo) {
         AsyncMapper<?> asyncMapper;
         if (typeInfo.hasParameterizedTypes()) {
             asyncMapper = new AsyncMapper<>(objectMapper, jacksonType(objectMapper, typeInfo));

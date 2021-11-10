@@ -160,6 +160,7 @@ public class NettyTest extends AbstractTestAppTest {
                 .statusCode(304);
 
         req().get("/netty/file/thisdoesntexist.html")
+                .prettyPeek()
                 .then()
                 .statusCode(404);
     }

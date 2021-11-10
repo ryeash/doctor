@@ -1,6 +1,7 @@
 package vest.doctor.http.server.impl;
 
 import vest.doctor.Prioritized;
+import vest.doctor.flow.Flo;
 import vest.doctor.http.server.DoctorHttpServerConfiguration;
 import vest.doctor.http.server.Filter;
 import vest.doctor.http.server.Handler;
@@ -9,7 +10,6 @@ import vest.doctor.http.server.Response;
 import vest.doctor.http.server.rest.HttpMethod;
 import vest.doctor.netty.common.HttpServerConfiguration;
 import vest.doctor.netty.common.PathSpec;
-import vest.doctor.workflow.Workflow;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -162,7 +162,7 @@ public final class Router implements Handler {
     }
 
     @Override
-    public Workflow<?, Response> handle(Request request) throws Exception {
+    public Flo<?, Response> handle(Request request) throws Exception {
         if (conf.isDebugRequestRouting()) {
             request.attribute(DEBUG_START_ATTRIBUTE, System.nanoTime());
             addTraceMessage(request, "request " + request.method() + " " + request.path());
@@ -176,7 +176,7 @@ public final class Router implements Handler {
         return doNextFilter(request);
     }
 
-    private Workflow<?, Response> doNextFilter(Request request) throws Exception {
+    private Flo<?, Response> doNextFilter(Request request) throws Exception {
         Iterator<FilterAndPath> iterator = request.attribute(FILTER_ITERATOR);
         while (iterator.hasNext()) {
             FilterAndPath next = iterator.next();

@@ -16,7 +16,7 @@ import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 /**
- * Builder for {@link HttpServer}. Combines {@link HttpServerConfiguration} and {@link Router} into
+ * Builder for {@link NettyHttpServer}. Combines {@link HttpServerConfiguration} and {@link Router} into
  * a builder style configuration and startup mechanism.
  */
 public final class HttpServerBuilder {
@@ -157,6 +157,14 @@ public final class HttpServerBuilder {
      */
     public HttpServerBuilder setExceptionHandler(ExceptionHandler exceptionHandler) {
         config.setExceptionHandler(exceptionHandler);
+        return this;
+    }
+
+    /**
+     * @see DoctorHttpServerConfiguration#setDebugRequestRouting(boolean)
+     */
+    public HttpServerBuilder setDebugRequestRouting(boolean debugRequestRouting) {
+        config.setDebugRequestRouting(debugRequestRouting);
         return this;
     }
 

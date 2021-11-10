@@ -1,7 +1,7 @@
 package vest.doctor.http.server;
 
 import vest.doctor.Prioritized;
-import vest.doctor.workflow.Workflow;
+import vest.doctor.flow.Flo;
 
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -20,7 +20,7 @@ public interface Filter extends Prioritized {
      * @param chain   the next step in the filter chain
      * @return the response; possibly with new chained actions attached
      */
-    Workflow<?, Response> filter(Request request, FilterChain chain) throws Exception;
+    Flo<?, Response> filter(Request request, FilterChain chain) throws Exception;
 
     /**
      * Create a filter that operates on the request before it is sent to a {@link Handler}.
@@ -44,14 +44,14 @@ public interface Filter extends Prioritized {
 
     record BeforeFilter(UnaryOperator<Request> function) implements Filter {
         @Override
-        public Workflow<?, Response> filter(Request request, FilterChain chain) throws Exception {
+        public Flo<?, Response> filter(Request request, FilterChain chain) throws Exception {
             return chain.next(function.apply(request));
         }
     }
 
     record AfterFilter(UnaryOperator<Response> function) implements Filter {
         @Override
-        public Workflow<?, Response> filter(Request request, FilterChain chain) throws Exception {
+        public Flo<?, Response> filter(Request request, FilterChain chain) throws Exception {
             return chain.next(request).map(function);
         }
     }

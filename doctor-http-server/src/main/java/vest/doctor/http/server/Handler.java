@@ -1,6 +1,6 @@
 package vest.doctor.http.server;
 
-import vest.doctor.workflow.Workflow;
+import vest.doctor.flow.Flo;
 
 /**
  * Handles an HTTP request.
@@ -14,5 +14,5 @@ public interface Handler {
      * @param request the request
      * @return an asynchronously produced response
      */
-    Workflow<?, Response> handle(Request request) throws Exception;
+    Flo<?, Response> handle(Request request) throws Exception;
 }

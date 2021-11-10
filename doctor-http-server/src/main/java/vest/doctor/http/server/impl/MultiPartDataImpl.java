@@ -10,11 +10,11 @@ import io.netty.handler.codec.http.multipart.Attribute;
 import io.netty.handler.codec.http.multipart.FileUpload;
 import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
+import vest.doctor.flow.Emitter;
+import vest.doctor.flow.Flo;
 import vest.doctor.http.server.HttpException;
 import vest.doctor.http.server.MultiPartData;
 import vest.doctor.http.server.RequestBody;
-import vest.doctor.workflow.Emitter;
-import vest.doctor.workflow.Workflow;
 
 class MultiPartDataImpl implements MultiPartData {
 
@@ -36,10 +36,12 @@ class MultiPartDataImpl implements MultiPartData {
         return valid;
     }
 
-    public Workflow<?, Part> parts() {
+    public Flo<?, Part> parts() {
         if (valid) {
             return body.flow()
-                    .mapAsync(Part.class, this::nextData)
+                    .step(Part.class, (c, sub, emit) -> {
+                        nextData(c, emit);
+                    })
                     .takeWhile(p -> !p.last(), true);
         } else {
             return body.flow()

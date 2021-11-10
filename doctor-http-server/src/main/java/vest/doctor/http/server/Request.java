@@ -142,4 +142,8 @@ public interface Request {
      * @return a new {@link Response}
      */
     Response createResponse();
+
+    default Response createResponse(Object anything) {
+        return createResponse();
+    }
 }

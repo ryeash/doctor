@@ -9,9 +9,9 @@ import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import vest.doctor.flow.Flo;
 import vest.doctor.http.server.impl.Router;
 import vest.doctor.netty.common.NettyHttpServer;
-import vest.doctor.workflow.Workflow;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -53,7 +53,7 @@ public class NettyHttpTest {
                 })
                 .filter("/*", ((request, chain) -> {
                     if (Objects.equals(request.queryParam("shortcircuit"), "true")) {
-                        return Workflow.of(request.createResponse().status(500).body(ResponseBody.of("shortcircuited")));
+                        return Flo.of(request.createResponse().status(500).body(ResponseBody.of("shortcircuited")));
                     } else {
                         return chain.next(request);
                     }
@@ -80,7 +80,7 @@ public class NettyHttpTest {
                 .get("/exception", request -> {
                     throw new RuntimeException("I threw an error");
                 })
-                .get("/futureexception", request -> Workflow.error(new RuntimeException("I threw an error")))
+                .get("/futureexception", request -> Flo.error(Response.class, new RuntimeException("I threw an error")))
                 .postSync("/readablebody", (request, body) ->
                         request.createResponse()
                                 .body(ResponseBody.of(body.toString(StandardCharsets.UTF_8))))
@@ -89,6 +89,7 @@ public class NettyHttpTest {
                         .map((Function<String, ResponseBody>) ResponseBody::of)
                         .map(request.createResponse()::body)
                         .observe(r -> r.header("Content-Type", "text/plain")))
+//                .setDebugRequestRouting(true)
                 .start();
         System.out.println(server);
     }

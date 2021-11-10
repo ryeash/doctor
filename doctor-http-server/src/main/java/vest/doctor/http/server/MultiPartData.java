@@ -1,10 +1,10 @@
 package vest.doctor.http.server;
 
 import io.netty.buffer.ByteBuf;
-import vest.doctor.workflow.Workflow;
+import vest.doctor.flow.Flo;
 
 /**
- * Represents a multi part upload from the client.
+ * Represents a multi-part upload from the client.
  */
 public interface MultiPartData {
 
@@ -13,7 +13,10 @@ public interface MultiPartData {
      */
     boolean valid();
 
-    Workflow<?, Part> parts();
+    /**
+     * Get the parts of the multipart request body as an asynchronous flow.
+     */
+    Flo<?, Part> parts();
 
     /**
      * Represents a single part of a multipart upload.

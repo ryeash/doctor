@@ -3,15 +3,16 @@ package vest.doctor.http.server.rest;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import vest.doctor.TypeInfo;
+import vest.doctor.flow.Flo;
 import vest.doctor.http.server.MultiPartData;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.RequestBody;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
-import vest.doctor.workflow.Workflow;
 
 import java.io.File;
 import java.io.InputStream;
@@ -33,6 +34,9 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
 
     @Override
     public boolean canRead(Request request, TypeInfo typeInfo) {
+        if (typeInfo == null) {
+            return true;
+        }
         Class<?> rawType = typeInfo.getRawType();
         for (Class<?> supportedType : SUPPORTED_TYPES) {
             if (supportedType.isAssignableFrom(rawType)) {
@@ -45,16 +49,18 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> Workflow<?, T> read(Request request, TypeInfo typeInfo) {
+    public <T> Flo<?, T> read(Request request, TypeInfo typeInfo) {
         return convertStandard(request, typeInfo)
                 .map(o -> (T) o);
     }
 
-    private Workflow<?, ?> convertStandard(Request request, TypeInfo typeInfo) {
-        if (typeInfo.matches(ByteBuf.class)) {
+    private Flo<?, ?> convertStandard(Request request, TypeInfo typeInfo) {
+        if (typeInfo == null) {
+            return request.body().ignored();
+        } else if (typeInfo.matches(ByteBuf.class)) {
             return request.body().asBuffer();
         } else if (typeInfo.matches(RequestBody.class)) {
-            return Workflow.of(request.body());
+            return Flo.of(request.body());
         } else if (typeInfo.matches(InputStream.class)) {
             return request.body()
                     .asBuffer()
@@ -74,12 +80,12 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
                     .asBuffer()
                     .map(ByteBuf::nioBuffer);
         } else if (typeInfo.matches(MultiPartData.class)) {
-            return Workflow.of(request.multiPartBody());
+            return Flo.of(request.multiPartBody());
         } else if (CompletableFuture.class.isAssignableFrom(typeInfo.getRawType())) {
             return convertStandard(request, typeInfo.getParameterTypes().get(0))
                     .map(CompletableFuture::completedFuture);
         } else {
-            return Workflow.error(new UnsupportedOperationException("parameter type is not supported: " + typeInfo));
+            return Flo.error(HttpContent.class, new UnsupportedOperationException("parameter type is not supported: " + typeInfo));
         }
     }
 
