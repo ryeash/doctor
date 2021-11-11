@@ -13,7 +13,7 @@ final class NotFound implements Handler {
         return request.body()
                 .ignored()
                 .map(request::createResponse)
-                .observe(r -> r.status(HttpResponseStatus.NOT_FOUND)
+                .map(r -> r.status(HttpResponseStatus.NOT_FOUND)
                         .body(EmptyBody.INSTANCE));
     }
 }

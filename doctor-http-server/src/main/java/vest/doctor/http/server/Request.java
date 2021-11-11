@@ -143,7 +143,20 @@ public interface Request {
      */
     Response createResponse();
 
-    default Response createResponse(Object anything) {
+    /**
+     * Create a new {@link Response} for this request. Useful when using this method as a method reference.
+     * Example:
+     * <pre>
+     * request.body()
+     *  .ignored()
+     *  .map(request::createResponse)
+     * </pre>
+     *
+     * @param ignored an ignored value that can be anything
+     * @return a new {@link Response}
+     */
+    @SuppressWarnings("unused")
+    default Response createResponse(Object ignored) {
         return createResponse();
     }
 }

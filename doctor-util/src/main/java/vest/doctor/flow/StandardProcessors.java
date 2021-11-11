@@ -239,12 +239,8 @@ public final class StandardProcessors {
 
         @Override
         public void onNext(IN item) {
-            if (!taking.get()) {
-                return;
-            } else {
-                synchronized (taking) {
-                    taking.compareAndSet(true, takeWhileTrue.test(item));
-                }
+            if (taking.get()) {
+                taking.compareAndSet(true, takeWhileTrue.test(item));
                 if (taking.get()) {
                     publishDownstream(item);
                 } else {
@@ -269,10 +265,8 @@ public final class StandardProcessors {
 
         @Override
         public void onNext(IN item) {
-            synchronized (dropping) {
-                if (dropping.get()) {
-                    dropping.compareAndSet(true, dropUntilFalse.test(item));
-                }
+            if (dropping.get()) {
+                dropping.compareAndSet(true, dropUntilFalse.test(item));
             }
             if (!dropping.get()) {
                 publishDownstream(item);
