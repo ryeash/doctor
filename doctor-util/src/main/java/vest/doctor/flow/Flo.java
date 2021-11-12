@@ -19,11 +19,11 @@ import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 /**
- * Subscriber methods are DOWNSTREAM
- * Subscription methods are UPSTREAM
+ * An extension of the standard {@link Flow.Processor} to add additional methods for chaining
+ * and orchestrating processing workflows.
  *
- * @param <I>
- * @param <O>
+ * @param <I> the initial input type
+ * @param <O> the output type of the current processor stage
  */
 public interface Flo<I, O> extends Flow.Processor<I, O> {
 
