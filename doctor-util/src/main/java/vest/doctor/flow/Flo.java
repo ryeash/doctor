@@ -96,6 +96,10 @@ public interface Flo<I, O> extends Flow.Processor<I, O> {
         return chain(new StandardProcessors.ParallelProcessor<>(subscribeOn, requestOn));
     }
 
+    default Flo<I, O> buffer() {
+        return buffer(Flow.defaultBufferSize());
+    }
+
     default Flo<I, O> buffer(int size) {
         return chain(new StandardProcessors.BufferProcessor<>(size));
     }
@@ -132,6 +136,7 @@ public interface Flo<I, O> extends Flow.Processor<I, O> {
         return chain(new StandardProcessors.StepProcessor<>(step));
     }
 
+    @SuppressWarnings("unused")
     default <NEXT> Flo<I, NEXT> step(Class<NEXT> outType, Step<O, NEXT> step) {
         return chain(new StandardProcessors.StepProcessor<>(step));
     }

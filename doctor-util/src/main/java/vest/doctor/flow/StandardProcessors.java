@@ -343,8 +343,13 @@ public final class StandardProcessors {
 
     public static class ParallelProcessor<I> extends AbstractProcessor<I, I> implements Flow.Subscription {
 
+        enum State {
+            RUNNING, AWAITING, COMPLETE
+        }
+
+        private static final Object LAST = new Object();
         private final AtomicLong inFlight = new AtomicLong(0);
-        private final AtomicBoolean complete = new AtomicBoolean(false);
+        private final AtomicReference<State> state = new AtomicReference<>(State.RUNNING);
         private final ExecutorService subscribeOn;
         private final ExecutorService requestOn;
 
@@ -376,8 +381,9 @@ public final class StandardProcessors {
 
         @Override
         public void onComplete() {
-            complete.set(true);
-            checkCompletion();
+            if (state.compareAndSet(State.RUNNING, State.AWAITING)) {
+                onNext((I) LAST);
+            }
         }
 
         @Override
@@ -385,11 +391,15 @@ public final class StandardProcessors {
             inFlight.incrementAndGet();
             subscribeOn.submit(() -> {
                 try {
-                    publishDownstream(item);
+                    if (item != LAST) {
+                        publishDownstream(item);
+                    }
                 } finally {
                     inFlight.decrementAndGet();
                 }
-                checkCompletion();
+                if (inFlight.get() <= 0 && state.compareAndSet(State.AWAITING, State.COMPLETE)) {
+                    subscribeOn.submit(super::onComplete);
+                }
             });
         }
 
@@ -401,12 +411,6 @@ public final class StandardProcessors {
         @Override
         public void cancel() {
             subscription.cancel();
-        }
-
-        private void checkCompletion() {
-            if (complete.get() && inFlight.get() == 0) {
-                subscribeOn.submit(super::onComplete);
-            }
         }
     }
 }

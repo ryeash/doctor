@@ -43,7 +43,7 @@ public interface Step<IN, OUT> {
         @Override
         public void accept(IN in, Flow.Subscription subscription, Emitter<IN> emitter) {
             boolean test = predicate.test(in);
-            if (test && keep) {
+            if (test == keep) {
                 emitter.emit(in);
             }
         }

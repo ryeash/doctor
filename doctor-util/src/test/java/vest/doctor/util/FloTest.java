@@ -2,26 +2,28 @@ package vest.doctor.util;
 
 import org.testng.annotations.Test;
 import vest.doctor.flow.Flo;
+import vest.doctor.tuple.Tuple;
 
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Flow;
 import java.util.concurrent.ForkJoinPool;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Test(invocationCount = 5)
 public class FloTest extends BaseUtilTest {
 
     private final List<String> strings = Arrays.asList("alpha", "bravo", "charlie", "delta", "foxtrot");
+    private final List<String> upperString = strings.stream().map(String::toUpperCase).collect(Collectors.toList());
 
-    @Test
     public void adhoc() {
         Flo.adhoc(String.class)
-                .parallel(ForkJoinPool.commonPool())
-                .observe(s -> System.out.println(Thread.currentThread().getName() + " " + s))
+                .parallel()
+                .collect(Collectors.toSet())
+                .observe(expect(1, (it, set) -> assertTrue(set.containsAll(Set.of("a", "b", "c")))))
                 .subscribe()
                 .onNext("a")
                 .onNext("b")
@@ -31,13 +33,12 @@ public class FloTest extends BaseUtilTest {
                 .join();
     }
 
-    @Test
     public void adhocBuffered() {
-        List<String> joined = Flo.adhoc(String.class)
-                .buffer(Flow.defaultBufferSize())
-                .parallel(ForkJoinPool.commonPool())
-                .observe(s -> System.out.println(Thread.currentThread().getName() + " " + s))
-                .collect(Collectors.toList())
+        Flo.adhoc(String.class)
+                .buffer()
+                .parallel()
+                .collect(Collectors.toSet())
+                .observe(expect(1, (it, set) -> assertTrue(set.containsAll(Set.of("a", "b", "c")))))
                 .subscribe()
                 .onNext("a")
                 .onNext("b")
@@ -45,19 +46,17 @@ public class FloTest extends BaseUtilTest {
                 .onComplete()
                 .completionSignal()
                 .join();
-        System.out.println(joined);
     }
 
-    @Test
     public void iterate() {
         Flo.iterate(strings)
                 .parallel(ForkJoinPool.commonPool())
-                .observe(s -> System.out.println(Thread.currentThread().getName() + " " + s))
+                .collect(Collectors.toSet())
+                .observe(expect(1, (it, set) -> assertTrue(set.containsAll(strings))))
                 .subscribe()
                 .join();
     }
 
-    @Test
     public void skipLimit() {
         Flo.iterate(strings)
                 .skip(1)
@@ -78,7 +77,6 @@ public class FloTest extends BaseUtilTest {
                 .join();
     }
 
-    @Test
     public void takeWhile() {
         Flo.iterate(strings)
                 .takeWhile(s -> !s.equals("charlie"))
@@ -88,7 +86,6 @@ public class FloTest extends BaseUtilTest {
                 .join();
     }
 
-    @Test
     public void dropWhile() {
         Flo.iterate(strings)
                 .dropWhile(s -> !s.equals("charlie"))
@@ -98,7 +95,6 @@ public class FloTest extends BaseUtilTest {
                 .join();
     }
 
-    @Test
     public void errorSource() {
         CompletableFuture<String> error = Flo.error(String.class, new RuntimeException("error"))
                 .subscribe()
@@ -112,7 +108,6 @@ public class FloTest extends BaseUtilTest {
                 .join();
     }
 
-    @Test
     public void timeout() {
         assertThrows(() -> Flo.adhoc(String.class)
                 .timeout(Executors.newSingleThreadScheduledExecutor(), Duration.ofMillis(100))
@@ -129,20 +124,16 @@ public class FloTest extends BaseUtilTest {
                 .join();
     }
 
-    @Test
     public void flattener() {
-        // TODO: broken
         Flo.iterate(strings)
                 .chain(str -> Flo.iterate(List.of(str))
-                        .map((Function<String, String>) String::toUpperCase))
+                        .map(String::toUpperCase))
                 .collect(Collectors.toList())
-                .observe(System.out::println)
-//                .observe(expect(1, (it, l) -> assertEquals(l, Arrays.asList("bravo", "charlie", "delta"))))
+                .observe(expect(1, (it, l) -> assertEquals(l, upperString)))
                 .subscribe()
                 .join();
     }
 
-    @Test
     public void delayed() {
         Flo.iterate(strings)
                 .parallel(ForkJoinPool.commonPool())
@@ -150,27 +141,74 @@ public class FloTest extends BaseUtilTest {
                 .chain(str -> Flo.iterate(List.of(str))
                         .map(String::toUpperCase))
                 .collect(Collectors.toList())
-                .observe(l -> System.out.println(l))
-//                .observe(expect(1, (it, l) -> assertEquals(l, Arrays.asList("bravo", "charlie", "delta"))))
+                .observe(expect(1, (it, l) -> assertTrue(l.containsAll(upperString))))
                 .subscribe()
                 .join();
     }
 
-    @Test
     public void mapFuture() {
         Flo.iterate(strings)
                 .mapFuture(CompletableFuture::completedFuture)
                 .observe(expect(5, (it, s) -> assertEquals(s, strings.get(it))))
-                .subscribe();
+                .subscribe()
+                .join();
     }
 
-    @Test
     public void flatMap() {
         Flo.of("string")
-                .flatMapStream(s -> s.chars().mapToObj(i -> "" + i))
+                .flatMapStream(s -> s.chars().mapToObj(Character::toString))
                 .map(String::toUpperCase)
                 .collect(Collectors.joining())
                 .observe(expect(1, (it, s) -> assertEquals(s, "STRING")))
-                .subscribe();
+                .subscribe()
+                .join();
+
+        Flo.of("string")
+                .flatMapIterable(s -> s.chars().mapToObj(Character::toString).collect(Collectors.toList()))
+                .map(String::toUpperCase)
+                .collect(Collectors.joining())
+                .observe(expect(1, (it, s) -> assertEquals(s, "STRING")))
+                .subscribe()
+                .join();
+    }
+
+    public void filtering() {
+        Flo.iterate(strings)
+                .keep(s -> s.startsWith("a"))
+                .observe(expect(1, (it, s) -> assertTrue(s.startsWith("a"))))
+                .subscribe()
+                .join();
+
+        Flo.iterate(strings)
+                .drop(s -> s.startsWith("a"))
+                .observe(expect(4, (it, s) -> assertFalse(s.startsWith("a"))))
+                .subscribe()
+                .join();
+    }
+
+    public void affix() {
+        Flo.of("a")
+                .affix("b")
+                .observe(expect(1, (it, t) -> assertEquals(t, Tuple.of("a", "b"))))
+                .subscribe()
+                .join();
+
+        Flo.of("a")
+                .affix("b", "c")
+                .observe(expect(1, (it, t) -> assertEquals(t, Tuple.of("a", "b", "c"))))
+                .subscribe()
+                .join();
+
+        Flo.of("a")
+                .affix("b", "c", "d")
+                .observe(expect(1, (it, t) -> assertEquals(t, Tuple.of("a", "b", "c", "d"))))
+                .subscribe()
+                .join();
+
+        Flo.of("a")
+                .affix("b", "c", "d", "e")
+                .observe(expect(1, (it, t) -> assertEquals(t, Tuple.of("a", "b", "c", "d", "e"))))
+                .subscribe()
+                .join();
     }
 }
