@@ -76,8 +76,7 @@ public interface Flo<I, O> extends Flow.Processor<I, O> {
     }
 
     default <NEXT> Flo<I, NEXT> mapFuture(Function<O, ? extends CompletionStage<NEXT>> mapper) {
-        return map(mapper)
-                .step((future, subscription, emitter) -> future.thenAccept(emitter::emit));
+        return chain(new StandardProcessors.CompletableFutureMapper<>(mapper));
     }
 
     default Flo<I, O> subscriptionHook(Consumer<Flow.Subscription> action) {

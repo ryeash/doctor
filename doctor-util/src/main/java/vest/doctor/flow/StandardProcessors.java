@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -79,7 +80,6 @@ public final class StandardProcessors {
             if (apply instanceof Flo<?, O> flo) {
                 flo.chain(subscriber).subscribe();
             } else if (this.subscriber != null) {
-                // TODO: possibly naive, but maybe this is all we need
                 apply.subscribe(subscriber);
             }
         }
@@ -226,19 +226,19 @@ public final class StandardProcessors {
         }
     }
 
-    public static class TakeWhileProcessor<IN> extends AbstractProcessor<IN, IN> {
+    public static class TakeWhileProcessor<I> extends AbstractProcessor<I, I> {
 
-        private final Predicate<IN> takeWhileTrue;
+        private final Predicate<I> takeWhileTrue;
         private final boolean includeLast;
         private final AtomicBoolean taking = new AtomicBoolean(true);
 
-        public TakeWhileProcessor(Predicate<IN> takeWhileTrue, boolean includeLast) {
+        public TakeWhileProcessor(Predicate<I> takeWhileTrue, boolean includeLast) {
             this.takeWhileTrue = takeWhileTrue;
             this.includeLast = includeLast;
         }
 
         @Override
-        public void onNext(IN item) {
+        public void onNext(I item) {
             if (taking.get()) {
                 taking.compareAndSet(true, takeWhileTrue.test(item));
                 if (taking.get()) {
@@ -254,17 +254,17 @@ public final class StandardProcessors {
         }
     }
 
-    public static class DropWhileProcessor<IN> extends AbstractProcessor<IN, IN> {
+    public static class DropWhileProcessor<I> extends AbstractProcessor<I, I> {
 
-        private final Predicate<IN> dropUntilFalse;
+        private final Predicate<I> dropUntilFalse;
         private final AtomicBoolean dropping = new AtomicBoolean(true);
 
-        public DropWhileProcessor(Predicate<IN> dropUntilFalse) {
+        public DropWhileProcessor(Predicate<I> dropUntilFalse) {
             this.dropUntilFalse = dropUntilFalse;
         }
 
         @Override
-        public void onNext(IN item) {
+        public void onNext(I item) {
             if (dropping.get()) {
                 dropping.compareAndSet(true, dropUntilFalse.test(item));
             }
@@ -411,6 +411,26 @@ public final class StandardProcessors {
         @Override
         public void cancel() {
             subscription.cancel();
+        }
+    }
+
+    public static class CompletableFutureMapper<I, O> extends AbstractProcessor<I, O> {
+
+        private final Function<I, ? extends CompletionStage<O>> mapper;
+
+        public CompletableFutureMapper(Function<I, ? extends CompletionStage<O>> mapper) {
+            this.mapper = mapper;
+        }
+
+        @Override
+        public void onNext(I item) {
+            mapper.apply(item).whenComplete((result, error) -> {
+                if (error != null) {
+                    onError(error);
+                } else {
+                    publishDownstream(result);
+                }
+            });
         }
     }
 }

@@ -152,6 +152,13 @@ public class FloTest extends BaseUtilTest {
                 .observe(expect(5, (it, s) -> assertEquals(s, strings.get(it))))
                 .subscribe()
                 .join();
+
+        Flo.of("error")
+                .mapFuture(s -> CompletableFuture.failedFuture(new IllegalStateException(s)))
+                .recover(Throwable::getMessage)
+                .observe(expect(1, (it, s) -> assertEquals(s, "error")))
+                .subscribe()
+                .join();
     }
 
     public void flatMap() {
