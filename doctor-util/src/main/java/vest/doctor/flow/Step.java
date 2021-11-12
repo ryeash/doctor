@@ -6,7 +6,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
- * A basic step in a workflow. Does not deal with any control signals for the Flow, just items in and out.
+ * A basic step in a workflow. Does not deal with any control signals for the processing flow,
+ * just items in and out.
  *
  * @param <IN>  the input type into the step
  * @param <OUT> the output type from the step
@@ -23,7 +24,7 @@ public interface Step<IN, OUT> {
      */
     void accept(IN item, Flow.Subscription subscription, Emitter<OUT> emitter) throws Exception;
 
-    record Observer1<IN>(Consumer<IN> action) implements Step<IN, IN> {
+    record Observer<IN>(Consumer<IN> action) implements Step<IN, IN> {
         @Override
         public void accept(IN in, Flow.Subscription subscription, Emitter<IN> emitter) {
             action.accept(in);
@@ -31,7 +32,7 @@ public interface Step<IN, OUT> {
         }
     }
 
-    record Mapper1<IN, OUT>(Function<IN, OUT> mapper) implements Step<IN, OUT> {
+    record Mapper<IN, OUT>(Function<IN, OUT> mapper) implements Step<IN, OUT> {
         @Override
         public void accept(IN in, Flow.Subscription subscription, Emitter<OUT> emitter) {
             OUT out = mapper.apply(in);
@@ -39,7 +40,7 @@ public interface Step<IN, OUT> {
         }
     }
 
-    record Filter1<IN>(Predicate<IN> predicate, boolean keep) implements Step<IN, IN> {
+    record Filter<IN>(Predicate<IN> predicate, boolean keep) implements Step<IN, IN> {
         @Override
         public void accept(IN in, Flow.Subscription subscription, Emitter<IN> emitter) {
             boolean test = predicate.test(in);

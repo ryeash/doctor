@@ -12,7 +12,7 @@ public interface Handler {
      * Handle a request and produce a response.
      *
      * @param request the request
-     * @return an asynchronously produced response
+     * @return an asynchronously produced response flow
      */
     Flo<?, Response> handle(Request request) throws Exception;
 }

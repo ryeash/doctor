@@ -5,6 +5,5 @@ module doctor.util {
     exports vest.doctor.util;
     exports vest.doctor.stream;
     exports vest.doctor.tuple;
-    exports vest.doctor.workflow;
     exports vest.doctor.flow;
 }

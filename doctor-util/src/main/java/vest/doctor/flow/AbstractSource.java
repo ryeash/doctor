@@ -42,7 +42,12 @@ public abstract class AbstractSource<I> extends AbstractProcessor<I, I> implemen
     @Override
     public void cancel() {
         requested.set(0);
+        onComplete();
         state.set(FlowState.CANCELLED);
+    }
+
+    protected long getAndDecrementRequested() {
+        return requested.getAndAccumulate(-1, (a, b) -> Math.max(a + b, 0));
     }
 
     protected void transition(FlowState expected, FlowState next) {

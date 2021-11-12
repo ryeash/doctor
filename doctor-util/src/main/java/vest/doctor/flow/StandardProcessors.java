@@ -247,7 +247,6 @@ public final class StandardProcessors {
                     if (includeLast) {
                         publishDownstream(item);
                     }
-                    onComplete();
                     subscription.cancel();
                 }
             }
@@ -256,17 +255,17 @@ public final class StandardProcessors {
 
     public static class DropWhileProcessor<I> extends AbstractProcessor<I, I> {
 
-        private final Predicate<I> dropUntilFalse;
+        private final Predicate<I> dropWhileFalse;
         private final AtomicBoolean dropping = new AtomicBoolean(true);
 
-        public DropWhileProcessor(Predicate<I> dropUntilFalse) {
-            this.dropUntilFalse = dropUntilFalse;
+        public DropWhileProcessor(Predicate<I> dropWhileFalse) {
+            this.dropWhileFalse = dropWhileFalse;
         }
 
         @Override
         public void onNext(I item) {
             if (dropping.get()) {
-                dropping.compareAndSet(true, dropUntilFalse.test(item));
+                dropping.compareAndSet(true, dropWhileFalse.test(item));
             }
             if (!dropping.get()) {
                 publishDownstream(item);
@@ -290,6 +289,7 @@ public final class StandardProcessors {
         public void onSubscribe(Flow.Subscription subscription) {
             super.onSubscribe(subscription);
             this.scheduledFuture = executorService.scheduleAtFixedRate(this::checkTimeout, timeoutMillis, timeoutMillis, TimeUnit.MILLISECONDS);
+            this.lastUpdate = System.currentTimeMillis();
         }
 
         @Override

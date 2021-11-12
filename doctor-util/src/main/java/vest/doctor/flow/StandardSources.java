@@ -11,7 +11,7 @@ public final class StandardSources {
         @Override
         public void onNext(I item) {
             checkSubscribed();
-            if (requested.getAndDecrement() > 0) {
+            if (getAndDecrementRequested() > 0) {
                 if (subscriber != null) {
                     try {
                         subscriber.onNext(item);
@@ -48,7 +48,7 @@ public final class StandardSources {
             while (subscriber != null
                     && state.get() == FlowState.SUBSCRIBED
                     && iterator.hasNext()
-                    && requested.getAndDecrement() > 0) {
+                    && getAndDecrementRequested() > 0) {
                 try {
                     subscriber.onNext(iterator.next());
                 } catch (Throwable t) {
@@ -76,7 +76,7 @@ public final class StandardSources {
 
         @Override
         public void startSubscription() {
-            if (requested.getAndDecrement() > 0) {
+            if (getAndDecrementRequested() > 0) {
                 publishDownstream(item);
                 onComplete();
             } else {
@@ -95,7 +95,7 @@ public final class StandardSources {
 
         @Override
         public void onNext(I item) {
-            throw new IllegalStateException();
+            throw new UnsupportedOperationException();
         }
 
         @Override

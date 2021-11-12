@@ -2,15 +2,8 @@ package vest.doctor.flow;
 
 import java.util.concurrent.Flow;
 
-public class StandardFlo<I, O> implements Flo<I, O> {
-
-    private final AbstractSource<I> head;
-    private final Flow.Publisher<O> tail;
-
-    public StandardFlo(AbstractSource<I> head, Flow.Publisher<O> tail) {
-        this.head = head;
-        this.tail = tail;
-    }
+public record StandardFlo<I, O>(AbstractSource<I> head,
+                                Flow.Publisher<O> tail) implements Flo<I, O> {
 
     @Override
     public void subscribe(Flow.Subscriber<? super O> subscriber) {

@@ -11,7 +11,9 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 @Test(invocationCount = 5)
 public class FloTest extends BaseUtilTest {
@@ -55,6 +57,13 @@ public class FloTest extends BaseUtilTest {
                 .observe(expect(1, (it, set) -> assertTrue(set.containsAll(strings))))
                 .subscribe()
                 .join();
+    }
+
+    public void join() {
+        String s = Flo.iterate(strings)
+                .subscribe()
+                .join();
+        assertEquals(s, strings.get(strings.size() - 1));
     }
 
     public void skipLimit() {
@@ -217,5 +226,55 @@ public class FloTest extends BaseUtilTest {
                 .observe(expect(1, (it, t) -> assertEquals(t, Tuple.of("a", "b", "c", "d", "e"))))
                 .subscribe()
                 .join();
+    }
+
+    public void basicBackpressure() {
+        AtomicInteger c = new AtomicInteger(0);
+        Flo.iterate(strings)
+                .step((value, subscription, emit) -> {
+                    int andIncrement = c.getAndIncrement();
+                    assertEquals(value, strings.get(andIncrement));
+                    subscription.request(1);
+                })
+                .subscribe(1)
+                .join();
+        assertEquals(c.get(), 5);
+    }
+
+    public void basicCancel() {
+        AtomicInteger c = new AtomicInteger(0);
+        Flo.iterate(strings)
+                .parallel(Executors.newSingleThreadScheduledExecutor())
+                .step((value, subscription, emit) -> {
+                    int andIncrement = c.getAndIncrement();
+                    assertEquals(value, strings.get(andIncrement));
+                    subscription.cancel();
+                })
+                .parallel(Executors.newSingleThreadScheduledExecutor())
+                .subscribe(1)
+                .join();
+        assertEquals(c.get(), 1);
+    }
+
+    public void complex() {
+        Flo.iterate(strings)
+                .flatMapStream(string -> string.chars().mapToObj(Character::toString))
+                .keep(c -> c.equals("a"))
+                .observe(expect(5, (it, c) -> assertEquals(c, "a")))
+                .collect(Collectors.counting())
+                .observe(expect(1, (it, count) -> assertEquals(count.intValue(), 5)))
+                .flatMapStream(count -> LongStream.range(0, count).boxed())
+                .observe(expect(5, (it, l) -> assertEquals(it.intValue(), l.intValue())))
+                .observe(expect(5, (it, l) -> assertEquals(it.intValue(), l.intValue())))
+                .observe(expect(5, (it, l) -> assertEquals(it.intValue(), l.intValue())))
+                .subscribe()
+                .join();
+    }
+
+    public void errorInPipe() {
+        assertThrows(() -> Flo.of("string")
+                .map(s -> s.getBytes()[100])
+                .subscribe()
+                .join());
     }
 }
