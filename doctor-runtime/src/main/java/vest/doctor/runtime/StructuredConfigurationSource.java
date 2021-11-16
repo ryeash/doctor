@@ -29,24 +29,26 @@ import static java.io.StreamTokenizer.TT_EOL;
  * <pre>
  * root {
  *  child {
- *      propertyName = propertyValue
- *      ... more properties defined ...
+ *   propertyName = propertyValue
+ *   ... more properties defined ...
  *  }
  * }
  * </pre>
  * </code>
  * This will be parsed as <code>root.child.propertyName = propertyValue</code>.
- * <pre>
+ * <br/>
+ * <br/>
  * Reserved characters:
+ * <pre>
  * '{' : used to nest a level deeper in the structure
  * '}' : used to close a nested structure
- * '=' & ':' : sets the value of a property, e.g. name = value OR name: value
+ * '=', ':' : sets the value of a property, e.g. name = value OR name: value
  * ';' : can be used to signify the end of a line (though it is not necessary)
  * '#' : comments
  * </pre>
  * Quoted strings using either ' or " can be used to escape reserved characters
- * e.g. name = "value contains { } = : and ;"
- * Quotes are necessary when interpolating values, i.e. values like: http://${referenced.property}/
+ * e.g. <pre>name = "value contains { } = : and ;"</pre>
+ * Quotes are necessary when interpolating values, i.e. values like: <pre>http://${referenced.property}/</pre>
  */
 public class StructuredConfigurationSource implements ConfigurationSource {
 

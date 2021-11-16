@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -81,12 +80,11 @@ public class NettyHttpTest {
                     throw new RuntimeException("I threw an error");
                 })
                 .get("/futureexception", request -> Flo.error(Response.class, new RuntimeException("I threw an error")))
-                .postSync("/readablebody", (request, body) ->
-                        request.createResponse()
-                                .body(ResponseBody.of(body.toString(StandardCharsets.UTF_8))))
+                .postSync("/readablebody", (request, body) -> request.createResponse()
+                        .body(ResponseBody.of(new String(body, StandardCharsets.UTF_8))))
                 .post("/", request -> request.body()
                         .asString()
-                        .map((Function<String, ResponseBody>) ResponseBody::of)
+                        .map(ResponseBody::of)
                         .map(request.createResponse()::body)
                         .observe(r -> r.header("Content-Type", "text/plain")))
 //                .setDebugRequestRouting(true)

@@ -186,25 +186,25 @@ public interface Flo<I, O> extends Flow.Processor<I, O> {
 
     /**
      * Add a parallelization step to the processing flow.
-     * Alias for <code>parallel(ForkJoinPool.commonPool(), CallerRunsExecutorService.INSTANCE)</code>.
+     * Alias for <code>parallel(ForkJoinPool.commonPool(), CallerRunsExecutorService.instance())</code>.
      *
      * @return the next processing flow step
      * @see #parallel(ExecutorService, ExecutorService)
      */
     default Flo<I, O> parallel() {
-        return parallel(ForkJoinPool.commonPool(), CallerRunsExecutorService.INSTANCE);
+        return parallel(ForkJoinPool.commonPool(), CallerRunsExecutorService.instance());
     }
 
     /**
      * Add a parallelization step to the processing flow.
-     * Alias for <code>parallel(subscribeOn, CallerRunsExecutorService.INSTANCE)</code>.
+     * Alias for <code>parallel(subscribeOn, CallerRunsExecutorService.instance())</code>.
      *
      * @param subscribeOn the executor service that will execute the {@link Flow.Subscriber} methods
      * @return the next processing flow step
      * @see #parallel(ExecutorService, ExecutorService)
      */
     default Flo<I, O> parallel(ExecutorService subscribeOn) {
-        return parallel(subscribeOn, CallerRunsExecutorService.INSTANCE);
+        return parallel(subscribeOn, CallerRunsExecutorService.instance());
     }
 
     /**
@@ -241,7 +241,7 @@ public interface Flo<I, O> extends Flow.Processor<I, O> {
      * data loss.
      *
      * @param size the maximum number of elements to buffer before throwing a {@link java.nio.BufferOverflowException};
-     *             when negative, the buffer will be unbounded.
+     *             when negative, the buffer will be unbounded
      * @return the next processing flow step
      */
     default Flo<I, O> buffer(int size) {
@@ -251,7 +251,7 @@ public interface Flo<I, O> extends Flow.Processor<I, O> {
     /**
      * Add a collecting stage to the processing flow. The collector will operate on items until the
      * {@link Flow.Subscriber#onComplete()} signal is received at which point the collected value will
-     * be realized and emitted to downstream subscribers, followed immediate by the completion signal.
+     * be finalized and emitted to downstream subscribers, followed immediately by the completion signal.
      *
      * @param collector the collector
      * @return the next processing flow step

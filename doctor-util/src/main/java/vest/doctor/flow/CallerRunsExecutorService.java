@@ -11,11 +11,23 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+/**
+ * An {@link ExecutorService} that invokes all tasks in the caller thread.
+ */
 public class CallerRunsExecutorService implements ExecutorService {
 
-    public static final ExecutorService INSTANCE = new CallerRunsExecutorService();
+    private static final class CallerRunsExecutorServiceHolder {
+        private static final ExecutorService INSTANCE = new CallerRunsExecutorService();
+    }
+
+    public static ExecutorService instance() {
+        return CallerRunsExecutorServiceHolder.INSTANCE;
+    }
 
     private boolean shutdown = false;
+
+    private CallerRunsExecutorService() {
+    }
 
     @Override
     public void shutdown() {

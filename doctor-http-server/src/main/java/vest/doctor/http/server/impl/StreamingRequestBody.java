@@ -33,7 +33,7 @@ public class StreamingRequestBody implements RequestBody {
     @Override
     public Flo<?, HttpContent> flow() {
         if (used) {
-            throw new IllegalStateException("the request body flow has already been consumed");
+            throw new IllegalStateException("the request body has already been consumed");
         }
         used = true;
         return dataFlow;

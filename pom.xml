@@ -28,7 +28,7 @@
         <maven.compiler.target>16</maven.compiler.target>
         <slf4j.version>1.7.32</slf4j.version>
         <maven.deploy.skip>true</maven.deploy.skip>
-        <netty.version>4.1.68.Final</netty.version>
+        <netty.version>4.1.70.Final</netty.version>
     </properties>
 
     <dependencyManagement>
