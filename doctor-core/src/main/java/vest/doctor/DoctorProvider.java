@@ -7,7 +7,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Extension of the {@link Provider} interface to add more metadata.
+ * Extension of the {@link Provider} interface to add additional metadata for the provided tye.
  */
 public interface DoctorProvider<T> extends Provider<T> {
 
@@ -17,7 +17,7 @@ public interface DoctorProvider<T> extends Provider<T> {
     Class<T> type();
 
     /**
-     * The provider qualifier, or null if there isn't one.
+     * The qualifier, or null if there isn't one.
      */
     String qualifier();
 
@@ -27,7 +27,9 @@ public interface DoctorProvider<T> extends Provider<T> {
     Class<? extends Annotation> scope();
 
     /**
-     * All provided types.
+     * All provided types. This is a list of all interfaces and super classes that the provided
+     * type can satisfy as injection targets. This list will always include the class returned
+     * by {@link #type()}This will not include {@link Object}.
      */
     List<Class<?>> allProvidedTypes();
 

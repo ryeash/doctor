@@ -2,9 +2,9 @@ package vest.doctor.http.server;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpContent;
+import vest.doctor.flow.Flo;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 /**
  * A handle to the request body data. The data is received asynchronously.
@@ -12,36 +12,52 @@ import java.util.function.Function;
 public interface RequestBody {
 
     /**
-     * Attach a function to this body that will receive data chunks as they arrive.
-     * Only one call to this method is allowed; calling more than once will result
-     * in an {@link IllegalStateException}
+     * Get the flow of request body data. A call to this method will mark this object
+     * as 'consumed' and any further method calls (except calls to {@link #inspect(UnaryOperator)})
+     * will result in {@link IllegalStateException}.
      *
-     * @param reader the function that will process the data. The function
-     *               must return <code>null</code> until a complete body has been read
-     * @return a future representing the completed parsing of request body data with
-     * the non-null output from the reader function
+     * @return a flow of request body contents
      */
-    <T> CompletableFuture<T> asyncRead(Function<HttpContent, T> reader);
+    Flo<?, HttpContent> flow();
 
     /**
-     * Get a future that will complete when the final bytes are received from the client.
+     * Inspect the data flow. A call to this method will NOT mark this object as consumed. It
+     * will, however, check the consumed flag and throw an {@link IllegalStateException} if the
+     * data has already been consumed. Care should be taken to avoid altering the content of the
+     * flow as that could have undesirable consequences for the performance of the underlying http
+     * channels.
+     *
+     * @param inspection a function that takes the data flow and returns a type compatible flow
      */
-    CompletableFuture<ByteBuf> completionFuture();
+    void inspect(UnaryOperator<Flo<?, HttpContent>> inspection);
+
+    /**
+     * Collect the body into a single buffer.
+     *
+     * @return a flow of the request body as a single buffer
+     */
+    Flo<?, ByteBuf> asBuffer();
 
     /**
      * Read the body data into a UTF-8 string.
+     *
+     * @return a flow of the request body as a single string
      */
-    CompletableFuture<String> asString();
+    Flo<?, String> asString();
 
     /**
      * Ignore the body data. The returned future will indicate only that the data has been
      * received successfully in its entirety.
+     *
+     * @return a flow of a single null element indicating the successful read of all body data
      */
-    CompletableFuture<Void> ignored();
+    <T> Flo<?, T> ignored();
 
     /**
-     * Return true if the asyncRead method has already been called. If this method returns true,
-     * additional calls to any method besides this one with throw an exception.
+     * Get the usability state of the request body. If this method returns true, calling any
+     * other method will throw an {@link IllegalStateException}.
+     *
+     * @return true if the body has already been used
      */
-    boolean readerAttached();
+    boolean used();
 }

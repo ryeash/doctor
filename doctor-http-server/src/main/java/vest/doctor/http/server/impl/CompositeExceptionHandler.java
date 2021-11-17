@@ -14,8 +14,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 /**
  * {@link ExceptionHandler} implementation that combines multiple handlers together
@@ -39,13 +37,13 @@ public class CompositeExceptionHandler implements ExceptionHandler {
     }
 
     @Override
-    public CompletionStage<Response> handle(Request request, Throwable error) {
+    public Response handle(Request request, Throwable error) {
         for (ExceptionHandler handler : handlers) {
             if (handler.type().isInstance(error)) {
                 return handler.handle(request, error);
             }
         }
-        return CompletableFuture.completedFuture(defaultWorkflow(request, error));
+        return defaultWorkflow(request, error);
     }
 
     @Override

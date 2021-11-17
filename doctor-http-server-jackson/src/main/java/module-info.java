@@ -5,6 +5,7 @@ module doctor.http.server.jackson {
     requires io.netty.codec.http;
     requires jakarta.inject;
     requires org.slf4j;
+    requires doctor.util;
 
     exports vest.doctor.http.jackson;
 }

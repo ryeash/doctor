@@ -39,7 +39,7 @@ public class JAXRSEndpoint {
     @Path("/get")
     public String get(@Context HttpServletRequest request,
                       @Provided ProviderRegistry providerRegistry,
-                      @Attribute("start") long start) {
+                      @Attribute("start") Long start) {
         Assert.assertNotNull(request);
         Assert.assertTrue(start > 0);
         Assert.assertNotNull(providerRegistry);
@@ -111,6 +111,9 @@ public class JAXRSEndpoint {
         Assert.assertEquals(beanParam.getQueryParam(), queryParam);
         Assert.assertEquals(beanParam.getHeader(), header);
         Assert.assertEquals(beanParam.getCookie(), cookie);
+        Assert.assertNotNull(beanParam.getRequest());
+        Assert.assertTrue(TimeUnit.SECONDS.convert(System.nanoTime() - beanParam.getStart(), TimeUnit.NANOSECONDS) < 5);
+        Assert.assertNotNull(beanParam.getTestFilter());
         return pathParam + " " + queryParam + " " + header + " " + cookie;
     }
 }

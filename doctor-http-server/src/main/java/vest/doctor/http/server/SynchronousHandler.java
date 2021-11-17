@@ -1,9 +1,6 @@
 package vest.doctor.http.server;
 
-import io.netty.buffer.ByteBuf;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import vest.doctor.flow.Flo;
 
 /**
  * Synchronous version of the {@link Handler} interface.
@@ -12,25 +9,30 @@ import java.util.concurrent.CompletionStage;
 public interface SynchronousHandler extends Handler {
 
     @Override
-    default CompletionStage<Response> handle(Request request) {
+    default Flo<?, Response> handle(Request request) {
         return request.body()
-                .completionFuture()
-                .thenCombineAsync(CompletableFuture.completedFuture(request), (body, req) -> {
+                .asBuffer()
+                .map(buffer -> {
                     try {
-                        return handleSync(req, body);
+                        byte[] buf = new byte[buffer.readableBytes()];
+                        buffer.readBytes(buf);
+                        return buf;
                     } finally {
-                        if (body.refCnt() > 0) {
-                            body.release();
-                        }
+                        buffer.release();
                     }
-                }, request.pool());
+                })
+                .affix(request)
+                .map(pair -> handleSync(pair.second(), pair.first()));
     }
 
     /**
-     * Handle the request synchronously.
+     * Handle the request synchronously. Using the {@link RequestBody} from the request will
+     * cause an {@link IllegalStateException} as the body has already been read into the
+     * given byte array.
      *
      * @param request the request
+     * @param body    the bytes received in the request body
      * @return a {@link Response}
      */
-    Response handleSync(Request request, ByteBuf body);
+    Response handleSync(Request request, byte[] body);
 }

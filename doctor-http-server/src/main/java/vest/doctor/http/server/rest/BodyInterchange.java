@@ -4,6 +4,7 @@ import jakarta.inject.Provider;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.TypeInfo;
+import vest.doctor.flow.Flo;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
@@ -12,6 +13,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 /**
  * Combines the {@link BodyReader BodyReaders} and {@link BodyWriter BodyWriters} that are provided
@@ -46,7 +48,7 @@ public final class BodyInterchange {
      * @param typeInfo the type info for the target parameter
      * @return the asynchronous result of reading the body data into the desired type
      */
-    public <T> CompletableFuture<T> read(Request request, TypeInfo typeInfo) {
+    public <T> Flo<?, T> read(Request request, TypeInfo typeInfo) {
         for (BodyReader reader : readers) {
             if (reader.canRead(request, typeInfo)) {
                 return reader.read(request, typeInfo);
@@ -62,25 +64,33 @@ public final class BodyInterchange {
      * @param data    the body response
      * @return the asynchronous response to the request
      */
-    public CompletableFuture<Response> write(Request request, Object data) {
+    public Flo<?, Response> write(Request request, Object data) {
         if (data == null) {
-            return request.createResponse().body(ResponseBody.empty()).wrapFuture();
+            return Flo.of(request.createResponse().body(ResponseBody.empty()));
+        } else if (data instanceof Flo wf) {
+            return wf.map((o) -> write(request, o));
         } else if (data instanceof CompletableFuture<?> future) {
-            return future.thenCompose(d -> write(request, d));
+            return Flo.of(future)
+                    .mapFuture(Function.identity())
+                    .observe(o -> System.out.println("FUTURE RESULT: " + o))
+                    .chain(o -> write(request, o))
+                    .observe(w -> System.out.println("POST FUTURE MAP: " + w))
+                    .cast(Response.class);
         } else if (data instanceof Response response) {
-            return response.wrapFuture();
+            return Flo.of(response);
         } else if (data instanceof ResponseBody body) {
-            return request.createResponse().body(body).wrapFuture();
+            return Flo.of(request.createResponse().body(body));
         } else if (data instanceof File file) {
-            return request.createResponse().body(ResponseBody.sendFile(file)).wrapFuture();
+            return Flo.of(request.createResponse().body(ResponseBody.sendFile(file)));
         } else if (data instanceof R r) {
-            return write(request, r.body()).thenApply(r::applyTo);
+            return write(request, r.body())
+                    .map(r::applyTo);
         } else {
             Response response = request.createResponse();
             for (BodyWriter writer : writers) {
                 if (writer.canWrite(response, data)) {
-                    return writer.write(response, data)
-                            .thenApply(response::body);
+                    return Flo.of(response.body(writer.write(response, data)));
+
                 }
             }
             throw new UnsupportedOperationException("unsupported response type: " + response.getClass());

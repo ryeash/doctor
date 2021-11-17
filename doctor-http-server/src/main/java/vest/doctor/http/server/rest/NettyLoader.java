@@ -57,7 +57,7 @@ public class NettyLoader implements ApplicationLoader {
         NettyHttpServer server = new NettyHttpServer(
                 conf,
                 doctorHttpHandler,
-                false);
+                true);
 
         providerRegistry.register(new AdHocProvider<>(NettyHttpServer.class, server, null));
 
@@ -75,11 +75,6 @@ public class NettyLoader implements ApplicationLoader {
         ConfigurationFacade httpConf = providerRegistry.configuration().subsection("doctor.netty.http.");
 
         DoctorHttpServerConfiguration conf = new DoctorHttpServerConfiguration();
-        conf.setTcpManagementThreads(httpConf.get("tcp.threads", 1, Integer::valueOf));
-        conf.setTcpThreadFormat(httpConf.get("tcp.threadNameFormat", "netty-tcp-%d"));
-        conf.setSocketBacklog(httpConf.get("tcp.socketBacklog", 1024, Integer::valueOf));
-        conf.setWorkerThreads(httpConf.get("worker.threads", 16, Integer::valueOf));
-        conf.setWorkerThreadFormat(httpConf.get("worker.threadNameFormat", "netty-worker-%d"));
 
         List<InetSocketAddress> bind = httpConf.getList("bind", Function.identity())
                 .stream()
@@ -87,6 +82,13 @@ public class NettyLoader implements ApplicationLoader {
                 .map(hp -> new InetSocketAddress(hp[0].trim(), Integer.parseInt(hp[1].trim())))
                 .collect(Collectors.toList());
         conf.setBindAddresses(bind);
+
+        conf.setTcpManagementThreads(httpConf.get("tcp.threads", 1, Integer::valueOf));
+        conf.setTcpThreadFormat(httpConf.get("tcp.threadFormat", "netty-tcp-%d"));
+        conf.setSocketBacklog(httpConf.get("tcp.socketBacklog", 1024, Integer::valueOf));
+        conf.setWorkerThreads(httpConf.get("worker.threads", 16, Integer::valueOf));
+        conf.setWorkerThreadFormat(httpConf.get("worker.threadFormat", "netty-worker-%d"));
+
 
         try {
             if (httpConf.get("ssl.selfSigned", false, Boolean::valueOf)) {

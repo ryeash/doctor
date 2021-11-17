@@ -104,7 +104,6 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
     }
 
     private final List<String> activeModules;
-    private final List<ApplicationLoader> loaders;
     private final ProviderIndex providerIndex;
     private final ConfigurationFacade configurationFacade;
     private final ShutdownContainer shutdownContainer;
@@ -129,13 +128,13 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         log.debug("Active modules: {}", this.activeModules);
         log.debug("Configuration: {}", this.configurationFacade);
 
-        this.loaders = new LinkedList<>();
-        this.loaders.add(new BuiltInApplicationLoader());
+        List<ApplicationLoader> loaders = new LinkedList<>();
+        loaders.add(new BuiltInApplicationLoader());
         for (ApplicationLoader applicationLoader : ServiceLoader.load(ApplicationLoader.class)) {
             loaders.add(applicationLoader);
         }
         if (additionalLoaders != null) {
-            loaders.addAll(List.of(additionalLoaders));
+            Collections.addAll(loaders, additionalLoaders);
         }
         loaders.sort(Prioritized.COMPARATOR);
         log.debug("Loaders (in order): {}", loaders.stream().map(l -> l + ":" + l.priority()).collect(Collectors.joining(", ")));

@@ -1,12 +1,10 @@
 package vest.doctor.http.server;
 
 import io.netty.buffer.ByteBuf;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
+import vest.doctor.flow.Flo;
 
 /**
- * Represents a multi part upload from the client.
+ * Represents a multi-part upload from the client.
  */
 public interface MultiPartData {
 
@@ -16,12 +14,9 @@ public interface MultiPartData {
     boolean valid();
 
     /**
-     * Register a listener to consume {@link Part}s as they arrive.
-     *
-     * @param consumer the action
-     * @return a future indicating when all parts have been received
+     * Get the parts of the multipart request body as an asynchronous flow.
      */
-    CompletableFuture<Boolean> receive(Consumer<Part> consumer);
+    Flo<?, Part> parts();
 
     /**
      * Represents a single part of a multipart upload.

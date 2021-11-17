@@ -15,26 +15,29 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import vest.doctor.flow.Flo;
 import vest.doctor.http.server.DoctorHttpServerConfiguration;
 import vest.doctor.http.server.ExceptionHandler;
 import vest.doctor.http.server.Handler;
+import vest.doctor.http.server.HttpException;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
 import vest.doctor.netty.common.Websocket;
 import vest.doctor.netty.common.WebsocketRouter;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 @Sharable
 public class DoctorHttpHandler extends SimpleChannelInboundHandler<HttpObject> {
-    private static final AttributeKey<StreamingRequestBody> CONTEXT_BODY = AttributeKey.newInstance("doctor.netty.contextBody");
+    private static final AttributeKey<Flo<HttpContent, HttpContent>> CONTEXT_BODY = AttributeKey.newInstance("doctor.netty.contextBody");
+    private static final AttributeKey<AtomicInteger> BODY_SIZE = AttributeKey.newInstance("doctor.netty.bodySize");
 
     private static final Logger log = LoggerFactory.getLogger(DoctorHttpHandler.class);
     private final DoctorHttpServerConfiguration config;
@@ -79,23 +82,37 @@ public class DoctorHttpHandler extends SimpleChannelInboundHandler<HttpObject> {
                     ctx.write(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE));
                 }
 
-                StreamingRequestBody body = new StreamingRequestBody(ctx, config.getMaxContentLength());
-                ctx.channel().attr(CONTEXT_BODY).set(body);
+                Flo<HttpContent, HttpContent> bodyData = Flo.adhoc(HttpContent.class)
+                        .takeWhile(httpContent -> !(httpContent instanceof LastHttpContent), true)
+                        .parallel(ctx.executor());
+                StreamingRequestBody body = new StreamingRequestBody(ctx, bodyData);
+                ctx.channel().attr(CONTEXT_BODY).set(bodyData);
+                ctx.channel().attr(BODY_SIZE).set(new AtomicInteger(0));
+
                 ServerRequest req = new ServerRequest(request, ctx, ctx.executor(), body);
+                Flo<?, Response> handle;
                 try {
-                    handler.handle(req)
-                            .exceptionallyCompose(error -> handleError(req, error))
-                            .thenAccept(response -> writeResponse(response.request(), response));
+                    handle = handler.handle(req);
                 } catch (Throwable t) {
-                    handleError(req, t).thenAccept(errorResponse -> writeResponse(req, errorResponse));
+                    handle = Flo.error(Response.class, t);
+                }
+                handle.recover(error -> handleError(req, error))
+                        .observe(this::writeResponse)
+                        .subscribe();
+                // ensure the body flow is subscribed
+                if (!req.body().used()) {
+                    req.body().ignored().subscribe();
                 }
             }
 
             if (object instanceof HttpContent content) {
-                StreamingRequestBody streamingRequestBody = ctx.channel().attr(CONTEXT_BODY).get();
-                if (streamingRequestBody != null) {
-                    HttpContent httpContent = content.retainedDuplicate();
-                    ctx.executor().submit(() -> streamingRequestBody.append(httpContent));
+                Flo<HttpContent, HttpContent> bodyFlow = ctx.channel().attr(CONTEXT_BODY).get();
+                AtomicInteger size = ctx.channel().attr(BODY_SIZE).get();
+                if (size.addAndGet(content.content().readableBytes()) > config.getMaxContentLength()) {
+                    throw new HttpException(HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE, "");
+                }
+                if (bodyFlow != null) {
+                    bodyFlow.onNext(content.retain());
                 }
             }
         } catch (Throwable t) {
@@ -104,20 +121,21 @@ public class DoctorHttpHandler extends SimpleChannelInboundHandler<HttpObject> {
         }
     }
 
-    private CompletionStage<Response> handleError(Request request, Throwable error) {
+    private Response handleError(Request request, Throwable error) {
         try {
             return exceptionHandler.handle(request, error);
         } catch (Throwable fatal) {
             log.error("error mapping exception", fatal);
             log.error("original exception", error);
             request.channelContext().close();
-            return CompletableFuture.completedFuture(request.createResponse().status(500));
+            return request.createResponse().status(500);
         }
     }
 
-    private void writeResponse(Request request, Response response) {
+    private void writeResponse(Response response) {
+        ChannelHandlerContext ctx = response.request().channelContext();
+        Request request = response.request();
         try {
-            ChannelHandlerContext ctx = request.channelContext();
             HttpResponse nettyResponse = new DefaultHttpResponse(HTTP_1_1, response.status(), response.headers());
             ctx.write(nettyResponse);
             ChannelFuture f = response.body().writeTo(ctx);
@@ -128,7 +146,7 @@ public class DoctorHttpHandler extends SimpleChannelInboundHandler<HttpObject> {
             }
         } catch (Throwable t) {
             log.error("error writing response", t);
-            request.channelContext().close();
+            ctx.close();
         }
     }
 

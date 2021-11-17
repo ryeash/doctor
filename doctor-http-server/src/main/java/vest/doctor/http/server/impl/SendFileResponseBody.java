@@ -6,9 +6,9 @@ import io.netty.channel.DefaultFileRegion;
 import io.netty.channel.FileRegion;
 import io.netty.handler.codec.http.HttpChunkedInput;
 import io.netty.handler.codec.http.LastHttpContent;
-import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedFile;
 import vest.doctor.http.server.ResponseBody;
+import vest.doctor.netty.common.HttpServerChannelInitializer;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,7 +26,7 @@ public class SendFileResponseBody implements ResponseBody {
 
     @Override
     public ChannelFuture writeTo(ChannelHandlerContext channel) {
-        if (channel.pipeline().get(SslHandler.class) != null) {
+        if (channel.pipeline().get(HttpServerChannelInitializer.SSL_CONTEXT) != null) {
             try {
                 RandomAccessFile raf = new RandomAccessFile(file, "r");
                 HttpChunkedInput httpChunkedInput = new HttpChunkedInput(new ChunkedFile(raf, 0, file.length(), 8192));

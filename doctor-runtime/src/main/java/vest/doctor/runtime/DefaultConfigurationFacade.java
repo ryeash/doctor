@@ -158,7 +158,7 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
 
             String subValue = get(subName, defaultValue);
             if (subValue == null) {
-                throw new IllegalArgumentException("missing interpolation value for property [" + subName + "] while trying to resolvePlaceholders in [" + value + "]");
+                throw new IllegalArgumentException("missing interpolation value for property [" + subName + "] while trying to resolve placeholders in [" + value + "]");
             }
             sb.append(subValue);
             i += MACRO_CLOSE.length();
@@ -209,14 +209,6 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
                 .peek(l -> sb.append('\n'))
                 .forEach(sb::append);
         return sb.toString();
-    }
-
-    public ConfigurationFacade copy() {
-        DefaultConfigurationFacade clone = new DefaultConfigurationFacade();
-        for (ConfigurationSource source : sources) {
-            clone.addSource(source);
-        }
-        return clone;
     }
 
     private <C extends Collection<T>, T> C spl(String fullyQualifiedPropertyName, C defaultValue, Function<String, T> converter, Supplier<C> collectionFactory) {

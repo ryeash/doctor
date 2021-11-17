@@ -13,6 +13,7 @@ module doctor.http.server {
     requires org.slf4j;
     requires doctor.runtime;
     requires doctor.netty.bundle;
+    requires doctor.util;
 
     exports vest.doctor.http.server;
     exports vest.doctor.http.server.impl;

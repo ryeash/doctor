@@ -1,9 +1,13 @@
-package vest.doctor.workflow;
+package vest.doctor.flow;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 import java.util.concurrent.Flow;
 
 abstract class AbstractProcessor<IN, OUT> implements Flow.Processor<IN, OUT> {
+    protected static final Logger log = LoggerFactory.getLogger(AbstractProcessor.class);
     protected Flow.Subscription subscription;
     protected Flow.Subscriber<? super OUT> subscriber;
 
@@ -25,6 +29,7 @@ abstract class AbstractProcessor<IN, OUT> implements Flow.Processor<IN, OUT> {
             try {
                 subscriber.onSubscribe(subscription);
             } catch (Throwable t) {
+                subscription.cancel();
                 onError(t);
             }
         }
@@ -33,18 +38,23 @@ abstract class AbstractProcessor<IN, OUT> implements Flow.Processor<IN, OUT> {
     @Override
     public void onError(Throwable throwable) {
         if (subscriber != null) {
-            subscriber.onError(throwable);
-        } else {
-            subscription.cancel();
+            try {
+                subscriber.onError(throwable);
+            } catch (Throwable t) {
+                log.error("error while processing error signal", t);
+                log.error("original exception", throwable);
+            }
         }
     }
 
     @Override
     public void onComplete() {
         if (subscriber != null) {
-            subscriber.onComplete();
-        } else {
-            subscription.cancel();
+            try {
+                subscriber.onComplete();
+            } catch (Throwable t) {
+                log.error("error while processing completion signal", t);
+            }
         }
     }
 
@@ -58,7 +68,7 @@ abstract class AbstractProcessor<IN, OUT> implements Flow.Processor<IN, OUT> {
             try {
                 subscriber.onNext(item);
             } catch (Throwable t) {
-                subscriber.onError(t);
+                onError(t);
             }
         }
     }

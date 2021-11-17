@@ -2,12 +2,10 @@ package vest.doctor.http.server.rest;
 
 import jakarta.inject.Provider;
 import vest.doctor.TypeInfo;
+import vest.doctor.flow.Flo;
 import vest.doctor.http.server.Handler;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 /**
  * Used internally to link a provider to a route.
@@ -29,29 +27,14 @@ public final class EndpointLinker<P> implements Handler {
     }
 
     @Override
-    public CompletionStage<Response> handle(Request request) throws Exception {
-        return endpointHandler.handle(provider.get(), request, readFutureBody(request))
-                .thenCompose(result -> convertResponse(request, result));
+    public Flo<?, Response> handle(Request request) throws Exception {
+        Flo<?, Object> body = bodyInterchange.read(request, bodyType);
+        return endpointHandler.handle(provider.get(), request, body)
+                .chain(response -> bodyInterchange.write(request, response));
     }
 
     @Override
     public String toString() {
         return summary;
-    }
-
-    private CompletableFuture<?> readFutureBody(Request request) {
-        return (bodyType == null)
-                ? request.body().ignored()
-                : bodyInterchange.read(request, bodyType);
-    }
-
-    private CompletionStage<Response> convertResponse(Request request, Object result) {
-        try {
-            return bodyInterchange.write(request, result);
-        } catch (Throwable t) {
-            CompletableFuture<Response> future = new CompletableFuture<>();
-            future.completeExceptionally(t);
-            return future;
-        }
     }
 }

@@ -1,4 +1,4 @@
-package vest.doctor.workflow;
+package vest.doctor.flow;
 
 /**
  * Emitter of values to downstream processors.

@@ -1,12 +1,13 @@
 package vest.doctor.jersey;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
 
 public class TestBeanParam {
-    @PathParam("pathParam")
     String pathParam;
     @QueryParam("queryParam")
     String queryParam;
@@ -14,11 +15,18 @@ public class TestBeanParam {
     String header;
     @CookieParam("_cookie")
     String cookie;
+    @Context
+    HttpServletRequest request;
+    @Attribute("start")
+    Long start;
+    @Provided
+    TestFilter testFilter;
 
     public String getPathParam() {
         return pathParam;
     }
 
+    @PathParam("pathParam")
     public void setPathParam(String pathParam) {
         this.pathParam = pathParam;
     }
@@ -45,5 +53,29 @@ public class TestBeanParam {
 
     public void setCookie(String cookie) {
         this.cookie = cookie;
+    }
+
+    public HttpServletRequest getRequest() {
+        return request;
+    }
+
+    public void setRequest(HttpServletRequest request) {
+        this.request = request;
+    }
+
+    public Long getStart() {
+        return start;
+    }
+
+    public void setStart(Long start) {
+        this.start = start;
+    }
+
+    public TestFilter getTestFilter() {
+        return testFilter;
+    }
+
+    public void setTestFilter(TestFilter testFilter) {
+        this.testFilter = testFilter;
     }
 }

@@ -31,7 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @Sharable
-final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
+public final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
     public static final String NETTY_REQUEST = "doctor.netty.request";
     public static final String NETTY_SERVLET_REQUEST = "doctor.netty.servlet.request";
     public static final String RESOURCE_CONFIG = "doctor.jersey.resourceConfig";

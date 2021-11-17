@@ -3,9 +3,11 @@ package vest.doctor.http.server.rest;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import vest.doctor.TypeInfo;
+import vest.doctor.flow.Flo;
 import vest.doctor.http.server.MultiPartData;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.RequestBody;
@@ -13,14 +15,9 @@ import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -37,6 +34,9 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
 
     @Override
     public boolean canRead(Request request, TypeInfo typeInfo) {
+        if (typeInfo == null) {
+            return true;
+        }
         Class<?> rawType = typeInfo.getRawType();
         for (Class<?> supportedType : SUPPORTED_TYPES) {
             if (supportedType.isAssignableFrom(rawType)) {
@@ -49,24 +49,26 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> CompletableFuture<T> read(Request request, TypeInfo typeInfo) {
-        return (CompletableFuture<T>) convertStandard(request, typeInfo);
+    public <T> Flo<?, T> read(Request request, TypeInfo typeInfo) {
+        return convertStandard(request, typeInfo)
+                .map(o -> (T) o);
     }
 
-    private Object convertStandard(Request request, TypeInfo typeInfo) {
-        Class<?> rawType = typeInfo.getRawType();
-        if (typeInfo.matches(ByteBuf.class)) {
-            return request.body().completionFuture();
+    private Flo<?, ?> convertStandard(Request request, TypeInfo typeInfo) {
+        if (typeInfo == null) {
+            return request.body().ignored();
+        } else if (typeInfo.matches(ByteBuf.class)) {
+            return request.body().asBuffer();
         } else if (typeInfo.matches(RequestBody.class)) {
-            return CompletableFuture.completedFuture(request.body());
+            return Flo.of(request.body());
         } else if (typeInfo.matches(InputStream.class)) {
             return request.body()
-                    .completionFuture()
-                    .thenApply(ByteBufInputStream::new);
+                    .asBuffer()
+                    .map(buf -> new ByteBufInputStream(buf, true));
         } else if (typeInfo.matches(byte[].class)) {
             return request.body()
-                    .completionFuture()
-                    .thenApply(buf -> {
+                    .asBuffer()
+                    .map(buf -> {
                         byte[] bytes = new byte[buf.readableBytes()];
                         buf.readBytes(bytes);
                         return bytes;
@@ -75,16 +77,15 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
             return request.body().asString();
         } else if (typeInfo.matches(ByteBuffer.class)) {
             return request.body()
-                    .completionFuture()
-                    .thenApply(ByteBuf::nioBuffer);
+                    .asBuffer()
+                    .map(ByteBuf::nioBuffer);
         } else if (typeInfo.matches(MultiPartData.class)) {
-            return CompletableFuture.completedFuture(request.multiPartBody());
-        } else if (CompletableFuture.class.isAssignableFrom(rawType)) {
-            return convertStandard(request, typeInfo.getParameterTypes().get(0));
+            return Flo.of(request.multiPartBody());
+        } else if (CompletableFuture.class.isAssignableFrom(typeInfo.getRawType())) {
+            return convertStandard(request, typeInfo.getParameterTypes().get(0))
+                    .map(CompletableFuture::completedFuture);
         } else {
-            CompletableFuture<?> future = new CompletableFuture<>();
-            future.completeExceptionally(new UnsupportedOperationException("parameter type is not supported: " + typeInfo));
-            return future;
+            return Flo.error(HttpContent.class, new UnsupportedOperationException("parameter type is not supported: " + typeInfo));
         }
     }
 
@@ -99,34 +100,24 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
     }
 
     @Override
-    public CompletableFuture<ResponseBody> write(Response response, Object data) {
-        if (data instanceof byte[]) {
+    public ResponseBody write(Response response, Object data) {
+        if (data instanceof byte[] bytes) {
             setContentTypeIfAbsent(response, HttpHeaderValues.APPLICATION_OCTET_STREAM);
-            return CompletableFuture.completedFuture(ResponseBody.of((byte[]) data));
-        } else if (data instanceof InputStream) {
+            return ResponseBody.of(bytes);
+        } else if (data instanceof InputStream is) {
             setContentTypeIfAbsent(response, HttpHeaderValues.APPLICATION_OCTET_STREAM);
-            return CompletableFuture.completedFuture(ResponseBody.of((InputStream) data));
-        } else if (data instanceof CharSequence) {
+            return ResponseBody.of(is);
+        } else if (data instanceof CharSequence chars) {
             setContentTypeIfAbsent(response, HttpHeaderValues.TEXT_PLAIN);
-            return CompletableFuture.completedFuture(ResponseBody.of(data.toString(), response.request().requestCharset(StandardCharsets.UTF_8)));
-        } else if (data instanceof ByteBuf) {
+            return ResponseBody.of(chars.toString(), response.request().requestCharset(StandardCharsets.UTF_8));
+        } else if (data instanceof ByteBuf buf) {
             setContentTypeIfAbsent(response, HttpHeaderValues.APPLICATION_OCTET_STREAM);
-            return CompletableFuture.completedFuture(ResponseBody.of((ByteBuf) data));
-        } else if (data instanceof ByteBuffer) {
+            return ResponseBody.of(buf);
+        } else if (data instanceof ByteBuffer buf) {
             setContentTypeIfAbsent(response, HttpHeaderValues.APPLICATION_OCTET_STREAM);
-            return CompletableFuture.completedFuture(ResponseBody.of(Unpooled.wrappedBuffer((ByteBuffer) data)));
-        } else if (data instanceof File) {
-            try {
-                File file = (File) data;
-                setContentTypeIfAbsent(response, Utils.getContentType(file));
-                FileChannel fc = FileChannel.open(file.toPath(), StandardOpenOption.READ);
-                MappedByteBuffer bb = fc.map(FileChannel.MapMode.READ_ONLY, 0, file.length());
-                ByteBuf body = Unpooled.wrappedBuffer(bb);
-                fc.close();
-                return CompletableFuture.completedFuture(ResponseBody.of(body));
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+            return ResponseBody.of(Unpooled.wrappedBuffer(buf));
+        } else if (data instanceof File file) {
+            return ResponseBody.sendFile(file);
         } else {
             throw new UnsupportedOperationException();
         }

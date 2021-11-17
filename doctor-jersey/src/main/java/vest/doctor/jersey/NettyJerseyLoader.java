@@ -13,6 +13,7 @@ import vest.doctor.event.EventBus;
 import vest.doctor.event.EventProducer;
 import vest.doctor.event.ServiceStarted;
 import vest.doctor.event.ServiceStopped;
+import vest.doctor.jersey.ext.DoctorCustomValueParamProvider;
 import vest.doctor.netty.common.HttpServerConfiguration;
 import vest.doctor.netty.common.NettyHttpServer;
 import vest.doctor.netty.common.PipelineCustomizer;
@@ -41,6 +42,9 @@ public final class NettyJerseyLoader implements ApplicationLoader {
             config.property((String) entry.getKey(), entry.getValue());
         }
 
+        config.register(new DoctorCustomValueParamProvider(providerRegistry));
+        config.register(new DoctorBinder(providerRegistry));
+
         providerRegistry.getProvidersWithAnnotation(Path.class)
                 .map(DoctorProvider::type)
                 .forEach(config::register);
@@ -48,11 +52,6 @@ public final class NettyJerseyLoader implements ApplicationLoader {
         providerRegistry.getProviders(ResourceConfigCustomizer.class)
                 .map(DoctorProvider::get)
                 .forEach(c -> c.customize(config));
-
-        config.register(DoctorCustomValueParamProvider.class);
-        config.register(ContextParamsProvider.class);
-        config.register(new DoctorBinder(providerRegistry));
-
 
         DoctorJerseyContainer container = new DoctorJerseyContainer(config);
         NettyHttpServer httpServer = new NettyHttpServer(

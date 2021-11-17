@@ -1,6 +1,7 @@
 package vest.doctor.http.server.impl;
 
 import vest.doctor.Prioritized;
+import vest.doctor.flow.Flo;
 import vest.doctor.http.server.DoctorHttpServerConfiguration;
 import vest.doctor.http.server.Filter;
 import vest.doctor.http.server.Handler;
@@ -19,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -80,7 +80,6 @@ public final class Router implements Handler {
     private static final String DEBUG_START_ATTRIBUTE = "doctor.netty.router.debugStart";
     private static final String FILTER_ITERATOR = "doctor.netty.router.filterIterator";
 
-    private static final Handler NOT_FOUND = new NotFound();
     private final List<FilterAndPath> filters = new LinkedList<>();
     private final Map<io.netty.handler.codec.http.HttpMethod, List<Route>> routes = new TreeMap<>();
     private final DoctorHttpServerConfiguration conf;
@@ -162,7 +161,7 @@ public final class Router implements Handler {
     }
 
     @Override
-    public CompletionStage<Response> handle(Request request) throws Exception {
+    public Flo<?, Response> handle(Request request) throws Exception {
         if (conf.isDebugRequestRouting()) {
             request.attribute(DEBUG_START_ATTRIBUTE, System.nanoTime());
             addTraceMessage(request, "request " + request.method() + " " + request.path());
@@ -173,14 +172,10 @@ public final class Router implements Handler {
             Iterator<FilterAndPath> iterator = filters.iterator();
             request.attribute(FILTER_ITERATOR, iterator);
         }
-        CompletionStage<Response> response = doNextFilter(request);
-        if (conf.isDebugRequestRouting()) {
-            response.thenAccept(this::attachRouteDebugging);
-        }
-        return response;
+        return doNextFilter(request);
     }
 
-    private CompletionStage<Response> doNextFilter(Request request) throws Exception {
+    private Flo<?, Response> doNextFilter(Request request) throws Exception {
         Iterator<FilterAndPath> iterator = request.attribute(FILTER_ITERATOR);
         while (iterator.hasNext()) {
             FilterAndPath next = iterator.next();
@@ -193,7 +188,9 @@ public final class Router implements Handler {
                 return filter.filter(request, this::doNextFilter);
             }
         }
-        return selectHandler(request).handle(request);
+        return selectHandler(request)
+                .handle(request)
+                .observe(this::attachRouteDebugging);
     }
 
     private Handler selectHandler(Request request) {
@@ -210,7 +207,7 @@ public final class Router implements Handler {
         if (conf.isDebugRequestRouting()) {
             addTraceMessage(request, "no matching route found");
         }
-        return NOT_FOUND;
+        return NotFound.INSTANCE;
     }
 
     private Handler selectHandler(Request request, io.netty.handler.codec.http.HttpMethod method) {
@@ -292,6 +289,9 @@ public final class Router implements Handler {
     }
 
     void attachRouteDebugging(Response response) {
+        if (!conf.isDebugRequestRouting()) {
+            return;
+        }
         List<String> tracing = response.request().attribute(DEBUG_ROUTING_ATTRIBUTE);
         for (int i = 0; i < tracing.size(); i++) {
             response.header("X-RouteTracing-" + i, tracing.get(i));

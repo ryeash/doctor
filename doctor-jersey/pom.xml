@@ -12,7 +12,7 @@
     <artifactId>doctor-jersey</artifactId>
 
     <properties>
-        <jersey.version>3.0.2</jersey.version>
+        <jersey.version>3.0.3</jersey.version>
     </properties>
 
     <dependencyManagement>

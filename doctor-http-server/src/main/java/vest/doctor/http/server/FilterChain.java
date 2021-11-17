@@ -1,6 +1,6 @@
 package vest.doctor.http.server;
 
-import java.util.concurrent.CompletionStage;
+import vest.doctor.flow.Flo;
 
 /**
  * A handle to the next step in the filter chain.
@@ -15,5 +15,5 @@ public interface FilterChain {
      * @return the future response
      * @throws Exception for any error processing the filter chain
      */
-    CompletionStage<Response> next(Request request) throws Exception;
+    Flo<?, Response> next(Request request) throws Exception;
 }

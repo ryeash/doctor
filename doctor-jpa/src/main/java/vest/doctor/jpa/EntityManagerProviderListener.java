@@ -63,7 +63,7 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
         stage2.line("EntityManager ", em, " = null;");
         stage2.line("try{");
         stage2.line(em, " = ", emf, ".createEntityManager(SynchronizationType.", persistenceContext.synchronization(), ", ", properties, ");");
-        stage2.line("} catch (" + IllegalStateException.class.getSimpleName() + " e) {");
+        stage2.line("} catch (", IllegalStateException.class.getSimpleName(), " e) {");
         stage2.line("log.warn(\"could not create entity manager with explicit synchronization type, falling back; error message: {}\", e.getMessage());");
         stage2.line("log.debug(\"full error stack\", e);");
         stage2.line(em, " = ", emf, ".createEntityManager(", properties, ");");

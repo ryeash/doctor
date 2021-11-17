@@ -3,8 +3,6 @@ package vest.doctor.http.server;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
-import java.util.concurrent.CompletableFuture;
-
 /**
  * Models a mutable HTTP response.
  */
@@ -73,11 +71,4 @@ public interface Response {
      * Get the request that this response is paired to.
      */
     Request request();
-
-    /**
-     * Wrap this response in a completed {@link CompletableFuture}.
-     */
-    default CompletableFuture<Response> wrapFuture() {
-        return CompletableFuture.completedFuture(this);
-    }
 }

@@ -7,20 +7,18 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufInputStream;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import vest.doctor.TypeInfo;
+import vest.doctor.flow.Flo;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
 import vest.doctor.http.server.rest.BodyReader;
 import vest.doctor.http.server.rest.BodyWriter;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 public class JacksonInterchange implements BodyReader, BodyWriter {
@@ -38,36 +36,28 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> CompletableFuture<T> read(Request request, TypeInfo typeInfo) {
-        CompletableFuture<?> future;
+    public <T> Flo<?, T> read(Request request, TypeInfo typeInfo) {
         if (typeInfo.getRawType() == CompletableFuture.class) {
-            future = asyncRead(request, typeInfo);
+            return internalRead(request, typeInfo.getParameterTypes().get(0))
+                    .map(CompletableFuture::completedFuture)
+                    .map(o -> (T) o);
         } else {
-            future = request.body().completionFuture().thenApply(buf -> readValue(buf, typeInfo));
-        }
-        return (CompletableFuture<T>) future;
-    }
-
-    private <T> T readValue(ByteBuf buf, TypeInfo typeInfo) {
-        try (InputStream input = new ByteBufInputStream(buf, true)) {
-            return objectMapper.readValue(input, jacksonType(objectMapper, typeInfo));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            return internalRead(request, typeInfo)
+                    .map(o -> (T) o);
         }
     }
 
-    private CompletableFuture<?> asyncRead(Request request, TypeInfo typeInfo) {
-        if (!typeInfo.hasParameterizedTypes() || typeInfo.getParameterTypes().size() != 1) {
-            throw new IllegalArgumentException("asynchronous bodies must be CompletableFutures with exactly one parameterized type: " + typeInfo);
-        }
-        TypeInfo paramType = typeInfo.getParameterTypes().get(0);
+    private Flo<?, ?> internalRead(Request request, TypeInfo typeInfo) {
         AsyncMapper<?> asyncMapper;
-        if (paramType.hasParameterizedTypes()) {
-            asyncMapper = new AsyncMapper<>(objectMapper, jacksonType(objectMapper, paramType));
+        if (typeInfo.hasParameterizedTypes()) {
+            asyncMapper = new AsyncMapper<>(objectMapper, jacksonType(objectMapper, typeInfo));
         } else {
-            asyncMapper = new AsyncMapper<>(objectMapper, paramType.getRawType());
+            asyncMapper = new AsyncMapper<>(objectMapper, typeInfo.getRawType());
         }
-        return request.body().asyncRead(asyncMapper::feed);
+        return request.body()
+                .flow()
+                .map(asyncMapper::feed)
+                .keep(Objects::nonNull);
     }
 
     @Override
@@ -76,13 +66,13 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
     }
 
     @Override
-    public CompletableFuture<ResponseBody> write(Response ctx, Object response) {
+    public ResponseBody write(Response ctx, Object response) {
         try {
             byte[] bytes = objectMapper.writeValueAsBytes(response);
             if (!ctx.headers().contains(HttpHeaderNames.CONTENT_TYPE)) {
                 ctx.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json;charset=utf-8");
             }
-            return CompletableFuture.completedFuture(ResponseBody.of(bytes));
+            return ResponseBody.of(bytes);
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }
