@@ -112,7 +112,7 @@ public class JAXRSEndpoint {
         Assert.assertEquals(beanParam.getHeader(), header);
         Assert.assertEquals(beanParam.getCookie(), cookie);
         Assert.assertNotNull(beanParam.getRequest());
-        Assert.assertTrue(TimeUnit.NANOSECONDS.convert(System.nanoTime() - beanParam.getStart(), TimeUnit.SECONDS) < 5);
+        Assert.assertTrue(TimeUnit.SECONDS.convert(System.nanoTime() - beanParam.getStart(), TimeUnit.NANOSECONDS) < 5);
         Assert.assertNotNull(beanParam.getTestFilter());
         return pathParam + " " + queryParam + " " + header + " " + cookie;
     }
