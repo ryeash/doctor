@@ -8,6 +8,7 @@ import vest.doctor.flow.Flo;
 import vest.doctor.http.server.RequestBody;
 
 import java.nio.charset.StandardCharsets;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -22,7 +23,7 @@ public class StreamingRequestBody implements RequestBody {
             (a, b) -> a);
 
     private final ByteBufAllocator alloc;
-    private final Flo<?, HttpContent> dataFlow;
+    private Flo<?, HttpContent> dataFlow;
     private volatile boolean used = false;
 
     public StreamingRequestBody(ChannelHandlerContext ctx, Flo<?, HttpContent> dataFlow) {
@@ -37,6 +38,14 @@ public class StreamingRequestBody implements RequestBody {
         }
         used = true;
         return dataFlow;
+    }
+
+    @Override
+    public void inspect(UnaryOperator<Flo<?, HttpContent>> inspection) {
+        if (used) {
+            throw new IllegalStateException("the request body has already been consumed");
+        }
+        this.dataFlow = inspection.apply(dataFlow);
     }
 
     @Override

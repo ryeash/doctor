@@ -17,8 +17,7 @@ public class TCNettyHandler implements Handler {
     @Override
     @Endpoint(method = HttpMethod.ANY)
     public Flo<?, Response> handle(Request request) {
-        return request
-                .body()
+        return request.body()
                 .ignored()
                 .map(v -> request.createResponse()
                         .body(ResponseBody.of("rawhandler")));

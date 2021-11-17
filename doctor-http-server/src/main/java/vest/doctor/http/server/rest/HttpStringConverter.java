@@ -16,7 +16,6 @@ public class HttpStringConverter implements StringConversionGenerator {
     public String converterFunction(AnnotationProcessorContext context, TypeMirror targetType) {
         if (ProcessorUtils.isCompatibleWith(context, targetType, Locale.class)) {
             return "str -> java.util.Locale.forLanguageTag(str.contains(\";\") ? str.substring(0, str.indexOf(';')) : str)";
-//            return "java.util.Locale::forLanguageTag";
         } else if (ProcessorUtils.isCompatibleWith(context, targetType, ZonedDateTime.class)) {
             return "str -> java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME.parse(str, java.time.ZonedDateTime::from)";
         } else if (ProcessorUtils.isCompatibleWith(context, targetType, LocalDateTime.class)) {
