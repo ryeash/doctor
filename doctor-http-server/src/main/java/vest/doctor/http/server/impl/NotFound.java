@@ -7,6 +7,7 @@ import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
 
 final class NotFound implements Handler {
+    static final Handler INSTANCE = new NotFound();
 
     @Override
     public Flo<?, Response> handle(Request request) {

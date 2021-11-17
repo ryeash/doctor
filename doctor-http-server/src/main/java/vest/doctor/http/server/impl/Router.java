@@ -80,7 +80,6 @@ public final class Router implements Handler {
     private static final String DEBUG_START_ATTRIBUTE = "doctor.netty.router.debugStart";
     private static final String FILTER_ITERATOR = "doctor.netty.router.filterIterator";
 
-    private static final Handler NOT_FOUND = new NotFound();
     private final List<FilterAndPath> filters = new LinkedList<>();
     private final Map<io.netty.handler.codec.http.HttpMethod, List<Route>> routes = new TreeMap<>();
     private final DoctorHttpServerConfiguration conf;
@@ -208,7 +207,7 @@ public final class Router implements Handler {
         if (conf.isDebugRequestRouting()) {
             addTraceMessage(request, "no matching route found");
         }
-        return NOT_FOUND;
+        return NotFound.INSTANCE;
     }
 
     private Handler selectHandler(Request request, io.netty.handler.codec.http.HttpMethod method) {
