@@ -35,9 +35,11 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import java.net.URI;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -54,6 +56,8 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
     private ClassBuilder config;
     private MethodBuilder stage5;
 
+    private final Map<String, String> beanParamTypeToMethod = new HashMap<>();
+
     @Override
     public void process(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
         if (providerDefinition.annotationSource().getAnnotation(Path.class) == null) {
@@ -61,7 +65,6 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         }
         initialize(context);
 
-        TypeElement endpointType = providerDefinition.providedType();
         String endpointRef = "endpoint" + context.nextId();
         stage5.line("Provider<", providerDefinition.providedType(), "> ", endpointRef, " = {{providerRegistry}}.getProvider(", providerDefinition.providedType(), ".class, ", providerDefinition.qualifier(), ");");
         String[] roots = Optional.ofNullable(providerDefinition.annotationSource().getAnnotation(Path.class))
@@ -105,7 +108,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                         }
                         for (String fullPath : paths(roots, endpoint.path())) {
                             for (String httMethod : endpoint.method()) {
-                                addRoute(stage5, context, httMethod, fullPath, endpointType, endpointRef, method);
+                                addRoute(stage5, context, httMethod, fullPath, endpointRef, method);
                                 hasRoutes.set(true);
                             }
                         }
@@ -166,13 +169,12 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         return allPaths;
     }
 
-    private static void addRoute(MethodBuilder initialize,
-                                 AnnotationProcessorContext context,
-                                 String httpMethod,
-                                 String path,
-                                 TypeElement endpointType,
-                                 String endpointRef,
-                                 ExecutableElement method) {
+    private void addRoute(MethodBuilder initialize,
+                          AnnotationProcessorContext context,
+                          String httpMethod,
+                          String path,
+                          String endpointRef,
+                          ExecutableElement method) {
         boolean isVoid = method.getReturnType().getKind() == TypeKind.VOID;
 
         String summary = method.getEnclosingElement().asType() + "#" + method.getSimpleName() + method.getParameters().stream().map(VariableElement::asType).map(String::valueOf).collect(Collectors.joining(", ", "(", ")"));
@@ -180,11 +182,8 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                 ProcessorUtils.escapeStringForCode(httpMethod), '"',
                 ",\"", ProcessorUtils.escapeStringForCode(path), "\", new EndpointLinker<>(",
                 endpointRef, ',', buildTypeInfoCode(method), ',', "bodyInterchange", ",\"", summary, "\",");
-        initialize.line("(ep, req, flow) -> {");
-        initialize.line("return flow.affix(ep, req).step((tuple, subscription, emitter) -> {");
-        initialize.line("Object b = tuple.first();");
-        initialize.line(endpointType, " endpoint = tuple.second();");
-        initialize.line("Request request = tuple.third();");
+        initialize.line("(endpoint, request, flow) -> {");
+        initialize.line("return flow.step((b, subscription, emitter) -> {");
 
         String parameters = method.getParameters().stream()
                 .map(p -> parameterWriting(context, p, "request"))
@@ -204,7 +203,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
 
     private static final List<Class<?>> SUPPORTED_CLASSES = List.of(Request.class, Response.class, URI.class);
 
-    private static String parameterWriting(AnnotationProcessorContext context, VariableElement parameter, String contextRef) {
+    private String parameterWriting(AnnotationProcessorContext context, VariableElement parameter, String contextRef) {
         try {
             return parameterWriting(context, parameter, parameter, contextRef);
         } catch (Throwable t) {
@@ -212,7 +211,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         }
     }
 
-    private static String parameterWriting(AnnotationProcessorContext context, VariableElement parameter, Element annotationSource, String contextRef) {
+    private String parameterWriting(AnnotationProcessorContext context, VariableElement parameter, Element annotationSource, String contextRef) {
         if (parameter.asType().toString().equals(Request.class.getCanonicalName())) {
             return contextRef;
         } else if (parameter.asType().toString().equals(Response.class.getCanonicalName())) {
@@ -237,7 +236,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
             case Attribute:
                 return contextRef + ".attribute(\"" + name + "\")";
             case Bean:
-                return beanParameterCode(context, parameter, contextRef);
+                return beanParamBuilderCall(context, parameter, contextRef) + "(" + contextRef + ")";
             case Provided:
                 return ProcessorUtils.providerLookupCode(context, parameter, Constants.PROVIDER_REGISTRY);
         }
@@ -268,8 +267,16 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         return sb.toString();
     }
 
-    private static String beanParameterCode(AnnotationProcessorContext context, VariableElement parameter, String contextRef) {
+    private String beanParamBuilderCall(AnnotationProcessorContext context, VariableElement parameter, String contextRef) {
         TypeMirror typeMirror = parameter.asType();
+        String typeWithoutParams = ProcessorUtils.typeWithoutParameters(typeMirror);
+        if (beanParamTypeToMethod.containsKey(typeWithoutParams)) {
+            return beanParamTypeToMethod.get(typeWithoutParams);
+        }
+        String methodName = "beanParam" + context.nextId();
+        beanParamTypeToMethod.put(typeWithoutParams, methodName);
+        MethodBuilder bean = config.newMethod("public static ", typeWithoutParams, " " + methodName + "(Request ", contextRef, ")");
+
         TypeElement beanType = context.toTypeElement(typeMirror);
         ExecutableElement constructor = injectableConstructor(beanType);
 
@@ -282,12 +289,13 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                 .map(p -> parameterWriting(context, p, contextRef))
                 .collect(Collectors.joining(", ", "(", ")"));
 
-        StringBuilder sb = new StringBuilder("new " + POJOHelper.class.getCanonicalName() + "<>(new " + ProcessorUtils.typeWithoutParameters(typeMirror) + diamond + constructorParams + ")");
+        bean.line(ProcessorUtils.typeWithoutParameters(typeMirror), " bean = new ", ProcessorUtils.typeWithoutParameters(typeMirror), diamond, constructorParams, ";");
+
         for (VariableElement field : ElementFilter.fieldsIn(beanType.getEnclosedElements())) {
             if (supportedParam(field)) {
                 ExecutableElement setter = findCorrespondingSetter(context, field, beanType);
                 VariableElement setterParameter = setter.getParameters().get(0);
-                sb.append("\n.with(").append(beanType).append("::").append(setter.getSimpleName()).append(", ").append(parameterWriting(context, setterParameter, field, contextRef)).append(")");
+                bean.line("bean.", setter.getSimpleName(), "(", parameterWriting(context, setterParameter, field, contextRef), ");");
             }
         }
         for (ExecutableElement method : ElementFilter.methodsIn(beanType.getEnclosedElements())) {
@@ -296,11 +304,11 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                     throw new CodeProcessingException("setters in BeanParam objects must have one and only one parameter", method);
                 }
                 VariableElement setterParameter = method.getParameters().get(0);
-                sb.append(".with(").append(beanType).append("::").append(method.getSimpleName()).append(", ").append(parameterWriting(context, setterParameter, method, contextRef)).append(")");
+                bean.line("bean.", method.getSimpleName(), "(", parameterWriting(context, setterParameter, method, contextRef), ");");
             }
         }
-        sb.append(".get()");
-        return sb.toString();
+        bean.line("return bean;");
+        return methodName;
     }
 
     private static ExecutableElement injectableConstructor(TypeElement typeElement) {

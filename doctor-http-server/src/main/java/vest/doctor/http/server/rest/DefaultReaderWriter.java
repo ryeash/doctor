@@ -50,13 +50,12 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
     @Override
     @SuppressWarnings("unchecked")
     public <T> Flo<?, T> read(Request request, TypeInfo typeInfo) {
-        return convertStandard(request, typeInfo)
-                .map(o -> (T) o);
+        return convertStandard(request, typeInfo).map(o -> (T) o);
     }
 
     private Flo<?, ?> convertStandard(Request request, TypeInfo typeInfo) {
         if (typeInfo == null) {
-            return request.body().ignored();
+            return Flo.of(null);
         } else if (typeInfo.matches(ByteBuf.class)) {
             return request.body().asBuffer();
         } else if (typeInfo.matches(RequestBody.class)) {
@@ -69,16 +68,26 @@ public class DefaultReaderWriter implements BodyReader, BodyWriter {
             return request.body()
                     .asBuffer()
                     .map(buf -> {
-                        byte[] bytes = new byte[buf.readableBytes()];
-                        buf.readBytes(bytes);
-                        return bytes;
+                        try {
+                            byte[] bytes = new byte[buf.readableBytes()];
+                            buf.readBytes(bytes);
+                            return bytes;
+                        } finally {
+                            buf.release();
+                        }
                     });
         } else if (typeInfo.matches(CharSequence.class)) {
             return request.body().asString();
         } else if (typeInfo.matches(ByteBuffer.class)) {
             return request.body()
                     .asBuffer()
-                    .map(ByteBuf::nioBuffer);
+                    .map(buf -> {
+                        try {
+                            return buf.nioBuffer();
+                        } finally {
+                            buf.release();
+                        }
+                    });
         } else if (typeInfo.matches(MultiPartData.class)) {
             return Flo.of(request.multiPartBody());
         } else if (CompletableFuture.class.isAssignableFrom(typeInfo.getRawType())) {

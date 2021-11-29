@@ -1,6 +1,7 @@
 package vest.doctor.http.server;
 
 import vest.doctor.flow.Flo;
+import vest.doctor.tuple.Tuple;
 
 /**
  * Synchronous version of the {@link Handler} interface.
@@ -12,17 +13,16 @@ public interface SynchronousHandler extends Handler {
     default Flo<?, Response> handle(Request request) {
         return request.body()
                 .asBuffer()
-                .map(buffer -> {
+                .map2(buffer -> {
                     try {
                         byte[] buf = new byte[buffer.readableBytes()];
                         buffer.readBytes(buf);
-                        return buf;
+                        return Tuple.of(request, buf);
                     } finally {
                         buffer.release();
                     }
                 })
-                .affix(request)
-                .map(pair -> handleSync(pair.second(), pair.first()));
+                .map(this::handleSync);
     }
 
     /**
