@@ -79,9 +79,9 @@ public class TCNettyEndpoint {
     }
 
     @Endpoint(method = HttpMethod.POST, path = "/pojo")
-    public CompletableFuture<String> pojo(@Param(type = Body) CompletableFuture<Person> person) {
+    public Flo<?, String> pojo(@Param(type = Body) Person person) {
         log.info("pojo endpoint");
-        return person.thenApply(p -> {
+        return Flo.of(person).map(p -> {
             try {
                 return new ObjectMapper().writeValueAsString(p);
             } catch (JsonProcessingException e) {

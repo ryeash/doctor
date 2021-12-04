@@ -16,7 +16,7 @@ public class ServerResponse implements Response {
 
     private HttpResponseStatus status = HttpResponseStatus.OK;
     private final HttpHeaders headers = new DefaultHttpHeaders(false);
-    private ResponseBody body = EmptyBody.INSTANCE;
+    private ResponseBody body = ResponseBody.empty();
 
     public ServerResponse(Request request) {
         this.request = request;
@@ -59,7 +59,7 @@ public class ServerResponse implements Response {
 
     @Override
     public Response body(ResponseBody body) {
-        this.body = Objects.requireNonNullElse(body, EmptyBody.INSTANCE);
+        this.body = Objects.requireNonNullElse(body, ResponseBody.empty());
         return this;
     }
 

@@ -16,7 +16,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * A utility class for building an endpoint response.
+ * A utility class for building an endpoint response. Can be returned by endpoint methods
+ * as a shorthand to using {@link Request#createResponse()}.
  */
 public class R {
 

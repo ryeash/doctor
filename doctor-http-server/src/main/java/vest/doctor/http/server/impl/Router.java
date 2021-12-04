@@ -1,5 +1,6 @@
 package vest.doctor.http.server.impl;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
 import vest.doctor.Prioritized;
 import vest.doctor.flow.Flo;
 import vest.doctor.http.server.DoctorHttpServerConfiguration;
@@ -7,6 +8,7 @@ import vest.doctor.http.server.Filter;
 import vest.doctor.http.server.Handler;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
+import vest.doctor.http.server.ResponseBody;
 import vest.doctor.http.server.rest.HttpMethod;
 import vest.doctor.netty.common.HttpServerConfiguration;
 import vest.doctor.netty.common.PathSpec;
@@ -70,6 +72,12 @@ public final class Router implements Handler {
      * A path specification string that will match any requested path.
      */
     public static final String MATCH_ALL_PATH_SPEC = "/*";
+
+    public static final Handler NOT_FOUND = request -> request.body()
+            .ignored()
+            .map(request::createResponse)
+            .map(r -> r.status(HttpResponseStatus.NOT_FOUND)
+                    .body(ResponseBody.empty()));
 
     /**
      * The ANY method. This method can be used to create a route that responds to any HTTP method.
@@ -207,7 +215,7 @@ public final class Router implements Handler {
         if (conf.isDebugRequestRouting()) {
             addTraceMessage(request, "no matching route found");
         }
-        return NotFound.INSTANCE;
+        return NOT_FOUND;
     }
 
     private Handler selectHandler(Request request, io.netty.handler.codec.http.HttpMethod method) {

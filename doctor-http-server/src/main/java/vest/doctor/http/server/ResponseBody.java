@@ -7,8 +7,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.FileRegion;
 import io.netty.handler.codec.http.DefaultHttpContent;
 import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.LastHttpContent;
 import vest.doctor.http.server.impl.DefaultResponseBody;
-import vest.doctor.http.server.impl.EmptyBody;
 import vest.doctor.http.server.impl.SendFileResponseBody;
 import vest.doctor.http.server.impl.StreamingResponseBody;
 
@@ -22,6 +22,7 @@ import java.util.Objects;
 /**
  * Defines an object that can be sent as an HTTP response body.
  */
+@FunctionalInterface
 public interface ResponseBody {
 
     /**
@@ -51,7 +52,7 @@ public interface ResponseBody {
      */
     static ResponseBody of(String str, Charset charset) {
         if (str == null || str.isEmpty()) {
-            return EmptyBody.INSTANCE;
+            return empty();
         } else {
             return new DefaultResponseBody(Unpooled.wrappedBuffer(str.getBytes(charset)));
         }
@@ -65,7 +66,7 @@ public interface ResponseBody {
      */
     static ResponseBody of(byte[] content) {
         if (content == null) {
-            return EmptyBody.INSTANCE;
+            return empty();
         } else {
             return new DefaultResponseBody(Unpooled.wrappedBuffer(content));
         }
@@ -130,6 +131,6 @@ public interface ResponseBody {
      * An empty body.
      */
     static ResponseBody empty() {
-        return EmptyBody.INSTANCE;
+        return channel -> channel.write(LastHttpContent.EMPTY_LAST_CONTENT);
     }
 }
