@@ -380,6 +380,7 @@ public final class StandardProcessors {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public void onComplete() {
             if (state.compareAndSet(State.RUNNING, State.AWAITING)) {
                 onNext((I) LAST);

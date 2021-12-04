@@ -7,6 +7,7 @@ import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
+import vest.doctor.flow.Flo;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
@@ -132,5 +133,12 @@ public class TCNettyEndpoint {
         return body
                 .thenApply(ResponseBody::of)
                 .thenApplyAsync(response::body);
+    }
+
+    @Endpoint(method = HttpMethod.POST, path = "/flo")
+    public Flo<?, R> floResponse(Request request) {
+        return request.body()
+                .asString()
+                .map(R::ok);
     }
 }

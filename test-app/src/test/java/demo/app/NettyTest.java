@@ -246,6 +246,15 @@ public class NettyTest extends AbstractTestAppTest {
     }
 
     @Test
+    public void flo() {
+        req().body("toast")
+                .post("/netty/flo")
+                .then()
+                .statusCode(200)
+                .body(equalTo("toast"));
+    }
+
+    @Test
     public void ws() throws Exception {
         String destUri = "ws://localhost:61233/grumpy";
         WebSocketClient client = new WebSocketClient();

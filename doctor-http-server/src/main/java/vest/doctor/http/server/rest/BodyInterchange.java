@@ -67,14 +67,12 @@ public final class BodyInterchange {
     public Flo<?, Response> write(Request request, Object data) {
         if (data == null) {
             return Flo.of(request.createResponse().body(ResponseBody.empty()));
-        } else if (data instanceof Flo wf) {
-            return wf.map((o) -> write(request, o));
+        } else if (data instanceof Flo<?, ?> flo) {
+            return flo.chain((o) -> write(request, o));
         } else if (data instanceof CompletableFuture<?> future) {
             return Flo.of(future)
                     .mapFuture(Function.identity())
-                    .observe(o -> System.out.println("FUTURE RESULT: " + o))
                     .chain(o -> write(request, o))
-                    .observe(w -> System.out.println("POST FUTURE MAP: " + w))
                     .cast(Response.class);
         } else if (data instanceof Response response) {
             return Flo.of(response);
@@ -90,7 +88,6 @@ public final class BodyInterchange {
             for (BodyWriter writer : writers) {
                 if (writer.canWrite(response, data)) {
                     return Flo.of(response.body(writer.write(response, data)));
-
                 }
             }
             throw new UnsupportedOperationException("unsupported response type: " + response.getClass());

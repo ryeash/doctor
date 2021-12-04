@@ -2,6 +2,7 @@ package vest.doctor.http.server;
 
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.ssl.SslContext;
+import vest.doctor.function.ThrowingBiFunction;
 import vest.doctor.http.server.impl.CompositeExceptionHandler;
 import vest.doctor.http.server.impl.DoctorHttpHandler;
 import vest.doctor.http.server.impl.Router;
@@ -248,8 +249,8 @@ public final class HttpServerBuilder {
      * @return this builder
      * @see #route(HttpMethod, String, Handler)
      */
-    public HttpServerBuilder getSync(String pathSpec, SynchronousHandler handler) {
-        return route(HttpMethod.GET, pathSpec, handler);
+    public HttpServerBuilder getSync(String pathSpec, ThrowingBiFunction<Request, byte[], Response> handler) {
+        return routeSync(HttpMethod.GET, pathSpec, handler);
     }
 
     /**
@@ -260,8 +261,8 @@ public final class HttpServerBuilder {
      * @return this builder
      * @see #route(HttpMethod, String, Handler)
      */
-    public HttpServerBuilder putSync(String pathSpec, SynchronousHandler handler) {
-        return route(HttpMethod.PUT, pathSpec, handler);
+    public HttpServerBuilder putSync(String pathSpec, ThrowingBiFunction<Request, byte[], Response> handler) {
+        return routeSync(HttpMethod.PUT, pathSpec, handler);
     }
 
     /**
@@ -272,8 +273,8 @@ public final class HttpServerBuilder {
      * @return this builder
      * @see #route(HttpMethod, String, Handler)
      */
-    public HttpServerBuilder postSync(String pathSpec, SynchronousHandler handler) {
-        return route(HttpMethod.POST, pathSpec, handler);
+    public HttpServerBuilder postSync(String pathSpec, ThrowingBiFunction<Request, byte[], Response> handler) {
+        return routeSync(HttpMethod.POST, pathSpec, handler);
     }
 
     /**
@@ -284,8 +285,8 @@ public final class HttpServerBuilder {
      * @return this builder
      * @see #route(HttpMethod, String, Handler)
      */
-    public HttpServerBuilder deleteSync(String pathSpec, SynchronousHandler handler) {
-        return route(HttpMethod.DELETE, pathSpec, handler);
+    public HttpServerBuilder deleteSync(String pathSpec, ThrowingBiFunction<Request, byte[], Response> handler) {
+        return routeSync(HttpMethod.DELETE, pathSpec, handler);
     }
 
     /**
@@ -297,8 +298,8 @@ public final class HttpServerBuilder {
      * @return this builder
      * @see #route(HttpMethod, String, Handler)
      */
-    public HttpServerBuilder anySync(String pathSpec, SynchronousHandler handler) {
-        return route(Router.ANY, pathSpec, handler);
+    public HttpServerBuilder anySync(String pathSpec, ThrowingBiFunction<Request, byte[], Response> handler) {
+        return routeSync(Router.ANY, pathSpec, handler);
     }
 
     /**
@@ -311,6 +312,19 @@ public final class HttpServerBuilder {
      */
     public HttpServerBuilder route(String method, String path, Handler handler) {
         router.route(method, path, handler);
+        return this;
+    }
+
+    /**
+     * Add a synchronous request handler to the router.
+     *
+     * @param method  the http method for the route, e.g. "GET"
+     * @param path    the path specification for the handler, e.g. /api/v2/{type}/{collection}
+     * @param handler the handler that will be routed for requests matching the method and path specification
+     * @return this builder
+     */
+    public HttpServerBuilder routeSync(HttpMethod method, String path, ThrowingBiFunction<Request, byte[], Response> handler) {
+        router.route(method, path, Handler.sync(handler));
         return this;
     }
 

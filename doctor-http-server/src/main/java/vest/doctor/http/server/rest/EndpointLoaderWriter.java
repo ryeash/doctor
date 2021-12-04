@@ -13,6 +13,7 @@ import vest.doctor.codegen.Constants;
 import vest.doctor.codegen.GenericInfo;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
+import vest.doctor.flow.Flo;
 import vest.doctor.http.server.Filter;
 import vest.doctor.http.server.Handler;
 import vest.doctor.http.server.Request;
@@ -53,7 +54,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
 
     private final Set<ExecutableElement> processedMethods = new HashSet<>();
     private final AtomicBoolean hasRoutes = new AtomicBoolean(false);
-    private ClassBuilder config;
+    private ClassBuilder loader;
     private MethodBuilder stage5;
 
     private final Map<String, String> beanParamTypeToMethod = new HashMap<>();
@@ -65,8 +66,6 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         }
         initialize(context);
 
-        String endpointRef = "endpoint" + context.nextId();
-        stage5.line("Provider<", providerDefinition.providedType(), "> ", endpointRef, " = {{providerRegistry}}.getProvider(", providerDefinition.providedType(), ".class, ", providerDefinition.qualifier(), ");");
         String[] roots = Optional.ofNullable(providerDefinition.annotationSource().getAnnotation(Path.class))
                 .map(Path::value)
                 .orElse(new String[]{"/"});
@@ -74,11 +73,13 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         if (ProcessorUtils.isCompatibleWith(context, providerDefinition.providedType(), Filter.class)) {
             for (String root : roots) {
                 hasRoutes.set(true);
-                stage5.line("router.filter(\"", ProcessorUtils.escapeStringForCode(root), "\",", endpointRef, ".get());");
+                stage5.line("router.filter(\"", ProcessorUtils.escapeStringForCode(root), "\",", "{{providerRegistry}}.getInstance(", providerDefinition.providedType(), ".class, ", providerDefinition.qualifier(), "));");
             }
         }
 
         if (ProcessorUtils.isCompatibleWith(context, providerDefinition.providedType(), Handler.class)) {
+            String endpointRef = "endpoint" + context.nextId();
+            stage5.line("Provider<", providerDefinition.providedType(), "> ", endpointRef, " = {{providerRegistry}}.getProvider(", providerDefinition.providedType(), ".class, ", providerDefinition.qualifier(), ");");
             List<String> methods = ProcessorUtils.methodMatchingSignature(context, providerDefinition.providedType(), "handle", Request.class)
                     .map(m -> m.getAnnotation(Endpoint.class))
                     .map(Endpoint::method)
@@ -93,52 +94,52 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                 }
             }
         } else {
-            ProcessorUtils.allMethods(context, providerDefinition.providedType())
+            List<ExecutableElement> endpointMethods = ProcessorUtils.allMethods(context, providerDefinition.providedType())
                     .stream()
                     .filter(m -> m.getModifiers().contains(Modifier.PUBLIC))
                     .filter(processedMethods::add)
                     .filter(m -> m.getAnnotation(Endpoint.class) != null)
-                    .forEach(method -> {
-                        Endpoint endpoint = method.getAnnotation(Endpoint.class);
-                        if (endpoint.method().length == 0) {
-                            throw new CodeProcessingException("endpoints must have at least one method", method);
-                        }
-                        if (endpoint.path().length == 0) {
-                            throw new CodeProcessingException("endpoints must have at least one path", method);
-                        }
-                        for (String fullPath : paths(roots, endpoint.path())) {
-                            for (String httMethod : endpoint.method()) {
-                                addRoute(stage5, context, httMethod, fullPath, endpointRef, method);
-                                hasRoutes.set(true);
-                            }
-                        }
-                    });
+                    .toList();
+            if (!endpointMethods.isEmpty()) {
+                ClassBuilder classBuilder = initEndpointManagerClass(context, providerDefinition);
+                String instanceName = "handlerInst" + context.nextId();
+                stage5.line(classBuilder.getFullyQualifiedClassName(), " ", instanceName, "= new ", classBuilder.getFullyQualifiedClassName(), "({{providerRegistry}});");
+                endpointMethods.forEach(method -> {
+                    Endpoint endpoint = method.getAnnotation(Endpoint.class);
+                    if (endpoint.method().length == 0) {
+                        throw new CodeProcessingException("endpoints must have at least one method", method);
+                    }
+                    if (endpoint.path().length == 0) {
+                        throw new CodeProcessingException("endpoints must have at least one path", method);
+                    }
+                    addRoute(context, classBuilder, instanceName, endpoint.method(), paths(roots, endpoint.path()), method);
+                });
+                classBuilder.writeClass(context.filer());
+            }
         }
     }
 
     @Override
     public void finish(AnnotationProcessorContext context) {
         if (hasRoutes.get()) {
-            config.writeClass(context.filer());
-            context.addServiceImplementation(ApplicationLoader.class, config.getFullyQualifiedClassName());
+            loader.writeClass(context.filer());
+            context.addServiceImplementation(ApplicationLoader.class, loader.getFullyQualifiedClassName());
         }
     }
 
     private void initialize(AnnotationProcessorContext context) {
-        if (config != null) {
+        if (loader != null) {
             return;
         }
         String className = "EndpointLoader_" + context.nextId();
         String qualifiedClassName = context.generatedPackage() + "." + className;
 
-        this.config = new ClassBuilder()
+        this.loader = new ClassBuilder()
                 .setClassName(qualifiedClassName)
-                .addImplementsInterface(EndpointLoader.class)
+                .addImplementsInterface(ApplicationLoader.class)
                 .addImportClass(CompletableFuture.class)
                 .addImportClass(CompletionStage.class)
                 .addImportClass(BodyInterchange.class)
-                .addImportClass(EndpointLinker.class)
-                .addImportClass(EndpointLoader.class)
                 .addImportClass(ProviderRegistry.class)
                 .addImportClass(Optional.class)
                 .addImportClass(Request.class)
@@ -146,17 +147,59 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                 .addImportClass(Router.class)
                 .addImportClass(TypeInfo.class)
                 .addImportClass(Utils.class)
+                .addImportClass(Flo.class)
+                .addImportClass(Handler.class)
+                .addImportClass(Handler.HandlerHolder.class)
                 .addImportClass(Inject.class)
                 .addImportClass(Singleton.class)
                 .addImportClass(Named.class)
                 .addImportClass(ExplicitProvidedTypes.class)
                 .addImportClass(Provider.class);
 
-        this.stage5 = config.newMethod("public void stage5(ProviderRegistry {{providerRegistry}})");
-        stage5.line("if(!isRouterWired({{providerRegistry}})) { return; }");
-        stage5.line("Router router = {{providerRegistry}}.getInstance(Router.class);");
-        stage5.line("BodyInterchange bodyInterchange = {{providerRegistry}}.getInstance(BodyInterchange.class);");
+        this.stage5 = loader.newMethod("public void stage5(ProviderRegistry {{providerRegistry}})");
+        stage5.line("Router router = {{providerRegistry}}.getProviderOpt(Router.class).map(Provider::get).orElse(null);");
+        stage5.line("if(router == null) { return; }");
 
+        loader.addMethod("@Override public int priority()", m -> m.line("return Integer.MAX_VALUE;"));
+    }
+
+    private ClassBuilder initEndpointManagerClass(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
+        String className = "EndpointManager_" + context.nextId();
+        String qualifiedClassName = context.generatedPackage() + "." + className;
+
+        ClassBuilder builder = new ClassBuilder()
+                .setClassName(qualifiedClassName)
+                .addImportClass(CompletableFuture.class)
+                .addImportClass(CompletionStage.class)
+                .addImportClass(BodyInterchange.class)
+                .addImportClass(ProviderRegistry.class)
+                .addImportClass(Optional.class)
+                .addImportClass(Request.class)
+                .addImportClass(Response.class)
+                .addImportClass(Router.class)
+                .addImportClass(TypeInfo.class)
+                .addImportClass(Utils.class)
+                .addImportClass(Flo.class)
+                .addImportClass(Inject.class)
+                .addImportClass(Singleton.class)
+                .addImportClass(Named.class)
+                .addImportClass(ExplicitProvidedTypes.class)
+                .addImportClass(Provider.class);
+
+        builder.addField("private final ProviderRegistry {{providerRegistry}}");
+        builder.addField("private final Router router");
+        builder.addField("private final BodyInterchange bodyInterchange");
+        MethodBuilder constructor = builder.newMethod("public ", className, "(ProviderRegistry {{providerRegistry}})");
+        constructor.line("this.{{providerRegistry}} = {{providerRegistry}};");
+        constructor.line("this.router = {{providerRegistry}}.getInstance(Router.class);");
+        constructor.line("this.bodyInterchange = {{providerRegistry}}.getInstance(BodyInterchange.class);");
+
+        String endpointRef = "endpoint" + context.nextId();
+        builder.addField("private final Provider<", providerDefinition.providedType(), "> ", endpointRef);
+        constructor.line("this.", endpointRef, " = {{providerRegistry}}.getProvider(", providerDefinition.providedType(), ".class, ", providerDefinition.qualifier(), ");");
+
+        builder.addMethod("private " + providerDefinition.providedType() + " __endpoint()", m -> m.line("return ", endpointRef, ".get();"));
+        return builder;
     }
 
     private static List<String> paths(String[] roots, String[] paths) {
@@ -169,49 +212,66 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         return allPaths;
     }
 
-    private void addRoute(MethodBuilder initialize,
-                          AnnotationProcessorContext context,
-                          String httpMethod,
-                          String path,
-                          String endpointRef,
+    private void addRoute(AnnotationProcessorContext context,
+                          ClassBuilder epHandler,
+                          String epHandlerInstance,
+                          String[] httpMethods,
+                          List<String> paths,
                           ExecutableElement method) {
         boolean isVoid = method.getReturnType().getKind() == TypeKind.VOID;
 
         String summary = method.getEnclosingElement().asType() + "#" + method.getSimpleName() + method.getParameters().stream().map(VariableElement::asType).map(String::valueOf).collect(Collectors.joining(", ", "(", ")"));
-        initialize.line("router.route(\"",
-                ProcessorUtils.escapeStringForCode(httpMethod), '"',
-                ",\"", ProcessorUtils.escapeStringForCode(path), "\", new EndpointLinker<>(",
-                endpointRef, ',', buildTypeInfoCode(method), ',', "bodyInterchange", ",\"", summary, "\",");
-        initialize.line("(endpoint, request, flow) -> {");
-        initialize.line("return flow.step((b, subscription, emitter) -> {");
+        String methodName = "handler_" + method.getSimpleName() + context.nextId();
+
+        String bodyType;
+        if (hasBodyTypeInfo(method)) {
+            bodyType = "bodyType_" + method.getSimpleName() + context.nextId();
+            epHandler.addField("public static final TypeInfo ", bodyType, "=", buildTypeInfoCode(method));
+        } else {
+            bodyType = "null";
+        }
+
+        MethodBuilder handler = epHandler.newMethod("public Flo<?, Response> ", methodName, "(Request request) throws Exception");
+        handler.line("return bodyInterchange.read(request, ", bodyType, ")");
+        handler.line(".step((b, subscription, emitter) -> {");
 
         String parameters = method.getParameters().stream()
-                .map(p -> parameterWriting(context, p, "request"))
+                .map(p -> parameterWriting(context, epHandler, p, "request"))
                 .collect(Collectors.joining(",\n", "(", ")"));
-        String callMethod = "endpoint." + method.getSimpleName() + parameters + ";";
+        String callMethod = "__endpoint()." + method.getSimpleName() + parameters + ";";
 
         if (isVoid) {
-            initialize.line(callMethod);
-            initialize.line("Object result = null;");
+            handler.line(callMethod);
+            handler.line("emitter.emit(null);");
         } else {
-            initialize.line("Object result = ", callMethod);
+            handler.line("Object result = ", callMethod);
+            handler.line("emitter.emit(result);");
         }
-        initialize.line("emitter.emit(result);");
-        initialize.line("});");
-        initialize.line("}));");
+        handler.line("})");
+        handler.line(".chain(response -> bodyInterchange.write(request, response));");
+
+        for (String fullPath : paths) {
+            for (String httpMethod : httpMethods) {
+                stage5.line("router.route(\"",
+                        ProcessorUtils.escapeStringForCode(httpMethod), '"',
+                        ",\"", ProcessorUtils.escapeStringForCode(fullPath),
+                        "\", new HandlerHolder(", epHandlerInstance,
+                        "::", methodName, ", \"", ProcessorUtils.escapeStringForCode(summary), "\"));");
+            }
+        }
     }
 
     private static final List<Class<?>> SUPPORTED_CLASSES = List.of(Request.class, Response.class, URI.class);
 
-    private String parameterWriting(AnnotationProcessorContext context, VariableElement parameter, String contextRef) {
+    private String parameterWriting(AnnotationProcessorContext context, ClassBuilder epHandler, VariableElement parameter, String contextRef) {
         try {
-            return parameterWriting(context, parameter, parameter, contextRef);
+            return parameterWriting(context, epHandler, parameter, parameter, contextRef);
         } catch (Throwable t) {
             throw new CodeProcessingException("error wiring endpoint parameter", parameter, t);
         }
     }
 
-    private String parameterWriting(AnnotationProcessorContext context, VariableElement parameter, Element annotationSource, String contextRef) {
+    private String parameterWriting(AnnotationProcessorContext context, ClassBuilder epHandler, VariableElement parameter, Element annotationSource, String contextRef) {
         if (parameter.asType().toString().equals(Request.class.getCanonicalName())) {
             return contextRef;
         } else if (parameter.asType().toString().equals(Response.class.getCanonicalName())) {
@@ -219,7 +279,6 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         } else if (parameter.asType().toString().equals(URI.class.getCanonicalName())) {
             return contextRef + ".uri()";
         }
-
 
         Param param = annotationSource.getAnnotation(Param.class);
         if (param == null) {
@@ -236,7 +295,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
             case Attribute:
                 return contextRef + ".attribute(\"" + name + "\")";
             case Bean:
-                return beanParamBuilderCall(context, parameter, contextRef) + "(" + contextRef + ")";
+                return beanParamBuilderCall(context, epHandler, parameter, contextRef) + "(" + contextRef + ")";
             case Provided:
                 return ProcessorUtils.providerLookupCode(context, parameter, Constants.PROVIDER_REGISTRY);
         }
@@ -267,7 +326,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         return sb.toString();
     }
 
-    private String beanParamBuilderCall(AnnotationProcessorContext context, VariableElement parameter, String contextRef) {
+    private String beanParamBuilderCall(AnnotationProcessorContext context, ClassBuilder epHandler, VariableElement parameter, String contextRef) {
         TypeMirror typeMirror = parameter.asType();
         String typeWithoutParams = ProcessorUtils.typeWithoutParameters(typeMirror);
         if (beanParamTypeToMethod.containsKey(typeWithoutParams)) {
@@ -275,7 +334,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         }
         String methodName = "beanParam" + context.nextId();
         beanParamTypeToMethod.put(typeWithoutParams, methodName);
-        MethodBuilder bean = config.newMethod("public static ", typeWithoutParams, " " + methodName + "(Request ", contextRef, ")");
+        MethodBuilder bean = epHandler.newMethod("public static ", typeWithoutParams, " " + methodName + "(Request ", contextRef, ")");
 
         TypeElement beanType = context.toTypeElement(typeMirror);
         ExecutableElement constructor = injectableConstructor(beanType);
@@ -286,7 +345,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                 .orElse("");
 
         String constructorParams = constructor.getParameters().stream()
-                .map(p -> parameterWriting(context, p, contextRef))
+                .map(p -> parameterWriting(context, epHandler, p, contextRef))
                 .collect(Collectors.joining(", ", "(", ")"));
 
         bean.line(ProcessorUtils.typeWithoutParameters(typeMirror), " bean = new ", ProcessorUtils.typeWithoutParameters(typeMirror), diamond, constructorParams, ";");
@@ -295,7 +354,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
             if (supportedParam(field)) {
                 ExecutableElement setter = findCorrespondingSetter(context, field, beanType);
                 VariableElement setterParameter = setter.getParameters().get(0);
-                bean.line("bean.", setter.getSimpleName(), "(", parameterWriting(context, setterParameter, field, contextRef), ");");
+                bean.line("bean.", setter.getSimpleName(), "(", parameterWriting(context, epHandler, setterParameter, field, contextRef), ");");
             }
         }
         for (ExecutableElement method : ElementFilter.methodsIn(beanType.getEnclosedElements())) {
@@ -304,7 +363,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                     throw new CodeProcessingException("setters in BeanParam objects must have one and only one parameter", method);
                 }
                 VariableElement setterParameter = method.getParameters().get(0);
-                bean.line("bean.", method.getSimpleName(), "(", parameterWriting(context, setterParameter, method, contextRef), ");");
+                bean.line("bean.", method.getSimpleName(), "(", parameterWriting(context, epHandler, setterParameter, method, contextRef), ");");
             }
         }
         bean.line("return bean;");
@@ -366,6 +425,12 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                 })
                 .findFirst()
                 .orElseThrow(() -> new CodeProcessingException("missing setter method for BeanParam field", field));
+    }
+
+    public static boolean hasBodyTypeInfo(ExecutableElement method) {
+        return method.getParameters()
+                .stream()
+                .anyMatch(m -> getParamType(m) == Body);
     }
 
     public static String buildTypeInfoCode(ExecutableElement method) {

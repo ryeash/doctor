@@ -7,15 +7,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Mark a class or method with an HTTP endpoint path.
- * For classes, indicates the root uri paths to use for the method endpoints.
- * <p>
- * For methods, indicates the suffix (prepended with the root paths from the
- * class level Path annotation) for the uri paths to use for the endpoint method.
+ * Mark a class with an HTTP endpoint path.
+ * Indicates the root uri paths to use for the method endpoints.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE, ElementType.METHOD})
+@Target({ElementType.TYPE})
 public @interface Path {
     /**
      * The uri paths for the route.
