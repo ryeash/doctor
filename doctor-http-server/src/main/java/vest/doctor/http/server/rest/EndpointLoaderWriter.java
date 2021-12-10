@@ -103,7 +103,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
             if (!endpointMethods.isEmpty()) {
                 ClassBuilder classBuilder = initEndpointManagerClass(context, providerDefinition);
                 String instanceName = "handlerInst" + context.nextId();
-                stage5.line(classBuilder.getFullyQualifiedClassName(), " ", instanceName, "= new ", classBuilder.getFullyQualifiedClassName(), "({{providerRegistry}});");
+                stage5.line(classBuilder.getFullyQualifiedClassName(), " ", instanceName, " = new ", classBuilder.getFullyQualifiedClassName(), "({{providerRegistry}});");
                 endpointMethods.forEach(method -> {
                     Endpoint endpoint = method.getAnnotation(Endpoint.class);
                     if (endpoint.method().length == 0) {

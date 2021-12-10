@@ -3,5 +3,5 @@ package vest.doctor.aop;
 /**
  * Marker class for all aspect advice interfaces.
  */
-public interface Aspect {
+public sealed interface Aspect permits Before, After, Around {
 }

@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
  */
 public final class EventBus implements EventProducer {
 
-    private final Collection<ConsumerHolder<?>> consumers = new ConcurrentLinkedDeque<>();
+    private final Collection<ConsumerHolder> consumers = new ConcurrentLinkedDeque<>();
 
     /**
      * Add a new consumer to notify with published events.
@@ -18,12 +18,12 @@ public final class EventBus implements EventProducer {
      * @param eventType the event type the consumer listens for
      * @param consumer  the action
      */
-    public <T> void addConsumer(Class<T> eventType, EventConsumer<T> consumer) {
-        consumers.add(new ConsumerHolder<>(eventType, consumer));
+    @SuppressWarnings("unchecked")
+    public <T> void addConsumer(Class<T> eventType, EventConsumer<? super T> consumer) {
+        consumers.add(new ConsumerHolder(eventType, (EventConsumer<Object>) consumer));
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void publish(Object event) {
         for (ConsumerHolder eventConsumer : consumers) {
             if (eventConsumer.type.isInstance(event)) {
@@ -42,6 +42,6 @@ public final class EventBus implements EventProducer {
                 "]}";
     }
 
-    private static record ConsumerHolder<T>(Class<T> type, EventConsumer<?> consumer) {
+    private record ConsumerHolder(Class<?> type, EventConsumer<Object> consumer) {
     }
 }

@@ -4,6 +4,8 @@ import vest.doctor.Prioritized;
 
 /**
  * Base marker class for the customizations used by the {@link AnnotationProcessorContext} implementation.
+ * A customization point is used at compile time to write/alter the code generated to support dependency
+ * injection.
  */
 public interface CustomizationPoint extends Prioritized {
 

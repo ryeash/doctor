@@ -105,7 +105,9 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
         classBuilder.addField("private final ", typeElement.getSimpleName(), " delegate");
         classBuilder.addField("private final ", ProviderRegistry.class.getSimpleName(), " beanProvider");
 
+        //TODO: support non-zero-arity constructors???
         MethodBuilder constructor = classBuilder.newMethod("public ", delegateClassName, "(", typeElement.getSimpleName(), " delegate, ", ProviderRegistry.class.getSimpleName(), " beanProvider)");
+        constructor.line("super();");
         constructor.line("this.delegate = delegate;");
         constructor.line("this.beanProvider = beanProvider;");
 

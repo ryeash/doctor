@@ -5,7 +5,7 @@ import java.util.Objects;
 /**
  * A mutable wrapper around a method argument.
  */
-public class MutableMethodArgument {
+public final class MutableMethodArgument {
     private Object value;
 
     public MutableMethodArgument(Object value) {

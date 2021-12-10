@@ -3,7 +3,7 @@ package vest.doctor.aop;
 /**
  * Customizes a method to add pre-invoke workflows.
  */
-public interface Before extends Aspect {
+public non-sealed interface Before extends Aspect {
 
     /**
      * Called before any {@link Around} to customize the method before it has been invoked. In this context

@@ -146,8 +146,9 @@ public class MorningRoutine {
 
 Only one qualifier is allowed per provided type.
 
-The [@Named](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/named) qualifier is the only qualifier
-included with doctor. To create qualifiers see example here:
+Doctor does not provide any built-in qualifiers beyond
+the [@Named](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/named)
+qualifier packaged in java.inject. To create qualifiers see example here:
 [@Qualifier](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/qualifier).
 
 ### [@Modules](doctor-core/src/main/java/vest/doctor/Modules.java)
@@ -175,8 +176,8 @@ public class App {
 }
 ```
 
-Any provider that has modules will _only_ be active if the app is started with one of the modules listed in the active
-list. Providers without modules will _always_ be active.
+Any provider that has modules will _only_ be active if the app is started with one of the modules listed in the
+activation list. Providers without modules will _always_ be active.
 
 ### [@Eager](doctor-core/src/main/java/vest/doctor/Eager.java)
 
@@ -212,7 +213,7 @@ public class AppConfig {
 }
 ```
 
-The previous will allow the datasource to be retrieved either with the qualifier or without:
+This will make the datasource retrievable with the qualifier or without:
 
 ```java
 doctor.getInstance(DataSource.class) == doctor.getInstance(DataSource.class, "primary")
@@ -365,6 +366,22 @@ public interface DBProps { // must be an interface
 }
 ```
 
+#### Injectable property types
+
+Properties are defined as strings and require conversion to specific types when injected. Out of the box, these are the
+conversions that are supported:
+
+* primitives and their associated java.lang wrappers
+* any type that has a public constructor with a single string argument and does not throw an exception (like BigInteger)
+* and type that has a public static method that takes a single string argument and does not throw an exception (like
+  URI::create)
+
+If these built in conversions do not satisfy requirements, the string conversion system can be extended by creating
+implementations
+of [StringConversionGenerator](doctor-core/src/main/java/vest/doctor/processing/StringConversionGenerator.java)
+and wiring them in
+via [ProcessorConfiguration](doctor-core/src/main/java/vest/doctor/processing/ProcessorConfiguration.java).
+
 # Aspect Oriented Programming (AOP)
 
 AOP is supported for any provided type that is an interface or a public, non-final class.
@@ -415,7 +432,7 @@ public class AppConfig {
 Now, when you get an instance of Thing, all method calls will use the TimingAspect:
 
 ```java
-Thing thing=doctor.getInstance(Thing.class);
+Thing thing = doctor.getInstance(Thing.class);
 thing.doSomething() // <- method will be both timed and observed
 ```
 

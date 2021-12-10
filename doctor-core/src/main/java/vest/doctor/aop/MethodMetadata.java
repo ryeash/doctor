@@ -10,7 +10,7 @@ import java.util.Objects;
 /**
  * Static metadata about an invoked method.
  */
-public class MethodMetadata {
+public final class MethodMetadata {
 
     private final Object containingInstance;
     private final String methodName;

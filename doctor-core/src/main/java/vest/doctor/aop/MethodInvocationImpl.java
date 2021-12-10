@@ -8,16 +8,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-public class MethodInvocationImpl implements MethodInvocation {
+public final class MethodInvocationImpl implements MethodInvocation {
 
     private final MethodMetadata methodMetadata;
     private final List<MutableMethodArgument> argumentList;
-    private final MethodInvoker<MethodInvocation, ?> methodInvoker;
+    private final MethodInvoker<?> methodInvoker;
     private Object result;
     private boolean invoked = false;
     private boolean invokable = true;
 
-    public MethodInvocationImpl(MethodMetadata methodMetadata, List<MutableMethodArgument> argumentList, MethodInvoker<MethodInvocation, ?> methodInvoker) {
+    public MethodInvocationImpl(MethodMetadata methodMetadata, List<MutableMethodArgument> argumentList, MethodInvoker<?> methodInvoker) {
         this.methodMetadata = methodMetadata;
         this.argumentList = Collections.unmodifiableList(argumentList);
         this.methodInvoker = methodInvoker;

@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * Information about the type of a parameter or field.
+ * Information about the type of parameter, field, or return type.
  */
 public final class TypeInfo {
     private final Class<?> rawType;

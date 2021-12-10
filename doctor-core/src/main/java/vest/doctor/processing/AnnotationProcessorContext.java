@@ -148,7 +148,18 @@ public interface AnnotationProcessorContext {
      * @return generated code to call the method
      */
     default String executableCall(ProviderDefinition providerDefinition, ExecutableElement executableElement, String instanceRef, String providerRegistryRef) {
-        String parameters = executableElement.getParameters().stream()
+        String parameters = buildParametersList(providerDefinition, executableElement, providerRegistryRef);
+        if (executableElement.getKind() == ElementKind.METHOD) {
+            return instanceRef + "." + executableElement.getSimpleName() + "(" + parameters + ")";
+        } else if (executableElement.getKind() == ElementKind.CONSTRUCTOR) {
+            return "new " + providerDefinition.providedType().getSimpleName() + "(" + parameters + ")";
+        } else {
+            throw new CodeProcessingException("failed to create calling code for ", executableElement);
+        }
+    }
+
+    default String buildParametersList(ProviderDefinition providerDefinition, ExecutableElement executableElement, String providerRegistryRef) {
+        return executableElement.getParameters().stream()
                 .map(ve -> {
                     for (ParameterLookupCustomizer lookup : customizations(ParameterLookupCustomizer.class)) {
                         String code = lookup.lookupCode(this, ve, providerRegistryRef);
@@ -162,14 +173,7 @@ public interface AnnotationProcessorContext {
                     }
                     throw new CodeProcessingException("unable to inject method parameter; no lookup matched", ve);
                 })
-                .collect(Collectors.joining(",\n\t", "(", ")"));
-        if (executableElement.getKind() == ElementKind.METHOD) {
-            return instanceRef + "." + executableElement.getSimpleName() + parameters;
-        } else if (executableElement.getKind() == ElementKind.CONSTRUCTOR) {
-            return "new " + providerDefinition.providedType().getSimpleName() + parameters;
-        } else {
-            throw new CodeProcessingException("failed to create calling code for ", executableElement);
-        }
+                .collect(Collectors.joining(",\n\t", "", ""));
     }
 
     void addServiceImplementation(Class<?> serviceInterface, String fullyQualifiedClassName);
