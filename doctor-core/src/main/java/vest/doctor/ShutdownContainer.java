@@ -11,13 +11,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Used internally to support auto-closing of provided instances.
  */
-public class ShutdownContainer implements AutoCloseable {
+public final class ShutdownContainer implements AutoCloseable {
+
     private static final int EXPUNGE_THRESHOLD = 64;
+    private static final ReferenceQueue<AutoCloseable> queue = new ReferenceQueue<>();
+    private static final Set<Ref> cSet = Collections.newSetFromMap(new ConcurrentHashMap<>(EXPUNGE_THRESHOLD * 2, 0.9F, 4));
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final AtomicInteger counter = new AtomicInteger(0);
-    private static final ReferenceQueue<AutoCloseable> queue = new ReferenceQueue<>();
-    private static final Set<Ref> cSet = Collections.newSetFromMap(new ConcurrentHashMap<>(64, 0.9F, 4));
 
     public void register(AutoCloseable closeable) {
         if (closeable == null) {

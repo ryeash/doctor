@@ -15,7 +15,8 @@ import vest.doctor.scheduled.Scheduled;
 import javax.lang.model.element.ExecutableElement;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ScheduledMethodCustomizer implements NewInstanceCustomizer {
+public class
+ScheduledMethodCustomizer implements NewInstanceCustomizer {
 
     private static final AtomicInteger count = new AtomicInteger(0);
 

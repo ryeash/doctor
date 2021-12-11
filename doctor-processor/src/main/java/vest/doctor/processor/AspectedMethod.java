@@ -17,6 +17,7 @@ import vest.doctor.processing.ProviderDefinition;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import java.util.Collection;
 import java.util.Collections;
@@ -124,7 +125,7 @@ final class AspectedMethod {
             arguments = "Collections.emptyList()";
         } else {
             arguments = method.getParameters().stream()
-                    .map(p -> "new MutableMethodArgument(" + p.getSimpleName() + ")")
+                    .map(VariableElement::getSimpleName)
                     .collect(Collectors.joining(", ", "List.of(", ")"));
         }
         StringBuilder invoker = new StringBuilder();

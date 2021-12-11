@@ -11,7 +11,7 @@ import java.util.List;
  *
  * @param <T> the provided type
  */
-public class AdHocProvider<T> implements DoctorProvider<T> {
+public final class AdHocProvider<T> implements DoctorProvider<T> {
 
     private final Class<T> type;
     private final T t;

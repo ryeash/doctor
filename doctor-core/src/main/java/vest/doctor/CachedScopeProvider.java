@@ -3,7 +3,7 @@ package vest.doctor;
 /**
  * Provider wrapper that supports the {@link Cached} scope.
  */
-public class CachedScopeProvider<T> extends DoctorProviderWrapper<T> {
+public final class CachedScopeProvider<T> extends DoctorProviderWrapper<T> {
 
     private final long ttlNanos;
     private volatile long expires = 0;

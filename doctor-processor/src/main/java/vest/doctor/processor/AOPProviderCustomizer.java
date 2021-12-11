@@ -10,7 +10,6 @@ import vest.doctor.aop.MethodInvocation;
 import vest.doctor.aop.MethodInvocationImpl;
 import vest.doctor.aop.MethodInvoker;
 import vest.doctor.aop.MethodMetadata;
-import vest.doctor.aop.MutableMethodArgument;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
@@ -84,7 +83,6 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
                 .addImportClass(MethodMetadata.class)
                 .addImportClass(MethodInvocation.class)
                 .addImportClass(MethodInvocationImpl.class)
-                .addImportClass(MutableMethodArgument.class)
                 .addImportClass(Arrays.class)
                 .addImportClass(Collections.class)
                 .addImportClass(Map.class)
@@ -103,13 +101,11 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
             throw new CodeProcessingException("aspects can only be applied to interfaces and public non-final classes with an empty constructor - invalid class", typeElement);
         }
         classBuilder.addField("private final ", typeElement.getSimpleName(), " delegate");
-        classBuilder.addField("private final ", ProviderRegistry.class.getSimpleName(), " beanProvider");
 
         //TODO: support non-zero-arity constructors???
         MethodBuilder constructor = classBuilder.newMethod("public ", delegateClassName, "(", typeElement.getSimpleName(), " delegate, ", ProviderRegistry.class.getSimpleName(), " beanProvider)");
         constructor.line("super();");
         constructor.line("this.delegate = delegate;");
-        constructor.line("this.beanProvider = beanProvider;");
 
         Map<String, String> initializedAspects = new HashMap<>();
         ProcessorUtils.allUniqueMethods(context, providerDefinition.providedType())
