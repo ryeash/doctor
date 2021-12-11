@@ -124,6 +124,9 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         if (hasRoutes.get()) {
             loader.writeClass(context.filer());
             context.addServiceImplementation(ApplicationLoader.class, loader.getFullyQualifiedClassName());
+            loader = null;
+            hasRoutes.set(false);
+            processedMethods.clear();
         }
     }
 
@@ -154,7 +157,8 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                 .addImportClass(Singleton.class)
                 .addImportClass(Named.class)
                 .addImportClass(ExplicitProvidedTypes.class)
-                .addImportClass(Provider.class);
+                .addImportClass(Provider.class)
+                .addClassAnnotation("@SuppressWarnings(\"unchecked\")");
 
         this.stage5 = loader.newMethod("public void stage5(ProviderRegistry {{providerRegistry}})");
         stage5.line("Router router = {{providerRegistry}}.getProviderOpt(Router.class).map(Provider::get).orElse(null);");
@@ -184,7 +188,8 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                 .addImportClass(Singleton.class)
                 .addImportClass(Named.class)
                 .addImportClass(ExplicitProvidedTypes.class)
-                .addImportClass(Provider.class);
+                .addImportClass(Provider.class)
+                .addClassAnnotation("@SuppressWarnings(\"unchecked\")");
 
         builder.addField("private final ProviderRegistry {{providerRegistry}}");
         builder.addField("private final Router router");

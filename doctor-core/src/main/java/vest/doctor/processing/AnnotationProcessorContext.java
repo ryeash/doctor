@@ -5,6 +5,7 @@ import vest.doctor.ProviderRegistry;
 import javax.annotation.processing.Filer;
 import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
@@ -125,6 +126,19 @@ public interface AnnotationProcessorContext {
      * @return a list of {@link CustomizationPoint}s
      */
     <T extends CustomizationPoint> List<T> customizations(Class<T> type);
+
+    /**
+     * Get the package name to use for whatever is generated for the given {@link Element}.
+     * @param element the element
+     * @return a package name
+     */
+   default String generatedPackageName(Element element){
+        return processingEnvironment()
+                .getElementUtils()
+                .getPackageOf(element)
+                .getSimpleName()
+                .toString();
+    }
 
     /**
      * Create the code to call a constructor. Handles wiring of constructor parameters using the {@link ProviderRegistry}.

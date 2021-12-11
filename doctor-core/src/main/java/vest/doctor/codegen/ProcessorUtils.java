@@ -272,17 +272,6 @@ public class ProcessorUtils {
         return Constants.PROVIDER_REGISTRY + ".getProvider(" + type + ".class" + ", " + qualifier + ")";
     }
 
-
-    public static String uniqueHash() {
-        UUID uuid = UUID.randomUUID();
-        ByteBuffer buf = ByteBuffer.allocate(16);
-        buf.putLong(uuid.getMostSignificantBits());
-        buf.putLong(uuid.getLeastSignificantBits());
-        return Base64.getEncoder().encodeToString(buf.array())
-                .toLowerCase()
-                .replaceAll("[^a-z0-9]", "");
-    }
-
     public static <T> void ifClassExists(String fullyQualifiedClassName, Consumer<Class<? extends T>> action) {
         ifClassesExists(Collections.singletonList(fullyQualifiedClassName), action);
     }

@@ -42,6 +42,7 @@ public class EventConsumersWriter implements ProviderDefinitionListener {
         if (events != null) {
             events.writeClass(context.filer());
             context.addServiceImplementation(ApplicationLoader.class, events.getFullyQualifiedClassName());
+            events = null;
         }
     }
 

@@ -30,12 +30,12 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
 
     public PropertiesProviderDefinition(AnnotationProcessorContext context, TypeElement type) {
         super(context, type, type);
-        this.generatedClassName = context.generatedPackage() + '.' + type.getSimpleName() + "__propertiesprovider" + context.nextId();
+        this.generatedClassName = context.generatedPackageName(type) + '.' + type.getSimpleName() + "__propertiesprovider" + context.nextId();
         this.uniqueName = "props" + context.nextId();
 
         this.implClass = type.getSimpleName() + "__impl" + context.nextId();
         ClassBuilder impl = new ClassBuilder()
-                .setClassName(context.generatedPackage() + "." + implClass)
+                .setClassName(context.generatedPackageName(type) + "." + implClass)
                 .addImportClass(ConfigurationFacade.class)
                 .addImplementsInterface(type.toString());
 

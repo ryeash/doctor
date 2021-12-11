@@ -58,7 +58,7 @@ import java.util.stream.Stream;
 
 import static vest.doctor.codegen.Constants.PROVIDER_REGISTRY;
 
-@SupportedSourceVersion(SourceVersion.RELEASE_16)
+@SupportedSourceVersion(SourceVersion.RELEASE_17)
 @SupportedOptions({JSR311Processor.PACKAGE_NAME_OPTION, JSR311Processor.IGNORE_PACKAGES})
 public class JSR311Processor extends AbstractProcessor implements AnnotationProcessorContext {
 
@@ -89,7 +89,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
 
     private ClassBuilder appLoader;
     private MethodBuilder stage3;
-    private MethodBuilder stage5;
+    private boolean changed = false;
 
     private final Map<Class<?>, Collection<String>> serviceImplementations = new HashMap<>();
     private final DependencyGraph graph = new DependencyGraph();
@@ -100,8 +100,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
         super.init(processingEnv);
         this.processingEnv = processingEnv;
 
-        this.generatedPackage = "vest.doctor.generated."
-                + processingEnv.getOptions().getOrDefault(PACKAGE_NAME_OPTION, "$" + ProcessorUtils.uniqueHash());
+        this.generatedPackage = processingEnv.getOptions().getOrDefault(PACKAGE_NAME_OPTION, "vest.doctor.generated");
 
         this.ignorePackages = Stream.of(processingEnv.getOptions().getOrDefault(IGNORE_PACKAGES, "").split(","))
                 .map(String::trim)
@@ -117,9 +116,13 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
         addSatisfiedDependency(ProviderRegistry.class, null);
         addSatisfiedDependency(ConfigurationFacade.class, null);
         addSatisfiedDependency(EventProducer.class, null);
+        reInitAppLoader();
+    }
 
+    private void reInitAppLoader() {
+        String className = generatedPackage + ".AppLoaderImpl" + nextId();
         this.appLoader = new ClassBuilder()
-                .setClassName(generatedPackage + ".AppLoaderImpl")
+                .setClassName(className)
                 .addImplementsInterface(ApplicationLoader.class)
                 .addImportClass(List.class)
                 .addImportClass(LinkedList.class)
@@ -129,10 +132,12 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 .addImportClass(DoctorProvider.class)
                 .addImportClass(PrimaryProviderWrapper.class)
                 .addImportClass(ShutdownContainer.class)
+                .addClassAnnotation("@SuppressWarnings(\"unchecked\")")
                 .addField("private final List<", DoctorProvider.class, "<?>> eagerList = new LinkedList<>()");
         this.stage3 = appLoader.newMethod("public void stage3(", ProviderRegistry.class, " {{providerRegistry}})");
-        this.stage5 = appLoader.newMethod("public void stage5(", ProviderRegistry.class, " {{providerRegistry}})");
+        MethodBuilder stage5 = appLoader.newMethod("public void stage5(", ProviderRegistry.class, " {{providerRegistry}})");
         stage5.line("eagerList.stream().filter(Objects::nonNull).forEach(", Provider.class, "::get);");
+        changed = false;
     }
 
     private void loadConf(ProcessorConfiguration processorConfiguration) {
@@ -153,13 +158,17 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 .filter(processedElements::add)
                 .forEach(this::processElement);
 
-        if (roundEnv.processingOver()) {
-            customizationPoints.forEach(c -> c.finish(this));
+        customizationPoints.forEach(c -> c.finish(this));
+        if (changed) {
             appLoader.writeClass(filer());
             addServiceImplementation(ApplicationLoader.class, appLoader.getFullyQualifiedClassName());
+        }
+        reInitAppLoader();
+
+        if (roundEnv.processingOver()) {
             writeServicesResource();
             compileTimeDependencyCheck();
-            infoMessage("took " + (System.currentTimeMillis() - start) + "ms");
+            infoMessage("doctor processing took " + (System.currentTimeMillis() - start) + "ms");
         }
         return annotationsToProcess.containsAll(annotations);
     }
@@ -185,6 +194,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                         classBuilder.writeClass(filer());
                     }
                     writeInProvider(provDef);
+                    changed = true;
                     break;
                 }
             }

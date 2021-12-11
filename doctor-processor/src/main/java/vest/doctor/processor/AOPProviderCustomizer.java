@@ -75,8 +75,10 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
     private String createDelegationClass(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
         TypeElement typeElement = providerDefinition.providedType();
 
+        String packageName = context.generatedPackageName(providerDefinition.providedType());
+
         String delegateClassName = providerDefinition.providedType().getSimpleName() + "__aop" + context.nextId();
-        String delegateQualifiedClassName = context.generatedPackage() + "." + delegateClassName;
+        String delegateQualifiedClassName = packageName + "." + delegateClassName;
         ClassBuilder classBuilder = new ClassBuilder()
                 .setClassName(delegateQualifiedClassName)
                 .addImportClass(ProviderRegistry.class)
