@@ -21,18 +21,14 @@ public class DefaultProcessorConfiguration implements ProcessorConfiguration {
     @Override
     public List<CustomizationPoint> customizationPoints() {
         return List.of(
-                new InjectMethodsCustomizer(),
+                new DoctorProviderDefinitionProcessor(),
+                new DoctorNewInstanceCustomizer(),
+
                 new EventConsumersWriter(),
-                new ScheduledMethodCustomizer(),
                 new PropertyParameterCustomizer(),
                 new AOPProviderCustomizer(),
                 new ProviderParameterLookupCustomizer(),
-                new ShutdownCustomizationPoint(),
                 new StandardConversionGenerator(),
-
-                new ConstructorProviderDefinitionProcessor(),
-                new FactoryProviderDefinitionProcessor(),
-                new PropertiesProviderDefinitionProcessor(),
 
                 new SingletonScopeWriter(),
                 new ThreadLocalScopeWriter(),

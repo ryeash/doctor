@@ -15,8 +15,6 @@ import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
-import vest.doctor.processing.CustomizationPoint;
-import vest.doctor.processing.ProcessorConfiguration;
 import vest.doctor.processing.ProviderCustomizationPoint;
 import vest.doctor.processing.ProviderDefinition;
 
@@ -28,7 +26,6 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
-import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,17 +38,7 @@ import java.util.stream.Collectors;
 /**
  * Customization that handles the aspected class generation and wrapping.
  */
-public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCustomizationPoint {
-
-    @Override
-    public List<Class<? extends Annotation>> supportedAnnotations() {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public List<CustomizationPoint> customizationPoints() {
-        return Collections.singletonList(this);
-    }
+public class AOPProviderCustomizer implements ProviderCustomizationPoint {
 
     @Override
     public String wrap(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String providerRef, String providerRegistryRef) {

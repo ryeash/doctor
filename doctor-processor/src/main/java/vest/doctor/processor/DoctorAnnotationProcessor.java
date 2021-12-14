@@ -59,8 +59,8 @@ import java.util.stream.Stream;
 import static vest.doctor.codegen.Constants.PROVIDER_REGISTRY;
 
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
-@SupportedOptions({JSR311Processor.PACKAGE_NAME_OPTION, JSR311Processor.IGNORE_PACKAGES})
-public class JSR311Processor extends AbstractProcessor implements AnnotationProcessorContext {
+@SupportedOptions({DoctorAnnotationProcessor.PACKAGE_NAME_OPTION, DoctorAnnotationProcessor.IGNORE_PACKAGES})
+public class DoctorAnnotationProcessor extends AbstractProcessor implements AnnotationProcessorContext {
 
     /**
      * Sets the package name for the generated classes. If unset, the default
@@ -108,7 +108,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 .collect(Collectors.toList());
 
         loadConf(new DefaultProcessorConfiguration());
-        for (ProcessorConfiguration processorConfiguration : ServiceLoader.load(ProcessorConfiguration.class, JSR311Processor.class.getClassLoader())) {
+        for (ProcessorConfiguration processorConfiguration : ServiceLoader.load(ProcessorConfiguration.class, DoctorAnnotationProcessor.class.getClassLoader())) {
             loadConf(processorConfiguration);
         }
         customizationPoints.sort(Prioritized.COMPARATOR);
@@ -344,7 +344,7 @@ public class JSR311Processor extends AbstractProcessor implements AnnotationProc
                 return scopeWriter;
             }
         }
-        throw new IllegalArgumentException("unsupported scope type: " + scopeType);
+        throw new IllegalArgumentException("unsupported scope: " + scopeType);
     }
 
     private void writeServicesResource() {
