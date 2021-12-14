@@ -47,7 +47,7 @@ public @interface Param {
         /**
          * The parameter value will be pulled from the request attributes using {@link vest.doctor.http.server.Request#attribute(String)}.
          */
-        Attribute;
+        Attribute
     }
 
     /**

@@ -306,6 +306,6 @@ public final class Router implements Handler {
         }
     }
 
-    final record Route(PathSpec pathSpec, Handler handler) {
+    record Route(PathSpec pathSpec, Handler handler) {
     }
 }
