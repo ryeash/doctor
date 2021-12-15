@@ -90,7 +90,7 @@ public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
                 throw new CodeProcessingException("can not set both cron and interval for the @Scheduled annotation", executableElement);
             }
             if (!scheduled.interval().isEmpty()) {
-                processScheduled(context, providerDefinition, method, instanceRef, providerRegistryRef, executableElement);
+                processInterval(context, providerDefinition, method, instanceRef, providerRegistryRef, executableElement);
             } else {
                 processCron(context, providerDefinition, method, instanceRef, providerRegistryRef, executableElement);
             }
@@ -119,7 +119,7 @@ public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
         }
     }
 
-    private void processScheduled(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef, ExecutableElement scheduledMethod) {
+    private void processInterval(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef, ExecutableElement scheduledMethod) {
         Scheduled scheduled = scheduledMethod.getAnnotation(Scheduled.class);
         method.bind("instance", instanceRef)
                 .bind("executionLimit", String.valueOf(scheduled.executionLimit()))

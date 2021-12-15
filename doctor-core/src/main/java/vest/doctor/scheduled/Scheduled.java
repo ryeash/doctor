@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
  * Marks a method to be automatically scheduled with the default {@link java.util.concurrent.ScheduledExecutorService}
  * provided by the {@link ProviderRegistry}.
  * <p>
- * Only one of {@link #interval()} or {@link #cron()} may be set.
+ * One and only one of {@link #interval()} or {@link #cron()} may be set.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
@@ -48,7 +48,7 @@ public @interface Scheduled {
 
     /**
      * Limit the number of times the scheduled method will execute per-instance of the containing object.
-     * When negative, indicates that the method will be scheduled indefinitely.
+     * A negative value indicates that the method will be scheduled indefinitely.
      */
     long executionLimit() default -1;
 }

@@ -368,15 +368,15 @@ public interface DBProps { // must be an interface
 
 #### Injectable property types
 
-Properties are defined as strings and require conversion to specific types when injected. Out of the box, these are the
-conversions that are supported:
+Properties are defined as strings and require conversion to specific types when injected. Out of the box, these
+conversions are supported:
 
 * primitives and their associated java.lang wrappers
 * any type that has a public constructor with a single string argument and does not throw an exception (like BigInteger)
 * and type that has a public static method that takes a single string argument and does not throw an exception (like
   URI::create)
 
-If these built in conversions do not satisfy requirements, the string conversion system can be extended by creating
+If these built in conversions do not satisfy your requirements, the string conversion system can be extended by creating
 implementations
 of [StringConversionGenerator](doctor-core/src/main/java/vest/doctor/processing/StringConversionGenerator.java)
 and wiring them in
@@ -457,16 +457,24 @@ public class AspectDemo implements Before, Around, After {
 
     @Override
     public void execute(MethodInvocation methodInvocation) {
-        // should call methodInvocation.invoke()
-        // this is the only stage where invoke() can be called
+      // should call methodInvocation.invoke()
+      // this is the only stage where invoke() can be called
     }
 
-    @Override
-    public void after(MethodInvocation invocation) {
-        // inspect or modify the result of an invocation
-    }
+  @Override
+  public void after(MethodInvocation invocation) {
+    // inspect or modify the result of an invocation
+  }
 }
 ```
+
+## Property injection with annotation values
+
+All string values in supported annotations can be parameterized using the macro format
+`${property.name}`, e.g. `@Scheduled(interval = "${configurableInterval}")`. An unfortunate side effect of this
+configurability is that these strings can not be validated at compile time. In the previous example, if the realized
+value for the `configurableInterval` property was invalid, it would not be known at compile time, and only checked at
+runtime.
 
 # Limitations
 

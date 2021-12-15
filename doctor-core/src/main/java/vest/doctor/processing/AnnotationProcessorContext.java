@@ -136,7 +136,7 @@ public interface AnnotationProcessorContext {
         return processingEnvironment()
                 .getElementUtils()
                 .getPackageOf(element)
-                .getSimpleName()
+                .getQualifiedName()
                 .toString();
     }
 
