@@ -26,7 +26,7 @@ public class DoctorProviderDefinitionProcessor implements ProviderDefinitionProc
 
         if (element.getKind() == ElementKind.METHOD && element.getAnnotation(Factory.class) != null) {
             if (ProcessorUtils.getScope(context, element.getEnclosingElement()) == null) {
-                throw new CodeProcessingException("classes with @Factory methods must have a scope; it is recommended to use @Singleton", element.getEnclosingElement());
+                throw new CodeProcessingException("classes with @Factory methods must have a scope", element.getEnclosingElement());
             }
             return new FactoryMethodProviderDefinition(context, (TypeElement) element.getEnclosingElement(), (ExecutableElement) element);
         }
