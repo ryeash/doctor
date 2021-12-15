@@ -457,24 +457,24 @@ public class AspectDemo implements Before, Around, After {
 
     @Override
     public void execute(MethodInvocation methodInvocation) {
-      // should call methodInvocation.invoke()
-      // this is the only stage where invoke() can be called
+        // should call methodInvocation.invoke()
+        // this is the only stage where invoke() can be called
     }
 
-  @Override
-  public void after(MethodInvocation invocation) {
-    // inspect or modify the result of an invocation
-  }
+    @Override
+    public void after(MethodInvocation invocation) {
+        // inspect or modify the result of an invocation
+    }
 }
 ```
 
 ## Property injection with annotation values
 
 All string values in supported annotations can be parameterized using the macro format
-`${property.name}`, e.g. `@Scheduled(interval = "${configurableInterval}")`. An unfortunate side effect of this
-configurability is that these strings can not be validated at compile time. In the previous example, if the realized
-value for the `configurableInterval` property was invalid, it would not be known at compile time, and only checked at
-runtime.
+`${property.name}`, e.g. `@Scheduled(interval = "${configurableInterval}")`. An unfortunate
+side effect of this configurability is that these strings can not be validated at compile time.
+In the previous example, if the realized value for the `configurableInterval` property
+was invalid, it would not be known at compile time, and only checked at runtime.
 
 # Limitations
 
