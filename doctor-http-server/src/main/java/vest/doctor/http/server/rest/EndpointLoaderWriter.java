@@ -152,7 +152,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                 .addImportClass(Utils.class)
                 .addImportClass(Flo.class)
                 .addImportClass(Handler.class)
-                .addImportClass(Handler.HandlerHolder.class)
+                .addImportClass(Handler.Holder.class)
                 .addImportClass(Inject.class)
                 .addImportClass(Singleton.class)
                 .addImportClass(Named.class)
@@ -260,7 +260,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                 stage5.line("router.route(\"",
                         ProcessorUtils.escapeStringForCode(httpMethod), '"',
                         ",\"", ProcessorUtils.escapeStringForCode(fullPath),
-                        "\", new HandlerHolder(", epHandlerInstance,
+                        "\", new Holder(", epHandlerInstance,
                         "::", methodName, ", \"", ProcessorUtils.escapeStringForCode(summary), "\"));");
             }
         }

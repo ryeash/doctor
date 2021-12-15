@@ -39,7 +39,7 @@ public interface Handler {
      * Container record holding a handler and a summary string of the handler to enrich, e.g., the
      * method reference used as a handler with a more descriptive string.
      */
-    record HandlerHolder(Handler handler, String summary) implements Handler {
+    record Holder(Handler handler, String summary) implements Handler {
         @Override
         public Flo<?, Response> handle(Request request) throws Exception {
             return handler.handle(request);
