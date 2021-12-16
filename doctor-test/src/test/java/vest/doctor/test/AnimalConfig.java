@@ -17,4 +17,11 @@ public class AnimalConfig {
     public Dog dog() {
         return new Dog();
     }
+
+    @Factory
+    @Prototype
+    @AnimalColor(color = AnimalColor.Color.BLUE, name = "hank")
+    public Dog blueDog() {
+        return new Dog("blue-bark");
+    }
 }

@@ -22,7 +22,7 @@ public interface Flo3<I, O1, O2, O3> extends Flo<I, Tuple3<O1, O2, O3>> {
      * @param step the step that will accept items and emit results
      * @return the next processing flow step
      */
-    default <N1, N2, N3> Flo3<I, N1, N2, N3> step3(Step<Tuple3<O1, O2, O3>, Tuple3<N1, N2, N3>> step) {
+    default <N1, N2, N3> Flo3<I, N1, N2, N3> chain3(Step<Tuple3<O1, O2, O3>, Tuple3<N1, N2, N3>> step) {
         return new StandardFlo3<>(chain(new StandardProcessors.StepProcessor<>(step)));
     }
 
@@ -33,7 +33,7 @@ public interface Flo3<I, O1, O2, O3> extends Flo<I, Tuple3<O1, O2, O3>> {
      * @return the next processing flow step
      */
     default Flo3<I, O1, O2, O3> observe(Tuple3Consumer<O1, O2, O3> observer) {
-        return step3(new Step.Observer<>(observer));
+        return chain3(new Step.Observer<>(observer));
     }
 
     /**
@@ -126,7 +126,7 @@ public interface Flo3<I, O1, O2, O3> extends Flo<I, Tuple3<O1, O2, O3>> {
      * @return the next processing flow step
      */
     default Flo3<I, O1, O2, O3> keep(Tuple3Predicate<O1, O2, O3> predicate) {
-        return step3(new Step.Filter<>(predicate, true));
+        return chain3(new Step.Filter<>(predicate, true));
     }
 
     /**
@@ -136,7 +136,7 @@ public interface Flo3<I, O1, O2, O3> extends Flo<I, Tuple3<O1, O2, O3>> {
      * @return the next processing flow step
      */
     default Flo3<I, O1, O2, O3> drop(Tuple3Predicate<O1, O2, O3> predicate) {
-        return step3(new Step.Filter<>(predicate, false));
+        return chain3(new Step.Filter<>(predicate, false));
     }
 
     /**

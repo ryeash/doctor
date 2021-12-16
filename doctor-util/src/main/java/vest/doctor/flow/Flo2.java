@@ -34,7 +34,7 @@ public interface Flo2<I, O1, O2> extends Flo<I, Tuple2<O1, O2>> {
      * @param step the step that will accept items and emit results
      * @return the next processing flow step
      */
-    default <N1, N2> Flo2<I, N1, N2> step2(Step<Tuple2<O1, O2>, Tuple2<N1, N2>> step) {
+    default <N1, N2> Flo2<I, N1, N2> chain2(Step<Tuple2<O1, O2>, Tuple2<N1, N2>> step) {
         return new StandardFlo2<>(chain(new StandardProcessors.StepProcessor<>(step)));
     }
 
@@ -45,7 +45,7 @@ public interface Flo2<I, O1, O2> extends Flo<I, Tuple2<O1, O2>> {
      * @return the next processing flow step
      */
     default Flo2<I, O1, O2> observe(Tuple2Consumer<O1, O2> observer) {
-        return step2(new Step.Observer<>(observer));
+        return chain2(new Step.Observer<>(observer));
     }
 
     /**
@@ -138,7 +138,7 @@ public interface Flo2<I, O1, O2> extends Flo<I, Tuple2<O1, O2>> {
      * @return the next processing flow step
      */
     default Flo2<I, O1, O2> keep(Tuple2Predicate<O1, O2> predicate) {
-        return step2(new Step.Filter<>(predicate, true));
+        return chain2(new Step.Filter<>(predicate, true));
     }
 
     /**
@@ -148,7 +148,7 @@ public interface Flo2<I, O1, O2> extends Flo<I, Tuple2<O1, O2>> {
      * @return the next processing flow step
      */
     default Flo2<I, O1, O2> drop(Tuple2Predicate<O1, O2> predicate) {
-        return step2(new Step.Filter<>(predicate, false));
+        return chain2(new Step.Filter<>(predicate, false));
     }
 
     /**

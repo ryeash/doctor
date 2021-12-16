@@ -30,6 +30,7 @@ import java.util.Optional;
 
 /**
  * Binds all providers from a {@link ProviderRegistry} to the HK2 instance.
+ * Also binds context parameters and the extensions to JAX-RS.
  */
 final class DoctorBinder extends AbstractBinder {
 

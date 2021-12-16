@@ -22,7 +22,7 @@ public interface Flo5<I, O1, O2, O3, O4, O5> extends Flo<I, Tuple5<O1, O2, O3, O
      * @param step the step that will accept items and emit results
      * @return the next processing flow step
      */
-    default <N1, N2, N3, N4, N5> Flo5<I, N1, N2, N3, N4, N5> step5(Step<Tuple5<O1, O2, O3, O4, O5>, Tuple5<N1, N2, N3, N4, N5>> step) {
+    default <N1, N2, N3, N4, N5> Flo5<I, N1, N2, N3, N4, N5> chain5(Step<Tuple5<O1, O2, O3, O4, O5>, Tuple5<N1, N2, N3, N4, N5>> step) {
         return new StandardFlo5<>(chain(new StandardProcessors.StepProcessor<>(step)));
     }
 
@@ -33,7 +33,7 @@ public interface Flo5<I, O1, O2, O3, O4, O5> extends Flo<I, Tuple5<O1, O2, O3, O
      * @return the next processing flow step
      */
     default Flo5<I, O1, O2, O3, O4, O5> observe(Tuple5Consumer<O1, O2, O3, O4, O5> observer) {
-        return step5(new Step.Observer<>(observer));
+        return chain5(new Step.Observer<>(observer));
     }
 
     /**
@@ -115,7 +115,7 @@ public interface Flo5<I, O1, O2, O3, O4, O5> extends Flo<I, Tuple5<O1, O2, O3, O
      * @return the next processing flow step
      */
     default Flo5<I, O1, O2, O3, O4, O5> keep(Tuple5Predicate<O1, O2, O3, O4, O5> predicate) {
-        return step5(new Step.Filter<>(predicate, true));
+        return chain5(new Step.Filter<>(predicate, true));
     }
 
     /**
@@ -125,7 +125,7 @@ public interface Flo5<I, O1, O2, O3, O4, O5> extends Flo<I, Tuple5<O1, O2, O3, O
      * @return the next processing flow step
      */
     default Flo5<I, O1, O2, O3, O4, O5> drop(Tuple5Predicate<O1, O2, O3, O4, O5> predicate) {
-        return step5(new Step.Filter<>(predicate, false));
+        return chain5(new Step.Filter<>(predicate, false));
     }
 
     /**

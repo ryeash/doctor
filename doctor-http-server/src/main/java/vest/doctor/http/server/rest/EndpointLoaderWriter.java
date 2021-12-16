@@ -1,11 +1,8 @@
 package vest.doctor.http.server.rest;
 
 import jakarta.inject.Inject;
-import jakarta.inject.Named;
 import jakarta.inject.Provider;
-import jakarta.inject.Singleton;
 import vest.doctor.ApplicationLoader;
-import vest.doctor.ExplicitProvidedTypes;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.TypeInfo;
 import vest.doctor.codegen.ClassBuilder;
@@ -140,23 +137,10 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         this.loader = new ClassBuilder()
                 .setClassName(qualifiedClassName)
                 .addImplementsInterface(ApplicationLoader.class)
-                .addImportClass(CompletableFuture.class)
-                .addImportClass(CompletionStage.class)
-                .addImportClass(BodyInterchange.class)
                 .addImportClass(ProviderRegistry.class)
-                .addImportClass(Optional.class)
-                .addImportClass(Request.class)
-                .addImportClass(Response.class)
                 .addImportClass(Router.class)
-                .addImportClass(TypeInfo.class)
-                .addImportClass(Utils.class)
-                .addImportClass(Flo.class)
                 .addImportClass(Handler.class)
                 .addImportClass(Handler.Holder.class)
-                .addImportClass(Inject.class)
-                .addImportClass(Singleton.class)
-                .addImportClass(Named.class)
-                .addImportClass(ExplicitProvidedTypes.class)
                 .addImportClass(Provider.class)
                 .addClassAnnotation("@SuppressWarnings(\"unchecked\")");
 
@@ -180,23 +164,16 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
                 .addImportClass(Optional.class)
                 .addImportClass(Request.class)
                 .addImportClass(Response.class)
-                .addImportClass(Router.class)
                 .addImportClass(TypeInfo.class)
                 .addImportClass(Utils.class)
                 .addImportClass(Flo.class)
-                .addImportClass(Inject.class)
-                .addImportClass(Singleton.class)
-                .addImportClass(Named.class)
-                .addImportClass(ExplicitProvidedTypes.class)
                 .addImportClass(Provider.class)
                 .addClassAnnotation("@SuppressWarnings(\"unchecked\")");
 
         builder.addField("private final ProviderRegistry {{providerRegistry}}");
-        builder.addField("private final Router router");
         builder.addField("private final BodyInterchange bodyInterchange");
         MethodBuilder constructor = builder.newMethod("public ", className, "(ProviderRegistry {{providerRegistry}})");
         constructor.line("this.{{providerRegistry}} = {{providerRegistry}};");
-        constructor.line("this.router = {{providerRegistry}}.getInstance(Router.class);");
         constructor.line("this.bodyInterchange = {{providerRegistry}}.getInstance(BodyInterchange.class);");
 
         String endpointRef = "endpoint" + context.nextId();
@@ -231,7 +208,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
         String bodyType;
         if (hasBodyTypeInfo(method)) {
             bodyType = "bodyType_" + method.getSimpleName() + context.nextId();
-            epHandler.addField("public static final TypeInfo ", bodyType, "=", buildTypeInfoCode(method));
+            epHandler.addField("private static final TypeInfo ", bodyType, "=", buildTypeInfoCode(method));
         } else {
             bodyType = "null";
         }

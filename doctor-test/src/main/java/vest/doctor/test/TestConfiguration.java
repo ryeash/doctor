@@ -17,7 +17,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * unique test configuration will build only one doctor and the instances will be cached for the
  * lifetime of the test suite.
  * <p>
- * This annotation is inherited so sub-classes of the marked class will be configured with the same
+ * This annotation is inherited so subclasses of the marked class will be configured with the same
  * doctor instance as the marked class (without needing to duplicate the annotation).
  */
 @Documented

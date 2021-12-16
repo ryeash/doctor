@@ -7,7 +7,6 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @TestConfiguration(
         modules = {"animals"},
@@ -19,6 +18,10 @@ public class AnimalTest extends AbstractDoctorTest {
 
     @Inject
     protected Dog dog;
+
+    @Inject
+    @AnimalColor(name = "hank", color = AnimalColor.Color.BLUE)
+    protected Dog blueDog;
 
     @Inject
     @Named("dog")
@@ -44,6 +47,11 @@ public class AnimalTest extends AbstractDoctorTest {
     }
 
     @Test
+    public void blueDogTest() {
+        assertEquals(blueDog.makeNoise(), "blue-bark");
+    }
+
+    @Test
     public void animalTest() {
         assertEquals(animal.makeNoise(), "bark");
     }
@@ -60,9 +68,10 @@ public class AnimalTest extends AbstractDoctorTest {
 
     @Test
     public void listInject() {
-        List<String> collect = allAnimals.stream().map(Animal::makeNoise).collect(Collectors.toList());
-        assertEquals(collect.size(), 3);
+        List<String> collect = allAnimals.stream().map(Animal::makeNoise).toList();
+        assertEquals(collect.size(), 4);
         assertTrue(collect.contains("bark"));
+        assertTrue(collect.contains("blue-bark"));
         assertTrue(collect.contains("meow"));
     }
 

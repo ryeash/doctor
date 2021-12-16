@@ -65,10 +65,8 @@ public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
                 });
                 method.bind("InjectionException", InjectionException.class.getCanonicalName())
                         .line(executorInstance, ".submit(() -> {")
-                        .line("try {")
                         .line(call, ";")
-                        .line("} catch(Throwable t) {")
-                        .line("throw new {{InjectionException}}(\"error injecting method\", t); }")
+                        .line("return null;")
                         .line("});");
             } else {
                 method.line(call + ";");
