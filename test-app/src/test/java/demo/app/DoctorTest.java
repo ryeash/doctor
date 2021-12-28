@@ -8,6 +8,7 @@ import org.testng.annotations.Test;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.event.EventProducer;
 import vest.doctor.event.ReloadConfiguration;
+import vest.doctor.event.ReloadProviders;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -212,5 +213,15 @@ public class DoctorTest extends AbstractTestAppTest {
     public void parameterized() {
         TCParamterizedInject instance = providerRegistry().getInstance(TCParamterizedInject.class);
         assertEquals(instance.getInjectedList().getValue(), "worked");
+    }
+
+    @Test
+    public void reloadable() {
+        TCReloadable first = providerRegistry().getInstance(TCReloadable.class);
+        TCReloadable second = providerRegistry().getInstance(TCReloadable.class);
+        providerRegistry().getInstance(EventProducer.class).publish(new ReloadProviders());
+        TCReloadable third = providerRegistry().getInstance(TCReloadable.class);
+        assertEquals(first, second);
+        assertNotEquals(first, third);
     }
 }

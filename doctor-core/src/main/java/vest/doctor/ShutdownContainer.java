@@ -47,7 +47,7 @@ public final class ShutdownContainer implements AutoCloseable {
         }
     }
 
-    private static void closeQuietly(AutoCloseable autoCloseable) {
+    public static void closeQuietly(AutoCloseable autoCloseable) {
         if (autoCloseable != null) {
             try {
                 autoCloseable.close();

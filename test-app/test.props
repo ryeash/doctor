@@ -10,9 +10,9 @@ list=42, 12, 97
 set=one, two, two, three
 
 db {
-    url="jdbc:hsqldb:mem:mymemdb"
-    username=unused
-    password=nothing
+    url = "jdbc:hsqldb:mem:mymemdb"
+    username = unused
+    password = nothing
 }
 
 configurableInterval=9 ms

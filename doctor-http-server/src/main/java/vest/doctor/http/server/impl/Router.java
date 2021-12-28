@@ -73,7 +73,7 @@ public final class Router implements Handler {
      */
     public static final String MATCH_ALL_PATH_SPEC = "/*";
 
-    public static final Handler NOT_FOUND = request -> request.body()
+    private static final Handler NOT_FOUND = request -> request.body()
             .ignored()
             .map(request::createResponse)
             .map(r -> r.status(HttpResponseStatus.NOT_FOUND)

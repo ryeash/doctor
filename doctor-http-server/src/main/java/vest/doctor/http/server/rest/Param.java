@@ -16,19 +16,19 @@ public @interface Param {
 
     enum Type {
         /**
-         * The parameter value is pulled from the path matching variables.
+         * The parameter value will be pulled from the path matching variables.
          */
         Path,
         /**
-         * The parameter value is pulled from URI query parameters.
+         * The parameter value will be pulled from URI query parameters.
          */
         Query,
         /**
-         * The parameter value is pulled from a header value.
+         * The parameter value will be pulled from a header value.
          */
         Header,
         /**
-         * The parameter value is pulled from a cookie value.
+         * The parameter value will be pulled from a cookie value.
          */
         Cookie,
         /**
