@@ -3,6 +3,7 @@ package vest.doctor.runtime;
 import vest.doctor.ConfigurationFacade;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Can be used as the main-class when packaging/running applications backed by doctor.
@@ -13,9 +14,12 @@ import java.util.Objects;
  */
 public final class Main {
 
-    private static Doctor doctor;
+    private static final AtomicReference<Doctor> doctorRef = new AtomicReference<>(null);
 
     public static void main(String[] args) {
+        if (doctorRef.get() != null) {
+            throw new IllegalStateException("the main method has already been called");
+        }
         Args a = new Args(args);
         String modules = a.option("modules", 'm');
         String properties = a.option("properties", 'p', "");
@@ -29,7 +33,10 @@ public final class Main {
                 .map(FileLocation::new)
                 .map(StructuredConfigurationSource::new)
                 .forEach(facade::addSource);
-        doctor = new Doctor(facade, DefaultConfigurationFacade.split(modules), new ArgsLoader(a));
+        Doctor doctor = new Doctor(facade, DefaultConfigurationFacade.split(modules), new ArgsLoader(a));
+        if (!doctorRef.compareAndSet(null, doctor)) {
+            throw new IllegalStateException("the main method has already been called");
+        }
     }
 
     /**
@@ -38,6 +45,6 @@ public final class Main {
      * @return the {@link Doctor}
      */
     public static Doctor doctor() {
-        return Objects.requireNonNull(doctor, Main.class.getCanonicalName() + " was not used as the main class");
+        return Objects.requireNonNull(doctorRef.get(), Main.class.getCanonicalName() + " was not used as the main class or has not finished initializing");
     }
 }

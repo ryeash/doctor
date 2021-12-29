@@ -316,9 +316,13 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
         }
 
         if (providerDefinition.scope() != null) {
-            Class<?> scopeType = loadClass(providerDefinition.scope().getAnnotationType().toString());
-            ScopeWriter scopeWriter = getScopeWriter(scopeType);
-            creator = scopeWriter.wrapScope(this, providerDefinition, creator);
+            for (ScopeWriter scopeWriter : customizations(ScopeWriter.class)) {
+                String wrapped = scopeWriter.wrapScope(this, providerDefinition, creator);
+                if (wrapped != null) {
+                    creator = wrapped;
+                    break;
+                }
+            }
         }
         stage3.line(DoctorProvider.class, "<", providerDefinition.providedType().getSimpleName(), "> ", providerDefinition.uniqueInstanceName(), " = ", creator, ";");
         stage3.line("{{providerRegistry}}.register(", providerDefinition.uniqueInstanceName(), ");");
@@ -336,15 +340,6 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
         if (hasModules) {
             stage3.line("}");
         }
-    }
-
-    private ScopeWriter getScopeWriter(Class<?> scopeType) {
-        for (ScopeWriter scopeWriter : customizations(ScopeWriter.class)) {
-            if (scopeWriter.scope().equals(scopeType)) {
-                return scopeWriter;
-            }
-        }
-        throw new IllegalArgumentException("unsupported scope: " + scopeType);
     }
 
     private void writeServicesResource() {

@@ -1,16 +1,9 @@
 package vest.doctor.processing;
 
-import java.lang.annotation.Annotation;
-
 /**
  * A customization point that is used to wrap providers with their associated scopes.
  */
 public interface ScopeWriter extends CustomizationPoint {
-
-    /**
-     * The scope that this writer supports.
-     */
-    Class<? extends Annotation> scope();
 
     /**
      * Wrap the provider reference in a scope.

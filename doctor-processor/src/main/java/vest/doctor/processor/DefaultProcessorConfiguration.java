@@ -31,10 +31,6 @@ public class DefaultProcessorConfiguration implements ProcessorConfiguration {
                 new ProviderParameterLookupCustomizer(),
                 new StandardConversionGenerator(),
 
-                new SingletonScopeWriter(),
-                new ThreadLocalScopeWriter(),
-                new CachedScopeWriter(),
-                new PrototypeScopeWriter(),
-                new ReloadableScopeWriter());
+                new DoctorScopeWriter());
     }
 }

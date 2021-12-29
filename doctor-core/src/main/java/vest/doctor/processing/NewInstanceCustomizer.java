@@ -1,14 +1,13 @@
 package vest.doctor.processing;
 
 import jakarta.inject.Provider;
-import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.MethodBuilder;
 
 /**
  * Used to customize the instances created by providers. For example, can be used to call methods marked with {@link jakarta.inject.Inject}.
  */
-public interface NewInstanceCustomizer extends CustomizationPoint, Prioritized {
+public interface NewInstanceCustomizer extends CustomizationPoint {
 
     /**
      * Customize a provided instance after its creation from a {@link Provider#get()} call.

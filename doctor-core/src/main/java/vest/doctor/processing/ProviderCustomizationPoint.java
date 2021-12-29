@@ -1,12 +1,11 @@
 package vest.doctor.processing;
 
-import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
 
 /**
  * Customization point used to wrap a provider with additional code.
  */
-public interface ProviderCustomizationPoint extends CustomizationPoint, Prioritized {
+public interface ProviderCustomizationPoint extends CustomizationPoint {
 
     /**
      * Wrap the provider (referenced using the 'providerRef' value) with additional code.
