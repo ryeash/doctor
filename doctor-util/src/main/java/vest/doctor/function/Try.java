@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 
 /**
  * Represents an execution of a task that can succeed or fail. Fundamentally it is
- * an object oriented try-catch-finally.
+ * an object-oriented try-catch-finally.
  */
 public final class Try<T> {
 

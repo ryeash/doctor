@@ -46,8 +46,7 @@ public interface RequestBody {
     Flo<?, String> asString();
 
     /**
-     * Ignore the body data. The returned future will indicate only that the data has been
-     * received successfully in its entirety.
+     * Ignore the body data.
      *
      * @return a flow of a single null element indicating the successful read of all body data
      */

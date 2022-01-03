@@ -9,7 +9,7 @@ import java.util.function.BiFunction;
 /**
  * Internally used to bring together aspects and providers.
  */
-public class AspectWrappingProvider<T> extends DoctorProviderWrapper<T> {
+public final class AspectWrappingProvider<T> extends DoctorProviderWrapper<T> {
 
     private final ProviderRegistry providerRegistry;
     private final BiFunction<T, ProviderRegistry, T> wrapper;

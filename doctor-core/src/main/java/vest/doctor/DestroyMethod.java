@@ -8,7 +8,8 @@ import java.lang.annotation.Target;
 
 /**
  * Used to indicate that the instances of the provided type have a destroy method that must
- * be called during shutdown.
+ * be called during shutdown. This is only necessary when a class does not implement
+ * {@link AutoCloseable}.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

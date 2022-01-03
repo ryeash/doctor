@@ -1,13 +1,11 @@
 package vest.doctor.processing;
 
-import vest.doctor.Prioritized;
-
 import javax.lang.model.type.TypeMirror;
 
 /**
  * Customization that generates lambda function code to convert string values into other types.
  */
-public interface StringConversionGenerator extends CustomizationPoint, Prioritized {
+public interface StringConversionGenerator extends CustomizationPoint {
 
     /**
      * Generate a function that converts a string value into the target type.

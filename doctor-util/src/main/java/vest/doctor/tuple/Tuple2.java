@@ -7,7 +7,7 @@ import java.util.stream.Stream;
 
 /**
  * Specialization of the {@link Tuple} for a tuple of 2 elements.
- * Implements the {@link Map.Entry} interface, but the {@link #setValue(Object)} will throw an exception.
+ * Implements the {@link Map.Entry} interface, but calls to {@link #setValue(Object)} will throw an exception.
  */
 public class Tuple2<A, B> extends Tuple implements Map.Entry<A, B> {
 

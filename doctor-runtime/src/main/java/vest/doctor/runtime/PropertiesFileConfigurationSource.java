@@ -3,6 +3,7 @@ package vest.doctor.runtime;
 import vest.doctor.ConfigurationSource;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.Properties;
@@ -28,8 +29,8 @@ public class PropertiesFileConfigurationSource implements ConfigurationSource {
     @Override
     public void reload() {
         Properties properties = new Properties();
-        try {
-            properties.load(propertiesFileLocation.toURL().openStream());
+        try (InputStream is = propertiesFileLocation.toURL().openStream()) {
+            properties.load(is);
         } catch (IOException e) {
             throw new UncheckedIOException("error reading properties file: " + propertiesFileLocation, e);
         }

@@ -6,6 +6,7 @@ import vest.doctor.ConfigurationFacade;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.SingletonScopedProvider;
 import vest.doctor.event.EventBus;
+import vest.doctor.event.EventConsumer;
 import vest.doctor.event.EventProducer;
 import vest.doctor.event.ReloadConfiguration;
 
@@ -31,7 +32,7 @@ public class BuiltInApplicationLoader implements ApplicationLoader {
         if (loadBuiltIns(providerRegistry)) {
             EventBus eventBus = new EventBus();
             providerRegistry.register(new AdHocProvider<>(EventBus.class, eventBus, null, List.of(EventBus.class, EventProducer.class)));
-            eventBus.addConsumer(ReloadConfiguration.class, obj -> providerRegistry.configuration().reload());
+            eventBus.addConsumer(ReloadConfiguration.class, new ConfigReloadListener(providerRegistry));
             executors.put(DEFAULT_EXECUTOR_NAME, null);
             executors.put(DEFAULT_SCHEDULED_EXECUTOR_NAME, ConfigurationDrivenExecutorServiceProvider.ThreadPoolType.scheduled);
         }
@@ -52,4 +53,10 @@ public class BuiltInApplicationLoader implements ApplicationLoader {
         return providerRegistry.configuration().get(LOAD_BUILT_INS, true, Boolean::valueOf);
     }
 
+    record ConfigReloadListener(ProviderRegistry providerRegistry) implements EventConsumer<ReloadConfiguration> {
+        @Override
+        public void accept(ReloadConfiguration event) {
+            providerRegistry.configuration().reload();
+        }
+    }
 }

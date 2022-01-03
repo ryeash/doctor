@@ -15,11 +15,11 @@ import vest.doctor.http.server.rest.Path;
 public class TCNettyHandler implements Handler {
 
     @Override
-    @Endpoint(method = HttpMethod.ANY)
+    @Endpoint(method = HttpMethod.GET)
     public Flo<?, Response> handle(Request request) {
         return request.body()
                 .ignored()
-                .map(v -> request.createResponse()
-                        .body(ResponseBody.of("rawhandler")));
+                .map(request::createResponse)
+                .map(r -> r.body(ResponseBody.of("rawhandler")));
     }
 }

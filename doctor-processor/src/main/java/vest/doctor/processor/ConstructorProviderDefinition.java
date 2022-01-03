@@ -25,7 +25,8 @@ public class ConstructorProviderDefinition extends AbstractProviderDefinition {
 
     public ConstructorProviderDefinition(AnnotationProcessorContext context, TypeElement providedType) {
         super(context, providedType, providedType);
-        this.generatedClassName = context.generatedPackage() + "." + providedType.getSimpleName() + "__constructorProvider" + context.nextId();
+        String packageName = context.generatedPackageName(providedType);
+        this.generatedClassName = packageName + "." + providedType.getSimpleName() + "__constructorProvider" + context.nextId();
 
         int injectMarked = 0;
         LinkedList<ExecutableElement> injectable = new LinkedList<>();

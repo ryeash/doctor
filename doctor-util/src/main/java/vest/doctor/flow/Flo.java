@@ -7,7 +7,6 @@ import vest.doctor.tuple.Tuple4;
 import vest.doctor.tuple.Tuple5;
 
 import java.time.Duration;
-import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
@@ -35,7 +34,7 @@ public interface Flo<I, O> extends Flow.Processor<I, O> {
      * @return a new processing flow of one item
      */
     static <I> Flo<I, I> of(I item) {
-        return from(new StandardSources.OneItemSource<>(Objects.requireNonNull(item)));
+        return from(new StandardSources.SingleSource<>(item));
     }
 
     /**
@@ -71,6 +70,16 @@ public interface Flo<I, O> extends Flow.Processor<I, O> {
     @SuppressWarnings("unused")
     static <I> Flo<I, I> error(Class<I> type, Throwable error) {
         return from(new StandardSources.ErrorSource<>(error));
+    }
+
+    /**
+     * Start a new flow that will emit no items, when subscribed the
+     * {@link Flow.Subscriber#onComplete()} will be called immediately.
+     *
+     * @return a new empty processing flow
+     */
+    static <I> Flo<I, I> empty() {
+        return from(new StandardSources.EmptySource<>());
     }
 
     /**
@@ -157,6 +166,57 @@ public interface Flo<I, O> extends Flow.Processor<I, O> {
      */
     default <NEXT> Flo<I, NEXT> map(Function<O, NEXT> function) {
         return chain(new Step.Mapper<>(function));
+    }
+
+    /**
+     * Map items in the processing flow to a new tuple of 2 values.
+     *
+     * @param mapper the mapper
+     * @return the next tuple processing flow step
+     */
+    default <N1, N2> Flo2<I, N1, N2> map2(Function<O, Tuple2<N1, N2>> mapper) {
+        return new StandardFlo2<>(map(mapper));
+    }
+
+    /**
+     * Map items in the processing flow to a new tuple of 3 values.
+     *
+     * @param mapper the mapper
+     * @return the next tuple processing flow step
+     */
+    default <N1, N2, N3> Flo3<I, N1, N2, N3> map3(Function<O, Tuple3<N1, N2, N3>> mapper) {
+        return new StandardFlo3<>(map(mapper));
+    }
+
+    /**
+     * Map items in the processing flow to a new tuple of 4 values.
+     *
+     * @param mapper the mapper
+     * @return the next tuple processing flow step
+     */
+    default <N1, N2, N3, N4> Flo4<I, N1, N2, N3, N4> map4(Function<O, Tuple4<N1, N2, N3, N4>> mapper) {
+        return new StandardFlo4<>(map(mapper));
+    }
+
+    /**
+     * Map items in the processing flow to a new tuple of 5 values.
+     *
+     * @param mapper the mapper
+     * @return the next tuple processing flow step
+     */
+    default <N1, N2, N3, N4, N5> Flo5<I, N1, N2, N3, N4, N5> map5(Function<O, Tuple5<N1, N2, N3, N4, N5>> mapper) {
+        return new StandardFlo5<>(map(mapper));
+    }
+
+    /**
+     * Increase the arity of the items in the flow by using the value to map to a new one and emit them
+     * together.
+     *
+     * @param mapper the mapper
+     * @return the next tuple processing flow step
+     */
+    default <N> Flo2<I, O, N> affix(Function<O, N> mapper) {
+        return map2(o -> Tuple.of(o, mapper.apply(o)));
     }
 
     /**
@@ -435,49 +495,7 @@ public interface Flo<I, O> extends Flow.Processor<I, O> {
         });
     }
 
-    /**
-     * Attach an arbitrary value to the items in the processing flow.
-     *
-     * @param a the value to affix
-     * @return the next processing flow step
-     */
-    default <A> Flo<I, Tuple2<O, A>> affix(A a) {
-        return map(o -> Tuple.of(o, a));
-    }
-
-    /**
-     * Attach arbitrary values to the items in the processing flow.
-     *
-     * @param a the first value to affix
-     * @param b the second value to affix
-     * @return the next processing flow step
-     */
-    default <A, B> Flo<I, Tuple3<O, A, B>> affix(A a, B b) {
-        return map(o -> Tuple.of(o, a, b));
-    }
-
-    /**
-     * Attach arbitrary values to the items in the processing flow.
-     *
-     * @param a the first value to affix
-     * @param b the second value to affix
-     * @param c the third value to affix
-     * @return the next processing flow step
-     */
-    default <A, B, C> Flo<I, Tuple4<O, A, B, C>> affix(A a, B b, C c) {
-        return map(o -> Tuple.of(o, a, b, c));
-    }
-
-    /**
-     * Attach arbitrary values to the items in the processing flow.
-     *
-     * @param a the first value to affix
-     * @param b the second value to affix
-     * @param c the third value to affix
-     * @param d the fourth value to affix
-     * @return the next processing flow step
-     */
-    default <A, B, C, D> Flo<I, Tuple5<O, A, B, C, D>> affix(A a, B b, C c, D d) {
-        return map(o -> Tuple.of(o, a, b, c, d));
+    default <NEXT> Flo<I, NEXT> signal(Class<NEXT> type, Consumer<Signal<O, ? super NEXT>> action) {
+        return chain(new SignalProcessor<>(action));
     }
 }

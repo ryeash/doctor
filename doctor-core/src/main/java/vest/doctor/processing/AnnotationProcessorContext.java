@@ -5,6 +5,7 @@ import vest.doctor.ProviderRegistry;
 import javax.annotation.processing.Filer;
 import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
@@ -127,6 +128,19 @@ public interface AnnotationProcessorContext {
     <T extends CustomizationPoint> List<T> customizations(Class<T> type);
 
     /**
+     * Get the package name to use for whatever is generated for the given {@link Element}.
+     * @param element the element
+     * @return a package name
+     */
+   default String generatedPackageName(Element element){
+        return processingEnvironment()
+                .getElementUtils()
+                .getPackageOf(element)
+                .getQualifiedName()
+                .toString();
+    }
+
+    /**
      * Create the code to call a constructor. Handles wiring of constructor parameters using the {@link ProviderRegistry}.
      *
      * @param providerDefinition  the provider definition for the type to create the constructor call for
@@ -148,7 +162,18 @@ public interface AnnotationProcessorContext {
      * @return generated code to call the method
      */
     default String executableCall(ProviderDefinition providerDefinition, ExecutableElement executableElement, String instanceRef, String providerRegistryRef) {
-        String parameters = executableElement.getParameters().stream()
+        String parameters = buildParametersList(providerDefinition, executableElement, providerRegistryRef);
+        if (executableElement.getKind() == ElementKind.METHOD) {
+            return instanceRef + "." + executableElement.getSimpleName() + "(" + parameters + ")";
+        } else if (executableElement.getKind() == ElementKind.CONSTRUCTOR) {
+            return "new " + providerDefinition.providedType().getSimpleName() + "(" + parameters + ")";
+        } else {
+            throw new CodeProcessingException("failed to create calling code for ", executableElement);
+        }
+    }
+
+    default String buildParametersList(ProviderDefinition providerDefinition, ExecutableElement executableElement, String providerRegistryRef) {
+        return executableElement.getParameters().stream()
                 .map(ve -> {
                     for (ParameterLookupCustomizer lookup : customizations(ParameterLookupCustomizer.class)) {
                         String code = lookup.lookupCode(this, ve, providerRegistryRef);
@@ -162,14 +187,7 @@ public interface AnnotationProcessorContext {
                     }
                     throw new CodeProcessingException("unable to inject method parameter; no lookup matched", ve);
                 })
-                .collect(Collectors.joining(",\n\t", "(", ")"));
-        if (executableElement.getKind() == ElementKind.METHOD) {
-            return instanceRef + "." + executableElement.getSimpleName() + parameters;
-        } else if (executableElement.getKind() == ElementKind.CONSTRUCTOR) {
-            return "new " + providerDefinition.providedType().getSimpleName() + parameters;
-        } else {
-            throw new CodeProcessingException("failed to create calling code for ", executableElement);
-        }
+                .collect(Collectors.joining(",\n\t", "", ""));
     }
 
     void addServiceImplementation(Class<?> serviceInterface, String fullyQualifiedClassName);

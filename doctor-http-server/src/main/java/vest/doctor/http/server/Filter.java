@@ -29,7 +29,7 @@ public interface Filter extends Prioritized {
      * @return a new before {@link Filter}
      */
     static Filter before(UnaryOperator<Request> function) {
-        return new BeforeFilter(Objects.requireNonNull(function));
+        return new Before(Objects.requireNonNull(function));
     }
 
     /**
@@ -39,17 +39,17 @@ public interface Filter extends Prioritized {
      * @return a new after {@link Filter}
      */
     static Filter after(UnaryOperator<Response> function) {
-        return new AfterFilter(Objects.requireNonNull(function));
+        return new After(Objects.requireNonNull(function));
     }
 
-    record BeforeFilter(UnaryOperator<Request> function) implements Filter {
+    record Before(UnaryOperator<Request> function) implements Filter {
         @Override
         public Flo<?, Response> filter(Request request, FilterChain chain) throws Exception {
             return chain.next(function.apply(request));
         }
     }
 
-    record AfterFilter(UnaryOperator<Response> function) implements Filter {
+    record After(UnaryOperator<Response> function) implements Filter {
         @Override
         public Flo<?, Response> filter(Request request, FilterChain chain) throws Exception {
             return chain.next(request).map(function);

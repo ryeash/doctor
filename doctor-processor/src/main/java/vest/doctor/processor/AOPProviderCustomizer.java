@@ -3,24 +3,28 @@ package vest.doctor.processor;
 import vest.doctor.Factory;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.TypeInfo;
+import vest.doctor.aop.Aspect;
 import vest.doctor.aop.AspectCoordinator;
 import vest.doctor.aop.AspectWrappingProvider;
 import vest.doctor.aop.Aspects;
+import vest.doctor.aop.Attribute;
+import vest.doctor.aop.Attributes;
 import vest.doctor.aop.MethodInvocation;
 import vest.doctor.aop.MethodInvocationImpl;
 import vest.doctor.aop.MethodInvoker;
 import vest.doctor.aop.MethodMetadata;
-import vest.doctor.aop.MutableMethodArgument;
+import vest.doctor.codegen.AnnotationClassValueVisitor;
 import vest.doctor.codegen.ClassBuilder;
+import vest.doctor.codegen.Constants;
+import vest.doctor.codegen.GenericInfo;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
-import vest.doctor.processing.CustomizationPoint;
-import vest.doctor.processing.ProcessorConfiguration;
 import vest.doctor.processing.ProviderCustomizationPoint;
 import vest.doctor.processing.ProviderDefinition;
 
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
@@ -29,30 +33,23 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
-import java.lang.annotation.Annotation;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * Customization that handles the aspected class generation and wrapping.
  */
-public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCustomizationPoint {
-
-    @Override
-    public List<Class<? extends Annotation>> supportedAnnotations() {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public List<CustomizationPoint> customizationPoints() {
-        return Collections.singletonList(this);
-    }
+public class AOPProviderCustomizer implements ProviderCustomizationPoint {
 
     @Override
     public String wrap(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String providerRef, String providerRegistryRef) {
@@ -76,15 +73,16 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
     private String createDelegationClass(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
         TypeElement typeElement = providerDefinition.providedType();
 
+        String packageName = context.generatedPackageName(providerDefinition.providedType());
+
         String delegateClassName = providerDefinition.providedType().getSimpleName() + "__aop" + context.nextId();
-        String delegateQualifiedClassName = context.generatedPackage() + "." + delegateClassName;
+        String delegateQualifiedClassName = packageName + "." + delegateClassName;
         ClassBuilder classBuilder = new ClassBuilder()
                 .setClassName(delegateQualifiedClassName)
                 .addImportClass(ProviderRegistry.class)
                 .addImportClass(MethodMetadata.class)
                 .addImportClass(MethodInvocation.class)
                 .addImportClass(MethodInvocationImpl.class)
-                .addImportClass(MutableMethodArgument.class)
                 .addImportClass(Arrays.class)
                 .addImportClass(Collections.class)
                 .addImportClass(Map.class)
@@ -103,27 +101,37 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
             throw new CodeProcessingException("aspects can only be applied to interfaces and public non-final classes with an empty constructor - invalid class", typeElement);
         }
         classBuilder.addField("private final ", typeElement.getSimpleName(), " delegate");
-        classBuilder.addField("private final ", ProviderRegistry.class.getSimpleName(), " beanProvider");
 
+        //TODO: support non-zero-arity constructors???
         MethodBuilder constructor = classBuilder.newMethod("public ", delegateClassName, "(", typeElement.getSimpleName(), " delegate, ", ProviderRegistry.class.getSimpleName(), " beanProvider)");
+        constructor.line("super();");
         constructor.line("this.delegate = delegate;");
-        constructor.line("this.beanProvider = beanProvider;");
 
         Map<String, String> initializedAspects = new HashMap<>();
         ProcessorUtils.allUniqueMethods(context, providerDefinition.providedType())
-                .forEach(method -> {
-                    Set<Modifier> modifiers = method.getModifiers();
+                .stream()
+                .filter(method -> {
                     // nothing we can do for final, private, or static methods
-                    if (modifiers.contains(Modifier.FINAL) || modifiers.contains(Modifier.PRIVATE) || modifiers.contains(Modifier.STATIC)) {
-                        return;
-                    }
-                    AspectedMethod aspectedMethod = new AspectedMethod(context, method, providerDefinition, initializedAspects);
-
+                    Set<Modifier> modifiers = method.getModifiers();
+                    return !(modifiers.contains(Modifier.FINAL) || modifiers.contains(Modifier.PRIVATE) || modifiers.contains(Modifier.STATIC));
+                })
+                .forEach(method -> {
+                    List<TypeElement> aspectClasses = Stream.of(providerDefinition.annotationSource(), method.getEnclosingElement(), method)
+                            .map(AOPProviderCustomizer::getAspects)
+                            .filter(Objects::nonNull)
+                            .flatMap(Collection::stream)
+                            .distinct()
+                            .map(context.processingEnvironment().getElementUtils()::getTypeElement)
+                            .toList();
                     String methodBody;
-                    if (aspectedMethod.shouldAOP()) {
-                        aspectedMethod.init(classBuilder, constructor);
-                        methodBody = aspectedMethod.buildAspectedMethodBody();
-                        for (TypeElement aspectClass : aspectedMethod.aspectClasses()) {
+                    if (!aspectClasses.isEmpty()) {
+                        methodBody = buildAspectedMethodCall(context,
+                                method,
+                                classBuilder,
+                                constructor,
+                                aspectClasses,
+                                initializedAspects);
+                        for (TypeElement aspectClass : aspectClasses) {
                             context.registerDependency(providerDefinition.asDependency(), context.buildDependency(aspectClass, null, true));
                         }
                     } else {
@@ -181,8 +189,8 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
         sb.append("delegate.").append(method.getSimpleName());
         String parameters = method.getParameters().stream()
                 .map(VariableElement::getSimpleName)
-                .collect(Collectors.joining(", ", "(", ")"));
-        sb.append(parameters).append(";");
+                .collect(Collectors.joining(", ", "(", ");"));
+        sb.append(parameters);
         return sb.toString();
     }
 
@@ -196,5 +204,109 @@ public class AOPProviderCustomizer implements ProcessorConfiguration, ProviderCu
                 && modifiers.contains(Modifier.PUBLIC)
                 && !modifiers.contains(Modifier.FINAL)
                 && typeElement.getKind() == ElementKind.CLASS;
+    }
+
+    private static String buildAspectedMethodCall(AnnotationProcessorContext context,
+                                                  ExecutableElement method,
+                                                  ClassBuilder classBuilder,
+                                                  MethodBuilder constructor,
+                                                  List<TypeElement> aspectClasses,
+                                                  Map<String, String> initializedAspects) {
+        String uniqueId = "asp" + context.nextId();
+        String metadataName = uniqueId + "_metadata";
+        String aspectClassUniqueKey = aspectClasses.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining("|"));
+        classBuilder.addField("private final MethodMetadata " + metadataName);
+        String paramTypes;
+        if (method.getParameters().isEmpty()) {
+            paramTypes = "Collections.emptyList()";
+        } else {
+            paramTypes = method.getParameters().stream()
+                    .map(ProcessorUtils::newTypeInfo)
+                    .collect(Collectors.joining(", ", "List.of(", ")"));
+        }
+        String returnType;
+        if (method.getReturnType().getKind() == TypeKind.VOID) {
+            returnType = "null";
+        } else {
+            returnType = ProcessorUtils.newTypeInfo(new GenericInfo(method.getReturnType()));
+        }
+
+        String attributes = "attributes" + context.nextId();
+        if (method.getAnnotation(Attributes.class) == null) {
+            constructor.line("Map<String, String> ", attributes, " = Collections.emptyMap();");
+        } else {
+            constructor.line("Map<String, String> ", attributes, " = new LinkedHashMap<>();");
+            Attributes attrs = method.getAnnotation(Attributes.class);
+            for (Attribute attribute : attrs.value()) {
+                constructor.line(attributes + ".put(" +
+                        "beanProvider.resolvePlaceholders(\"", ProcessorUtils.escapeStringForCode(attribute.name()), "\"), " +
+                        "beanProvider.resolvePlaceholders(\"", ProcessorUtils.escapeStringForCode(attribute.value()), "\"));");
+            }
+        }
+
+        constructor.line("this." + metadataName + " =  new MethodMetadata(delegate, \"" + method.getSimpleName() + "\", " + paramTypes + ", " + returnType + "," + attributes + ");");
+
+        String aspectName = initializedAspects.computeIfAbsent(aspectClassUniqueKey, s -> {
+            String an = uniqueId + "_aspect";
+            classBuilder.addImportClass(Aspect.class);
+            classBuilder.addImportClass(AspectCoordinator.class);
+            classBuilder.addField("private final " + AspectCoordinator.class.getSimpleName() + " " + an);
+
+            String params = aspectClasses.stream()
+                    .map(c -> "beanProvider.getInstance(" + c + ".class, null)")
+                    .collect(Collectors.joining(", "));
+            constructor.line("this." + an + " = new " + AspectCoordinator.class.getSimpleName() + "(" + params + ");");
+            return an;
+        });
+
+
+        StringBuilder sb = new StringBuilder();
+        String arguments;
+        if (method.getParameters().isEmpty()) {
+            arguments = "Collections.emptyList()";
+        } else {
+            arguments = method.getParameters().stream()
+                    .map(VariableElement::getSimpleName)
+                    .collect(Collectors.joining(", ", "List.of(", ")"));
+        }
+        StringBuilder invoker = new StringBuilder();
+        String invokerParams = IntStream.range(0, method.getParameters().size())
+                .mapToObj(i -> "inv.getArgumentValue(" + i + ")")
+                .collect(Collectors.joining(", ", "(", ")"));
+        String execute = "((" + method.getEnclosingElement().asType() + ") inv.getContainingInstance())." + method.getSimpleName() + invokerParams + ";";
+        invoker.append("inv -> {");
+        if (method.getReturnType().getKind() != TypeKind.VOID) {
+            invoker.append("return ").append(execute);
+        } else {
+            invoker.append(execute)
+                    .append("return null;");
+        }
+        invoker.append("}");
+
+        sb.append("MethodInvocation invocation = new MethodInvocationImpl(")
+                .append(metadataName)
+                .append(", ")
+                .append(arguments)
+                .append(", ")
+                .append(invoker)
+                .append(");\n");
+        if (method.getReturnType().getKind() != TypeKind.VOID) {
+            sb.append("return ");
+        }
+        sb.append(aspectName).append(".call(invocation);");
+        return sb.toString();
+    }
+
+    private static List<String> getAspects(Element element) {
+        return element.getAnnotationMirrors().stream()
+                .filter(am -> am.getAnnotationType().toString().equals(Aspects.class.getCanonicalName()))
+                .flatMap(am -> am.getElementValues().entrySet().stream())
+                .filter(e -> e.getKey().getSimpleName().toString().equals(Constants.ANNOTATION_VALUE))
+                .map(Map.Entry::getValue)
+                .map(AnnotationClassValueVisitor::getValues)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
     }
 }

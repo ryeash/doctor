@@ -7,6 +7,7 @@ import vest.doctor.runtime.StructuredConfigurationSource;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 final class DoctorInstanceManager implements AutoCloseable {
 
@@ -19,21 +20,26 @@ final class DoctorInstanceManager implements AutoCloseable {
     }
 
     private final Map<TestConfiguration, Doctor> instances = new ConcurrentHashMap<>(4, 1, 2);
+    private final AtomicBoolean closed = new AtomicBoolean(false);
 
     public Doctor getOrCreate(TestConfiguration doctorConfig) {
+        if (closed.get()) {
+            throw new InjectionException("this manager has already been shutdown");
+        }
         return instances.computeIfAbsent(doctorConfig, this::create);
     }
 
     private Doctor create(TestConfiguration doctorConfig) {
+        ConfigurationFacade configurationFacade;
         try {
-            ConfigurationFacade configurationFacade = doctorConfig.configurationBuilder().getConstructor().newInstance().get();
+            configurationFacade = doctorConfig.configurationBuilder().getConstructor().newInstance().get();
             for (String location : doctorConfig.propertyFiles()) {
                 configurationFacade.addSource(new StructuredConfigurationSource(location));
             }
-            return Doctor.load(configurationFacade, doctorConfig.modules());
         } catch (Throwable t) {
             throw new InjectionException("failed to create configuration facade for test", t);
         }
+        return Doctor.load(configurationFacade, doctorConfig.modules());
     }
 
     public int size() {
@@ -42,7 +48,9 @@ final class DoctorInstanceManager implements AutoCloseable {
 
     @Override
     public void close() {
-        instances.values().forEach(Doctor::close);
-        instances.clear();
+        if (closed.compareAndSet(false, true)) {
+            instances.values().forEach(Doctor::close);
+            instances.clear();
+        }
     }
 }

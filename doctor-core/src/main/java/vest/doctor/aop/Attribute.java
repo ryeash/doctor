@@ -18,12 +18,12 @@ import java.lang.annotation.Target;
 public @interface Attribute {
 
     /**
-     * The name of the attribute. Can be pulled from properties using '${property.name}' notation.
+     * The name of the attribute. Can be interpolated from properties using '${property.name}' notation.
      */
     String name();
 
     /**
-     * The value of the attribute. Can be pulled from properties using '${property.name}' notation.
+     * The value of the attribute. Can be interpolated from properties using '${property.name}' notation.
      */
     String value();
 }

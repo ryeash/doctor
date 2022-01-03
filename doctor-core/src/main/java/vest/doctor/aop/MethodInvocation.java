@@ -10,7 +10,7 @@ import java.util.Map;
  * Represents an invocation of a method. Providing details about the method that was called as well as the arguments the
  * method was called with. Allows manipulation of arguments and invocation result.
  */
-public interface MethodInvocation {
+public sealed interface MethodInvocation permits MethodInvocationImpl {
 
     /**
      * Get the instance upon which the method was invoked.

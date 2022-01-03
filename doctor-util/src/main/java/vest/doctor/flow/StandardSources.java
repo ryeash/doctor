@@ -61,11 +61,11 @@ public final class StandardSources {
         }
     }
 
-    public static class OneItemSource<I> extends AbstractSource<I> {
+    public static class SingleSource<I> extends AbstractSource<I> {
 
         private final I item;
 
-        public OneItemSource(I item) {
+        public SingleSource(I item) {
             this.item = item;
         }
 
@@ -82,6 +82,19 @@ public final class StandardSources {
             } else {
                 throw new IllegalStateException("no items have been requested");
             }
+        }
+    }
+
+    public static class EmptySource<I> extends AbstractSource<I> {
+
+        @Override
+        public void onNext(I item) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void startSubscription() {
+            onComplete();
         }
     }
 

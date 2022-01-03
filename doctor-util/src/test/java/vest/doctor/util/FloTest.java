@@ -2,11 +2,14 @@ package vest.doctor.util;
 
 import org.testng.annotations.Test;
 import vest.doctor.flow.Flo;
+import vest.doctor.flow.Flo2;
+import vest.doctor.flow.Signal;
 import vest.doctor.tuple.Tuple;
 
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -202,32 +205,6 @@ public class FloTest extends BaseUtilTest {
                 .join();
     }
 
-    public void affix() {
-        Flo.of("a")
-                .affix("b")
-                .observe(expect(1, (it, t) -> assertEquals(t, Tuple.of("a", "b"))))
-                .subscribe()
-                .join();
-
-        Flo.of("a")
-                .affix("b", "c")
-                .observe(expect(1, (it, t) -> assertEquals(t, Tuple.of("a", "b", "c"))))
-                .subscribe()
-                .join();
-
-        Flo.of("a")
-                .affix("b", "c", "d")
-                .observe(expect(1, (it, t) -> assertEquals(t, Tuple.of("a", "b", "c", "d"))))
-                .subscribe()
-                .join();
-
-        Flo.of("a")
-                .affix("b", "c", "d", "e")
-                .observe(expect(1, (it, t) -> assertEquals(t, Tuple.of("a", "b", "c", "d", "e"))))
-                .subscribe()
-                .join();
-    }
-
     public void basicBackpressure() {
         AtomicInteger c = new AtomicInteger(0);
         Flo.iterate(strings)
@@ -276,5 +253,69 @@ public class FloTest extends BaseUtilTest {
                 .map(s -> s.getBytes()[100])
                 .subscribe()
                 .join());
+    }
+
+    public void empty() {
+        Object result = Flo.empty()
+                .subscribe()
+                .join();
+        assertNull(result);
+    }
+
+    public void signalProcessor() {
+        Flo.iterate(strings)
+                .signal(String.class, s -> {
+                    if (s.type() == Signal.Type.ITEM) {
+                        s.emit(s.item().toUpperCase());
+                    } else {
+                        s.defaultAction();
+                    }
+                })
+                .collect(Collectors.toList())
+                .parallel()
+                .observe(expect(1, (it, l) -> assertEquals(l, upperString)))
+                .subscribe()
+                .join();
+    }
+
+    public void tupleFlow() {
+        Flo.iterate(strings)
+                .affix(String::length)
+                .observe((str, len) -> assertEquals(str.length(), (int) len))
+                .map2(t -> Tuple.of(t.second(), t.first()))
+                .observe((len, str) -> assertEquals(str.length(), (int) len))
+                .subscribe()
+                .join();
+
+        Flo.iterate(strings)
+                .affix(String::length)
+                .affix((str, len) -> str.toUpperCase())
+                .observe((str, len, upper) -> {
+                    assertEquals(str.length(), (int) len);
+                    assertEquals(str.toUpperCase(), upper);
+                })
+                .subscribe()
+                .join();
+
+        Flo2.of(Map.of("a", 1,
+                        "b", 2,
+                        "c", 3))
+                .observe((str, it) -> assertEquals(str.charAt(0) - 'a' + 1, (int) it))
+                .subscribe();
+
+        Flo.of('a')
+                .affix(a -> (char) (a + 1))
+                .affix((a, b) -> (char) (b + 1))
+                .affix((a, b, c) -> (char) (c + 1))
+                .affix((a, b, c, d) -> (char) (d + 1))
+                .observe((a, b, c, d, e) -> {
+                    assertEquals((char) a, 'a');
+                    assertEquals((char) b, 'b');
+                    assertEquals((char) c, 'c');
+                    assertEquals((char) d, 'd');
+                    assertEquals((char) e, 'e');
+                })
+                .subscribe()
+                .join();
     }
 }

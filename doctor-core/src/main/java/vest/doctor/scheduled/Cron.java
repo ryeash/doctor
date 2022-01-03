@@ -54,7 +54,7 @@ import java.util.stream.Stream;
  * <code>@hourly</code>: "0 0 * * * *" - every hour at the top of the hour
  * </pre>
  */
-public class Cron {
+public final class Cron {
 
     private static final Pattern INTEGER_REGEX = Pattern.compile("\\d+");
     private static final Pattern RANGE_REGEX = Pattern.compile("([a-zA-Z0-9]+)-([a-zA-Z0-9]+)");

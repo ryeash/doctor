@@ -150,6 +150,7 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                 .addImportClass(DoctorProvider.class)
                 .addImportClass(InjectionException.class)
                 .addImplementsInterface(DoctorProvider.class.getSimpleName() + "<" + providedType().getSimpleName() + ">")
+                .addClassAnnotation("@SuppressWarnings(\"unchecked\")")
                 .addField("private final ", ProviderRegistry.class.getSimpleName(), " {{providerRegistry}}");
 
         MethodBuilder constructor = classBuilder.newMethod("public ", generatedClassName().substring(generatedClassName().lastIndexOf('.') + 1), "(", ProviderRegistry.class, " {{providerRegistry}})");

@@ -38,7 +38,7 @@ public class StandardConversionGenerator implements StringConversionGenerator {
 
         // wrappers
         List.of(Boolean.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class)
-                .forEach(c -> CLASS_TO_CONVERTER.put(c.getCanonicalName(), valueOfCode(c)));
+                .forEach(c -> CLASS_TO_CONVERTER.put(c.getCanonicalName(), c.getCanonicalName() + "::valueOf"));
 
         // misc
         CLASS_TO_CONVERTER.put(String.class.getCanonicalName(), "java.util.function.Function.identity()");
@@ -70,10 +70,6 @@ public class StandardConversionGenerator implements StringConversionGenerator {
     @Override
     public int priority() {
         return Integer.MAX_VALUE;
-    }
-
-    private static String valueOfCode(Class<?> c) {
-        return c.getCanonicalName() + "::valueOf";
     }
 
     private static boolean hasStringConstructor(AnnotationProcessorContext context, TypeMirror targetType) {

@@ -3,44 +3,44 @@ package vest.doctor.aop;
 import vest.doctor.TypeInfo;
 
 import java.lang.reflect.Method;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-public class MethodInvocationImpl implements MethodInvocation {
+public final class MethodInvocationImpl implements MethodInvocation {
 
     private final MethodMetadata methodMetadata;
-    private final List<MutableMethodArgument> argumentList;
-    private final MethodInvoker<MethodInvocation, ?> methodInvoker;
+    private final List<Object> argumentList;
+    private final MethodInvoker<?> methodInvoker;
     private Object result;
     private boolean invoked = false;
     private boolean invokable = true;
 
-    public MethodInvocationImpl(MethodMetadata methodMetadata, List<MutableMethodArgument> argumentList, MethodInvoker<MethodInvocation, ?> methodInvoker) {
+    public MethodInvocationImpl(MethodMetadata methodMetadata, List<Object> argumentList, MethodInvoker<?> methodInvoker) {
         this.methodMetadata = methodMetadata;
-        this.argumentList = Collections.unmodifiableList(argumentList);
+        this.argumentList = new ArrayList<>(argumentList);
         this.methodInvoker = methodInvoker;
     }
 
     @Override
     public Object getContainingInstance() {
-        return methodMetadata.getContainingInstance();
+        return methodMetadata.containingInstance();
     }
 
     @Override
     public String getMethodName() {
-        return methodMetadata.getMethodName();
+        return methodMetadata.methodName();
     }
 
     @Override
     public List<TypeInfo> getMethodParameters() {
-        return methodMetadata.getMethodParameters();
+        return methodMetadata.methodParameters();
     }
 
     @Override
     public TypeInfo getReturnType() {
-        return methodMetadata.getReturnType();
+        return methodMetadata.returnType();
     }
 
     @Override
@@ -49,13 +49,14 @@ public class MethodInvocationImpl implements MethodInvocation {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T getArgumentValue(int i) {
-        return argumentList.get(i).getValue();
+        return (T) argumentList.get(i);
     }
 
     @Override
     public void setArgumentValue(int i, Object o) {
-        argumentList.get(i).setValue(o);
+        argumentList.set(i, o);
     }
 
     @Override
@@ -87,14 +88,14 @@ public class MethodInvocationImpl implements MethodInvocation {
 
     @Override
     public Method getMethod() throws NoSuchMethodException {
-        return methodMetadata.getContainingInstance()
+        return methodMetadata.containingInstance()
                 .getClass()
-                .getMethod(methodMetadata.getMethodName(), methodMetadata.getMethodParameters().stream().map(TypeInfo::getRawType).toArray(Class<?>[]::new));
+                .getMethod(methodMetadata.methodName(), methodMetadata.methodParameters().stream().map(TypeInfo::getRawType).toArray(Class<?>[]::new));
     }
 
     @Override
     public Map<String, String> attributes() {
-        return methodMetadata.getAttributes();
+        return methodMetadata.attributes();
     }
 
     public void setInvokable(boolean invokable) {
@@ -103,8 +104,12 @@ public class MethodInvocationImpl implements MethodInvocation {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         MethodInvocationImpl that = (MethodInvocationImpl) o;
         return Objects.equals(methodMetadata, that.methodMetadata)
                 && Objects.equals(argumentList, that.argumentList);

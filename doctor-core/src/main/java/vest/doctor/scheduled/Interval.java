@@ -28,9 +28,10 @@ import java.util.regex.Pattern;
  * 10s -> 10 seconds
  * 50ms -> 50 milliseconds
  * 12345 us -> 12345 microseconds
+ * 42 -> 42 milliseconds
  * </pre>
  */
-public class Interval {
+public final class Interval {
 
     private static final Pattern INTERVAL_REGEX = Pattern.compile("^([0-9]+)\\s*([a-zA-Z]+)?");
 

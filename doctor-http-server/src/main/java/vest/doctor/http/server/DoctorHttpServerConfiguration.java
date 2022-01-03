@@ -4,7 +4,8 @@ import vest.doctor.http.server.impl.Router;
 import vest.doctor.netty.common.HttpServerConfiguration;
 
 /**
- * Configuration for {@link HttpServer}.
+ * Configuration for {@link vest.doctor.netty.common.NettyHttpServer} with specific configuration
+ * related to request routing.
  */
 public class DoctorHttpServerConfiguration extends HttpServerConfiguration {
 

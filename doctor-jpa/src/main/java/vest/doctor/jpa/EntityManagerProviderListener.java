@@ -79,6 +79,7 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
         if (jpaAppLoader != null) {
             jpaAppLoader.writeClass(context.filer());
             context.addServiceImplementation(ApplicationLoader.class, jpaAppLoader.getFullyQualifiedClassName());
+            jpaAppLoader = null;
         }
     }
 

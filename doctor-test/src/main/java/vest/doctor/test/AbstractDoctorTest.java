@@ -23,6 +23,8 @@ import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -136,7 +138,7 @@ public abstract class AbstractDoctorTest extends Assert {
                     if (a instanceof Named named) {
                         return named.value();
                     } else {
-                        return a;
+                        return annotationString(a);
                     }
                 })
                 .map(String::valueOf)
@@ -155,5 +157,29 @@ public abstract class AbstractDoctorTest extends Assert {
             }
         }
         return Optional.empty();
+    }
+
+    private static String annotationString(Annotation annotation) {
+        if (annotation == null) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("@").append(annotation.annotationType().getCanonicalName());
+        Map<String, String> methodToValue = new HashMap<>();
+        for (Method declaredMethod : annotation.annotationType().getDeclaredMethods()) {
+            try {
+                Object value = declaredMethod.invoke(annotation);
+                methodToValue.put(declaredMethod.getName(), String.valueOf(value));
+            } catch (Throwable e) {
+                throw new RuntimeException("failed to build annotation string", e);
+            }
+        }
+        String valuesString = methodToValue.entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(e -> e.getKey() + "=" + e.getValue())
+                .collect(Collectors.joining(", ", "(", ")"));
+        sb.append(valuesString);
+        return sb.toString();
     }
 }

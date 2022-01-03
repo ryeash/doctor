@@ -22,7 +22,7 @@ public class TCNettyFilter implements Filter {
 
     private static final Logger log = LoggerFactory.getLogger(TCNettyFilter.class);
     private static final AtomicLong totalBytes = new AtomicLong(0);
-    private static final Heartbeat heartbeat = new Heartbeat(20);
+    private static final Heartbeat heartbeat = new Heartbeat(5);
 
     @Override
     public Flo<?, Response> filter(Request request, FilterChain chain) throws Exception {

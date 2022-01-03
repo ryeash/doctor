@@ -1,6 +1,5 @@
 package vest.doctor.processing;
 
-import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
 
 import javax.lang.model.element.VariableElement;
@@ -9,7 +8,7 @@ import javax.lang.model.element.VariableElement;
  * Used to customize the value that is injected into factory methods and injected constructors, as well as {@link jakarta.inject.Inject}
  * marked methods (for post construction injection).
  */
-public interface ParameterLookupCustomizer extends CustomizationPoint, Prioritized {
+public interface ParameterLookupCustomizer extends CustomizationPoint {
 
     /**
      * Generate the lookup code for a parameter. Return null to indicate this customizer does not handle the target
