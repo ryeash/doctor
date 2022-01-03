@@ -104,6 +104,9 @@ These are the built-in scopes supported:
 - [@ThreadLocal](doctor-core/src/main/java/vest/doctor/ThreadLocal.java): one instance is created per thread
 - [@Cached](doctor-core/src/main/java/vest/doctor/Cached.java): an instance is created and shared for a configurable
   length of time
+- [@Reloadable](doctor-core/src/main/java/vest/doctor/Reloadable.java): an instance is created and cached until a 
+  [ReloadProviders](doctor-core/src/main/java/vest/doctor/event/ReloadProviders.java) event is produced, at which point
+  the cached instance will be cleared and a new instance will be created the next time an instance is requested (lazily)
 
 ### Qualifiers
 
