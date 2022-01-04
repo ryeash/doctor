@@ -18,10 +18,12 @@ public class WeakList<T> implements Iterable<T> {
         }
         cSet.add(new WeakReference<>(reference, queue));
 
-        // expunge enqueued (garbage collected) references
-        Reference<? extends T> ref;
-        while ((ref = queue.poll()) != null) {
-            cSet.remove(ref);
+        if (cSet.size() % 4 == 0) {
+            // expunge enqueued (garbage collected) references
+            Reference<? extends T> ref;
+            while ((ref = queue.poll()) != null) {
+                cSet.remove(ref);
+            }
         }
     }
 
