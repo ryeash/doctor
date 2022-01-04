@@ -23,11 +23,22 @@ public final class CachedScopeProvider<T> extends DoctorProviderWrapper<T> {
         if (expires == 0 || System.nanoTime() > expires) {
             synchronized (this) {
                 if (temp == expires) {
-                    this.value = delegate.get();
-                    this.expires = System.nanoTime() + ttlNanos;
+                    try {
+                        destroy(value);
+                    } catch (Exception e) {
+                        // TODO
+                        e.printStackTrace();
+                    }
+                    value = delegate.get();
+                    expires = System.nanoTime() + ttlNanos;
                 }
             }
         }
         return value;
+    }
+
+    @Override
+    public void close() throws Exception {
+        destroy(value);
     }
 }

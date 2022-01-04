@@ -24,10 +24,20 @@ public final class ReloadableScopeProvider<T> extends DoctorProviderWrapper<T> {
         return value.updateAndGet(v -> v == null ? delegate.get() : v);
     }
 
+    @Override
+    public void close() throws Exception {
+        clearValue(null);
+    }
+
     private void clearValue(ReloadProviders reloadProviders) {
         T previous = value.getAndSet(null);
-        if (previous instanceof AutoCloseable closeable) {
-            ShutdownContainer.closeQuietly(closeable);
+        if (previous != null) {
+            try {
+                destroy(previous);
+            } catch (Throwable t) {
+                // TODO
+                t.printStackTrace();
+            }
         }
     }
 }

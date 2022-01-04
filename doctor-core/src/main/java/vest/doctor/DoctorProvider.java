@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * Extension of the {@link Provider} interface to add additional metadata for the provided tye.
  */
-public interface DoctorProvider<T> extends Provider<T> {
+public interface DoctorProvider<T> extends Provider<T>, AutoCloseable {
 
     /**
      * The primary provided type.
@@ -51,4 +51,11 @@ public interface DoctorProvider<T> extends Provider<T> {
      * Check all dependencies are met by the current state of the given {@link ProviderRegistry}.
      */
     void validateDependencies(ProviderRegistry providerRegistry);
+
+    /**
+     * Destroy the given instance that was provided by this provider.
+     *
+     * @param instance the instance to destroy
+     */
+    void destroy(T instance) throws Exception;
 }

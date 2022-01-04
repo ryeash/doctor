@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 
 /**
  * Marks an interface as a properties object. An implementation of the interface will be created by the annotation
- * processor and exposed via a provider. The interface must use {@link Property} annotations on it's methods and
+ * processor and exposed via a provider. The interface must use {@link Property} annotations on its methods and
  * have a {@link jakarta.inject.Scope} (e.g. {@link jakarta.inject.Singleton}).
  */
 @Documented

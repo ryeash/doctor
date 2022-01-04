@@ -10,7 +10,6 @@ import vest.doctor.Primary;
 import vest.doctor.PrimaryProviderWrapper;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
-import vest.doctor.ShutdownContainer;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
@@ -131,7 +130,6 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
                 .addImportClass(Provider.class)
                 .addImportClass(DoctorProvider.class)
                 .addImportClass(PrimaryProviderWrapper.class)
-                .addImportClass(ShutdownContainer.class)
                 .addClassAnnotation("@SuppressWarnings(\"unchecked\")")
                 .addField("private final List<", DoctorProvider.class, "<?>> eagerList = new LinkedList<>()");
         this.stage3 = appLoader.newMethod("public void stage3(", ProviderRegistry.class, " {{providerRegistry}})");

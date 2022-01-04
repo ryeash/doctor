@@ -5,6 +5,7 @@ import vest.doctor.Cached;
 import vest.doctor.CachedScopeProvider;
 import vest.doctor.DestroyMethod;
 import vest.doctor.Prototype;
+import vest.doctor.PrototypeScopeProvider;
 import vest.doctor.Reloadable;
 import vest.doctor.ReloadableScopeProvider;
 import vest.doctor.SingletonScopedProvider;
@@ -32,7 +33,7 @@ class DoctorScopeWriter implements ScopeWriter {
         } else if (ProcessorUtils.isCompatibleWith(context, scope.getAnnotationType(), Cached.class)) {
             return cached(providerDefinition, providerRef);
         } else if (ProcessorUtils.isCompatibleWith(context, scope.getAnnotationType(), Prototype.class)) {
-            return providerRef;
+            return prototype(providerRef);
         } else if (ProcessorUtils.isCompatibleWith(context, scope.getAnnotationType(), Reloadable.class)) {
             return reloadable(context, providerDefinition, providerRef);
         } else {
@@ -58,7 +59,10 @@ class DoctorScopeWriter implements ScopeWriter {
         Interval interval = new Interval(cached.value());
         long ttl = TimeUnit.NANOSECONDS.convert(interval.getMagnitude(), interval.getUnit());
         return "new " + CachedScopeProvider.class.getCanonicalName() + "(" + providerRef + ", " + ttl + ")";
+    }
 
+    private String prototype(String providerRef) {
+        return "new " + PrototypeScopeProvider.class.getCanonicalName() + "(" + providerRef + ")";
     }
 
     private String reloadable(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String providerRef) {

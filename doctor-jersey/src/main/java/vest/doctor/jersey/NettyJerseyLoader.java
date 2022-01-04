@@ -5,14 +5,13 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import jakarta.ws.rs.Path;
 import org.glassfish.jersey.server.ResourceConfig;
+import vest.doctor.AdHocProvider;
 import vest.doctor.ApplicationLoader;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.DoctorProvider;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.event.EventBus;
-import vest.doctor.event.EventProducer;
 import vest.doctor.event.ServiceStarted;
-import vest.doctor.event.ServiceStopped;
 import vest.doctor.jersey.ext.DoctorCustomValueParamProvider;
 import vest.doctor.netty.common.HttpServerConfiguration;
 import vest.doctor.netty.common.NettyHttpServer;
@@ -59,14 +58,16 @@ public final class NettyJerseyLoader implements ApplicationLoader {
                 new JerseyChannelAdapter(httpConfig, container, providerRegistry),
                 false);
 
+        DoctorProvider<NettyHttpServer> serverProvider = new AdHocProvider<>(
+                NettyHttpServer.class,
+                httpServer,
+                "jersey",
+                httpServer
+        );
+        providerRegistry.register(serverProvider);
+
         Optional<EventBus> eventBusOpt = providerRegistry.getInstanceOpt(EventBus.class);
         eventBusOpt.ifPresent(eventBus -> eventBus.publish(new ServiceStarted("netty-jersey-http", httpServer)));
-
-        providerRegistry.shutdownContainer().register(() -> {
-            httpServer.close();
-            providerRegistry.getInstance(EventProducer.class)
-                    .publish(new ServiceStopped("netty-jersey-http", httpServer));
-        });
         Runtime.getRuntime().addShutdownHook(new Thread(() -> container.getApplicationHandler().onShutdown(container), "netty-server-shutdown"));
     }
 

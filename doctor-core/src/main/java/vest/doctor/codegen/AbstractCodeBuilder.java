@@ -24,7 +24,6 @@ public abstract class AbstractCodeBuilder<S extends AbstractCodeBuilder<?>> {
     protected AbstractCodeBuilder() {
         this.vars = new HashMap<>();
         bind("providerRegistry", Constants.PROVIDER_REGISTRY);
-        bind("shutdownContainer", Constants.SHUTDOWN_CONTAINER_NAME);
         this.lines = new LinkedList<>();
     }
 

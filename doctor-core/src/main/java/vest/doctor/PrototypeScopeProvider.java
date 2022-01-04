@@ -5,19 +5,19 @@ import java.util.Iterator;
 /**
  * Provider wrapper that supports the {@link ThreadLocal} scope.
  */
-public final class ThreadLocalScopedProvider<T> extends DoctorProviderWrapper<T> {
+public final class PrototypeScopeProvider<T> extends DoctorProviderWrapper<T> {
 
-    private final java.lang.ThreadLocal<T> tfInstance;
     private final WeakList<T> weakList = new WeakList<>();
 
-    public ThreadLocalScopedProvider(DoctorProvider<T> delegate) {
+    public PrototypeScopeProvider(DoctorProvider<T> delegate) {
         super(delegate);
-        this.tfInstance = java.lang.ThreadLocal.withInitial(this::newInstance);
     }
 
     @Override
     public T get() {
-        return tfInstance.get();
+        T value = delegate.get();
+        weakList.register(value);
+        return value;
     }
 
     @Override
@@ -28,11 +28,5 @@ public final class ThreadLocalScopedProvider<T> extends DoctorProviderWrapper<T>
             iterator.remove();
             destroy(next);
         }
-    }
-
-    private T newInstance() {
-        T t = delegate.get();
-        weakList.register(t);
-        return t;
     }
 }

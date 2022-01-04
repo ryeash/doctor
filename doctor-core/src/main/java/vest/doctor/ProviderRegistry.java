@@ -167,11 +167,6 @@ public interface ProviderRegistry {
     ConfigurationFacade configuration();
 
     /**
-     * Get the {@link ShutdownContainer} associated with this registry.
-     */
-    ShutdownContainer shutdownContainer();
-
-    /**
      * Convenience method for <code>configuration().resolvePlaceholders(string)</code>.
      *
      * @param string the string to resolve

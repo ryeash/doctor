@@ -10,9 +10,7 @@ import vest.doctor.ConfigurationFacade;
 import vest.doctor.DoctorProvider;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.event.EventBus;
-import vest.doctor.event.EventProducer;
 import vest.doctor.event.ServiceStarted;
-import vest.doctor.event.ServiceStopped;
 import vest.doctor.http.server.DoctorHttpServerConfiguration;
 import vest.doctor.http.server.ExceptionHandler;
 import vest.doctor.http.server.impl.CompositeExceptionHandler;
@@ -59,16 +57,16 @@ public class NettyLoader implements ApplicationLoader {
                 doctorHttpHandler,
                 true);
 
-        providerRegistry.register(new AdHocProvider<>(NettyHttpServer.class, server, null));
+        DoctorProvider<NettyHttpServer> serverProvider = new AdHocProvider<>(
+                NettyHttpServer.class,
+                server,
+                "netty",
+                server
+        );
+        providerRegistry.register(serverProvider);
 
         Optional<EventBus> eventBusOpt = providerRegistry.getInstanceOpt(EventBus.class);
         eventBusOpt.ifPresent(eventBus -> eventBus.publish(new ServiceStarted("netty-http", server)));
-
-        providerRegistry.shutdownContainer().register(() -> {
-            server.close();
-            providerRegistry.getInstance(EventProducer.class)
-                    .publish(new ServiceStopped("netty-http", server));
-        });
     }
 
     private DoctorHttpServerConfiguration buildConf(ProviderRegistry providerRegistry) {

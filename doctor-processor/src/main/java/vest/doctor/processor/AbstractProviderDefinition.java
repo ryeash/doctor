@@ -1,6 +1,7 @@
 package vest.doctor.processor;
 
 import jakarta.inject.Provider;
+import vest.doctor.DestroyMethod;
 import vest.doctor.DoctorProvider;
 import vest.doctor.ExplicitProvidedTypes;
 import vest.doctor.InjectionException;
@@ -19,6 +20,8 @@ import vest.doctor.processing.ProviderDependency;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import java.lang.annotation.Annotation;
@@ -201,6 +204,31 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                             .collect(AS_LIST))
                     .addMethod("public List<String> modules()", b -> b.line("return modules;"));
         }
+
+        classBuilder.addMethod("@Override public void destroy(" + providedType().getSimpleName() + " instance) throws Exception", destroy -> {
+            if (annotationSource().getAnnotation(DestroyMethod.class) != null) {
+                DestroyMethod destroyAnnotation = annotationSource().getAnnotation(DestroyMethod.class);
+                String destroyMethod = destroyAnnotation.value();
+                for (TypeElement providedType : getAllProvidedTypes()) {
+                    for (ExecutableElement m : ProcessorUtils.allMethods(context, providedType)) {
+                        if (m.getModifiers().contains(Modifier.PUBLIC) && m.getSimpleName().toString().equals(destroyMethod) && m.getParameters().size() == 0) {
+                            destroy.line("((" + providedType.getSimpleName() + ")instance).", destroyAnnotation.value(), "();");
+                            return;
+                        }
+                    }
+                }
+                throw new CodeProcessingException("invalid destroy method `" + providedType() + "." + destroyAnnotation.value() + "` is not valid; destroy methods must exist, be public, and have zero arguments");
+            } else {
+                destroy.addImportClass(AutoCloseable.class);
+                destroy.line("if(instance instanceof ", AutoCloseable.class, "){");
+                destroy.line("((", AutoCloseable.class, ")instance).close();");
+                destroy.line("}");
+            }
+        });
+
+        classBuilder.addMethod("@Override public void close() throws Exception", close -> {
+
+        });
 
         // must define the .get() method
         return classBuilder;

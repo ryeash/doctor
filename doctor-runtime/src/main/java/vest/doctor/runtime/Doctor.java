@@ -9,7 +9,6 @@ import vest.doctor.ConfigurationFacade;
 import vest.doctor.DoctorProvider;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
-import vest.doctor.ShutdownContainer;
 import vest.doctor.event.ApplicationShutdown;
 import vest.doctor.event.ApplicationStarted;
 import vest.doctor.event.EventProducer;
@@ -106,7 +105,6 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
     private final List<String> activeModules;
     private final ProviderIndex providerIndex;
     private final ConfigurationFacade configurationFacade;
-    private final ShutdownContainer shutdownContainer;
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     /**
@@ -123,7 +121,6 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         providerIndex.setProvider(new AdHocProvider<>(Doctor.class, this, null, List.of(Doctor.class, ProviderRegistry.class)));
         this.activeModules = activeModules;
         this.configurationFacade = configurationFacade;
-        this.shutdownContainer = new ShutdownContainer();
 
         log.debug("Active modules: {}", this.activeModules);
         log.debug("Configuration: {}", this.configurationFacade);
@@ -230,11 +227,6 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
     }
 
     @Override
-    public ShutdownContainer shutdownContainer() {
-        return shutdownContainer;
-    }
-
-    @Override
     public String resolvePlaceholders(String string) {
         return configurationFacade.resolvePlaceholders(string);
     }
@@ -245,7 +237,14 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
             getProviderOpt(EventProducer.class, null)
                     .map(Provider::get)
                     .ifPresent(ep -> ep.publish(new ApplicationShutdown(this)));
-            shutdownContainer.close();
+            providerIndex.allProviders()
+                    .forEach(p -> {
+                        try {
+                            p.close();
+                        } catch (Throwable t) {
+                            log.error("error closing provider {}", p, t);
+                        }
+                    });
         }
     }
 

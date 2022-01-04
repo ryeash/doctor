@@ -24,4 +24,9 @@ public final class SingletonScopedProvider<T> extends DoctorProviderWrapper<T> {
         }
         return instance;
     }
+
+    @Override
+    public void close() throws Exception {
+        destroy(instance);
+    }
 }
