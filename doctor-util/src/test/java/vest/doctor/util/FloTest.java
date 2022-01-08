@@ -2,7 +2,6 @@ package vest.doctor.util;
 
 import org.testng.annotations.Test;
 import vest.doctor.flow.Flo;
-import vest.doctor.flow.Signal;
 import vest.doctor.tuple.Tuple;
 
 import java.time.Duration;
@@ -259,22 +258,6 @@ public class FloTest extends BaseUtilTest {
                 .subscribe()
                 .join();
         assertNull(result);
-    }
-
-    public void signalProcessor() {
-        Flo.iterate(strings)
-                .signal(String.class, s -> {
-                    if (s.type() == Signal.Type.ITEM) {
-                        s.emit(s.item().toUpperCase());
-                    } else {
-                        s.defaultAction();
-                    }
-                })
-                .collect(Collectors.toList())
-                .parallel()
-                .observe(expect(1, (it, l) -> assertEquals(l, upperString)))
-                .subscribe()
-                .join();
     }
 
     public void tupleFlow() {

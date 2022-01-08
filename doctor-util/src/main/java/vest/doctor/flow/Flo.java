@@ -42,8 +42,7 @@ public interface Flo<I, O> extends Flow.Processor<I, O> {
      * @return a new processing flow for the entry set of the map
      */
     static <K, V> Flo<?, Tuple2<K, V>> ofEntries(Map<K, V> map) {
-        return iterate(map.entrySet())
-                .map(Tuple::of);
+        return iterate(map.entrySet()).map(Tuple::of);
     }
 
     /**
@@ -451,9 +450,5 @@ public interface Flo<I, O> extends Flow.Processor<I, O> {
                 // ignored
             }
         });
-    }
-
-    default <NEXT> Flo<I, NEXT> signal(Class<NEXT> type, Consumer<Signal<O, ? super NEXT>> action) {
-        return chain(new SignalProcessor<>(action));
     }
 }

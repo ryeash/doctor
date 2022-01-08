@@ -91,6 +91,7 @@
                     <compilerArgs>
                         <arg>-parameters</arg>
                         <arg>-Adoctor.ignore.packages=demo.app.ignored,org.dummy</arg>
+                        <arg>-Adoctor.generated.packagename=test_app.generated</arg>
                     </compilerArgs>
                     <maxmem>2g</maxmem>
                 </configuration>
