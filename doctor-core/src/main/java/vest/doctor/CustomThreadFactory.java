@@ -2,15 +2,15 @@ package vest.doctor;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
 import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Implements {@link ThreadFactory} and {@link java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory} and allows
- * for customizing the generated {@link Thread}s.
+ * Implements {@link ThreadFactory} and {@link ForkJoinWorkerThreadFactory} and supports customizing the generated {@link Thread}s.
  */
-public final class CustomThreadFactory implements ThreadFactory, ForkJoinPool.ForkJoinWorkerThreadFactory {
+public final class CustomThreadFactory implements ThreadFactory, ForkJoinWorkerThreadFactory {
 
     private static final ThreadFactory defaultThreadFactory = Executors.defaultThreadFactory();
     private final AtomicInteger counter = new AtomicInteger(0);

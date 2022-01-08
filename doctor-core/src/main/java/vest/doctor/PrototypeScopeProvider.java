@@ -15,9 +15,7 @@ public final class PrototypeScopeProvider<T> extends DoctorProviderWrapper<T> {
 
     @Override
     public T get() {
-        T value = delegate.get();
-        weakList.register(value);
-        return value;
+        return weakList.register(delegate.get());
     }
 
     @Override

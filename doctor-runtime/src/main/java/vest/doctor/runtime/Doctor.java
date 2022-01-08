@@ -11,7 +11,7 @@ import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.event.ApplicationShutdown;
 import vest.doctor.event.ApplicationStarted;
-import vest.doctor.event.EventProducer;
+import vest.doctor.event.EventBus;
 
 import java.lang.annotation.Annotation;
 import java.util.Collections;
@@ -158,7 +158,8 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         if (configurationFacade.get("doctor.autoShutdown", true, Boolean::valueOf)) {
             Runtime.getRuntime().addShutdownHook(new Thread(this::close, "doctor-shutdown-" + this.hashCode()));
         }
-        getInstance(EventProducer.class).publish(new ApplicationStarted(this));
+        EventBus eventBus = getInstance(EventBus.class);
+        eventBus.publish(new ApplicationStarted(this));
         log.info("\n{}\ninitialized in {}ms", ASCII_ART, (System.currentTimeMillis() - start));
     }
 
@@ -234,17 +235,16 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
     @Override
     public void close() {
         if (closed.compareAndSet(false, true)) {
-            getProviderOpt(EventProducer.class, null)
+            providerIndex.allProviders().forEach(p -> {
+                try {
+                    p.close();
+                } catch (Throwable t) {
+                    log.error("error closing provider {}", p, t);
+                }
+            });
+            getProviderOpt(EventBus.class, null)
                     .map(Provider::get)
                     .ifPresent(ep -> ep.publish(new ApplicationShutdown(this)));
-            providerIndex.allProviders()
-                    .forEach(p -> {
-                        try {
-                            p.close();
-                        } catch (Throwable t) {
-                            log.error("error closing provider {}", p, t);
-                        }
-                    });
         }
     }
 
@@ -257,8 +257,8 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         Map<String, List<DoctorProvider<?>>> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
         providerIndex.allProviders().forEach(p -> {
-            for (Object type : p.allProvidedTypes()) {
-                map.computeIfAbsent(((Class<?>) type).getSimpleName(), s -> new LinkedList<>()).add(p);
+            for (Class<?> type : p.allProvidedTypes()) {
+                map.computeIfAbsent(type.getSimpleName(), s -> new LinkedList<>()).add(p);
             }
         });
 

@@ -274,22 +274,22 @@ Messages can be published and consumed via the EventBus.
 Basics of event produce and consume:
 
 ```java
-
+// This class implements EventConsumer and will receive String events.
 @Singleton
 public class EventExample implements EventConsumer<String> {
 
-  private final EventProducer producer;
+  private final EventBus bus;
 
   @Inject
-  public EventExample(EventProducer producer) {
-    this.producer = producer;
+  public EventExample(EventBus bus) {
+    this.bus = bus;
   }
 
   @Inject
   @Async
-  public void message() {
+  public void sendMessage() {
     // publish a string event when this class is instantiated 
-    producer.publish("test");
+    bus.publish("test");
   }
 
   @Override
@@ -304,7 +304,6 @@ public class EventExample implements EventConsumer<String> {
 The @Async annotation can be used to perform certain actions in a background thread.
 
 ```java
-
 @Singleton
 public class AsyncDemo {
     @Inject

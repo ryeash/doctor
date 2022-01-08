@@ -34,13 +34,11 @@ import java.util.stream.Stream;
 /**
  * Base test for testing applications based on {@link Doctor}. Automatically configures
  * a doctor instance using the {@link TestConfiguration} annotation. The annotation is required
- * and the testing will fail to start with an {@link IllegalStateException} if missing.
+ * and the test will fail to start with an {@link IllegalStateException} if missing.
  */
 public abstract class AbstractDoctorTest extends Assert {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
-
-    @Inject
     private Doctor doctor;
 
     @BeforeClass(alwaysRun = true)

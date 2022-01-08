@@ -1,5 +1,6 @@
 package vest.doctor;
 
+import vest.doctor.event.ErrorEvent;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.ReloadProviders;
 
@@ -11,12 +12,14 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class ReloadableScopeProvider<T> extends DoctorProviderWrapper<T> {
 
     private final AtomicReference<T> value = new AtomicReference<>();
+    private final EventBus eventBus;
 
     public ReloadableScopeProvider(DoctorProvider<T> delegate, ProviderRegistry providerRegistry) {
         super(delegate);
         providerRegistry.getProvider(EventBus.class)
                 .get()
                 .addConsumer(ReloadProviders.class, this::clearValue);
+        this.eventBus = providerRegistry.getInstance(EventBus.class);
     }
 
     @Override
@@ -35,8 +38,7 @@ public final class ReloadableScopeProvider<T> extends DoctorProviderWrapper<T> {
             try {
                 destroy(previous);
             } catch (Throwable t) {
-                // TODO
-                t.printStackTrace();
+                eventBus.publish(new ErrorEvent(t));
             }
         }
     }

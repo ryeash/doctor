@@ -72,8 +72,7 @@ public final class BodyInterchange {
         } else if (data instanceof CompletableFuture<?> future) {
             return Flo.of(future)
                     .mapFuture(Function.identity())
-                    .chain(o -> write(request, o))
-                    .cast(Response.class);
+                    .chain(o -> write(request, o));
         } else if (data instanceof Response response) {
             return Flo.of(response);
         } else if (data instanceof ResponseBody body) {

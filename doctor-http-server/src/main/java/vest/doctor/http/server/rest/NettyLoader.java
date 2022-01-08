@@ -25,7 +25,6 @@ import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -64,9 +63,7 @@ public class NettyLoader implements ApplicationLoader {
                 server
         );
         providerRegistry.register(serverProvider);
-
-        Optional<EventBus> eventBusOpt = providerRegistry.getInstanceOpt(EventBus.class);
-        eventBusOpt.ifPresent(eventBus -> eventBus.publish(new ServiceStarted("netty-http", server)));
+        providerRegistry.getInstance(EventBus.class).publish(new ServiceStarted("netty-http", server));
     }
 
     private DoctorHttpServerConfiguration buildConf(ProviderRegistry providerRegistry) {

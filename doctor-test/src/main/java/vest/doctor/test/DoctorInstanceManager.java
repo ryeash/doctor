@@ -5,9 +5,11 @@ import vest.doctor.InjectionException;
 import vest.doctor.runtime.Doctor;
 import vest.doctor.runtime.StructuredConfigurationSource;
 
+import java.lang.reflect.Constructor;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 final class DoctorInstanceManager implements AutoCloseable {
 
@@ -30,14 +32,9 @@ final class DoctorInstanceManager implements AutoCloseable {
     }
 
     private Doctor create(TestConfiguration doctorConfig) {
-        ConfigurationFacade configurationFacade;
-        try {
-            configurationFacade = doctorConfig.configurationBuilder().getConstructor().newInstance().get();
-            for (String location : doctorConfig.propertyFiles()) {
-                configurationFacade.addSource(new StructuredConfigurationSource(location));
-            }
-        } catch (Throwable t) {
-            throw new InjectionException("failed to create configuration facade for test", t);
+        ConfigurationFacade configurationFacade = buildConfig(doctorConfig);
+        for (String location : doctorConfig.propertyFiles()) {
+            configurationFacade.addSource(new StructuredConfigurationSource(location));
         }
         return Doctor.load(configurationFacade, doctorConfig.modules());
     }
@@ -51,6 +48,20 @@ final class DoctorInstanceManager implements AutoCloseable {
         if (closed.compareAndSet(false, true)) {
             instances.values().forEach(Doctor::close);
             instances.clear();
+        }
+    }
+
+    private static ConfigurationFacade buildConfig(TestConfiguration config) {
+        Constructor<? extends Supplier<? extends ConfigurationFacade>> constructor;
+        try {
+            constructor = config.configurationBuilder().getConstructor();
+        } catch (NoSuchMethodException e) {
+            throw new InjectionException("invalid configuration builder used in " + config + ", no zero-arg, accessible constructor found", e);
+        }
+        try {
+            return constructor.newInstance().get();
+        } catch (Throwable e) {
+            throw new InjectionException("failed to create new instance of the configuration builder", e);
         }
     }
 }

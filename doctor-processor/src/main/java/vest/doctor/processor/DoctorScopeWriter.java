@@ -58,7 +58,7 @@ class DoctorScopeWriter implements ScopeWriter {
         Cached cached = providerDefinition.annotationSource().getAnnotation(Cached.class);
         Interval interval = new Interval(cached.value());
         long ttl = TimeUnit.NANOSECONDS.convert(interval.getMagnitude(), interval.getUnit());
-        return "new " + CachedScopeProvider.class.getCanonicalName() + "(" + providerRef + ", " + ttl + ")";
+        return "new " + CachedScopeProvider.class.getCanonicalName() + "(" + providerRef + ", " + ttl + ", " + Constants.PROVIDER_REGISTRY + ")";
     }
 
     private String prototype(String providerRef) {

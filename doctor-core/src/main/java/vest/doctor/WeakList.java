@@ -5,17 +5,20 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class WeakList<T> implements Iterable<T> {
+/**
+ * Tracks objects using {@link WeakReference weak references} so they can be cleaned up by
+ * automatic lifecycle management when the provider registry shuts down.
+ */
+public final class WeakList<T> implements Iterable<T> {
     private final ReferenceQueue<T> queue = new ReferenceQueue<>();
     private final Set<Reference<T>> cSet = Collections.newSetFromMap(new ConcurrentHashMap<>(64, 0.9F, 4));
 
-    public void register(T reference) {
-        if (reference == null) {
-            return;
-        }
+    public T register(T reference) {
+        Objects.requireNonNull(reference);
         cSet.add(new WeakReference<>(reference, queue));
 
         if (cSet.size() % 4 == 0) {
@@ -25,26 +28,29 @@ public class WeakList<T> implements Iterable<T> {
                 cSet.remove(ref);
             }
         }
+        return reference;
     }
 
     @Override
     public Iterator<T> iterator() {
-        Iterator<Reference<T>> refIterator = cSet.iterator();
-        return new Iterator<>() {
-            @Override
-            public boolean hasNext() {
-                return refIterator.hasNext();
-            }
+        return new RefIterator<>(cSet.iterator());
+    }
 
-            @Override
-            public T next() {
-                return refIterator.next().get();
-            }
+    private record RefIterator<T>(Iterator<Reference<T>> refIterator) implements Iterator<T> {
 
-            @Override
-            public void remove() {
-                refIterator.remove();
-            }
-        };
+        @Override
+        public boolean hasNext() {
+            return refIterator.hasNext();
+        }
+
+        @Override
+        public T next() {
+            return refIterator.next().get();
+        }
+
+        @Override
+        public void remove() {
+            refIterator.remove();
+        }
     }
 }

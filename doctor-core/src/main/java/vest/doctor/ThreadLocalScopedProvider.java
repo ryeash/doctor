@@ -31,8 +31,6 @@ public final class ThreadLocalScopedProvider<T> extends DoctorProviderWrapper<T>
     }
 
     private T newInstance() {
-        T t = delegate.get();
-        weakList.register(t);
-        return t;
+        return weakList.register(delegate.get());
     }
 }

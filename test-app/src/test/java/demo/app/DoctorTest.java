@@ -6,7 +6,7 @@ import demo.app.ignored.TCIgnoredClass;
 import jakarta.inject.Provider;
 import org.testng.annotations.Test;
 import vest.doctor.ConfigurationFacade;
-import vest.doctor.event.EventProducer;
+import vest.doctor.event.EventBus;
 import vest.doctor.event.ReloadConfiguration;
 import vest.doctor.event.ReloadProviders;
 
@@ -193,7 +193,7 @@ public class DoctorTest extends AbstractTestAppTest {
 
     @Test
     public void configurationReload() {
-        EventProducer instance = providerRegistry().getInstance(EventProducer.class);
+        EventBus instance = providerRegistry().getInstance(EventBus.class);
         instance.publish(new ReloadConfiguration());
         assertTrue(TCConfigReload.reloaded);
     }
@@ -219,7 +219,7 @@ public class DoctorTest extends AbstractTestAppTest {
     public void reloadable() {
         TCReloadable first = providerRegistry().getInstance(TCReloadable.class);
         TCReloadable second = providerRegistry().getInstance(TCReloadable.class);
-        providerRegistry().getInstance(EventProducer.class).publish(new ReloadProviders());
+        providerRegistry().getInstance(EventBus.class).publish(new ReloadProviders());
         TCReloadable third = providerRegistry().getInstance(TCReloadable.class);
         assertEquals(first, second);
         assertNotEquals(first, third);

@@ -5,7 +5,7 @@ import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.spi.Container;
 
-final class DoctorJerseyContainer implements Container {
+final class DoctorJerseyContainer implements Container, AutoCloseable {
     private final ApplicationHandler applicationHandler;
 
     public DoctorJerseyContainer(Application application) {
@@ -31,5 +31,10 @@ final class DoctorJerseyContainer implements Container {
     @Override
     public void reload(ResourceConfig configuration) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void close() {
+        getApplicationHandler().onShutdown(this);
     }
 }

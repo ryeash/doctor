@@ -1,7 +1,7 @@
 package vest.doctor.event;
 
 /**
- * Defines an object that can consume events produced via {@link EventProducer#publish(Object)}.
+ * Defines an object that can consume events produced via {@link EventBus#publish(Object)}.
  */
 public interface EventConsumer<T> {
 

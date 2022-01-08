@@ -82,7 +82,7 @@ public class StructuredConfigurationSource implements ConfigurationSource {
 
     @Override
     public void reload() {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(propertyFile.toURL().openStream(), StandardCharsets.UTF_8))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(propertyFile.openStream(), StandardCharsets.UTF_8))) {
             this.properties = parseStructuredPropertiesFile(reader, levelDelimiter);
         } catch (IOException e) {
             throw new UncheckedIOException("Error reading structured properties file", e);

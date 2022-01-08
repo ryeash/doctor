@@ -81,13 +81,15 @@ public class TCNettyEndpoint {
     @Endpoint(method = HttpMethod.POST, path = "/pojo")
     public Flo<?, String> pojo(@Param(type = Body) Person person) {
         log.info("pojo endpoint");
-        return Flo.of(person).map(p -> {
-            try {
-                return new ObjectMapper().writeValueAsString(p);
-            } catch (JsonProcessingException e) {
-                throw new UncheckedIOException(e);
-            }
-        });
+        return Flo.of(person)
+                .map(p -> {
+                    try {
+                        return new ObjectMapper().writeValueAsString(p);
+                    } catch (JsonProcessingException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                })
+                .recover(error -> "there was an error processing the person");
     }
 
     @Endpoint(method = HttpMethod.GET, path = "/headerparam")

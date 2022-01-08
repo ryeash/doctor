@@ -7,8 +7,8 @@ import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import vest.doctor.Async;
 import vest.doctor.event.ApplicationStarted;
+import vest.doctor.event.EventBus;
 import vest.doctor.event.EventConsumer;
-import vest.doctor.event.EventProducer;
 
 @Singleton
 public class TCEvent implements EventConsumer<Object> {
@@ -17,10 +17,10 @@ public class TCEvent implements EventConsumer<Object> {
     public boolean eventListened = false;
     public String messageReceived;
 
-    private final EventProducer producer;
+    private final EventBus producer;
 
     @Inject
-    public TCEvent(EventProducer producer) {
+    public TCEvent(EventBus producer) {
         this.producer = producer;
     }
 
