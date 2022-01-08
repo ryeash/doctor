@@ -8,6 +8,7 @@ import vest.doctor.flow.Flo;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
+import vest.doctor.tuple.Tuple;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -68,11 +69,13 @@ public final class BodyInterchange {
         if (data == null) {
             return Flo.of(request.createResponse().body(ResponseBody.empty()));
         } else if (data instanceof Flo<?, ?> flo) {
-            return flo.chain((o) -> write(request, o));
+            return flo.map(Tuple.affix(request))
+                    .chain(Tuple.function2((o, req) -> write(req, o)));
         } else if (data instanceof CompletableFuture<?> future) {
             return Flo.of(future)
                     .mapFuture(Function.identity())
-                    .chain(o -> write(request, o));
+                    .map(Tuple.affix(request))
+                    .chain(Tuple.function2((o, req) -> write(req, o)));
         } else if (data instanceof Response response) {
             return Flo.of(response);
         } else if (data instanceof ResponseBody body) {
@@ -86,7 +89,9 @@ public final class BodyInterchange {
             Response response = request.createResponse();
             for (BodyWriter writer : writers) {
                 if (writer.canWrite(response, data)) {
-                    return Flo.of(response.body(writer.write(response, data)));
+                    return Flo.of(Tuple.of(response, data))
+                            .map(Tuple.function2(writer::write))
+                            .map(response::body);
                 }
             }
             throw new UnsupportedOperationException("unsupported response type: " + response.getClass());

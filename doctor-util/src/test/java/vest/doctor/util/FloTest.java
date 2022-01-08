@@ -2,7 +2,6 @@ package vest.doctor.util;
 
 import org.testng.annotations.Test;
 import vest.doctor.flow.Flo;
-import vest.doctor.flow.Flo2;
 import vest.doctor.flow.Signal;
 import vest.doctor.tuple.Tuple;
 
@@ -280,41 +279,41 @@ public class FloTest extends BaseUtilTest {
 
     public void tupleFlow() {
         Flo.iterate(strings)
-                .affix(String::length)
-                .observe((str, len) -> assertEquals(str.length(), (int) len))
-                .map2(t -> Tuple.of(t.second(), t.first()))
-                .observe((len, str) -> assertEquals(str.length(), (int) len))
+                .map(Tuple.affix(String::length))
+                .observe(Tuple.consumer2((str, len) -> assertEquals(str.length(), (int) len)))
+                .map(t -> Tuple.of(t.second(), t.first()))
+                .observe(Tuple.consumer2((len, str) -> assertEquals(str.length(), (int) len)))
                 .subscribe()
                 .join();
 
         Flo.iterate(strings)
-                .affix(String::length)
-                .affix((str, len) -> str.toUpperCase())
-                .observe((str, len, upper) -> {
+                .map(Tuple.affix(String::length))
+                .map(Tuple.affix2((str, len) -> str.toUpperCase()))
+                .observe(Tuple.consumer3((str, len, upper) -> {
                     assertEquals(str.length(), (int) len);
                     assertEquals(str.toUpperCase(), upper);
-                })
+                }))
                 .subscribe()
                 .join();
 
-        Flo2.of(Map.of("a", 1,
+        Flo.ofEntries(Map.of("a", 1,
                         "b", 2,
                         "c", 3))
-                .observe((str, it) -> assertEquals(str.charAt(0) - 'a' + 1, (int) it))
+                .observe(Tuple.consumer2((str, it) -> assertEquals(str.charAt(0) - 'a' + 1, (int) it)))
                 .subscribe();
 
         Flo.of('a')
-                .affix(a -> (char) (a + 1))
-                .affix((a, b) -> (char) (b + 1))
-                .affix((a, b, c) -> (char) (c + 1))
-                .affix((a, b, c, d) -> (char) (d + 1))
-                .observe((a, b, c, d, e) -> {
+                .map(Tuple.affix(a -> (char) (a + 1)))
+                .map(Tuple.affix2((a, b) -> (char) (b + 1)))
+                .map(Tuple.affix3((a, b, c) -> (char) (c + 1)))
+                .map(Tuple.affix4((a, b, c, d) -> (char) (d + 1)))
+                .observe(Tuple.consumer5((a, b, c, d, e) -> {
                     assertEquals((char) a, 'a');
                     assertEquals((char) b, 'b');
                     assertEquals((char) c, 'c');
                     assertEquals((char) d, 'd');
                     assertEquals((char) e, 'e');
-                })
+                }))
                 .subscribe()
                 .join();
     }

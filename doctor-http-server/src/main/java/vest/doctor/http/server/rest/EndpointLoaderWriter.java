@@ -226,7 +226,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
             handler.line(callMethod);
             handler.line("emitter.emit(null);");
         } else {
-            handler.line("Object result = ", callMethod);
+            handler.line(method.getReturnType().toString(), " result = ", callMethod);
             handler.line("emitter.emit(result);");
         }
         handler.line("})");

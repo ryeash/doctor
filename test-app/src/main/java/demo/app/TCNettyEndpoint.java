@@ -51,7 +51,6 @@ public class TCNettyEndpoint {
 
     @Endpoint(method = HttpMethod.GET, path = "/hello2")
     public byte[] hello2() {
-        Locale.forLanguageTag("");
         return "bytes".getBytes();
     }
 

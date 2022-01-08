@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 
 public class DefaultReaderWriter implements BodyReader, BodyWriter {
 
-    private final List<Class<?>> SUPPORTED_TYPES = List.of(
+    private static final List<Class<?>> SUPPORTED_TYPES = List.of(
             ByteBuf.class,
             RequestBody.class,
             InputStream.class,

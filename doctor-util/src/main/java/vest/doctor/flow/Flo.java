@@ -2,11 +2,9 @@ package vest.doctor.flow;
 
 import vest.doctor.tuple.Tuple;
 import vest.doctor.tuple.Tuple2;
-import vest.doctor.tuple.Tuple3;
-import vest.doctor.tuple.Tuple4;
-import vest.doctor.tuple.Tuple5;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
@@ -35,6 +33,17 @@ public interface Flo<I, O> extends Flow.Processor<I, O> {
      */
     static <I> Flo<I, I> of(I item) {
         return from(new StandardSources.SingleSource<>(item));
+    }
+
+    /**
+     * Start a new flow that will process the entry of the map.
+     *
+     * @param map the map to process
+     * @return a new processing flow for the entry set of the map
+     */
+    static <K, V> Flo<?, Tuple2<K, V>> ofEntries(Map<K, V> map) {
+        return iterate(map.entrySet())
+                .map(Tuple::of);
     }
 
     /**
@@ -166,57 +175,6 @@ public interface Flo<I, O> extends Flow.Processor<I, O> {
      */
     default <NEXT> Flo<I, NEXT> map(Function<O, NEXT> function) {
         return chain(new Step.Mapper<>(function));
-    }
-
-    /**
-     * Map items in the processing flow to a new tuple of 2 values.
-     *
-     * @param mapper the mapper
-     * @return the next tuple processing flow step
-     */
-    default <N1, N2> Flo2<I, N1, N2> map2(Function<O, Tuple2<N1, N2>> mapper) {
-        return new StandardFlo2<>(map(mapper));
-    }
-
-    /**
-     * Map items in the processing flow to a new tuple of 3 values.
-     *
-     * @param mapper the mapper
-     * @return the next tuple processing flow step
-     */
-    default <N1, N2, N3> Flo3<I, N1, N2, N3> map3(Function<O, Tuple3<N1, N2, N3>> mapper) {
-        return new StandardFlo3<>(map(mapper));
-    }
-
-    /**
-     * Map items in the processing flow to a new tuple of 4 values.
-     *
-     * @param mapper the mapper
-     * @return the next tuple processing flow step
-     */
-    default <N1, N2, N3, N4> Flo4<I, N1, N2, N3, N4> map4(Function<O, Tuple4<N1, N2, N3, N4>> mapper) {
-        return new StandardFlo4<>(map(mapper));
-    }
-
-    /**
-     * Map items in the processing flow to a new tuple of 5 values.
-     *
-     * @param mapper the mapper
-     * @return the next tuple processing flow step
-     */
-    default <N1, N2, N3, N4, N5> Flo5<I, N1, N2, N3, N4, N5> map5(Function<O, Tuple5<N1, N2, N3, N4, N5>> mapper) {
-        return new StandardFlo5<>(map(mapper));
-    }
-
-    /**
-     * Increase the arity of the items in the flow by using the value to map to a new one and emit them
-     * together.
-     *
-     * @param mapper the mapper
-     * @return the next tuple processing flow step
-     */
-    default <N> Flo2<I, O, N> affix(Function<O, N> mapper) {
-        return map2(o -> Tuple.of(o, mapper.apply(o)));
     }
 
     /**
@@ -411,9 +369,9 @@ public interface Flo<I, O> extends Flow.Processor<I, O> {
 
     /**
      * Filter the items in the processing flow, taking only the first n seen.
-     * When the limit is reached, the {@link Flow.Subscription#cancel()} method will be called.
+     * When the limit is reached, the {@link Flow.Subscription#cancel()} method will be called automatically.
      *
-     * @param n the number of item to take before canceling the subscription
+     * @param n the number of items to take before canceling the subscription
      * @return the next processing flow step
      */
     default Flo<I, O> limit(long n) {
