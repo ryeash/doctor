@@ -14,6 +14,9 @@ import java.lang.annotation.Target;
 @Target({ElementType.PARAMETER, ElementType.FIELD, ElementType.METHOD})
 public @interface Param {
 
+    /**
+     * The type of the parameter, i.e. the source of the parameter.
+     */
     enum Type {
         /**
          * The parameter value will be pulled from the path matching variables.
@@ -57,7 +60,10 @@ public @interface Param {
 
     /**
      * The name to use to retrieve the value of the parameter. If left default the parameter name
-     * as it appears in code will be used.
+     * as it appears in the compiled code will be used.
+     * <p>
+     * To ensure that the parameter name from the source code is used in the compiled code, build
+     * your project(s) using the <code>-parameters</code> compiler flag.
      */
     String name() default "";
 }

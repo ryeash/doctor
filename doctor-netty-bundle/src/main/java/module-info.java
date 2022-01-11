@@ -1,6 +1,4 @@
 module doctor.netty.bundle {
-    requires static java.compiler;
-
     requires io.netty.buffer;
     requires io.netty.codec.http;
     requires io.netty.codec;

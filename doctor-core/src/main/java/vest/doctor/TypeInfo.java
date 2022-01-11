@@ -58,6 +58,13 @@ public final class TypeInfo {
         return parameterTypes != null && !parameterTypes.isEmpty();
     }
 
+    /**
+     * Determine if this TypeInfo is compatible with the given type and parameter types.
+     *
+     * @param type           the raw type to test
+     * @param parameterTypes the parameter type to test
+     * @return true if this TypeInfo instance is type compatible with the given type/parameters
+     */
     public boolean matches(Class<?> type, Class<?>... parameterTypes) {
         if (type.isAssignableFrom(rawType)) {
             if (this.parameterTypes.size() == parameterTypes.length) {

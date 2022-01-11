@@ -4,7 +4,7 @@ import vest.doctor.function.ThrowingConsumer;
 import vest.doctor.function.ThrowingFunction;
 import vest.doctor.function.ThrowingRunnable;
 import vest.doctor.function.ThrowingSupplier;
-import vest.doctor.function.Try;
+import vest.doctor.util.Try;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;

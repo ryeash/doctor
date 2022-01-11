@@ -4,6 +4,8 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import jakarta.inject.Provider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import vest.doctor.AdHocProvider;
 import vest.doctor.ApplicationLoader;
 import vest.doctor.ConfigurationFacade;
@@ -30,10 +32,13 @@ import java.util.stream.Collectors;
 
 public class NettyLoader implements ApplicationLoader {
 
+    private static final Logger log = LoggerFactory.getLogger(NettyLoader.class);
+
     @Override
     public void stage4(ProviderRegistry providerRegistry) {
         DoctorHttpServerConfiguration conf = buildConf(providerRegistry);
         if (conf.getBindAddresses() == null || conf.getBindAddresses().isEmpty()) {
+            log.warn("not starting the netty http server: no bind addresses set");
             return;
         }
         BodyInterchange bodyInterchange = new BodyInterchange(providerRegistry);

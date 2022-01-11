@@ -32,9 +32,8 @@ public class TCEvent implements EventConsumer<Object> {
 
     @Override
     public void accept(Object event) {
-        if (event instanceof ApplicationStarted) {
+        if (event instanceof ApplicationStarted startup) {
             eventListened = true;
-            ApplicationStarted startup = (ApplicationStarted) event;
             Assert.assertNotNull(startup);
             Assert.assertNotNull(startup.providerRegistry());
         } else if (event instanceof String) {

@@ -1,10 +1,11 @@
 package vest.doctor.flow;
 
+import vest.doctor.util.Try;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -56,51 +57,30 @@ public class CallerRunsExecutorService implements ExecutorService {
 
     @Override
     public <T> Future<T> submit(Callable<T> task) {
-        try {
-            return CompletableFuture.completedFuture(task.call());
-        } catch (Exception e) {
-            return CompletableFuture.failedFuture(e);
-        }
+        return Try.call(task).toCompletableFuture();
     }
 
     @Override
     public <T> Future<T> submit(Runnable task, T result) {
-        task.run();
-        return CompletableFuture.completedFuture(result);
+        return Try.run(task::run).apply(v -> result).toCompletableFuture();
     }
 
     @Override
     public Future<?> submit(Runnable task) {
-        task.run();
-        return CompletableFuture.completedFuture(null);
+        return Try.run(task::run).toCompletableFuture();
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) {
         return tasks.stream()
-                .map(c -> {
-                    try {
-                        return CompletableFuture.completedFuture(c.call());
-                    } catch (Throwable t) {
-                        return CompletableFuture.failedFuture(t);
-                    }
-                })
-                .map(f -> (Future<T>) f)
+                .map(c -> Try.call(c).toCompletableFuture())
                 .collect(Collectors.toList());
     }
 
     @Override
     public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) {
         return tasks.stream()
-                .map(c -> {
-                    try {
-                        return CompletableFuture.completedFuture(c.call());
-                    } catch (Throwable t) {
-                        return CompletableFuture.failedFuture(t);
-                    }
-                })
-                .map(f -> (Future<T>) f)
+                .map(c -> Try.call(c).toCompletableFuture())
                 .collect(Collectors.toList());
     }
 

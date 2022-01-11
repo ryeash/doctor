@@ -1,7 +1,6 @@
 package vest.doctor.util;
 
 import org.testng.annotations.Test;
-import vest.doctor.function.Try;
 
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;

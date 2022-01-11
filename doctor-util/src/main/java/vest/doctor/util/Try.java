@@ -1,4 +1,12 @@
-package vest.doctor.function;
+package vest.doctor.util;
+
+import vest.doctor.function.ThrowingBiConsumer;
+import vest.doctor.function.ThrowingBiFunction;
+import vest.doctor.function.ThrowingConsumer;
+import vest.doctor.function.ThrowingFunction;
+import vest.doctor.function.ThrowingPredicate;
+import vest.doctor.function.ThrowingRunnable;
+import vest.doctor.function.ThrowingSupplier;
 
 import java.util.Objects;
 import java.util.Optional;

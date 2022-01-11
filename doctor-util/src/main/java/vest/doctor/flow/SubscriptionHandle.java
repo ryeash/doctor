@@ -18,20 +18,6 @@ public interface SubscriptionHandle<I, O> {
      * @return this handle
      * @see #onNext(Object)
      */
-    default SubscriptionHandle<I, O> onNext(I... items) {
-        for (I item : items) {
-            onNext(item);
-        }
-        return this;
-    }
-
-    /**
-     * Emit multiple items to the processing flow.
-     *
-     * @param items the items to emit
-     * @return this handle
-     * @see #onNext(Object)
-     */
     default SubscriptionHandle<I, O> onNext(Iterable<I> items) {
         for (I item : items) {
             onNext(item);

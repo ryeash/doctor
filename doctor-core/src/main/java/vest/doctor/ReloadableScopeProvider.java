@@ -28,7 +28,7 @@ public final class ReloadableScopeProvider<T> extends DoctorProviderWrapper<T> {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         clearValue(null);
     }
 

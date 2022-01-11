@@ -39,9 +39,7 @@ class MultiPartDataImpl implements MultiPartData {
     public Flo<?, Part> parts() {
         if (valid) {
             return body.flow()
-                    .step(Part.class, (c, sub, emit) -> {
-                        nextData(c, emit);
-                    })
+                    .step(Part.class, (c, sub, emit) -> nextData(c, emit))
                     .takeWhile(p -> !p.last(), true);
         } else {
             return body.flow()

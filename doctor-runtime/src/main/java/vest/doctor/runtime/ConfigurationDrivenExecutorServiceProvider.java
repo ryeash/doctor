@@ -175,7 +175,7 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
     }
 
     private CustomThreadFactory getThreadFactory() {

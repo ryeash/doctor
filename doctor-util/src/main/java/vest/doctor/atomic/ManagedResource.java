@@ -2,7 +2,7 @@ package vest.doctor.atomic;
 
 import vest.doctor.function.ThrowingConsumer;
 import vest.doctor.function.ThrowingFunction;
-import vest.doctor.function.Try;
+import vest.doctor.util.Try;
 
 import java.util.concurrent.TimeUnit;
 

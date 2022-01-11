@@ -38,7 +38,7 @@ import java.util.stream.StreamSupport;
 
 /**
  * Extension to the {@link Stream} interface. Provides many extension methods, support for tuples, automatic
- * execution of the {@link #close()} method (for terminal operations), and static builders.
+ * execution of the {@link Stream#close()} method (for terminal operations), and static builders.
  */
 public class StreamExt<T> implements Stream<T>, Iterable<T> {
 

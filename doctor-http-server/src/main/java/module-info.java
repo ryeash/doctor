@@ -6,12 +6,10 @@ module doctor.http.server {
     requires jakarta.inject;
     requires io.netty.buffer;
     requires io.netty.codec.http;
-    requires io.netty.codec;
     requires io.netty.handler;
     requires io.netty.transport;
     requires io.netty.common;
     requires org.slf4j;
-    requires doctor.runtime;
     requires doctor.netty.bundle;
     requires doctor.util;
 
