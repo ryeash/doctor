@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 /**
- * Track executed 'ticks' and run code every N cycles.
+ * Track executed 'ticks' and run code every Nth tick.
  */
 public final class Heartbeat {
     private final int runEveryN;

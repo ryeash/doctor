@@ -203,6 +203,16 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
     }
 
     @Override
+    public <T> Stream<T> getInstances(Class<T> type) {
+        return getProviders(type).map(Provider::get);
+    }
+
+    @Override
+    public <T> Stream<T> getInstances(Class<T> type, String qualifier) {
+        return getProviders(type, qualifier).map(Provider::get);
+    }
+
+    @Override
     public Stream<DoctorProvider<?>> allProviders() {
         return providerIndex.allProviders();
     }

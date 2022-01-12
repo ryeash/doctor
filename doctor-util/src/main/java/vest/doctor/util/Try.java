@@ -18,7 +18,7 @@ import java.util.stream.Stream;
  * Represents an execution of a task that can succeed or fail. Fundamentally it is
  * an object-oriented try-catch-finally.
  */
-public final class Try<T> {
+public record Try<T>(T result, Throwable error) {
 
     /**
      * Run the runnable and produce a Try to indicate success or failure.
@@ -179,14 +179,6 @@ public final class Try<T> {
         return new Try<>(null, Objects.requireNonNull(exception));
     }
 
-    private final T result;
-    private final Throwable t;
-
-    private Try(T result, Throwable t) {
-        this.result = result;
-        this.t = t;
-    }
-
     /**
      * Get the resulting value from the Try. If the try failed, an unchecked exception
      * will be thrown.
@@ -204,21 +196,21 @@ public final class Try<T> {
      * @return the Try exception
      */
     public Throwable exception() {
-        return t;
+        return error;
     }
 
     /**
      * @return true if this Try is a failure and has an exception
      */
     public boolean isFailure() {
-        return t != null;
+        return error != null;
     }
 
     /**
      * @return true if this Try is a success
      */
     public boolean isSuccess() {
-        return t == null;
+        return error == null;
     }
 
     /**
@@ -229,7 +221,7 @@ public final class Try<T> {
      */
     public Try<T> throwException() throws Throwable {
         if (isFailure()) {
-            throw t;
+            throw error;
         }
         return this;
     }
@@ -241,10 +233,10 @@ public final class Try<T> {
      */
     public Try<T> throwUnchecked() {
         if (isFailure()) {
-            if (t instanceof RuntimeException) {
-                throw (RuntimeException) t;
+            if (error instanceof RuntimeException) {
+                throw (RuntimeException) error;
             } else {
-                throw new RuntimeException(t);
+                throw new RuntimeException(error);
             }
         }
         return this;
@@ -260,7 +252,7 @@ public final class Try<T> {
         if (isSuccess()) {
             return apply(result, fn);
         } else {
-            return failure(t);
+            return failure(error);
         }
     }
 
@@ -289,7 +281,7 @@ public final class Try<T> {
      */
     public <U> Try<U> compose(ThrowingFunction<? super T, ? extends Try<U>> fn) {
         if (isFailure()) {
-            return failure(t);
+            return failure(error);
         } else {
             try {
                 return fn.applyThrows(result);
@@ -307,7 +299,7 @@ public final class Try<T> {
      */
     public Try<T> exceptionally(ThrowingFunction<? super Throwable, ? extends T> mapper) {
         if (isFailure()) {
-            return apply(t, mapper);
+            return apply(error, mapper);
         } else {
             return this;
         }
@@ -323,8 +315,8 @@ public final class Try<T> {
      */
     @SuppressWarnings("unchecked")
     public <E extends Throwable> Try<T> exceptionally(Class<E> exceptionType, ThrowingFunction<E, ? extends T> mapper) {
-        if (isFailure() && exceptionType.isInstance(t)) {
-            return apply((E) t, mapper);
+        if (isFailure() && exceptionType.isInstance(error)) {
+            return apply((E) error, mapper);
         } else {
             return this;
         }
@@ -339,7 +331,7 @@ public final class Try<T> {
     public Try<T> exceptionallyCompose(ThrowingFunction<? super Throwable, ? extends Try<T>> fn) {
         if (isFailure()) {
             try {
-                return fn.applyThrows(t);
+                return fn.applyThrows(error);
             } catch (Throwable e) {
                 return failure(e);
             }
@@ -358,9 +350,9 @@ public final class Try<T> {
      */
     @SuppressWarnings("unchecked")
     public <E extends Throwable> Try<T> exceptionallyCompose(Class<E> exceptionType, ThrowingFunction<E, ? extends Try<T>> mapper) {
-        if (isFailure() && exceptionType.isInstance(t)) {
+        if (isFailure() && exceptionType.isInstance(error)) {
             try {
-                return mapper.applyThrows((E) t);
+                return mapper.applyThrows((E) error);
             } catch (Throwable e) {
                 return failure(e);
             }
@@ -377,7 +369,7 @@ public final class Try<T> {
      */
     public <U> Try<U> handle(ThrowingBiFunction<? super T, Throwable, ? extends U> fn) {
         try {
-            return success(fn.applyThrows(result, t));
+            return success(fn.applyThrows(result, error));
         } catch (Throwable e) {
             return failure(e);
         }
@@ -401,7 +393,7 @@ public final class Try<T> {
      */
     public Try<T> onFailure(ThrowingConsumer<? super Throwable> consumer) {
         if (isFailure()) {
-            accept(t, consumer).throwUnchecked();
+            accept(error, consumer).throwUnchecked();
         }
         return this;
     }
@@ -416,8 +408,8 @@ public final class Try<T> {
      */
     @SuppressWarnings("unchecked")
     public <E extends Throwable> Try<T> onFailure(Class<E> exceptionType, ThrowingConsumer<E> consumer) {
-        if (isFailure() && exceptionType.isInstance(t)) {
-            accept((E) t, consumer).throwUnchecked();
+        if (isFailure() && exceptionType.isInstance(error)) {
+            accept((E) error, consumer).throwUnchecked();
         }
         return this;
     }
@@ -431,7 +423,7 @@ public final class Try<T> {
     public CompletableFuture<T> toCompletableFuture() {
         if (isFailure()) {
             CompletableFuture<T> failed = new CompletableFuture<>();
-            failed.completeExceptionally(t);
+            failed.completeExceptionally(error);
             return failed;
         } else {
             return CompletableFuture.completedFuture(result);
@@ -464,7 +456,7 @@ public final class Try<T> {
     @Override
     public String toString() {
         if (isFailure()) {
-            return "Try{failed: " + t + "}";
+            return "Try{failed: " + error + "}";
         } else {
             return "Try{success: " + result + "}";
         }

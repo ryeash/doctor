@@ -128,6 +128,23 @@ public interface ProviderRegistry {
     <T> Stream<DoctorProvider<T>> getProviders(Class<T> type, String qualifier);
 
     /**
+     * Get all provided instances that can satisfy the given type.
+     *
+     * @param type the provided type to get
+     * @return a stream of all instances for the given type
+     */
+    <T> Stream<T> getInstances(Class<T> type);
+
+    /**
+     * Get all provided instances that can satisfy the given type and qualifier.
+     *
+     * @param type      the provided type to get
+     * @param qualifier the required qualifier for the providers
+     * @return a stream of all instances for the given type and qualifier
+     */
+    <T> Stream<T> getInstances(Class<T> type, String qualifier);
+
+    /**
      * Get all providers registered.
      *
      * @return a stream of providers

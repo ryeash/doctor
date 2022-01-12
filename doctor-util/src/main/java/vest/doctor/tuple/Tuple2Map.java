@@ -11,7 +11,7 @@ import java.util.function.Function;
 
 /**
  * Extension of the {@link Map} interface to add multi-key support (via Tuples). The standard
- * methods of {@link Map} have tuple based counterparts in this implementations, e.g.
+ * methods of {@link Map} have tuple based counterparts in this implementation, e.g.
  * {@link Map#get(Object)} has {@link #get(Object, Object)}.
  * For methods whose signatures for the multi-key variant would interfere with other methods
  * the methods are appended with `Tuple`, e.g. {@link #removeTuple(Object, Object)}.
@@ -86,14 +86,14 @@ public class Tuple2Map<K1, K2, V> extends AbstractDelegatedMap<Tuple2<K1, K2>, V
     /**
      * @see Map#forEach(BiConsumer)
      */
-    public void forEach(Tuple3Consumer<K1, K2, V> action) {
+    public void forEach(Tuple3.Tuple3Consumer<K1, K2, V> action) {
         stream().forEach(action);
     }
 
     /**
      * @see Map#replaceAll(BiFunction)
      */
-    public void replaceAll(Tuple3Function<K1, K2, V, ? extends V> function) {
+    public void replaceAll(Tuple3.Tuple3Function<K1, K2, V, ? extends V> function) {
         replaceAll((tuple, value) -> function.apply(tuple.first(), tuple.second(), value));
     }
 
@@ -134,21 +134,21 @@ public class Tuple2Map<K1, K2, V> extends AbstractDelegatedMap<Tuple2<K1, K2>, V
     /**
      * @see Map#computeIfAbsent(Object, Function)
      */
-    public V computeIfAbsent(K1 key1, K2 key2, Tuple2Function<K1, K2, ? extends V> mappingFunction) {
+    public V computeIfAbsent(K1 key1, K2 key2, Tuple2.Tuple2Function<K1, K2, ? extends V> mappingFunction) {
         return computeIfAbsent(Tuple.of(key1, key2), tuple -> mappingFunction.apply(tuple.first(), tuple.second()));
     }
 
     /**
      * @see Map#computeIfPresent(Object, BiFunction)
      */
-    public V computeIfPresent(K1 key1, K2 key2, Tuple3Function<K1, K2, ? super V, ? extends V> remappingFunction) {
+    public V computeIfPresent(K1 key1, K2 key2, Tuple3.Tuple3Function<K1, K2, ? super V, ? extends V> remappingFunction) {
         return computeIfPresent(Tuple.of(key1, key2), (tuple, value) -> remappingFunction.apply(tuple.first(), tuple.second(), value));
     }
 
     /**
      * @see Map#compute(Object, BiFunction)
      */
-    public V compute(K1 key1, K2 key2, Tuple3Function<K1, K2, ? super V, ? extends V> remappingFunction) {
+    public V compute(K1 key1, K2 key2, Tuple3.Tuple3Function<K1, K2, ? super V, ? extends V> remappingFunction) {
         return compute(Tuple.of(key1, key2), (tuple, value) -> remappingFunction.apply(tuple.first(), tuple.second(), value));
     }
 

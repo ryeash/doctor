@@ -2,9 +2,6 @@ package vest.doctor.stream;
 
 import vest.doctor.tuple.Tuple;
 import vest.doctor.tuple.Tuple2;
-import vest.doctor.tuple.Tuple2Consumer;
-import vest.doctor.tuple.Tuple2Function;
-import vest.doctor.tuple.Tuple2Predicate;
 import vest.doctor.tuple.Tuple3;
 import vest.doctor.tuple.Tuple4;
 import vest.doctor.tuple.Tuple5;
@@ -31,27 +28,27 @@ public class Stream2<A, B> extends StreamExt<Tuple2<A, B>> {
         super(delegate);
     }
 
-    public void forEach(Tuple2Consumer<A, B> consumer) {
+    public void forEach(Tuple2.Tuple2Consumer<A, B> consumer) {
         super.forEach(consumer);
     }
 
-    public <T> StreamExt<T> map(Tuple2Function<A, B, T> mapper) {
+    public <T> StreamExt<T> map(Tuple2.Tuple2Function<A, B, T> mapper) {
         return super.map(mapper);
     }
 
-    public <A2, B2> Stream2<A2, B2> map2(Tuple2Function<A, B, Tuple2<A2, B2>> mapper) {
+    public <A2, B2> Stream2<A2, B2> map2(Tuple2.Tuple2Function<A, B, Tuple2<A2, B2>> mapper) {
         return new Stream2<>(map(mapper));
     }
 
-    public <A2, B2, C2> Stream3<A2, B2, C2> map3(Tuple2Function<A, B, Tuple3<A2, B2, C2>> mapper) {
+    public <A2, B2, C2> Stream3<A2, B2, C2> map3(Tuple2.Tuple2Function<A, B, Tuple3<A2, B2, C2>> mapper) {
         return new Stream3<>(map(mapper));
     }
 
-    public <A2, B2, C2, D2> Stream4<A2, B2, C2, D2> map4(Tuple2Function<A, B, Tuple4<A2, B2, C2, D2>> mapper) {
+    public <A2, B2, C2, D2> Stream4<A2, B2, C2, D2> map4(Tuple2.Tuple2Function<A, B, Tuple4<A2, B2, C2, D2>> mapper) {
         return new Stream4<>(map(mapper));
     }
 
-    public <A2, B2, C2, D2, E2> Stream5<A2, B2, C2, D2, E2> map5(Tuple2Function<A, B, Tuple5<A2, B2, C2, D2, E2>> mapper) {
+    public <A2, B2, C2, D2, E2> Stream5<A2, B2, C2, D2, E2> map5(Tuple2.Tuple2Function<A, B, Tuple5<A2, B2, C2, D2, E2>> mapper) {
         return new Stream5<>(map(mapper));
     }
 
@@ -63,15 +60,15 @@ public class Stream2<A, B> extends StreamExt<Tuple2<A, B>> {
         return map2((a, b) -> Tuple.of(a, mapper.apply(b)));
     }
 
-    public Stream2<A, B> filter(Tuple2Predicate<A, B> predicate) {
+    public Stream2<A, B> filter(Tuple2.Tuple2Predicate<A, B> predicate) {
         return new Stream2<>(super.filter(predicate));
     }
 
-    public Stream2<A, B> keep(Tuple2Predicate<A, B> predicate) {
+    public Stream2<A, B> keep(Tuple2.Tuple2Predicate<A, B> predicate) {
         return filter(predicate);
     }
 
-    public Stream2<A, B> drop(Tuple2Predicate<A, B> predicate) {
+    public Stream2<A, B> drop(Tuple2.Tuple2Predicate<A, B> predicate) {
         return new Stream2<>(super.filter(predicate.negate()));
     }
 
@@ -113,35 +110,35 @@ public class Stream2<A, B> extends StreamExt<Tuple2<A, B>> {
         return new Stream2<>(super.distinct());
     }
 
-    public Stream2<A, B> distinct(Tuple2Function<A, B, Object> keyExtractor) {
+    public Stream2<A, B> distinct(Tuple2.Tuple2Function<A, B, Object> keyExtractor) {
         return new Stream2<>(super.distinct(keyExtractor));
     }
 
-    public Stream2<A, B> peek(Tuple2Consumer<A, B> consumer) {
+    public Stream2<A, B> peek(Tuple2.Tuple2Consumer<A, B> consumer) {
         return new Stream2<>(super.peek(consumer));
     }
 
-    public boolean anyMatch(Tuple2Predicate<A, B> predicate) {
+    public boolean anyMatch(Tuple2.Tuple2Predicate<A, B> predicate) {
         return super.anyMatch(predicate);
     }
 
-    public boolean allMatch(Tuple2Predicate<A, B> predicate) {
+    public boolean allMatch(Tuple2.Tuple2Predicate<A, B> predicate) {
         return super.allMatch(predicate);
     }
 
-    public boolean noneMatch(Tuple2Predicate<A, B> predicate) {
+    public boolean noneMatch(Tuple2.Tuple2Predicate<A, B> predicate) {
         return super.noneMatch(predicate);
     }
 
-    public <C> Stream3<A, B, C> affixRight(Tuple2Function<A, B, ? extends C> mapper) {
+    public <C> Stream3<A, B, C> affixRight(Tuple2.Tuple2Function<A, B, ? extends C> mapper) {
         return map3(t -> Tuple.of(t.first(), t.second(), mapper.apply(t)));
     }
 
-    public <C> Stream3<A, B, C> flatAffixRight(Tuple2Function<A, B, Stream<? extends C>> mapper) {
+    public <C> Stream3<A, B, C> flatAffixRight(Tuple2.Tuple2Function<A, B, Stream<? extends C>> mapper) {
         return new Stream3<>(flatMap(t -> mapper.apply(t).map(c -> Tuple.of(t.first(), t.second(), c))));
     }
 
-    public <C> Stream3<C, A, B> affixLeft(Tuple2Function<A, B, ? extends C> mapper) {
+    public <C> Stream3<C, A, B> affixLeft(Tuple2.Tuple2Function<A, B, ? extends C> mapper) {
         return map3(t -> Tuple.of(mapper.apply(t), t.first(), t.second()));
     }
 }

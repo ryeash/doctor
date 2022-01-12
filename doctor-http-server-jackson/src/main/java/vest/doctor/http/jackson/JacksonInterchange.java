@@ -5,9 +5,14 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.netty.handler.codec.http.HttpHeaderNames;
+import vest.doctor.ProviderRegistry;
 import vest.doctor.TypeInfo;
 import vest.doctor.flow.Flo;
 import vest.doctor.http.server.Request;
@@ -93,6 +98,19 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
                 .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
                 .setDefaultMergeable(true)
                 .registerModules(ObjectMapper.findModules());
+    }
+
+    @SuppressWarnings("unchecked")
+    public static ObjectMapper defaultConfig(ProviderRegistry providerRegistry) {
+        SimpleModule injected = new SimpleModule();
+        providerRegistry.getInstances(JsonSerializer.class)
+                .forEach(injected::addSerializer);
+        providerRegistry.getInstances(JsonDeserializer.class)
+                .forEach(jsonDeserializer -> injected.addDeserializer(jsonDeserializer.handledType(), jsonDeserializer));
+        List<Module> modules = providerRegistry.getInstances(Module.class).toList();
+        return defaultConfig()
+                .registerModule(injected)
+                .registerModules(modules);
     }
 
     public static JavaType jacksonType(ObjectMapper mapper, TypeInfo typeInfo) {
