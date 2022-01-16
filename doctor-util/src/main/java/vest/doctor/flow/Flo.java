@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -192,12 +193,13 @@ public interface Flo<I, O> extends Flow.Processor<I, O> {
     /**
      * Hook into the {@link Flow.Subscription} for the processing flow. When subscribed, the hook will
      * be called once in order for users to act on subscription, e.g. calling {@link Flow.Subscription#request(long)}
-     * to indicate an initial request capacity.
+     * to indicate an initial request capacity. Will also be called for each {@link Flow.Subscriber#onNext(Object)} with
+     * the item to facilitate reactively requesting data.
      *
      * @param action the subscription hook
      * @return the next processing flow step
      */
-    default Flo<I, O> subscriptionHook(Consumer<Flow.Subscription> action) {
+    default Flo<I, O> subscriptionHook(BiConsumer<Flow.Subscription, O> action) {
         return chain(new StandardProcessors.SubscribeHook<>(action));
     }
 

@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Objects;
 import java.util.concurrent.Flow;
 
-abstract class AbstractProcessor<IN, OUT> implements Flow.Processor<IN, OUT> {
+public abstract class AbstractProcessor<IN, OUT> implements Flow.Processor<IN, OUT> {
     protected static final Logger log = LoggerFactory.getLogger(AbstractProcessor.class);
     protected Flow.Subscription subscription;
     protected Flow.Subscriber<? super OUT> subscriber;

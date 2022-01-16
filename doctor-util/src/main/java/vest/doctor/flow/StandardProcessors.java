@@ -18,7 +18,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collector;
@@ -323,16 +323,16 @@ public final class StandardProcessors {
 
     public static class SubscribeHook<I> extends AbstractProcessor<I, I> {
 
-        private final Consumer<Flow.Subscription> hook;
+        private final BiConsumer<Flow.Subscription, I> hook;
 
-        public SubscribeHook(Consumer<Flow.Subscription> hook) {
+        public SubscribeHook(BiConsumer<Flow.Subscription, I> hook) {
             this.hook = hook;
         }
 
         @Override
         public void onSubscribe(Flow.Subscription subscription) {
             super.onSubscribe(subscription);
-            hook.accept(subscription);
+            hook.accept(subscription, null);
         }
 
         @Override

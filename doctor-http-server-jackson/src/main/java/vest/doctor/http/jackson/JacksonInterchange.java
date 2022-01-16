@@ -23,7 +23,6 @@ import vest.doctor.http.server.rest.BodyWriter;
 
 import java.io.UncheckedIOException;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 public class JacksonInterchange implements BodyReader, BodyWriter {
@@ -53,16 +52,11 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
     }
 
     private Flo<?, ?> internalRead(Request request, TypeInfo typeInfo) {
-        AsyncMapper<?> asyncMapper;
-        if (typeInfo.hasParameterizedTypes()) {
-            asyncMapper = new AsyncMapper<>(objectMapper, jacksonType(objectMapper, typeInfo));
-        } else {
-            asyncMapper = new AsyncMapper<>(objectMapper, typeInfo.getRawType());
-        }
         return request.body()
                 .flow()
-                .map(asyncMapper::feed)
-                .keep(Objects::nonNull);
+                .map(httpContent -> httpContent.content().nioBuffer())
+                .chain(new AsyncTokenizer(objectMapper))
+                .step(new GenericJsonBeanMapping<>(objectMapper, jacksonType(objectMapper, typeInfo)));
     }
 
     @Override

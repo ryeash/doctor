@@ -77,7 +77,7 @@ public class FloTest extends BaseUtilTest {
                 .join();
 
         Flo.adhoc(String.class)
-                .subscriptionHook(s -> s.request(Long.MAX_VALUE))
+                .subscriptionHook((s, item) -> s.request(Long.MAX_VALUE))
                 .skip(1)
                 .limit(3)
                 .collect(Collectors.toList())
@@ -148,10 +148,15 @@ public class FloTest extends BaseUtilTest {
         Flo.iterate(strings)
                 .parallel(ForkJoinPool.commonPool())
                 .delay(Duration.ofMillis(100))
-                .chain(str -> Flo.iterate(List.of(str))
+                .chain(str -> Flo.of(str)
                         .map(String::toUpperCase))
+                .observe(System.out::println)
                 .collect(Collectors.toList())
-                .observe(expect(1, (it, l) -> assertTrue(l.containsAll(upperString))))
+                .observe(expect(1, (it, l) -> {
+                    System.out.println(l);
+                    System.out.println(upperString);
+                    assertTrue(l.containsAll(upperString));
+                }))
                 .subscribe()
                 .join();
     }
