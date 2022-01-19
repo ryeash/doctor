@@ -215,7 +215,7 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
 
         MethodBuilder handler = epHandler.newMethod("public Flo<?, Response> ", methodName, "(Request request) throws Exception");
         handler.line("return bodyInterchange.read(request, ", bodyType, ")");
-        handler.line(".step((b, subscription, emitter) -> {");
+        handler.line(".chain((b, subscription, emitter) -> {");
 
         String parameters = method.getParameters().stream()
                 .map(p -> parameterWriting(context, epHandler, p, "request"))
