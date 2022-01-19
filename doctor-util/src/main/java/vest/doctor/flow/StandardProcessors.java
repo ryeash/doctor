@@ -42,11 +42,6 @@ public final class StandardProcessors {
                 onError(t);
             }
         }
-
-        @Override
-        public String toString() {
-            return "Step(" + step.getClass().getSimpleName() + ")->" + (subscriber != null ? subscriber : "end");
-        }
     }
 
     public static final class SubToProcessor<I> extends AbstractProcessor<I, I> {
@@ -375,11 +370,6 @@ public final class StandardProcessors {
         }
 
         @Override
-        public void onError(Throwable throwable) {
-            super.onError(throwable);
-        }
-
-        @Override
         @SuppressWarnings("unchecked")
         public void onComplete() {
             if (state.compareAndSet(State.RUNNING, State.AWAITING)) {
@@ -395,6 +385,8 @@ public final class StandardProcessors {
                     if (item != LAST) {
                         publishDownstream(item);
                     }
+                } catch (Throwable t) {
+                    onError(t);
                 } finally {
                     inFlight.decrementAndGet();
                 }
@@ -425,13 +417,14 @@ public final class StandardProcessors {
 
         @Override
         public void onNext(I item) {
-            mapper.apply(item).whenComplete((result, error) -> {
-                if (error != null) {
-                    onError(error);
-                } else {
-                    publishDownstream(result);
-                }
-            });
+            mapper.apply(item)
+                    .whenComplete((result, error) -> {
+                        if (error != null) {
+                            onError(error);
+                        } else {
+                            publishDownstream(result);
+                        }
+                    });
         }
     }
 }

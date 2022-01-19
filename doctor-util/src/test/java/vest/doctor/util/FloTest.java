@@ -211,7 +211,7 @@ public class FloTest extends BaseUtilTest {
     public void basicBackpressure() {
         AtomicInteger c = new AtomicInteger(0);
         Flo.iterate(strings)
-                .step((value, subscription, emit) -> {
+                .chain((value, subscription, emit) -> {
                     int andIncrement = c.getAndIncrement();
                     assertEquals(value, strings.get(andIncrement));
                     subscription.request(1);
@@ -225,7 +225,7 @@ public class FloTest extends BaseUtilTest {
         AtomicInteger c = new AtomicInteger(0);
         Flo.iterate(strings)
                 .parallel(Executors.newSingleThreadScheduledExecutor())
-                .step((value, subscription, emit) -> {
+                .chain((value, subscription, emit) -> {
                     int andIncrement = c.getAndIncrement();
                     assertEquals(value, strings.get(andIncrement));
                     subscription.cancel();

@@ -56,7 +56,7 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
                 .flow()
                 .map(httpContent -> httpContent.content().nioBuffer())
                 .chain(new AsyncTokenizer(objectMapper))
-                .step(new GenericJsonBeanMapping<>(objectMapper, jacksonType(objectMapper, typeInfo)));
+                .chain(new GenericJsonBeanMapping<>(objectMapper, jacksonType(objectMapper, typeInfo)));
     }
 
     @Override

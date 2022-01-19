@@ -31,7 +31,7 @@ public interface Handler {
                     byte[] buf = new byte[buffer.readableBytes()];
                     buffer.readBytes(buf);
                     buffer.release();
-                    emitter.emit(function.applyThrows(request, buf));
+                    emitter.accept(function.applyThrows(request, buf));
                 });
     }
 

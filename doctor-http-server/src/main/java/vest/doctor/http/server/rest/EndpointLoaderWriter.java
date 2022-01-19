@@ -224,10 +224,10 @@ public class EndpointLoaderWriter implements ProviderDefinitionListener {
 
         if (isVoid) {
             handler.line(callMethod);
-            handler.line("emitter.emit(null);");
+            handler.line("emitter.accept(null);");
         } else {
             handler.line(method.getReturnType().toString(), " result = ", callMethod);
-            handler.line("emitter.emit(result);");
+            handler.line("emitter.accept(result);");
         }
         handler.line("})");
         handler.line(".chain(response -> bodyInterchange.write(request, response));");

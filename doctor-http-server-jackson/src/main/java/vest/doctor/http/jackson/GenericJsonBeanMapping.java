@@ -2,7 +2,6 @@ package vest.doctor.http.jackson;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import vest.doctor.flow.Emitter;
 import vest.doctor.flow.Step;
 
 import java.util.ArrayList;
@@ -13,6 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Flow;
+import java.util.function.Consumer;
 
 public class GenericJsonBeanMapping<T> implements Step<JsonParseToken, T> {
     private final ObjectMapper mapper;
@@ -30,7 +30,7 @@ public class GenericJsonBeanMapping<T> implements Step<JsonParseToken, T> {
     }
 
     @Override
-    public void accept(JsonParseToken json, Flow.Subscription subscription, Emitter<T> emitter) {
+    public void accept(JsonParseToken json, Flow.Subscription subscription, Consumer<T> emitter) {
         switch (json.token()) {
             case START_OBJECT:
                 Map<String, Object> nextObject = new LinkedHashMap<>();
@@ -50,7 +50,7 @@ public class GenericJsonBeanMapping<T> implements Step<JsonParseToken, T> {
             case END_ARRAY:
                 Object obj = stack.pop();
                 if (stack.isEmpty()) {
-                    emitter.emit(complete(obj));
+                    emitter.accept(complete(obj));
                 }
                 break;
             case FIELD_NAME:

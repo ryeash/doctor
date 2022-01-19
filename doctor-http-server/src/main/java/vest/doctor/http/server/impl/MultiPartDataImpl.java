@@ -10,11 +10,12 @@ import io.netty.handler.codec.http.multipart.Attribute;
 import io.netty.handler.codec.http.multipart.FileUpload;
 import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
-import vest.doctor.flow.Emitter;
 import vest.doctor.flow.Flo;
 import vest.doctor.http.server.HttpException;
 import vest.doctor.http.server.MultiPartData;
 import vest.doctor.http.server.RequestBody;
+
+import java.util.function.Consumer;
 
 class MultiPartDataImpl implements MultiPartData {
 
@@ -39,7 +40,7 @@ class MultiPartDataImpl implements MultiPartData {
     public Flo<?, Part> parts() {
         if (valid) {
             return body.flow()
-                    .step(Part.class, (c, sub, emit) -> nextData(c, emit))
+                    .chain(Part.class, (c, sub, emit) -> nextData(c, emit))
                     .takeWhile(p -> !p.last(), true);
         } else {
             return body.flow()
@@ -49,7 +50,7 @@ class MultiPartDataImpl implements MultiPartData {
         }
     }
 
-    private void nextData(HttpContent content, Emitter<Part> emitter) {
+    private void nextData(HttpContent content, Consumer<Part> emitter) {
         try {
             decoder.offer(content);
             InterfaceHttpData next;
@@ -59,16 +60,16 @@ class MultiPartDataImpl implements MultiPartData {
                 switch (next.getHttpDataType()) {
                     case Attribute, InternalAttribute -> {
                         Attribute attribute = (Attribute) next;
-                        emitter.emit(new PartImpl(type, name, attribute.content().retainedDuplicate(), false));
+                        emitter.accept(new PartImpl(type, name, attribute.content().retainedDuplicate(), false));
                     }
                     case FileUpload -> {
                         FileUpload fileUpload = (FileUpload) next;
-                        emitter.emit(new PartImpl(type, name, fileUpload.content().retainedDuplicate(), false));
+                        emitter.accept(new PartImpl(type, name, fileUpload.content().retainedDuplicate(), false));
                     }
                 }
             }
         } catch (HttpPostRequestDecoder.EndOfDataDecoderException end) {
-            emitter.emit(new PartImpl("", "", Unpooled.EMPTY_BUFFER, true));
+            emitter.accept(new PartImpl("", "", Unpooled.EMPTY_BUFFER, true));
         } catch (Throwable t) {
             decoder.destroy();
             throw t;

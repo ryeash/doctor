@@ -22,30 +22,30 @@ public interface Step<IN, OUT> {
      * @param subscription the {@link Flow.Subscription}
      * @param emitter      the emitter for outputting values to downstream {@link Flow.Subscriber subscribers}
      */
-    void accept(IN item, Flow.Subscription subscription, Emitter<OUT> emitter) throws Exception;
+    void accept(IN item, Flow.Subscription subscription, Consumer<OUT> emitter) throws Exception;
 
     record Observer<IN>(Consumer<IN> action) implements Step<IN, IN> {
         @Override
-        public void accept(IN in, Flow.Subscription subscription, Emitter<IN> emitter) {
+        public void accept(IN in, Flow.Subscription subscription, Consumer<IN> emitter) {
             action.accept(in);
-            emitter.emit(in);
+            emitter.accept(in);
         }
     }
 
     record Mapper<IN, OUT>(Function<IN, OUT> mapper) implements Step<IN, OUT> {
         @Override
-        public void accept(IN in, Flow.Subscription subscription, Emitter<OUT> emitter) {
+        public void accept(IN in, Flow.Subscription subscription, Consumer<OUT> emitter) {
             OUT out = mapper.apply(in);
-            emitter.emit(out);
+            emitter.accept(out);
         }
     }
 
     record Filter<IN>(Predicate<IN> predicate, boolean keep) implements Step<IN, IN> {
         @Override
-        public void accept(IN in, Flow.Subscription subscription, Emitter<IN> emitter) {
+        public void accept(IN in, Flow.Subscription subscription, Consumer<IN> emitter) {
             boolean test = predicate.test(in);
             if (test == keep) {
-                emitter.emit(in);
+                emitter.accept(in);
             }
         }
     }

@@ -158,6 +158,20 @@ public interface Flo<I, O> extends Flow.Processor<I, O> {
     }
 
     /**
+     * Alias for {@link #chain(Step)} that explicitly tells the compiler the output type
+     * of the step.
+     *
+     * @param outType the explicit type that the step will output
+     * @param step    the step
+     * @return the next processing flow step
+     */
+    @SuppressWarnings("unused")
+    default <NEXT> Flo<I, NEXT> chain(Class<NEXT> outType, Step<O, NEXT> step) {
+        return chain(step);
+    }
+
+
+    /**
      * Observe items in the processing flow.
      *
      * @param observer the observer action
@@ -300,7 +314,7 @@ public interface Flo<I, O> extends Flow.Processor<I, O> {
      * @return the next processing flow step
      */
     default <NEXT> Flo<I, NEXT> flatMapIterable(Function<O, ? extends Iterable<NEXT>> mapper) {
-        return map(mapper).step((it, sub, emitter) -> it.forEach(emitter::emit));
+        return map(mapper).chain((it, sub, emitter) -> it.forEach(emitter));
     }
 
     /**
@@ -311,31 +325,7 @@ public interface Flo<I, O> extends Flow.Processor<I, O> {
      * @return the next processing flow step
      */
     default <NEXT> Flo<I, NEXT> flatMapStream(Function<O, Stream<NEXT>> mapper) {
-        return map(mapper).step((stream, sub, emitter) -> stream.forEach(emitter::emit));
-    }
-
-    /**
-     * Alias for {@link #chain(Step)}.
-     *
-     * @param step the step
-     * @return the next processing flow step
-     * @see #chain(Step)
-     */
-    default <NEXT> Flo<I, NEXT> step(Step<O, NEXT> step) {
-        return chain(step);
-    }
-
-    /**
-     * Alias for {@link #chain(Step)} that explicitly tells the compiler the output type
-     * of the step.
-     *
-     * @param outType the explicit type that the step will output
-     * @param step    the step
-     * @return the next processing flow step
-     */
-    @SuppressWarnings("unused")
-    default <NEXT> Flo<I, NEXT> step(Class<NEXT> outType, Step<O, NEXT> step) {
-        return chain(step);
+        return map(mapper).chain((stream, sub, emitter) -> stream.forEach(emitter));
     }
 
     /**
