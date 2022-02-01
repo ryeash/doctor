@@ -23,4 +23,8 @@ public interface ThrowingFunction<T, R> extends Function<T, R> {
         Objects.requireNonNull(after);
         return (T t) -> after.applyThrows(applyThrows(t));
     }
+
+    static <I> ThrowingFunction<I, I> identity() {
+        return i -> i;
+    }
 }

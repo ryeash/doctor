@@ -2,6 +2,7 @@ package vest.doctor.runtime;
 
 import vest.doctor.AdHocProvider;
 import vest.doctor.ApplicationLoader;
+import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
 
 final class ArgsLoader implements ApplicationLoader {
@@ -18,6 +19,6 @@ final class ArgsLoader implements ApplicationLoader {
 
     @Override
     public int priority() {
-        return Integer.MIN_VALUE;
+        return Prioritized.HIGHEST_PRIORITY;
     }
 }

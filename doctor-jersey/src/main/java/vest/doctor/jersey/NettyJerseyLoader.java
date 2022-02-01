@@ -13,10 +13,10 @@ import vest.doctor.ProviderRegistry;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.ServiceStarted;
 import vest.doctor.jersey.ext.DoctorCustomValueParamProvider;
-import vest.doctor.netty.common.HttpServerConfiguration;
-import vest.doctor.netty.common.NettyHttpServer;
-import vest.doctor.netty.common.PipelineCustomizer;
-import vest.doctor.netty.common.ServerBootstrapCustomizer;
+import vest.doctor.netty.HttpServerConfiguration;
+import vest.doctor.netty.NettyHttpServer;
+import vest.doctor.netty.PipelineCustomizer;
+import vest.doctor.netty.ServerBootstrapCustomizer;
 
 import java.io.File;
 import java.net.InetSocketAddress;

@@ -12,10 +12,8 @@
         <module>doctor-core</module>
         <module>doctor-processor</module>
         <module>doctor-runtime</module>
-        <module>doctor-netty-bundle</module>
-        <module>doctor-http-server</module>
-        <module>doctor-http-server-jackson</module>
         <module>doctor-jersey</module>
+        <module>doctor-reactor-http</module>
         <module>doctor-jpa</module>
         <module>doctor-util</module>
         <module>doctor-test</module>
@@ -26,7 +24,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <slf4j.version>1.7.32</slf4j.version>
+        <slf4j.version>1.7.33</slf4j.version>
         <maven.deploy.skip>true</maven.deploy.skip>
         <netty.version>4.1.72.Final</netty.version>
     </properties>

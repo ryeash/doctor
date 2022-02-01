@@ -1,3 +1,7 @@
 doctor.netty.http {
     bind: "localhost:61233"
 }
+
+doctor.reactor.http {
+    bind: "0.0.0.0:60222"
+}

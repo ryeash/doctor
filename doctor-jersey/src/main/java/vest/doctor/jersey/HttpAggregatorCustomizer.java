@@ -2,8 +2,8 @@ package vest.doctor.jersey;
 
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.http.HttpObjectAggregator;
-import vest.doctor.netty.common.HttpServerChannelInitializer;
-import vest.doctor.netty.common.PipelineCustomizer;
+import vest.doctor.netty.HttpServerChannelInitializer;
+import vest.doctor.netty.PipelineCustomizer;
 
 record HttpAggregatorCustomizer(int maxLength) implements PipelineCustomizer {
 

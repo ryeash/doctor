@@ -306,7 +306,7 @@ public class ProcessorUtils {
         TypeMirror reportedType = rawClass(type);
 
         if (reportedType == null) {
-            return "new TypeInfo(null)";
+            return "new TypeInfo(Object.class)";
         }
         String prefix = "new TypeInfo(" + typeWithoutParameters(reportedType) + ".class";
         if (!genericInfo.hasTypeParameters()) {
@@ -420,7 +420,8 @@ public class ProcessorUtils {
                 WildcardType wc = (WildcardType) mirror;
                 TypeMirror bound = Optional.ofNullable(wc.getSuperBound()).orElse(wc.getExtendsBound());
                 if (bound == null) {
-                    throw new CodeProcessingException("unspecified bounds");
+                    return null;
+//                    throw new CodeProcessingException("unspecified bounds");
                 }
                 return rawClass(bound);
 

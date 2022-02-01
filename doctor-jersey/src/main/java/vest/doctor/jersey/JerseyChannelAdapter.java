@@ -18,9 +18,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vest.doctor.CustomThreadFactory;
 import vest.doctor.ProviderRegistry;
-import vest.doctor.netty.common.HttpServerConfiguration;
-import vest.doctor.netty.common.Websocket;
-import vest.doctor.netty.common.WebsocketRouter;
+import vest.doctor.netty.HttpServerConfiguration;
+import vest.doctor.netty.Websocket;
+import vest.doctor.netty.WebsocketRouter;
 import vest.doctor.runtime.LoggingUncaughtExceptionHandler;
 
 import java.io.InputStream;

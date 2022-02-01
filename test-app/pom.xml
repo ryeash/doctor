@@ -24,12 +24,7 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <artifactId>doctor-http-server</artifactId>
-            <groupId>${project.groupId}</groupId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <artifactId>doctor-http-server-jackson</artifactId>
+            <artifactId>doctor-reactor-http</artifactId>
             <groupId>${project.groupId}</groupId>
             <version>${project.version}</version>
         </dependency>
@@ -48,7 +43,6 @@
             <artifactId>jakarta.annotation-api</artifactId>
             <version>2.0.0</version>
         </dependency>
-
 
         <dependency>
             <groupId>org.hibernate</groupId>
@@ -94,6 +88,12 @@
             <groupId>org.eclipse.jetty.websocket</groupId>
             <artifactId>websocket-client</artifactId>
             <version>9.4.43.v20210629</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>vest</groupId>
+            <artifactId>docker-reactor-http</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
