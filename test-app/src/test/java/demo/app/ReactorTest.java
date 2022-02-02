@@ -72,7 +72,7 @@ public class ReactorTest extends AbstractTestAppTest {
                 .get("/root/params/test")
                 .then()
                 .statusCode(200)
-                .body(is("test 10 headerValue monster test 10 headerValue monster providedThing value"))
+                .body(is("test 10 headerValue monster test 10 headerValue monster providedThing providedThing value"))
                 .header("X-After", is("true"));
     }
 
@@ -204,10 +204,23 @@ public class ReactorTest extends AbstractTestAppTest {
                 .body(is("/root/splat/this/is/the/full/path"));
     }
 
+    @Test
+    public void errors() {
+        req().options("/root/syncError")
+                .then()
+                .statusCode(500)
+                .body(containsString("error"));
+
+        req().options("/root/asyncError")
+                .then()
+                .statusCode(500)
+                .body(containsString("error"));
+    }
+
     @Test(invocationCount = 2)
     public void throughput() {
         long start = System.nanoTime();
-        IntStream.range(0, 100)
+        IntStream.range(0, 1000)
                 .parallel()
                 .forEach(i -> {
                     byte[] sent = randomBytes();

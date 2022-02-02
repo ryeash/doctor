@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.netty.DisposableServer;
+import reactor.netty.http.HttpProtocol;
 import reactor.netty.http.server.HttpServer;
 import vest.doctor.AdHocProvider;
 import vest.doctor.ApplicationLoader;
@@ -22,6 +23,7 @@ import vest.doctor.event.EventBus;
 import vest.doctor.event.ServiceStarted;
 import vest.doctor.reactor.http.BodyReader;
 import vest.doctor.reactor.http.BodyWriter;
+import vest.doctor.reactor.http.ExceptionHandler;
 import vest.doctor.reactor.http.Filter;
 import vest.doctor.reactor.http.Handler;
 import vest.doctor.reactor.http.HttpServerConfiguration;
@@ -69,6 +71,11 @@ public class ReactorHTTPLoader implements ApplicationLoader {
         BodyInterchange bodyInterchange = new BodyInterchange(readers, writers);
         providerRegistry.register(AdHocProvider.createDefault(bodyInterchange));
 
+        CompositeExceptionHandler compositeExceptionHandler = new CompositeExceptionHandler();
+        providerRegistry.getInstances(ExceptionHandler.class)
+                .forEach(compositeExceptionHandler::addHandler);
+        providerRegistry.register(AdHocProvider.createDefault(compositeExceptionHandler));
+
         Scheduler scheduler = Schedulers.newBoundedElastic(configuration.getWorkerThreads(), configuration.getWorkerThreads() * 2,
                 new CustomThreadFactory(true,
                         configuration.getWorkerThreadFormat(),
@@ -84,6 +91,24 @@ public class ReactorHTTPLoader implements ApplicationLoader {
 
         HttpServer httpServer = HttpServer.create();
         providerRegistry.getInstances(HttpServerCustomizer.class).forEach(c -> c.customize(httpServer));
+
+        httpServer.configuration()
+                .decoder()
+                .initialBufferSize(configuration.getInitialBufferSize())
+                .maxChunkSize(configuration.getMaxChunkSize())
+                .maxInitialLineLength(configuration.getMaxInitialLineLength())
+                .maxHeaderSize(configuration.getMaxHeaderSize())
+                .allowDuplicateContentLengths(false)
+                .h2cMaxContentLength(configuration.getMaxContentLength())
+                .validateHeaders(configuration.isValidateHeaders());
+
+        httpServer.compress(configuration.getMinGzipSize());
+
+        httpServer.protocol(configuration.getProtocols().toArray(HttpProtocol[]::new));
+        SslContext sslContext = configuration.getSslContext();
+        if (sslContext != null) {
+            httpServer.secure(spec -> spec.sslContext(sslContext));
+        }
 
         DisposableServer disposableServer = httpServer.runOn(bossGroup)
                 .host(configuration.getBindAddress().getHostName())
@@ -156,6 +181,7 @@ public class ReactorHTTPLoader implements ApplicationLoader {
         conf.setWorkerThreads(httpConf.get("worker.threads", 16, Integer::valueOf));
         conf.setWorkerThreadFormat(httpConf.get("worker.threadFormat", "netty-worker-%d"));
 
+        conf.setProtocols(httpConf.getList("protocol", List.of(HttpProtocol.HTTP11), HttpProtocol::valueOf));
 
         try {
             if (httpConf.get("ssl.selfSigned", false, Boolean::valueOf)) {
@@ -169,7 +195,7 @@ public class ReactorHTTPLoader implements ApplicationLoader {
                 String keyFile = Objects.requireNonNull(httpConf.get("ssl.keyFile"), "missing ssl key file configuration");
                 String keyPassword = httpConf.get("ssl.keyPassword");
                 SslContext sslContext = SslContextBuilder.forServer(new File(keyCertChainFile), new File(keyFile), keyPassword).build();
-                conf.setSslContext(sslContext);
+//                conf.setSslContext(sslContext);
             }
         } catch (Throwable t) {
             throw new RuntimeException("error configuring ssl", t);

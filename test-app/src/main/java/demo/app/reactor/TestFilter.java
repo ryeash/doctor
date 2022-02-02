@@ -1,4 +1,4 @@
-package demo.app;
+package demo.app.reactor;
 
 import io.netty.buffer.ByteBuf;
 import jakarta.inject.Singleton;

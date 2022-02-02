@@ -90,12 +90,6 @@
             <version>9.4.43.v20210629</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>vest</groupId>
-            <artifactId>docker-reactor-http</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
 </project>

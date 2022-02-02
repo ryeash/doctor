@@ -8,7 +8,8 @@ import java.util.List;
 import java.util.function.BiFunction;
 
 /**
- * A handler for HTTP requests.
+ * A handler for HTTP requests. Implementations must conform to handlers registered via
+ * {@link reactor.netty.http.server.HttpServer#handle(BiFunction)}.
  */
 public interface Handler extends BiFunction<HttpServerRequest, HttpServerResponse, Publisher<Void>> {
 

@@ -13,10 +13,19 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * HTTP response body data.
+ */
 public interface ResponseBody {
 
+    /**
+     * Create the data flow to be sent to the client.
+     */
     Publisher<HttpContent> content();
 
+    /**
+     * Create a response body of a single {@link ByteBuf}.
+     */
     static ResponseBody of(ByteBuf buf) {
         return new DefaultResponseBody(buf);
     }

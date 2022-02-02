@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Singleton
-public class GrumpyWebsocket extends AbstractWebsocket {
+public class JerseyGrumpyWebsocket extends AbstractWebsocket {
 
     @Override
     public List<String> paths() {

@@ -3,7 +3,7 @@ package vest.doctor.reactor.http;
 import reactor.netty.http.server.HttpServer;
 
 /**
- * Customizes the {@link HttpServer} before it starts up.
+ * Customizes the {@link HttpServer} before start up.
  */
 public interface HttpServerCustomizer {
 

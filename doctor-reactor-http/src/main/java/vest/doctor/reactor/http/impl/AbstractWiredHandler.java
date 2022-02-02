@@ -7,6 +7,7 @@ import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.TypeInfo;
+import vest.doctor.reactor.http.ExceptionHandler;
 import vest.doctor.reactor.http.Filter;
 import vest.doctor.reactor.http.Handler;
 import vest.doctor.reactor.http.HttpResponse;
@@ -23,12 +24,14 @@ public abstract class AbstractWiredHandler implements Handler {
     protected final List<Filter> filters;
     protected final BodyInterchange bodyInterchange;
     protected final Scheduler workerScheduler;
+    protected final ExceptionHandler exceptionHandler;
 
     protected AbstractWiredHandler(ProviderRegistry providerRegistry, String schedulerName) {
         this.providerRegistry = providerRegistry;
         this.filters = providerRegistry.getInstances(Filter.class).toList();
         this.bodyInterchange = providerRegistry.getInstance(BodyInterchange.class);
         this.workerScheduler = providerRegistry.getInstance(Scheduler.class, schedulerName);
+        this.exceptionHandler = providerRegistry.getInstance(CompositeExceptionHandler.class);
     }
 
     @Override
@@ -42,24 +45,29 @@ public abstract class AbstractWiredHandler implements Handler {
         return Flux.just(requestContext)
                 .subscribeOn(workerScheduler)
                 .switchMap(this::doNextFilter)
+                .onErrorResume(error -> exceptionHandler.handle(requestContext, error))
                 .switchMap(HttpResponse::send);
     }
 
     protected abstract TypeInfo responseType();
 
-    protected abstract Object handle(RequestContext requestContext);
+    protected abstract Object handle(RequestContext requestContext) throws Exception;
 
     private Publisher<HttpResponse> doNextFilter(RequestContext requestContext) {
-        Iterator<Filter> iterator = requestContext.attribute(FILTER_ITERATOR);
-        if (iterator.hasNext()) {
-            Filter filter = iterator.next();
-            try {
-                return filter.filter(requestContext, this::doNextFilter);
-            } catch (Throwable t) {
-                throw new RuntimeException("error processing request", t);
+        try {
+            Iterator<Filter> iterator = requestContext.attribute(FILTER_ITERATOR);
+            if (iterator.hasNext()) {
+                Filter filter = iterator.next();
+                try {
+                    return filter.filter(requestContext, this::doNextFilter);
+                } catch (Throwable t) {
+                    throw new RuntimeException("error processing request", t);
+                }
             }
+            Object result = handle(requestContext);
+            return bodyInterchange.write(requestContext, responseType(), result);
+        } catch (Throwable t) {
+            return exceptionHandler.handle(requestContext, t);
         }
-        Object result = handle(requestContext);
-        return bodyInterchange.write(requestContext, responseType(), result);
     }
 }

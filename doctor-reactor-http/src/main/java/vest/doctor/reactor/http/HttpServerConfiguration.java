@@ -1,8 +1,10 @@
 package vest.doctor.reactor.http;
 
 import io.netty.handler.ssl.SslContext;
+import reactor.netty.http.HttpProtocol;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 
 /**
  * Configuration for netty http components.
@@ -28,6 +30,13 @@ public class HttpServerConfiguration {
      * The thread prefix / pool name to use for the worker thread event loop group.
      */
     private String workerThreadFormat = "netty-worker-%d";
+
+    /**
+     * The supported communication protocols.
+     *
+     * @see HttpProtocol
+     */
+    private List<HttpProtocol> protocols = List.of(HttpProtocol.HTTP11);
 
     /**
      * The maximum queue length for incoming connection indications;
@@ -135,6 +144,14 @@ public class HttpServerConfiguration {
         this.workerThreadFormat = workerThreadFormat;
     }
 
+    public List<HttpProtocol> getProtocols() {
+        return protocols;
+    }
+
+    public void setProtocols(List<HttpProtocol> protocols) {
+        this.protocols = protocols;
+    }
+
     public int getSocketBacklog() {
         return socketBacklog;
     }
@@ -239,11 +256,4 @@ public class HttpServerConfiguration {
         this.debugRequestRouting = debugRequestRouting;
     }
 
-    public ExceptionHandler getExceptionHandler() {
-        return exceptionHandler;
-    }
-
-    public void setExceptionHandler(ExceptionHandler exceptionHandler) {
-        this.exceptionHandler = exceptionHandler;
-    }
 }

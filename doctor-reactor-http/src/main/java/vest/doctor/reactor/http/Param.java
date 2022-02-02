@@ -14,6 +14,9 @@ import java.lang.annotation.Target;
 @Target({ElementType.ANNOTATION_TYPE})
 public @interface Param {
 
+    /**
+     * Parameter value will be pulled from {@link HttpRequest#pathParam(String)}.
+     */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.PARAMETER, ElementType.METHOD, ElementType.FIELD})
@@ -22,6 +25,9 @@ public @interface Param {
         String value() default "";
     }
 
+    /**
+     * Parameter value will be pulled from {@link HttpRequest#queryParam(String)}.
+     */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.PARAMETER, ElementType.METHOD, ElementType.FIELD})
@@ -30,6 +36,9 @@ public @interface Param {
         String value() default "";
     }
 
+    /**
+     * Parameter value will be pulled from {@link HttpRequest#header(CharSequence)}.
+     */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.PARAMETER, ElementType.METHOD, ElementType.FIELD})
@@ -38,6 +47,9 @@ public @interface Param {
         String value() default "";
     }
 
+    /**
+     * Parameter value will be pulled from {@link HttpRequest#cookie(String)}.
+     */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.PARAMETER, ElementType.METHOD, ElementType.FIELD})
@@ -46,6 +58,11 @@ public @interface Param {
         String value() default "";
     }
 
+    /**
+     * Parameter value will be created from an annotated java bean. Bean parameters can use
+     * any parameter annotations to mark methods, constructors, and fields to indicate
+     * how to create and initialize the bean.
+     */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.PARAMETER, ElementType.METHOD, ElementType.FIELD})
@@ -53,6 +70,9 @@ public @interface Param {
     @interface Bean {
     }
 
+    /**
+     * Parameter value will be pulled from the {@link vest.doctor.ProviderRegistry}.
+     */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.PARAMETER, ElementType.METHOD, ElementType.FIELD})
@@ -60,6 +80,9 @@ public @interface Param {
     @interface Provided {
     }
 
+    /**
+     * Parameter value will be pulled from {@link RequestContext#attribute(String)}.
+     */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.PARAMETER, ElementType.METHOD, ElementType.FIELD})
@@ -68,6 +91,10 @@ public @interface Param {
         String value() default "";
     }
 
+    /**
+     * Parameter value will be created from the request body data using one of the available
+     * {@link BodyReader body readers}.
+     */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.PARAMETER, ElementType.METHOD, ElementType.FIELD})

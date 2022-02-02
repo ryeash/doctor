@@ -3,6 +3,7 @@ package vest.doctor.reactor.http.impl;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.multipart.HttpData;
 import io.netty.util.ReferenceCounted;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -13,7 +14,6 @@ import vest.doctor.TypeInfo;
 import vest.doctor.reactor.http.BodyReader;
 import vest.doctor.reactor.http.BodyWriter;
 import vest.doctor.reactor.http.HttpResponse;
-import vest.doctor.reactor.http.MultiPartData;
 import vest.doctor.reactor.http.RequestContext;
 import vest.doctor.reactor.http.ResponseBody;
 
@@ -51,6 +51,8 @@ public class DefaultBodyReaderWriter implements BodyReader, BodyWriter {
             return unwrap(requestContext).asString();
         } else if (flowableType.matches(InputStream.class)) {
             return unwrap(requestContext).asInputStream();
+        } else if (flowableType.matches(HttpData.class)) {
+            return requestContext.request().unwrap().receiveForm();
         } else {
             return null;
         }
@@ -71,8 +73,6 @@ public class DefaultBodyReaderWriter implements BodyReader, BodyWriter {
             return agg(requestContext).asString();
         } else if (typeInfo.matches(InputStream.class)) {
             return agg(requestContext).asInputStream();
-        } else if (typeInfo.matches(MultiPartData.class)) {
-            return Mono.just(new MultiPartDataImpl(requestContext.request().unwrap().receiveForm()));
         } else {
             return null;
         }

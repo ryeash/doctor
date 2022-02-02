@@ -184,7 +184,7 @@ public class RouterWriter implements ProviderDefinitionListener {
         }
 
 
-        MethodBuilder handler = cb.newMethod("@Override protected Object handle(RequestContext requestContext)");
+        MethodBuilder handler = cb.newMethod("@Override protected Object handle(RequestContext requestContext) throws Exception");
 
         if (bodyIsPublisher) {
             handler.line(bodyParam, " body = bodyInterchange.read(requestContext, ", bodyType, ");");

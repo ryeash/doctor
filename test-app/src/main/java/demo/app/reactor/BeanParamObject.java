@@ -1,4 +1,4 @@
-package demo.app;
+package demo.app.reactor;
 
 import jakarta.inject.Inject;
 import vest.doctor.reactor.http.Param;

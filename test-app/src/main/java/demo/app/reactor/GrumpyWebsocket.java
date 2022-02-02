@@ -1,4 +1,4 @@
-package demo.app;
+package demo.app.reactor;
 
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;

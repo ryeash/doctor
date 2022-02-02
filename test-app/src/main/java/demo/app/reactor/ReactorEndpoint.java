@@ -1,6 +1,9 @@
-package demo.app;
+package demo.app.reactor;
 
+import demo.app.Person;
 import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.http.multipart.HttpData;
+import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -9,7 +12,7 @@ import vest.doctor.reactor.http.DELETE;
 import vest.doctor.reactor.http.GET;
 import vest.doctor.reactor.http.HttpRequest;
 import vest.doctor.reactor.http.HttpResponse;
-import vest.doctor.reactor.http.MultiPartData;
+import vest.doctor.reactor.http.OPTIONS;
 import vest.doctor.reactor.http.POST;
 import vest.doctor.reactor.http.PUT;
 import vest.doctor.reactor.http.Param;
@@ -24,6 +27,7 @@ import vest.doctor.reactor.http.Path;
 import vest.doctor.reactor.http.RequestContext;
 import vest.doctor.reactor.http.ResponseBody;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
@@ -54,8 +58,9 @@ public class ReactorEndpoint {
                          @Cookie String cook,
                          @Bean BeanParamObject bean,
                          @Provided ProvidedThing thing,
+                         @Provided Provider<ProvidedThing> thingProvider,
                          @Attribute("test.attribute") String attribute) {
-        return path + " " + size + " " + param + " " + cook + " " + bean + " " + thing + " " + attribute;
+        return path + " " + size + " " + param + " " + cook + " " + bean + " " + thing + " " + thingProvider.get() + " " + attribute;
     }
 
     @POST
@@ -118,8 +123,8 @@ public class ReactorEndpoint {
 
     @POST
     @Path("/multipart")
-    public Publisher<String> multipart(@Body MultiPartData form) {
-        return form.data()
+    public Publisher<String> multipart(@Body Publisher<HttpData> form) {
+        return Flux.from(form)
                 .map(data -> data.content().toString(StandardCharsets.UTF_8))
                 .collect(Collectors.joining());
     }
@@ -128,5 +133,17 @@ public class ReactorEndpoint {
     @Path("/splat/**")
     public String splat(RequestContext ctx) {
         return ctx.request().uri().toString();
+    }
+
+    @OPTIONS
+    @Path("/asyncError")
+    public Publisher<String> asyncError() {
+        return Flux.error(new IOException("error"));
+    }
+
+    @OPTIONS
+    @Path("/syncError")
+    public ByteBuf syncError() throws IOException {
+        throw new IOException("error");
     }
 }
