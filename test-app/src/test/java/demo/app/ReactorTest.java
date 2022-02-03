@@ -217,6 +217,25 @@ public class ReactorTest extends AbstractTestAppTest {
                 .body(containsString("error"));
     }
 
+    @Test
+    public void tooLarge() {
+        byte[] b = new byte[4096];
+        ThreadLocalRandom.current().nextBytes(b);
+        req().body(b)
+                .post("/root/throughput")
+                .then()
+                .statusCode(413);
+    }
+
+    @Test
+    public void classLevelRunAs() {
+        req().get("/isolated/classLevelRunAs")
+                .prettyPeek()
+                .then()
+                .statusCode(200)
+                .body(containsString("websocketScheduler"));
+    }
+
     @Test(invocationCount = 2)
     public void throughput() {
         long start = System.nanoTime();

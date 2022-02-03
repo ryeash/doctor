@@ -101,4 +101,20 @@ public @interface Param {
     @Param
     @interface Body {
     }
+
+    /**
+     * Parameter value will be one of the supported context values. One of:
+     * <ul>
+     *     <li>{@link RequestContext}</li>
+     *     <li>{@link HttpRequest}</li>
+     *     <li>{@link HttpResponse}</li>
+     *     <li>{@link java.net.URI}</li>
+     * </ul>
+     */
+    @Documented
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.PARAMETER, ElementType.METHOD, ElementType.FIELD})
+    @Param
+    @interface Context {
+    }
 }

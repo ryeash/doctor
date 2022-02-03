@@ -2,6 +2,8 @@ package vest.doctor.reactor.http;
 
 import org.reactivestreams.Publisher;
 
+import java.util.Set;
+
 /**
  * An HTTP request context holding the {@link HttpRequest} and {@link HttpResponse} and context attributes.
  */
@@ -22,7 +24,7 @@ public interface RequestContext extends Publisher<HttpResponse> {
      * request.
      *
      * @param name  the name of the attribute
-     * @param value the value of the attribute, when null the attribute is removed from the context
+     * @param value the value of the attribute, if null the attribute is removed from the context
      */
     void attribute(String name, Object value);
 
@@ -42,4 +44,9 @@ public interface RequestContext extends Publisher<HttpResponse> {
      * @return the attribute value
      */
     <T> T attributeOrElse(String name, T orElse);
+
+    /**
+     * Get the names of all attributes attached to this context.
+     */
+    Set<String> attributeNames();
 }

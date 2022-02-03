@@ -14,36 +14,41 @@ import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
 import reactor.netty.http.websocket.WebsocketInbound;
 import reactor.netty.http.websocket.WebsocketOutbound;
-import vest.doctor.ProviderRegistry;
-import vest.doctor.reactor.http.RunOn;
 import vest.doctor.reactor.http.Websocket;
 import vest.doctor.reactor.http.WebsocketSession;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListMap;
 
+/**
+ * An abstract websocket implementation that simplifies sending and receiving frames.
+ * Implements a websocket handler to add {@link WebsocketSession} and default frame routing.
+ */
 public abstract class AbstractWebsocket implements Websocket {
     protected static final Logger log = LoggerFactory.getLogger(AbstractWebsocket.class);
 
     protected final Scheduler scheduler;
 
+    /**
+     * Create a new websocket using the given scheduler to subscribe to the frame flow.
+     *
+     * @param scheduler the scheduler to use with {@link Flux#subscribeOn(Scheduler)}
+     */
     protected AbstractWebsocket(Scheduler scheduler) {
         this.scheduler = scheduler;
     }
 
-    protected AbstractWebsocket(ProviderRegistry providerRegistry) {
-        this(providerRegistry, RunOn.DEFAULT_SCHEDULER);
-    }
-
-    protected AbstractWebsocket(ProviderRegistry providerRegistry, String executorName) {
-        this(providerRegistry.getInstance(Scheduler.class, executorName));
-    }
-
     @Override
-    public Publisher<Void> apply(WebsocketInbound websocketInbound, WebsocketOutbound websocketOutbound) {
+    public final Publisher<Void> apply(WebsocketInbound websocketInbound, WebsocketOutbound websocketOutbound) {
         return onConnect(new WebsocketSessionImpl(UUID.randomUUID(), websocketInbound, websocketOutbound, new ConcurrentSkipListMap<>()));
     }
 
+    /**
+     * Notified when a new websocket connection is established from a client.
+     *
+     * @param websocketSession the websocket connection
+     * @return a publisher that indicates the future complete/close of the websocket session
+     */
     protected Publisher<Void> onConnect(WebsocketSession websocketSession) {
         websocketSession.inbound()
                 .receiveFrames()
@@ -64,6 +69,14 @@ public abstract class AbstractWebsocket implements Websocket {
         return websocketSession.outbound().sendObject(Flux.from(websocketSession));
     }
 
+    /**
+     * Notified when a frame is received from the client. By default, the frame is routed
+     * to the specific handler method for the frame type, e.g. {@link #onTextMessage(WebsocketSession, TextWebSocketFrame)}.
+     *
+     * @param session the websocket session that received the message
+     * @param frame   the frame that was received
+     * @throws Exception for any exception during processing
+     */
     protected void onMessage(WebsocketSession session, WebSocketFrame frame) throws Exception {
         if (frame instanceof TextWebSocketFrame text) {
             onTextMessage(session, text);
@@ -116,7 +129,7 @@ public abstract class AbstractWebsocket implements Websocket {
      * @param session the session that received the message
      * @param frame   the ping frame
      */
-    protected void onPingMessage(WebsocketSession session, PingWebSocketFrame frame) {
+    protected void onPingMessage(WebsocketSession session, PingWebSocketFrame frame) throws Exception {
         session.send(new PongWebSocketFrame(frame.content().copy()));
     }
 
@@ -127,7 +140,7 @@ public abstract class AbstractWebsocket implements Websocket {
      * @param session the session that received the message
      * @param frame   the pong frame
      */
-    protected void onPongMessage(WebsocketSession session, PongWebSocketFrame frame) {
+    protected void onPongMessage(WebsocketSession session, PongWebSocketFrame frame) throws Exception {
         // no-op
     }
 
@@ -138,7 +151,7 @@ public abstract class AbstractWebsocket implements Websocket {
      * @param session the session that received the message
      * @param frame   the close frame
      */
-    protected void onCloseMessage(WebsocketSession session, CloseWebSocketFrame frame) {
+    protected void onCloseMessage(WebsocketSession session, CloseWebSocketFrame frame) throws Exception {
         session.sendClose(frame.statusCode(), frame.reasonText());
     }
 }

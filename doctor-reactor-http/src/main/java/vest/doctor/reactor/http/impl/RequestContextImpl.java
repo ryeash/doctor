@@ -5,7 +5,9 @@ import vest.doctor.reactor.http.HttpRequest;
 import vest.doctor.reactor.http.HttpResponse;
 import vest.doctor.reactor.http.RequestContext;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 public record RequestContextImpl(HttpRequest request,
                                  HttpResponse response,
@@ -29,6 +31,11 @@ public record RequestContextImpl(HttpRequest request,
     @SuppressWarnings("unchecked")
     public <T> T attributeOrElse(String name, T orElse) {
         return (T) attributes.getOrDefault(name, orElse);
+    }
+
+    @Override
+    public Set<String> attributeNames() {
+        return Collections.unmodifiableSet(attributes.keySet());
     }
 
     @Override

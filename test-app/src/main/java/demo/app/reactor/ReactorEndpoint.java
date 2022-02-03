@@ -6,6 +6,7 @@ import io.netty.handler.codec.http.multipart.HttpData;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import org.reactivestreams.Publisher;
+import org.testng.Assert;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import vest.doctor.reactor.http.DELETE;
@@ -19,6 +20,7 @@ import vest.doctor.reactor.http.Param;
 import vest.doctor.reactor.http.Param.Attribute;
 import vest.doctor.reactor.http.Param.Bean;
 import vest.doctor.reactor.http.Param.Body;
+import vest.doctor.reactor.http.Param.Context;
 import vest.doctor.reactor.http.Param.Cookie;
 import vest.doctor.reactor.http.Param.Header;
 import vest.doctor.reactor.http.Param.Provided;
@@ -59,7 +61,14 @@ public class ReactorEndpoint {
                          @Bean BeanParamObject bean,
                          @Provided ProvidedThing thing,
                          @Provided Provider<ProvidedThing> thingProvider,
-                         @Attribute("test.attribute") String attribute) {
+                         @Attribute("test.attribute") String attribute,
+                         @Context RequestContext ctx,
+                         @Context HttpRequest request,
+                         @Context HttpResponse response) {
+        Assert.assertNotNull(ctx);
+        Assert.assertNotNull(request);
+        Assert.assertNotNull(response);
+        System.out.println(ctx);
         return path + " " + size + " " + param + " " + cook + " " + bean + " " + thing + " " + thingProvider.get() + " " + attribute;
     }
 
@@ -71,7 +80,7 @@ public class ReactorEndpoint {
     @GET
     @POST
     @Path({"/multimethod", "/multimethod2"})
-    public String multiMethodAndPath(HttpRequest request) {
+    public String multiMethodAndPath(@Context HttpRequest request) {
         return request.method().toString();
     }
 
@@ -96,14 +105,14 @@ public class ReactorEndpoint {
 
     @DELETE
     @Path("/responseobject")
-    public HttpResponse responseObject(HttpResponse response) {
+    public HttpResponse responseObject(@Context HttpResponse response) {
         return response.header("X-RouteHeader", "true")
                 .body(ResponseBody.of("responseObject"));
     }
 
     @DELETE
     @Path("/responseobjectpub")
-    public Publisher<HttpResponse> responseObjectPub(HttpResponse response) {
+    public Publisher<HttpResponse> responseObjectPub(@Context HttpResponse response) {
         return Mono.just(response)
                 .map(r -> r.header("X-RouteHeader", "true")
                         .body(ResponseBody.of("responseObjectPub")));
@@ -131,7 +140,7 @@ public class ReactorEndpoint {
 
     @GET
     @Path("/splat/**")
-    public String splat(RequestContext ctx) {
+    public String splat(@Context RequestContext ctx) {
         return ctx.request().uri().toString();
     }
 

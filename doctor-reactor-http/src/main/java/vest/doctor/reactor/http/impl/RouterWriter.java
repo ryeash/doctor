@@ -10,7 +10,6 @@ import vest.doctor.ExplicitProvidedTypes;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.TypeInfo;
 import vest.doctor.codegen.ClassBuilder;
-import vest.doctor.codegen.Constants;
 import vest.doctor.codegen.GenericInfo;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
@@ -18,11 +17,9 @@ import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
 import vest.doctor.processing.ProviderDefinition;
 import vest.doctor.processing.ProviderDefinitionListener;
-import vest.doctor.processing.StringConversionGenerator;
 import vest.doctor.reactor.http.Handler;
 import vest.doctor.reactor.http.HttpMethod;
-import vest.doctor.reactor.http.HttpRequest;
-import vest.doctor.reactor.http.HttpResponse;
+import vest.doctor.reactor.http.HttpParameterWriter;
 import vest.doctor.reactor.http.Param;
 import vest.doctor.reactor.http.Path;
 import vest.doctor.reactor.http.RequestContext;
@@ -32,20 +29,15 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
-import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.ElementFilter;
-import java.lang.annotation.Annotation;
-import java.net.URI;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -118,12 +110,7 @@ public class RouterWriter implements ProviderDefinitionListener {
                           List<String> httpMethods,
                           List<String> paths,
                           ExecutableElement method) {
-        // check zero or one @Body parameters
-        long bodyParams = method.getParameters().stream().filter(v -> v.getAnnotation(Param.Body.class) != null).count();
-        if (bodyParams > 1) {
-            throw new CodeProcessingException("only one parameter may be marked with @Body in an endpoint method", method);
-        }
-
+        checkMethodParams(context, method);
         boolean isVoid = method.getReturnType().getKind() == TypeKind.VOID;
 
         String className = "WiredHandler_" + context.nextId();
@@ -193,7 +180,7 @@ public class RouterWriter implements ProviderDefinitionListener {
             handler.line(bodyTypeString, " body = Flux.<", bodyTypeString, ">from(bodyInterchange.read(requestContext, ", bodyType, ")).blockLast();");
         }
         String parameters = method.getParameters().stream()
-                .map(p -> parameterWriting(context, cb, p, "requestContext"))
+                .map(p -> parameterWriting(context, cb, p, p, "requestContext"))
                 .collect(Collectors.joining(",\n", "(", ")"));
         String callMethod = "provider.get()." + method.getSimpleName() + parameters + ";";
 
@@ -207,189 +194,30 @@ public class RouterWriter implements ProviderDefinitionListener {
         cb.writeClass(context.filer());
     }
 
+    private void checkMethodParams(AnnotationProcessorContext context, ExecutableElement method) {
+        // all parameters have one and only one param annotation
+        for (VariableElement parameter : method.getParameters()) {
+            int count = ProcessorUtils.getAnnotationsExtends(context, parameter, Param.class).size();
+            if (count != 1) {
+                throw new CodeProcessingException("http endpoint parameters must have exactly one parameter annotation", parameter);
+            }
+        }
 
-    private static final List<Class<?>> SUPPORTED_CLASSES = List.of(HttpRequest.class, HttpResponse.class, URI.class);
-
-    private String parameterWriting(AnnotationProcessorContext context, ClassBuilder epHandler, VariableElement parameter, String contextRef) {
-        try {
-            return parameterWriting(context, epHandler, parameter, parameter, contextRef);
-        } catch (Throwable t) {
-            throw new CodeProcessingException("error wiring endpoint parameter", parameter, t);
+        // zero or one @Body parameters
+        long bodyParams = method.getParameters().stream().filter(v -> v.getAnnotation(Param.Body.class) != null).count();
+        if (bodyParams > 1) {
+            throw new CodeProcessingException("only one parameter may be marked with @Body in an endpoint method", method);
         }
     }
 
     private String parameterWriting(AnnotationProcessorContext context, ClassBuilder handlerBuilder, VariableElement parameter, Element annotationSource, String contextRef) {
-        if (parameter.asType().toString().equals(RequestContext.class.getCanonicalName())) {
-            return contextRef;
-        } else if (parameter.asType().toString().equals(HttpRequest.class.getCanonicalName())) {
-            return contextRef + ".request()";
-        } else if (parameter.asType().toString().equals(HttpResponse.class.getCanonicalName())) {
-            return contextRef + ".response()";
-        } else if (parameter.asType().toString().equals(URI.class.getCanonicalName())) {
-            return contextRef + ".request().uri()";
-        }
-
-        if (annotationSource.getAnnotation(Param.Body.class) != null) {
-            return "body";
-        } else if (annotationSource.getAnnotation(Param.Attribute.class) != null) {
-            String name = getParamName(annotationSource, parameter, Param.Attribute.class, Param.Attribute::value);
-            return contextRef + ".attribute(\"" + name + "\")";
-        } else if (annotationSource.getAnnotation(Param.Bean.class) != null) {
-            return beanParamBuilderCall(context, handlerBuilder, parameter, contextRef) + "(" + contextRef + ")";
-        } else if (annotationSource.getAnnotation(Param.Provided.class) != null) {
-            return ProcessorUtils.providerLookupCode(context, parameter, Constants.PROVIDER_REGISTRY);
-        }
-
-        TypeMirror target = parameter.asType();
-        boolean isOptional = ProcessorUtils.isCompatibleWith(context, target, Optional.class);
-        if (isOptional) {
-            target = GenericInfo.firstParameterizedType(target)
-                    .orElseThrow(() -> new CodeProcessingException("missing type for Optional", parameter));
-        }
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("Optional.ofNullable(")
-                .append(contextRef)
-                .append(".request()");
-
-        if (annotationSource.getAnnotation(Param.Path.class) != null) {
-            String name = getParamName(annotationSource, parameter, Param.Path.class, Param.Path::value);
-            sb.append(".pathParam(\"").append(name).append("\")");
-        } else if (annotationSource.getAnnotation(Param.Query.class) != null) {
-            String name = getParamName(annotationSource, parameter, Param.Query.class, Param.Query::value);
-            sb.append(".queryParam(\"").append(name).append("\")");
-        } else if (annotationSource.getAnnotation(Param.Header.class) != null) {
-            String name = getParamName(annotationSource, parameter, Param.Header.class, Param.Header::value);
-            sb.append(".header(\"").append(name).append("\")");
-        } else if (annotationSource.getAnnotation(Param.Cookie.class) != null) {
-            String name = getParamName(annotationSource, parameter, Param.Cookie.class, Param.Cookie::value);
-            sb.append(".cookie(\"").append(name).append("\")).map(Cookie::value");
-        } else {
-            throw new CodeProcessingException("unsupported parameter - missing supported route parameter annotation", parameter);
-        }
-
-        sb.append(")");
-        sb.append(".map(");
-        sb.append(getStringConversion(context, target));
-        sb.append(")");
-        if (!isOptional) {
-            sb.append(".orElse(null)");
-        }
-        return sb.toString();
-    }
-
-    private static <A extends Annotation> String getParamName(Element element, VariableElement parameter, Class<A> parameterType, Function<A, String> mapper) {
-        return Optional.of(element.getAnnotation(parameterType))
-                .map(mapper)
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(ProcessorUtils::escapeStringForCode)
-                .orElse(parameter.getSimpleName().toString());
-    }
-
-    private String beanParamBuilderCall(AnnotationProcessorContext context, ClassBuilder epHandler, VariableElement parameter, String contextRef) {
-        TypeMirror typeMirror = parameter.asType();
-        String typeWithoutParams = ProcessorUtils.typeWithoutParameters(typeMirror);
-        String methodName = "beanParam" + context.nextId();
-        MethodBuilder bean = epHandler.newMethod("public static ", typeWithoutParams, " " + methodName + "(RequestContext ", contextRef, ")");
-
-        TypeElement beanType = context.toTypeElement(typeMirror);
-        ExecutableElement constructor = injectableConstructor(beanType);
-
-        String diamond = Optional.of(beanType.getTypeParameters())
-                .filter(l -> !l.isEmpty())
-                .map(l -> "<>")
-                .orElse("");
-
-        String constructorParams = constructor.getParameters().stream()
-                .map(p -> parameterWriting(context, epHandler, p, contextRef))
-                .collect(Collectors.joining(", ", "(", ")"));
-
-        bean.line(ProcessorUtils.typeWithoutParameters(typeMirror), " bean = new ", ProcessorUtils.typeWithoutParameters(typeMirror), diamond, constructorParams, ";");
-
-        for (VariableElement field : ElementFilter.fieldsIn(beanType.getEnclosedElements())) {
-            if (supportedParam(field)) {
-                ExecutableElement setter = findCorrespondingSetter(context, field, beanType);
-                VariableElement setterParameter = setter.getParameters().get(0);
-                bean.line("bean.", setter.getSimpleName(), "(", parameterWriting(context, epHandler, setterParameter, field, contextRef), ");");
+        for (HttpParameterWriter customization : context.customizations(HttpParameterWriter.class)) {
+            String code = customization.writeParameter(context, handlerBuilder, parameter, annotationSource, contextRef);
+            if (code != null) {
+                return code;
             }
         }
-        for (ExecutableElement method : ElementFilter.methodsIn(beanType.getEnclosedElements())) {
-            if (supportedParam(method)) {
-                if (method.getParameters().size() != 1) {
-                    throw new CodeProcessingException("setters in BeanParam objects must have one and only one parameter", method);
-                }
-                VariableElement setterParameter = method.getParameters().get(0);
-                bean.line("bean.", method.getSimpleName(), "(", parameterWriting(context, epHandler, setterParameter, method, contextRef), ");");
-            }
-        }
-        bean.line("return bean;");
-        return methodName;
-    }
-
-    private static ExecutableElement injectableConstructor(TypeElement typeElement) {
-        ExecutableElement constructor = null;
-        for (ExecutableElement c : ElementFilter.constructorsIn(typeElement.getEnclosedElements())) {
-            if (c.getAnnotation(Inject.class) != null) {
-                constructor = c;
-                break;
-            }
-            if (c.getParameters().isEmpty()) {
-                constructor = c;
-            }
-        }
-        if (constructor == null) {
-            throw new CodeProcessingException("failed to find injectable constructor for the BeanParam", typeElement);
-        }
-        return constructor;
-    }
-
-    private static boolean supportedParam(Element e) {
-        if (e.getAnnotation(Param.Path.class) != null
-                || e.getAnnotation(Param.Query.class) != null
-                || e.getAnnotation(Param.Header.class) != null
-                || e.getAnnotation(Param.Cookie.class) != null
-                || e.getAnnotation(Param.Attribute.class) != null
-                || e.getAnnotation(Param.Body.class) != null
-                || e.getAnnotation(Param.Provided.class) != null
-                || e.getAnnotation(Param.Bean.class) != null
-        ) {
-            return true;
-        }
-        for (Class<?> supportedClass : SUPPORTED_CLASSES) {
-            if (e.asType().toString().equals(supportedClass.getCanonicalName())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static String getStringConversion(AnnotationProcessorContext context, TypeMirror target) {
-        for (StringConversionGenerator customization : context.customizations(StringConversionGenerator.class)) {
-            String function = customization.converterFunction(context, target);
-            if (function != null) {
-                return function;
-            }
-        }
-        throw new CodeProcessingException("no string conversion available for: " + target);
-    }
-
-    private static final List<String> SETTER_PREFIXES = List.of("set", "is", "has");
-
-    private static ExecutableElement findCorrespondingSetter(AnnotationProcessorContext context, VariableElement field, TypeElement beanType) {
-        return ProcessorUtils.hierarchy(context, beanType)
-                .stream()
-                .flatMap(t -> ElementFilter.methodsIn(t.getEnclosedElements()).stream())
-                .distinct()
-                .filter(method -> method.getParameters().size() == 1)
-                .filter(method -> {
-                    String methodName = method.getSimpleName().toString();
-                    return SETTER_PREFIXES.stream()
-                            .map(prefix -> prefix + field.getSimpleName())
-                            .anyMatch(methodName::equalsIgnoreCase);
-                })
-                .findFirst()
-                .orElseThrow(() -> new CodeProcessingException("missing setter method for BeanParam field", field));
+        throw new CodeProcessingException("unsupported parameter - no HttpParameterWriter is registered to handle", parameter);
     }
 
     public static TypeMirror bodyParameter(ExecutableElement method) {

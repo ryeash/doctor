@@ -2,6 +2,8 @@ package vest.doctor.reactor.http.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
+import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
@@ -10,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.netty.DisposableServer;
+import reactor.netty.NettyPipeline;
 import reactor.netty.http.HttpProtocol;
 import reactor.netty.http.server.HttpServer;
 import vest.doctor.AdHocProvider;
@@ -26,7 +29,6 @@ import vest.doctor.reactor.http.BodyWriter;
 import vest.doctor.reactor.http.ExceptionHandler;
 import vest.doctor.reactor.http.Filter;
 import vest.doctor.reactor.http.Handler;
-import vest.doctor.reactor.http.HttpServerConfiguration;
 import vest.doctor.reactor.http.HttpServerCustomizer;
 import vest.doctor.reactor.http.RunOn;
 import vest.doctor.reactor.http.Websocket;
@@ -89,8 +91,8 @@ public class ReactorHTTPLoader implements ApplicationLoader {
                         LoggingUncaughtExceptionHandler.INSTANCE,
                         getClass().getClassLoader()));
 
-        HttpServer httpServer = HttpServer.create();
-        providerRegistry.getInstances(HttpServerCustomizer.class).forEach(c -> c.customize(httpServer));
+        HttpServer httpServer = providerRegistry.getInstances(HttpServerCustomizer.class)
+                .reduce(HttpServer.create(), (serv, c) -> c.customize(serv), (a, b) -> b);
 
         httpServer.configuration()
                 .decoder()
@@ -102,15 +104,18 @@ public class ReactorHTTPLoader implements ApplicationLoader {
                 .h2cMaxContentLength(configuration.getMaxContentLength())
                 .validateHeaders(configuration.isValidateHeaders());
 
-        httpServer.compress(configuration.getMinGzipSize());
-
-        httpServer.protocol(configuration.getProtocols().toArray(HttpProtocol[]::new));
         SslContext sslContext = configuration.getSslContext();
         if (sslContext != null) {
             httpServer.secure(spec -> spec.sslContext(sslContext));
         }
 
+        HttpMaxContentEnforcer maxContentEnforcer = new HttpMaxContentEnforcer(configuration.getMaxContentLength());
+
         DisposableServer disposableServer = httpServer.runOn(bossGroup)
+                .cookieCodec(ServerCookieEncoder.LAX, ServerCookieDecoder.LAX)
+                .doOnConnection(c -> c.channel().pipeline().addAfter(NettyPipeline.HttpCodec, "maxLengthEnforcer", maxContentEnforcer))
+                .protocol(configuration.getProtocols().toArray(HttpProtocol[]::new))
+                .compress(configuration.getMinGzipSize())
                 .host(configuration.getBindAddress().getHostName())
                 .port(configuration.getBindAddress().getPort())
                 .route(routes -> {
@@ -160,8 +165,7 @@ public class ReactorHTTPLoader implements ApplicationLoader {
                 disposableServer::onDispose
         );
         providerRegistry.register(serverProvider);
-        providerRegistry.getInstance(EventBus.class).publish(new ServiceStarted("netty-http", disposableServer));
-
+        providerRegistry.getInstance(EventBus.class).publish(new ServiceStarted("reactor-http", disposableServer));
     }
 
     private HttpServerConfiguration buildConf(ProviderRegistry providerRegistry) {
@@ -169,15 +173,13 @@ public class ReactorHTTPLoader implements ApplicationLoader {
 
         HttpServerConfiguration conf = new HttpServerConfiguration();
 
-        InetSocketAddress bind = Optional.ofNullable(httpConf.get("bind"))
+        Optional.ofNullable(httpConf.get("bind"))
                 .map(s -> s.split(":"))
                 .map(hp -> new InetSocketAddress(hp[0].trim(), Integer.parseInt(hp[1].trim())))
-                .orElse(null);
-        conf.setBindAddress(bind);
+                .ifPresent(conf::setBindAddress);
 
         conf.setTcpManagementThreads(httpConf.get("tcp.threads", 1, Integer::valueOf));
         conf.setTcpThreadFormat(httpConf.get("tcp.threadFormat", "netty-tcp-%d"));
-        conf.setSocketBacklog(httpConf.get("tcp.socketBacklog", 1024, Integer::valueOf));
         conf.setWorkerThreads(httpConf.get("worker.threads", 16, Integer::valueOf));
         conf.setWorkerThreadFormat(httpConf.get("worker.threadFormat", "netty-worker-%d"));
 
@@ -195,7 +197,7 @@ public class ReactorHTTPLoader implements ApplicationLoader {
                 String keyFile = Objects.requireNonNull(httpConf.get("ssl.keyFile"), "missing ssl key file configuration");
                 String keyPassword = httpConf.get("ssl.keyPassword");
                 SslContext sslContext = SslContextBuilder.forServer(new File(keyCertChainFile), new File(keyFile), keyPassword).build();
-//                conf.setSslContext(sslContext);
+                conf.setSslContext(sslContext);
             }
         } catch (Throwable t) {
             throw new RuntimeException("error configuring ssl", t);
@@ -208,9 +210,6 @@ public class ReactorHTTPLoader implements ApplicationLoader {
         conf.setInitialBufferSize(httpConf.get("initialBufferSize", 8192, Integer::valueOf));
         conf.setMaxContentLength(httpConf.get("maxContentLength", 8388608, Integer::valueOf));
         conf.setMinGzipSize(httpConf.get("minGzipSize", 812, Integer::valueOf));
-
-        conf.setCaseInsensitiveMatching(httpConf.get("caseInsensitiveMatching", false, Boolean::valueOf));
-        conf.setDebugRequestRouting(httpConf.get("debugRequestRouting", false, Boolean::valueOf));
         conf.setRouterPrefix(httpConf.get("routePrefix", ""));
         return conf;
     }

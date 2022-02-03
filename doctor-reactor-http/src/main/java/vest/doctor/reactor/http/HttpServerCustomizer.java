@@ -12,5 +12,5 @@ public interface HttpServerCustomizer {
      *
      * @param httpServer the server to customize
      */
-    void customize(HttpServer httpServer);
+    HttpServer customize(HttpServer httpServer);
 }

@@ -230,7 +230,13 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
 
     @Override
     public ProviderDependency buildDependency(TypeElement type, String qualifier, boolean required) {
-        return new Dependency(type, qualifier, required);
+        if (qualifier == null) {
+            return new Dependency(type, null, required);
+        } else if (qualifier.startsWith("@") || qualifier.startsWith("\"")) {
+            return new Dependency(type, qualifier, required);
+        } else {
+            return new Dependency(type, "\"" + qualifier + "\"", required);
+        }
     }
 
     @Override

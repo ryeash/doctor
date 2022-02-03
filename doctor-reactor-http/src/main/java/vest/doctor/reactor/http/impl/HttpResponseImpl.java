@@ -75,4 +75,14 @@ public class HttpResponseImpl implements HttpResponse {
     public Publisher<Void> send() {
         return response.sendObject(body.content());
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder(response.version() + " " + response.status() + "\n\r");
+        for (Map.Entry<String, String> header : response.responseHeaders()) {
+            sb.append(header.getKey()).append(": ").append(header.getValue()).append("\n\r");
+        }
+        sb.append(body);
+        return sb.toString();
+    }
 }

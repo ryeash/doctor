@@ -1,4 +1,4 @@
-package vest.doctor.reactor.http;
+package vest.doctor.reactor.http.impl;
 
 import io.netty.handler.ssl.SslContext;
 import reactor.netty.http.HttpProtocol;
@@ -96,22 +96,6 @@ public class HttpServerConfiguration {
 
     private String routerPrefix = "";
 
-    private boolean caseInsensitiveMatching = true;
-
-    private boolean debugRequestRouting = false;
-
-    /**
-     * The PipelineCustomizers to apply to the netty pipeline.
-     */
-//    private List<PipelineCustomizer> pipelineCustomizers;
-
-    /**
-     * The ServerBoostrapCustomizers to apply to the netty http server.
-     */
-//    private List<ServerBootstrapCustomizer> serverBootstrapCustomizers;
-
-    private ExceptionHandler exceptionHandler;
-
     public int getTcpManagementThreads() {
         return tcpManagementThreads;
     }
@@ -150,14 +134,6 @@ public class HttpServerConfiguration {
 
     public void setProtocols(List<HttpProtocol> protocols) {
         this.protocols = protocols;
-    }
-
-    public int getSocketBacklog() {
-        return socketBacklog;
-    }
-
-    public void setSocketBacklog(int socketBacklog) {
-        this.socketBacklog = socketBacklog;
     }
 
     public InetSocketAddress getBindAddress() {
@@ -239,21 +215,4 @@ public class HttpServerConfiguration {
     public void setRouterPrefix(String routerPrefix) {
         this.routerPrefix = routerPrefix;
     }
-
-    public boolean isCaseInsensitiveMatching() {
-        return caseInsensitiveMatching;
-    }
-
-    public void setCaseInsensitiveMatching(boolean caseInsensitiveMatching) {
-        this.caseInsensitiveMatching = caseInsensitiveMatching;
-    }
-
-    public boolean isDebugRequestRouting() {
-        return debugRequestRouting;
-    }
-
-    public void setDebugRequestRouting(boolean debugRequestRouting) {
-        this.debugRequestRouting = debugRequestRouting;
-    }
-
 }

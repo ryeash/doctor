@@ -8,8 +8,10 @@ import reactor.netty.http.websocket.WebsocketInbound;
 import reactor.netty.http.websocket.WebsocketOutbound;
 import vest.doctor.reactor.http.WebsocketSession;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 public final class WebsocketSessionImpl implements WebsocketSession {
@@ -47,6 +49,11 @@ public final class WebsocketSessionImpl implements WebsocketSession {
     @Override
     public <T> T attributeOrElse(String attribute, T orElse) {
         return (T) attributes.getOrDefault(attribute, orElse);
+    }
+
+    @Override
+    public Set<String> attributeNames() {
+        return Collections.unmodifiableSet(attributes.keySet());
     }
 
     @Override
