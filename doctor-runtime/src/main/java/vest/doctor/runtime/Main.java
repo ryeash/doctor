@@ -35,7 +35,9 @@ public final class Main {
                 .forEach(facade::addSource);
         Doctor doctor = new Doctor(facade, DefaultConfigurationFacade.split(modules), new ArgsLoader(a));
         if (!doctorRef.compareAndSet(null, doctor)) {
-            throw new IllegalStateException("the main method has already been called");
+            try (doctor) {
+                throw new IllegalStateException("the main method has already been called");
+            }
         }
     }
 

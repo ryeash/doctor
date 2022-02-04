@@ -14,6 +14,16 @@ public interface Prioritized {
     int DEFAULT_PRIORITY = 1000;
 
     /**
+     * The highest priority, i.e. will always sort first.
+     */
+    int HIGHEST_PRIORITY = Integer.MIN_VALUE;
+
+    /**
+     * The lowest priority, i.e. will always sort last.
+     */
+    int LOWEST_PRIORITY = Integer.MAX_VALUE;
+
+    /**
      * Default comparator for prioritized types. Sorts in ascending order, e.g. [1, 2, 3].
      */
     Comparator<Prioritized> COMPARATOR = Comparator.comparingInt(Prioritized::priority);
@@ -21,7 +31,7 @@ public interface Prioritized {
     /**
      * The priority for this object. By default, lower values will sort before higher values.
      *
-     * @default 1000
+     * @default {@link #DEFAULT_PRIORITY}
      */
     default int priority() {
         return DEFAULT_PRIORITY;

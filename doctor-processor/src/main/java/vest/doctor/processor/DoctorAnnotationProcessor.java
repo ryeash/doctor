@@ -1,8 +1,6 @@
 package vest.doctor.processor;
 
 import jakarta.inject.Inject;
-import jakarta.inject.Provider;
-import vest.doctor.ApplicationLoader;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.DoctorProvider;
 import vest.doctor.Eager;
@@ -10,11 +8,10 @@ import vest.doctor.Primary;
 import vest.doctor.PrimaryProviderWrapper;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
-import vest.doctor.ShutdownContainer;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
-import vest.doctor.event.EventProducer;
+import vest.doctor.event.EventBus;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
 import vest.doctor.processing.CustomizationPoint;
@@ -86,10 +83,7 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
     private final Set<ProviderDependency> additionalSatisfiedDependencies = new HashSet<>();
 
     private long start;
-
-    private ClassBuilder appLoader;
-    private MethodBuilder stage3;
-    private boolean changed = false;
+    private AppLoaderWriter appLoaderWriter;
 
     private final Map<Class<?>, Collection<String>> serviceImplementations = new HashMap<>();
     private final DependencyGraph graph = new DependencyGraph();
@@ -99,9 +93,7 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
         this.start = System.currentTimeMillis();
         super.init(processingEnv);
         this.processingEnv = processingEnv;
-
         this.generatedPackage = processingEnv.getOptions().getOrDefault(PACKAGE_NAME_OPTION, "vest.doctor.generated");
-
         this.ignorePackages = Stream.of(processingEnv.getOptions().getOrDefault(IGNORE_PACKAGES, "").split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
@@ -115,29 +107,8 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
 
         addSatisfiedDependency(ProviderRegistry.class, null);
         addSatisfiedDependency(ConfigurationFacade.class, null);
-        addSatisfiedDependency(EventProducer.class, null);
-        reInitAppLoader();
-    }
-
-    private void reInitAppLoader() {
-        String className = generatedPackage + ".AppLoaderImpl" + nextId();
-        this.appLoader = new ClassBuilder()
-                .setClassName(className)
-                .addImplementsInterface(ApplicationLoader.class)
-                .addImportClass(List.class)
-                .addImportClass(LinkedList.class)
-                .addImportClass(Objects.class)
-                .addImportClass(ProviderRegistry.class)
-                .addImportClass(Provider.class)
-                .addImportClass(DoctorProvider.class)
-                .addImportClass(PrimaryProviderWrapper.class)
-                .addImportClass(ShutdownContainer.class)
-                .addClassAnnotation("@SuppressWarnings(\"unchecked\")")
-                .addField("private final List<", DoctorProvider.class, "<?>> eagerList = new LinkedList<>()");
-        this.stage3 = appLoader.newMethod("public void stage3(", ProviderRegistry.class, " {{providerRegistry}})");
-        MethodBuilder stage5 = appLoader.newMethod("public void stage5(", ProviderRegistry.class, " {{providerRegistry}})");
-        stage5.line("eagerList.stream().filter(Objects::nonNull).forEach(", Provider.class, "::get);");
-        changed = false;
+        addSatisfiedDependency(EventBus.class, null);
+        appLoaderWriter = new AppLoaderWriter(this);
     }
 
     private void loadConf(ProcessorConfiguration processorConfiguration) {
@@ -159,11 +130,8 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
                 .forEach(this::processElement);
 
         customizationPoints.forEach(c -> c.finish(this));
-        if (changed) {
-            appLoader.writeClass(filer());
-            addServiceImplementation(ApplicationLoader.class, appLoader.getFullyQualifiedClassName());
-        }
-        reInitAppLoader();
+        appLoaderWriter.finish();
+        appLoaderWriter = new AppLoaderWriter(this);
 
         if (roundEnv.processingOver()) {
             writeServicesResource();
@@ -194,7 +162,6 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
                         classBuilder.writeClass(filer());
                     }
                     writeInProvider(provDef);
-                    changed = true;
                     break;
                 }
             }
@@ -263,7 +230,13 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
 
     @Override
     public ProviderDependency buildDependency(TypeElement type, String qualifier, boolean required) {
-        return new Dependency(type, qualifier, required);
+        if (qualifier == null) {
+            return new Dependency(type, null, required);
+        } else if (qualifier.startsWith("@") || qualifier.startsWith("\"")) {
+            return new Dependency(type, qualifier, required);
+        } else {
+            return new Dependency(type, "\"" + qualifier + "\"", required);
+        }
     }
 
     @Override
@@ -297,6 +270,8 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
     }
 
     private void writeInProvider(ProviderDefinition providerDefinition) {
+        ClassBuilder appLoader = appLoaderWriter.classBuilder();
+        MethodBuilder stage3 = appLoaderWriter.stage3();
         appLoader.addImportClass(ProcessorUtils.typeWithoutParameters(providerDefinition.providedType().asType()));
 
         String creator = "new " + providerDefinition.generatedClassName() + "({{providerRegistry}})";
@@ -354,14 +329,6 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
             }
         } catch (IOException e) {
             throw new CodeProcessingException("error writing services resources", e);
-        }
-    }
-
-    private Class<?> loadClass(String className) {
-        try {
-            return Class.forName(className);
-        } catch (ClassNotFoundException e) {
-            throw new CodeProcessingException("error loading class: " + className);
         }
     }
 

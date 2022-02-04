@@ -1,5 +1,6 @@
 package vest.doctor.runtime;
 
+import vest.doctor.AnnotationData;
 import vest.doctor.DoctorProvider;
 
 import java.lang.annotation.Annotation;
@@ -40,8 +41,8 @@ final class ProviderIndex {
                 sub.computeIfAbsent(provider.qualifier(), q -> new ArrayList<>()).add(provider);
             }
 
-            for (Class<? extends Annotation> annotation : provider.allAnnotationTypes()) {
-                annotationTypeToProvider.computeIfAbsent(annotation.getName(), a -> new HashSet<>(16)).add(provider);
+            for (AnnotationData annotation : provider.annotationMetadata()) {
+                annotationTypeToProvider.computeIfAbsent(annotation.type().getName(), a -> new HashSet<>(16)).add(provider);
             }
         } finally {
             writeLock.unlock();

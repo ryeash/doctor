@@ -1,10 +1,10 @@
 package vest.doctor.aop;
 
+import vest.doctor.AnnotationMetadata;
 import vest.doctor.TypeInfo;
 
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Represents an invocation of a method. Providing details about the method that was called as well as the arguments the
@@ -104,9 +104,7 @@ public sealed interface MethodInvocation permits MethodInvocationImpl {
     Method getMethod() throws NoSuchMethodException;
 
     /**
-     * Get the attributes attached to the method via {@link Attributes}.
-     *
-     * @return the aspect attributes
+     * Get the {@link AnnotationMetadata} for the method being called.
      */
-    Map<String, String> attributes();
+    AnnotationMetadata annotationMetadata();
 }

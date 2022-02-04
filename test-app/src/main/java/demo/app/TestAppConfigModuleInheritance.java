@@ -11,7 +11,7 @@ public class TestAppConfigModuleInheritance {
 
     @Factory
     @Named("class-level-module")
-    public CoffeeMaker testCoffeMakerQualified() {
+    public CoffeeMaker testCoffeeMakerQualified() {
         return () -> "module-qualified";
     }
 }

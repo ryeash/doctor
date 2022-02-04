@@ -4,6 +4,7 @@ import jakarta.inject.Singleton;
 
 import java.lang.annotation.Annotation;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -13,20 +14,38 @@ import java.util.List;
  */
 public final class AdHocProvider<T> implements DoctorProvider<T> {
 
+    @SuppressWarnings("unchecked")
+    public static <T> AdHocProvider<T> createDefault(T instance, Class<?>... additionalTypes) {
+        List<Class<?>> allTypes = new LinkedList<>();
+        allTypes.add(instance.getClass());
+        Collections.addAll(allTypes, additionalTypes);
+        return new AdHocProvider<>((Class<T>) instance.getClass(), instance, null, allTypes);
+    }
+
     private final Class<T> type;
     private final T t;
     private final String qualifier;
     private final List<Class<?>> allProvidedTypes;
+    private final AutoCloseable close;
 
     public AdHocProvider(Class<T> type, T t, String qualifier) {
         this(type, t, qualifier, Collections.singletonList(type));
     }
 
+    public AdHocProvider(Class<T> type, T t, String qualifier, AutoCloseable close) {
+        this(type, t, qualifier, Collections.singletonList(type), close);
+    }
+
     public AdHocProvider(Class<T> type, T t, String qualifier, List<Class<?>> allProvidedTypes) {
+        this(type, t, qualifier, allProvidedTypes, null);
+    }
+
+    public AdHocProvider(Class<T> type, T t, String qualifier, List<Class<?>> allProvidedTypes, AutoCloseable close) {
         this.type = type;
         this.t = t;
         this.qualifier = qualifier;
         this.allProvidedTypes = Collections.unmodifiableList(allProvidedTypes);
+        this.close = close;
     }
 
     @Override
@@ -50,17 +69,17 @@ public final class AdHocProvider<T> implements DoctorProvider<T> {
     }
 
     @Override
-    public List<Class<? extends Annotation>> allAnnotationTypes() {
-        return Collections.emptyList();
-    }
-
-    @Override
     public List<String> modules() {
         return Collections.emptyList();
     }
 
     @Override
     public void validateDependencies(ProviderRegistry providerRegistry) {
+        // no-op
+    }
+
+    @Override
+    public void destroy(T instance) {
         // no-op
     }
 
@@ -72,5 +91,12 @@ public final class AdHocProvider<T> implements DoctorProvider<T> {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "(" + type.getSimpleName() + "):" + hashCode();
+    }
+
+    @Override
+    public void close() throws Exception {
+        if (close != null) {
+            close.close();
+        }
     }
 }

@@ -35,8 +35,8 @@ public abstract class DoctorProviderWrapper<T> implements DoctorProvider<T> {
     }
 
     @Override
-    public List<Class<? extends Annotation>> allAnnotationTypes() {
-        return delegate.allAnnotationTypes();
+    public AnnotationMetadata annotationMetadata() {
+        return delegate.annotationMetadata();
     }
 
     @Override
@@ -55,6 +55,11 @@ public abstract class DoctorProviderWrapper<T> implements DoctorProvider<T> {
     }
 
     @Override
+    public void destroy(T instance) throws Exception {
+        delegate.destroy(instance);
+    }
+
+    @Override
     public String toString() {
         return getClass().getSimpleName() + '(' + delegate + ')';
     }
@@ -67,5 +72,10 @@ public abstract class DoctorProviderWrapper<T> implements DoctorProvider<T> {
     @Override
     public boolean equals(Object obj) {
         return delegate.equals(obj);
+    }
+
+    @Override
+    public void close() throws Exception {
+        delegate.close();
     }
 }

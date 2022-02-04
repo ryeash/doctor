@@ -22,8 +22,6 @@ import javax.lang.model.type.TypeVariable;
 import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.ElementFilter;
 import java.lang.annotation.Annotation;
-import java.nio.ByteBuffer;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,7 +32,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -89,17 +86,13 @@ public class ProcessorUtils {
         StringBuilder sb = new StringBuilder();
         sb.append("@").append(annotationMirror.getAnnotationType());
 
-        Map<String, String> methodToValue = new HashMap<>();
-        annotationMirror.getElementValues()
-                .forEach((key, value) -> methodToValue.computeIfAbsent(key.getSimpleName().toString(), name -> annotationString(context, value)));
-
-        context.processingEnvironment().getElementUtils().getElementValuesWithDefaults(annotationMirror)
-                .forEach((method, value) -> methodToValue.computeIfAbsent(method.getSimpleName().toString(), name -> annotationString(context, value)));
-
-        String valuesString = methodToValue.entrySet()
+        String valuesString = context.processingEnvironment()
+                .getElementUtils()
+                .getElementValuesWithDefaults(annotationMirror)
+                .entrySet()
                 .stream()
-                .sorted(Map.Entry.comparingByKey())
-                .map(e -> e.getKey() + "=" + e.getValue())
+                .map(e -> e.getKey().getSimpleName().toString() + "=" + annotationString(context, e.getValue()))
+                .sorted()
                 .collect(Collectors.joining(", ", "(", ")"));
         sb.append(valuesString);
         return "\"" + escapeStringForCode(sb.toString()) + "\"";
@@ -116,10 +109,10 @@ public class ProcessorUtils {
             return null;
         }
 
-        if (value instanceof AnnotationMirror) {
-            return annotationString(context, (AnnotationMirror) value);
-        } else if (value instanceof List) {
-            return ((List<AnnotationValue>) value).stream().map(v -> annotationString(context, v)).collect(Collectors.joining(", ", "(", ")"));
+        if (value instanceof AnnotationMirror am) {
+            return annotationString(context, am);
+        } else if (value instanceof List<?> list) {
+            return ((List<AnnotationValue>) list).stream().map(v -> annotationString(context, v)).collect(Collectors.joining(", ", "(", ")"));
         } else {
             return value.toString();
         }
@@ -189,21 +182,6 @@ public class ProcessorUtils {
                 .distinct()
                 .map(UniqueMethod::unwrap)
                 .collect(Collectors.toList());
-    }
-
-    public static Optional<ExecutableElement> methodMatchingSignature(AnnotationProcessorContext context, TypeElement type, String methodName, Class<?>... parameterTypes) {
-        return allMethods(context, type).stream()
-                .filter(e -> e.getSimpleName().toString().equals(methodName))
-                .filter(e -> e.getParameters().size() == parameterTypes.length)
-                .filter(e -> {
-                    for (int i = 0; i < e.getParameters().size(); i++) {
-                        if (!isCompatibleWith(context, e.getParameters().get(i).asType(), parameterTypes[i])) {
-                            return false;
-                        }
-                    }
-                    return true;
-                })
-                .findAny();
     }
 
     public static List<VariableElement> allFields(AnnotationProcessorContext context, TypeElement type) {
@@ -309,7 +287,7 @@ public class ProcessorUtils {
         TypeMirror reportedType = rawClass(type);
 
         if (reportedType == null) {
-            return "new TypeInfo(null)";
+            return "new TypeInfo(Object.class)";
         }
         String prefix = "new TypeInfo(" + typeWithoutParameters(reportedType) + ".class";
         if (!genericInfo.hasTypeParameters()) {
@@ -423,7 +401,7 @@ public class ProcessorUtils {
                 WildcardType wc = (WildcardType) mirror;
                 TypeMirror bound = Optional.ofNullable(wc.getSuperBound()).orElse(wc.getExtendsBound());
                 if (bound == null) {
-                    throw new CodeProcessingException("unspecified bounds");
+                    return null;
                 }
                 return rawClass(bound);
 
@@ -433,6 +411,68 @@ public class ProcessorUtils {
 
             default:
                 return null;
+        }
+    }
+
+    public static String writeNewAnnotationMetadata(AnnotationProcessorContext context, Element annotationSource) {
+        return annotationSource.getAnnotationMirrors()
+                .stream()
+                .map(am -> newAnnotationDataImpl(context, am))
+                .collect(Collectors.joining(",\n", "new AnnotationMetadataImpl(List.of(\n", "))"));
+    }
+
+    private static String newAnnotationDataImpl(AnnotationProcessorContext context, AnnotationMirror annotationMirror) {
+        StringBuilder sb = new StringBuilder("new AnnotationDataImpl(");
+        Element annotationElement = annotationMirror.getAnnotationType().asElement();
+        sb.append(annotationElement.asType());
+        sb.append(".class, ");
+        if (!annotationMirror.getElementValues().isEmpty()) {
+            sb.append("Map.ofEntries(");
+            List<String> entries = new LinkedList<>();
+            for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : context.processingEnvironment().getElementUtils().getElementValuesWithDefaults(annotationMirror).entrySet()) {
+                String name = entry.getKey().getSimpleName().toString();
+                String valueString = annotationValueLiteral(context, entry.getValue());
+                entries.add("Map.entry(\"" + name + "\", " + valueString + ")");
+            }
+            sb.append(String.join(",", entries));
+            sb.append("))");
+        } else {
+            sb.append("java.util.Collections.emptyMap())");
+        }
+        return sb.toString();
+    }
+
+    private static String annotationValueLiteral(AnnotationProcessorContext context, AnnotationValue annotationValue) {
+        Object value = annotationValue.getValue();
+        if (value instanceof String str) {
+            return "\"" + ProcessorUtils.escapeStringForCode(str) + "\"";
+        } else if (value instanceof Boolean bool) {
+            return bool.toString();
+        } else if (value instanceof Byte) {
+            return "(byte)" + value;
+        } else if (value instanceof Short) {
+            return "(short)" + value;
+        } else if (value instanceof Integer) {
+            return value.toString();
+        } else if (value instanceof Long) {
+            return value + "L";
+        } else if (value instanceof Float) {
+            return value + "F";
+        } else if (value instanceof Double) {
+            return value + "D";
+        } else if (value instanceof TypeMirror type) {
+            return type + ".class";
+        } else if (value instanceof VariableElement ve) {
+            return ve.asType() + "." + ve;
+        } else if (value instanceof AnnotationMirror am) {
+            return newAnnotationDataImpl(context, am);
+        } else if (value instanceof List<?> list) {
+            return list.stream()
+                    .map(AnnotationValue.class::cast)
+                    .map(av -> annotationValueLiteral(context, av))
+                    .collect(Collectors.joining(",", "List.of(", ")"));
+        } else {
+            return null;
         }
     }
 }

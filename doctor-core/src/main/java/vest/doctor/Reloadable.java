@@ -1,6 +1,7 @@
 package vest.doctor;
 
 import jakarta.inject.Scope;
+import vest.doctor.event.EventBus;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -11,7 +12,7 @@ import java.lang.annotation.Target;
 /**
  * Scope annotation indicating that the provider will (lazily) create one instance of the provided type
  * and cache it until a {@link vest.doctor.event.ReloadProviders} event is published to
- * the {@link vest.doctor.event.EventProducer} at which point the instance will be cleared and another
+ * the {@link EventBus} at which point the instance will be cleared and another
  * will be (lazily) created as necessary.
  */
 @Scope

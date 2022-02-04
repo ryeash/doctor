@@ -105,6 +105,10 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
     }
 
     @Override
+    public void destroy(ExecutorService instance) {
+    }
+
+    @Override
     public ExecutorService get() {
         int minThreads = executorConfig.get("minThreads", DEFAULT_MIN_THREADS, Integer::valueOf);
         int maxThreads = executorConfig.get("maxThreads", DEFAULT_MAX_THREADS, Integer::valueOf);
@@ -168,6 +172,10 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
             default:
                 throw new IllegalArgumentException("unknown executor service type: " + type);
         }
+    }
+
+    @Override
+    public void close() {
     }
 
     private CustomThreadFactory getThreadFactory() {

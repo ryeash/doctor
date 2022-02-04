@@ -47,7 +47,7 @@ public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
         for (ExecutableElement executableElement : ProcessorUtils.allMethods(context, typeElement)) {
             postCreateCalls(context, providerDefinition, method, instanceRef, providerRegistryRef, executableElement);
             postCreateSchedule(context, providerDefinition, method, instanceRef, providerRegistryRef, executableElement);
-            postCreateShutdown(context, providerDefinition, method, instanceRef);
+//            postCreateShutdown(context, providerDefinition, method, instanceRef);
         }
         executorNameToInstance.clear();
         executorInitialized = false;

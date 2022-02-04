@@ -1,11 +1,11 @@
 package vest.doctor.aop;
 
+import vest.doctor.AnnotationMetadata;
 import vest.doctor.TypeInfo;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 public final class MethodInvocationImpl implements MethodInvocation {
@@ -94,8 +94,8 @@ public final class MethodInvocationImpl implements MethodInvocation {
     }
 
     @Override
-    public Map<String, String> attributes() {
-        return methodMetadata.attributes();
+    public AnnotationMetadata annotationMetadata() {
+        return methodMetadata.annotationData();
     }
 
     public void setInvokable(boolean invokable) {

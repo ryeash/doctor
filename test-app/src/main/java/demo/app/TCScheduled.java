@@ -9,9 +9,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Prototype
 public class TCScheduled {
 
-    public AtomicInteger every10Milliseconds = new AtomicInteger(0);
-    public AtomicInteger every50Milliseconds = new AtomicInteger(0);
-    public AtomicInteger cronEverySecond = new AtomicInteger(0);
+    public final AtomicInteger every10Milliseconds = new AtomicInteger(0);
+    public final AtomicInteger every50Milliseconds = new AtomicInteger(0);
+    public final AtomicInteger cronEverySecond = new AtomicInteger(0);
 
     @Scheduled(interval = "${configurableInterval}")
     public void every10Milliseconds() {

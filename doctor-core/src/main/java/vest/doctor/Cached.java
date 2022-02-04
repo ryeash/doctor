@@ -10,7 +10,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Scope annotation indicating that the provider should cache the provided instances for a period of time before
+ * Scope annotation indicating that the provider will cache provided instances for a period of time before
  * creating another instance.
  */
 @Scope

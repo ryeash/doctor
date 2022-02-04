@@ -5,26 +5,24 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import jakarta.ws.rs.Path;
 import org.glassfish.jersey.server.ResourceConfig;
+import vest.doctor.AdHocProvider;
 import vest.doctor.ApplicationLoader;
 import vest.doctor.ConfigurationFacade;
 import vest.doctor.DoctorProvider;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.event.EventBus;
-import vest.doctor.event.EventProducer;
 import vest.doctor.event.ServiceStarted;
-import vest.doctor.event.ServiceStopped;
 import vest.doctor.jersey.ext.DoctorCustomValueParamProvider;
-import vest.doctor.netty.common.HttpServerConfiguration;
-import vest.doctor.netty.common.NettyHttpServer;
-import vest.doctor.netty.common.PipelineCustomizer;
-import vest.doctor.netty.common.ServerBootstrapCustomizer;
+import vest.doctor.netty.HttpServerConfiguration;
+import vest.doctor.netty.NettyHttpServer;
+import vest.doctor.netty.PipelineCustomizer;
+import vest.doctor.netty.ServerBootstrapCustomizer;
 
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -58,16 +56,9 @@ public final class NettyJerseyLoader implements ApplicationLoader {
                 httpConfig,
                 new JerseyChannelAdapter(httpConfig, container, providerRegistry),
                 false);
-
-        Optional<EventBus> eventBusOpt = providerRegistry.getInstanceOpt(EventBus.class);
-        eventBusOpt.ifPresent(eventBus -> eventBus.publish(new ServiceStarted("netty-jersey-http", httpServer)));
-
-        providerRegistry.shutdownContainer().register(() -> {
-            httpServer.close();
-            providerRegistry.getInstance(EventProducer.class)
-                    .publish(new ServiceStopped("netty-jersey-http", httpServer));
-        });
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> container.getApplicationHandler().onShutdown(container), "netty-server-shutdown"));
+        providerRegistry.register(new AdHocProvider<>(NettyHttpServer.class, httpServer, "jersey", httpServer));
+        providerRegistry.register(new AdHocProvider<>(DoctorJerseyContainer.class, container, "doctorJerseyContainer", container));
+        providerRegistry.getInstance(EventBus.class).publish(new ServiceStarted("netty-jersey-http", httpServer));
     }
 
     public HttpServerConfiguration init(ProviderRegistry providerRegistry) {

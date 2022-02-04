@@ -183,7 +183,7 @@ public class DefaultConfigurationFacade implements ConfigurationFacade {
 
     @Override
     public Set<String> uniquePropertyGroups(String prefix, String terminal) {
-        return StreamSupport.stream(propertyNames().spliterator(), false)
+        return propertyNames()
                 .filter(name -> name.startsWith(prefix))
                 .map(name -> getBetween(name, prefix, terminal))
                 .filter(Objects::nonNull)

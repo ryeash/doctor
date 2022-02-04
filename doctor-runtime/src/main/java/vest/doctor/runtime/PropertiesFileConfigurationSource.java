@@ -29,7 +29,7 @@ public class PropertiesFileConfigurationSource implements ConfigurationSource {
     @Override
     public void reload() {
         Properties properties = new Properties();
-        try (InputStream is = propertiesFileLocation.toURL().openStream()) {
+        try (InputStream is = propertiesFileLocation.openStream()) {
             properties.load(is);
         } catch (IOException e) {
             throw new UncheckedIOException("error reading properties file: " + propertiesFileLocation, e);

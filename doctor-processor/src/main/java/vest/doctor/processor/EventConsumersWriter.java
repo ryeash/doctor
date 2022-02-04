@@ -24,8 +24,8 @@ public class EventConsumersWriter implements ProviderDefinitionListener {
 
     @Override
     public void process(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
-        initBuilders(context);
         if (ProcessorUtils.isCompatibleWith(context, providerDefinition.providedType(), EventConsumer.class)) {
+            initBuilders(context);
             String type = ProcessorUtils.allUniqueMethods(context, providerDefinition.providedType())
                     .stream()
                     .filter(method -> method.getParameters().size() == 1 && method.getSimpleName().toString().equals("accept"))

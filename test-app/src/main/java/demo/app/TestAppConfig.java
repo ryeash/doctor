@@ -3,6 +3,8 @@ package demo.app;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import org.testng.Assert;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 import vest.doctor.Cached;
 import vest.doctor.Factory;
 import vest.doctor.Modules;
@@ -140,6 +142,13 @@ public class TestAppConfig {
     @Named("string")
     public ParameterizedThing<String> parameterizedType() {
         return new ParameterizedThing<>("worked");
+    }
+
+    @Factory
+    @Singleton
+    @Named("websocketScheduler")
+    public Scheduler weboscketScheduler() {
+        return Schedulers.newBoundedElastic(16, 1024, "websocketScheduler");
     }
 
     @Factory

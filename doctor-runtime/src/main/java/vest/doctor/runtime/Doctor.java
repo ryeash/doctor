@@ -9,10 +9,9 @@ import vest.doctor.ConfigurationFacade;
 import vest.doctor.DoctorProvider;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
-import vest.doctor.ShutdownContainer;
 import vest.doctor.event.ApplicationShutdown;
 import vest.doctor.event.ApplicationStarted;
-import vest.doctor.event.EventProducer;
+import vest.doctor.event.EventBus;
 
 import java.lang.annotation.Annotation;
 import java.util.Collections;
@@ -106,7 +105,6 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
     private final List<String> activeModules;
     private final ProviderIndex providerIndex;
     private final ConfigurationFacade configurationFacade;
-    private final ShutdownContainer shutdownContainer;
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     /**
@@ -123,7 +121,6 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         providerIndex.setProvider(new AdHocProvider<>(Doctor.class, this, null, List.of(Doctor.class, ProviderRegistry.class)));
         this.activeModules = activeModules;
         this.configurationFacade = configurationFacade;
-        this.shutdownContainer = new ShutdownContainer();
 
         log.debug("Active modules: {}", this.activeModules);
         log.debug("Configuration: {}", this.configurationFacade);
@@ -161,7 +158,8 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         if (configurationFacade.get("doctor.autoShutdown", true, Boolean::valueOf)) {
             Runtime.getRuntime().addShutdownHook(new Thread(this::close, "doctor-shutdown-" + this.hashCode()));
         }
-        getInstance(EventProducer.class).publish(new ApplicationStarted(this));
+        EventBus eventBus = getInstance(EventBus.class);
+        eventBus.publish(new ApplicationStarted(this));
         log.info("\n{}\ninitialized in {}ms", ASCII_ART, (System.currentTimeMillis() - start));
     }
 
@@ -205,6 +203,16 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
     }
 
     @Override
+    public <T> Stream<T> getInstances(Class<T> type) {
+        return getProviders(type).map(Provider::get);
+    }
+
+    @Override
+    public <T> Stream<T> getInstances(Class<T> type, String qualifier) {
+        return getProviders(type, qualifier).map(Provider::get);
+    }
+
+    @Override
     public Stream<DoctorProvider<?>> allProviders() {
         return providerIndex.allProviders();
     }
@@ -230,11 +238,6 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
     }
 
     @Override
-    public ShutdownContainer shutdownContainer() {
-        return shutdownContainer;
-    }
-
-    @Override
     public String resolvePlaceholders(String string) {
         return configurationFacade.resolvePlaceholders(string);
     }
@@ -242,10 +245,16 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
     @Override
     public void close() {
         if (closed.compareAndSet(false, true)) {
-            getProviderOpt(EventProducer.class, null)
+            providerIndex.allProviders().forEach(p -> {
+                try {
+                    p.close();
+                } catch (Throwable t) {
+                    log.error("error closing provider {}", p, t);
+                }
+            });
+            getProviderOpt(EventBus.class, null)
                     .map(Provider::get)
                     .ifPresent(ep -> ep.publish(new ApplicationShutdown(this)));
-            shutdownContainer.close();
         }
     }
 
@@ -258,8 +267,8 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         Map<String, List<DoctorProvider<?>>> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
         providerIndex.allProviders().forEach(p -> {
-            for (Object type : p.allProvidedTypes()) {
-                map.computeIfAbsent(((Class<?>) type).getSimpleName(), s -> new LinkedList<>()).add(p);
+            for (Class<?> type : p.allProvidedTypes()) {
+                map.computeIfAbsent(type.getSimpleName(), s -> new LinkedList<>()).add(p);
             }
         });
 

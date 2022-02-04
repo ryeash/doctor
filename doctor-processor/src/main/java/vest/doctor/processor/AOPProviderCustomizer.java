@@ -1,5 +1,7 @@
 package vest.doctor.processor;
 
+import vest.doctor.AnnotationData;
+import vest.doctor.AnnotationMetadata;
 import vest.doctor.Factory;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.TypeInfo;
@@ -7,8 +9,6 @@ import vest.doctor.aop.Aspect;
 import vest.doctor.aop.AspectCoordinator;
 import vest.doctor.aop.AspectWrappingProvider;
 import vest.doctor.aop.Aspects;
-import vest.doctor.aop.Attribute;
-import vest.doctor.aop.Attributes;
 import vest.doctor.aop.MethodInvocation;
 import vest.doctor.aop.MethodInvocationImpl;
 import vest.doctor.aop.MethodInvoker;
@@ -83,6 +83,12 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
                 .addImportClass(MethodMetadata.class)
                 .addImportClass(MethodInvocation.class)
                 .addImportClass(MethodInvocationImpl.class)
+                .addImportClass(Map.class)
+                .addImportClass(List.class)
+                .addImportClass(AnnotationData.class)
+                .addImportClass(AnnotationMetadata.class)
+                .addImportClass("vest.doctor.runtime.AnnotationDataImpl")
+                .addImportClass("vest.doctor.runtime.AnnotationMetadataImpl")
                 .addImportClass(Arrays.class)
                 .addImportClass(Collections.class)
                 .addImportClass(Map.class)
@@ -233,20 +239,7 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
             returnType = ProcessorUtils.newTypeInfo(new GenericInfo(method.getReturnType()));
         }
 
-        String attributes = "attributes" + context.nextId();
-        if (method.getAnnotation(Attributes.class) == null) {
-            constructor.line("Map<String, String> ", attributes, " = Collections.emptyMap();");
-        } else {
-            constructor.line("Map<String, String> ", attributes, " = new LinkedHashMap<>();");
-            Attributes attrs = method.getAnnotation(Attributes.class);
-            for (Attribute attribute : attrs.value()) {
-                constructor.line(attributes + ".put(" +
-                        "beanProvider.resolvePlaceholders(\"", ProcessorUtils.escapeStringForCode(attribute.name()), "\"), " +
-                        "beanProvider.resolvePlaceholders(\"", ProcessorUtils.escapeStringForCode(attribute.value()), "\"));");
-            }
-        }
-
-        constructor.line("this." + metadataName + " =  new MethodMetadata(delegate, \"" + method.getSimpleName() + "\", " + paramTypes + ", " + returnType + "," + attributes + ");");
+        constructor.line("this.", metadataName, " =  new MethodMetadata(delegate, \"", method.getSimpleName(), "\", ", paramTypes, ", ", returnType, ",", ProcessorUtils.writeNewAnnotationMetadata(context, method), ");");
 
         String aspectName = initializedAspects.computeIfAbsent(aspectClassUniqueKey, s -> {
             String an = uniqueId + "_aspect";
