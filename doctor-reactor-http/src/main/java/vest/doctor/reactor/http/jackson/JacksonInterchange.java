@@ -77,37 +77,20 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
     public Publisher<HttpResponse> write(RequestContext ctx, TypeInfo responseTypeInfo, Object response) {
         String accept = ctx.request().header(HttpHeaderNames.ACCEPT);
         if (accept.contains(HttpHeaderValues.APPLICATION_JSON)) {
-            if (responseTypeInfo.getRawType() == Object.class) {
-                // maximum effort
-                Flux<Object> flux = response instanceof Publisher<?> pub ? Flux.from(pub) : Flux.just(response);
-                return flux.map(this::writeJsonBytes)
-                        .map(ResponseBody::of)
-                        .map(ctx.response()::body)
-                        .doOnNext(res -> {
-                            if (!res.headers().contains(HttpHeaderNames.CONTENT_TYPE)) {
-                                res.headers().set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON + ";charset=utf-8");
-                            }
-                        });
-            } else if (responseTypeInfo.matches(Publisher.class, Object.class)) {
+            HttpResponse res = ctx.response();
+            if (!res.headers().contains(HttpHeaderNames.CONTENT_TYPE)) {
+                res.headers().set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON + ";charset=utf-8");
+            }
+            if (responseTypeInfo.matches(Publisher.class, Object.class)) {
                 return Flux.from((Publisher<?>) response)
                         .map(this::writeJsonBytes)
                         .map(ResponseBody::of)
-                        .map(ctx.response()::body)
-                        .doOnNext(res -> {
-                            if (!res.headers().contains(HttpHeaderNames.CONTENT_TYPE)) {
-                                res.headers().set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON + ";charset=utf-8");
-                            }
-                        });
+                        .map(ctx.response()::body);
             } else {
                 return Flux.just(response)
                         .map(this::writeJsonBytes)
                         .map(ResponseBody::of)
-                        .map(ctx.response()::body)
-                        .doOnNext(res -> {
-                            if (!res.headers().contains(HttpHeaderNames.CONTENT_TYPE)) {
-                                res.headers().set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON + ";charset=utf-8");
-                            }
-                        });
+                        .map(ctx.response()::body);
             }
         } else {
             return null;

@@ -3,9 +3,13 @@ package demo.app;
 import demo.app.dao.DAO;
 import demo.app.dao.User;
 import demo.app.ignored.TCIgnoredClass;
+import jakarta.inject.Named;
 import jakarta.inject.Provider;
+import org.hibernate.AssertionFailure;
 import org.testng.annotations.Test;
+import vest.doctor.AnnotationData;
 import vest.doctor.ConfigurationFacade;
+import vest.doctor.DoctorProvider;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.ReloadConfiguration;
 import vest.doctor.event.ReloadProviders;
@@ -223,5 +227,98 @@ public class DoctorTest extends AbstractTestAppTest {
         TCReloadable third = providerRegistry().getInstance(TCReloadable.class);
         assertEquals(first, second);
         assertNotEquals(first, third);
+    }
+
+    @Test
+    public void annotationMetadata() {
+        DoctorProvider<TCQualifierInterpolation> p = providerRegistry().getProvider(TCQualifierInterpolation.class, "name-interpolated");
+        for (AnnotationData data : p.annotationMetadata()) {
+            System.out.println(data);
+        }
+        String s = p.annotationMetadata().stream()
+                .filter(m -> m.type() == Named.class)
+                .map(m -> m.stringValue("value"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionFailure("failure"));
+        assertEquals(s, "name-${qualifierInterpolation}");
+
+        DoctorProvider<TCAnnotationMetadata> provider = providerRegistry().getProvider(TCAnnotationMetadata.class);
+        AnnotationData everything = provider.annotationMetadata().findOne(Everything.class).orElseThrow(() -> new AssertionFailure("missing everything"));
+        assertEquals(everything.stringValue("string"), "a");
+        assertEquals(everything.stringArrayValue("strings"), List.of("b", "c"));
+        assertEquals(everything.byteValue("byteVal"), (byte) 1);
+        assertEquals(everything.byteArrayValue("byteArr"), List.of((byte) 2, (byte) 3));
+        assertEquals(everything.shortValue("shortVal"), (short) 4);
+        assertEquals(everything.shortArrayValue("shortArr"), List.of((short) 5, (short) 6));
+        assertEquals(everything.intValue("intVal"), 7);
+        assertEquals(everything.intArrayValue("intArr"), List.of(8, 9));
+        assertEquals(everything.longValue("longVal"), 10L);
+        assertEquals(everything.longArrayValue("longArr"), List.of(11L, 12L));
+        assertEquals(everything.floatValue("floatVal"), 13.1F);
+        assertEquals(everything.floatArrayValue("floatArr"), List.of(14.2F, 15.3F));
+        assertEquals(everything.doubleValue("doubleVal"), 16.4D);
+        assertEquals(everything.doubleArrayValue("doubleArr"), List.of(17.5D, 18.6D));
+        assertTrue(everything.booleanValue("boolVal"));
+        assertEquals(everything.booleanArrayValue("boolArr"), List.of(true, false));
+        assertEquals(everything.enumValue("enumeration"), demo.app.Everything.Letter.A);
+        assertEquals(everything.enumArrayValue("enumerations"), List.of(demo.app.Everything.Letter.B, demo.app.Everything.Letter.C));
+        assertEquals(everything.classValue("classVal"), String.class);
+        assertEquals(everything.classArrayValue("classArr"), List.of(Integer.class, Long.class));
+
+        AnnotationData annotationVal = everything.annotationValue("annotationVal");
+        assertEquals(annotationVal.type(), CustomQualifier.class);
+        assertEquals(annotationVal.stringValue("name"), "nested");
+        assertEquals(annotationVal.enumValue("color"), CustomQualifier.Color.RED);
+
+        List<AnnotationData> annotationArr = everything.annotationArrayValue("annotationArr");
+        assertEquals(annotationArr.size(), 2);
+        AnnotationData first = annotationArr.get(0);
+        assertEquals(first.type(), CustomQualifier.class);
+        assertEquals(first.stringValue("name"), "two");
+        assertEquals(first.enumValue("color"), CustomQualifier.Color.BLACK);
+        AnnotationData second = annotationArr.get(1);
+        assertEquals(second.type(), CustomQualifier.class);
+        assertEquals(second.stringValue("name"), "three");
+        assertEquals(second.enumValue("color"), CustomQualifier.Color.RED);
+
+
+        assertEquals(provider.annotationMetadata().stringValue(Everything.class, "string"), "a");
+        assertEquals(provider.annotationMetadata().stringArrayValue(Everything.class, "strings"), List.of("b", "c"));
+        assertEquals(provider.annotationMetadata().byteValue(Everything.class, "byteVal"), (byte) 1);
+        assertEquals(provider.annotationMetadata().byteArrayValue(Everything.class, "byteArr"), List.of((byte) 2, (byte) 3));
+        assertEquals(provider.annotationMetadata().shortValue(Everything.class, "shortVal"), (short) 4);
+        assertEquals(provider.annotationMetadata().shortArrayValue(Everything.class, "shortArr"), List.of((short) 5, (short) 6));
+        assertEquals(provider.annotationMetadata().intValue(Everything.class, "intVal"), 7);
+        assertEquals(provider.annotationMetadata().intArrayValue(Everything.class, "intArr"), List.of(8, 9));
+        assertEquals(provider.annotationMetadata().longValue(Everything.class, "longVal"), 10L);
+        assertEquals(provider.annotationMetadata().longArrayValue(Everything.class, "longArr"), List.of(11L, 12L));
+        assertEquals(provider.annotationMetadata().floatValue(Everything.class, "floatVal"), 13.1F);
+        assertEquals(provider.annotationMetadata().floatArrayValue(Everything.class, "floatArr"), List.of(14.2F, 15.3F));
+        assertEquals(provider.annotationMetadata().doubleValue(Everything.class, "doubleVal"), 16.4D);
+        assertEquals(provider.annotationMetadata().doubleArrayValue(Everything.class, "doubleArr"), List.of(17.5D, 18.6D));
+        assertTrue(provider.annotationMetadata().booleanValue(Everything.class, "boolVal"));
+        assertEquals(provider.annotationMetadata().booleanArrayValue(Everything.class, "boolArr"), List.of(true, false));
+        assertEquals(provider.annotationMetadata().enumValue(Everything.class, "enumeration"), demo.app.Everything.Letter.A);
+        assertEquals(provider.annotationMetadata().enumArrayValue(Everything.class, "enumerations"), List.of(demo.app.Everything.Letter.B, demo.app.Everything.Letter.C));
+        assertEquals(provider.annotationMetadata().classValue(Everything.class, "classVal"), String.class);
+        assertEquals(provider.annotationMetadata().classArrayValue(Everything.class, "classArr"), List.of(Integer.class, Long.class));
+
+        annotationVal = provider.annotationMetadata().annotationValue(Everything.class, "annotationVal");
+        assertEquals(annotationVal.type(), CustomQualifier.class);
+        assertEquals(annotationVal.stringValue("name"), "nested");
+        assertEquals(annotationVal.enumValue("color"), CustomQualifier.Color.RED);
+
+        annotationArr = provider.annotationMetadata().annotationArrayValue(Everything.class, "annotationArr");
+        assertEquals(annotationArr.size(), 2);
+        first = annotationArr.get(0);
+        assertEquals(first.type(), CustomQualifier.class);
+        assertEquals(first.stringValue("name"), "two");
+        assertEquals(first.enumValue("color"), CustomQualifier.Color.BLACK);
+        second = annotationArr.get(1);
+        assertEquals(second.type(), CustomQualifier.class);
+        assertEquals(second.stringValue("name"), "three");
+        assertEquals(second.enumValue("color"), CustomQualifier.Color.RED);
+
+        assertEquals(provider.annotationMetadata().objectValue(Everything.class, "string"), "a");
     }
 }

@@ -47,12 +47,12 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
     public ClassBuilder getClassBuilder() {
         ClassBuilder classBuilder = super.getClassBuilder();
 
-        classBuilder.addMethod("public String toString()", b ->
+        classBuilder.addMethod("@Override public String toString()", b ->
                 b.bind("enclosing", factoryMethod.getEnclosingElement().getSimpleName())
                         .bind("method", factoryMethod.getSimpleName())
                         .line("return \"FactoryProvider({{enclosing}}#{{method}}):\" + hashCode();"));
 
-        MethodBuilder validate = classBuilder.newMethod("public void validateDependencies(", ProviderRegistry.class, " {{providerRegistry}})");
+        MethodBuilder validate = classBuilder.newMethod("@Override public void validateDependencies(", ProviderRegistry.class, " {{providerRegistry}})");
         for (VariableElement parameter : factoryMethod.getParameters()) {
             for (ParameterLookupCustomizer parameterLookupCustomizer : context.customizations(ParameterLookupCustomizer.class)) {
                 String checkCode = parameterLookupCustomizer.dependencyCheckCode(context, parameter, Constants.PROVIDER_REGISTRY);
@@ -66,7 +66,7 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
             }
         }
 
-        classBuilder.addMethod("public " + providedType().getSimpleName() + " get()", b -> {
+        classBuilder.addMethod("@Override public " + providedType().getSimpleName() + " get()", b -> {
             b.bind("providedType", providedType().getSimpleName());
             b.line("try {");
             if (factoryMethod.getModifiers().contains(Modifier.STATIC)) {

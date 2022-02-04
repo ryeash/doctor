@@ -1,4 +1,4 @@
-package demo.app;
+package demo.app.reactor;
 
 import jakarta.inject.Singleton;
 import org.reactivestreams.Publisher;
@@ -25,12 +25,8 @@ public class TCDirectHandler implements Handler {
 
     @Override
     public Publisher<Void> apply(HttpServerRequest httpServerRequest, HttpServerResponse httpServerResponse) {
-        httpServerRequest.isMultipart();
         return Flux.just(httpServerResponse)
                 .subscribeOn(Schedulers.boundedElastic())
-                .switchMap(r -> {
-                    System.out.println(Thread.currentThread().getName() + " THERE IS HOPE");
-                    return r.sendString(Mono.just("Hello World!"));
-                });
+                .switchMap(r -> r.sendString(Mono.just("Hello World!")));
     }
 }

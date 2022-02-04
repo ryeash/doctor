@@ -35,8 +35,8 @@ public abstract class DoctorProviderWrapper<T> implements DoctorProvider<T> {
     }
 
     @Override
-    public List<Class<? extends Annotation>> allAnnotationTypes() {
-        return delegate.allAnnotationTypes();
+    public AnnotationMetadata annotationMetadata() {
+        return delegate.annotationMetadata();
     }
 
     @Override

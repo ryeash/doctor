@@ -69,11 +69,6 @@ public final class AdHocProvider<T> implements DoctorProvider<T> {
     }
 
     @Override
-    public List<Class<? extends Annotation>> allAnnotationTypes() {
-        return Collections.emptyList();
-    }
-
-    @Override
     public List<String> modules() {
         return Collections.emptyList();
     }

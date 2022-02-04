@@ -1,6 +1,8 @@
 package vest.doctor.processor;
 
 import jakarta.inject.Provider;
+import vest.doctor.AnnotationData;
+import vest.doctor.AnnotationMetadata;
 import vest.doctor.DestroyMethod;
 import vest.doctor.DoctorProvider;
 import vest.doctor.ExplicitProvidedTypes;
@@ -18,12 +20,14 @@ import vest.doctor.processing.ProviderDefinition;
 import vest.doctor.processing.ProviderDependency;
 
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.DeclaredType;
+import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeMirror;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collection;
@@ -159,13 +163,13 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
         MethodBuilder constructor = classBuilder.newMethod("public ", generatedClassName().substring(generatedClassName().lastIndexOf('.') + 1), "(", ProviderRegistry.class, " {{providerRegistry}})");
         constructor.line("this.{{providerRegistry}} = {{providerRegistry}};");
 
-        MethodBuilder type = classBuilder.newMethod("public Class<", providedType().getSimpleName(), "> type()");
+        MethodBuilder type = classBuilder.newMethod("@Override public Class<", providedType().getSimpleName(), "> type()");
         type.line("return " + providedType().getSimpleName() + ".class;");
 
-        MethodBuilder qualifier = classBuilder.newMethod("public String qualifier()");
+        MethodBuilder qualifier = classBuilder.newMethod("@Override public String qualifier()");
         qualifier.line("return ", Optional.ofNullable(qualifier()).map(q -> "{{providerRegistry}}.resolvePlaceholders(" + q + ")").orElse(null) + ";");
 
-        MethodBuilder scope = classBuilder.newMethod("public Class<? extends Annotation> scope()");
+        MethodBuilder scope = classBuilder.newMethod("@Override public Class<? extends Annotation> scope()");
         String scopeString = Optional.ofNullable(scope())
                 .map(AnnotationMirror::getAnnotationType)
                 .map(c -> c.asElement().toString() + ".class")
@@ -178,19 +182,21 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                             .map(TypeElement::getQualifiedName)
                             .map(n -> n + ".class")
                             .collect(AS_LIST))
-                    .addMethod("public List<Class<?>> allProvidedTypes()", b -> b.line("return allTypes;"));
+                    .addMethod("@Override public List<Class<?>> allProvidedTypes()", b -> b.line("return allTypes;"));
         } else {
             throw new CodeProcessingException("all providers must provide at least one type: " + this);
         }
 
-        List<? extends AnnotationMirror> annotationMirrors = annotationSource().getAnnotationMirrors();
-        if (!annotationMirrors.isEmpty()) {
-            classBuilder.addField("private final List<Class<? extends Annotation>> allAnnotations = " + annotationMirrors.stream()
-                            .map(AnnotationMirror::getAnnotationType)
-                            .map(DeclaredType::toString)
-                            .map(n -> n + ".class")
-                            .collect(AS_LIST))
-                    .addMethod("public List<Class<? extends Annotation>> allAnnotationTypes()", b -> b.line("return allAnnotations;"));
+        if (!annotationSource.getAnnotationMirrors().isEmpty()) {
+            classBuilder.addImportClass(Map.class)
+                    .addImportClass(List.class)
+                    .addImportClass(AnnotationData.class)
+                    .addImportClass(AnnotationMetadata.class)
+                    .addImportClass("vest.doctor.runtime.AnnotationDataImpl")
+                    .addImportClass("vest.doctor.runtime.AnnotationMetadataImpl");
+            classBuilder.addField("private static final AnnotationMetadata annotationMetadata = ", writeAnnotationData(context, annotationSource));
+            classBuilder.addMethod("@Override public AnnotationMetadata annotationMetadata()",
+                    mb -> mb.line("return annotationMetadata;"));
         }
 
         List<String> modules = modules();
@@ -250,5 +256,68 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                 .flatMap(Collection::stream)
                 .map(context.processingEnvironment().getElementUtils()::getTypeElement)
                 .collect(Collectors.toList());
+    }
+
+
+    private String writeAnnotationData(AnnotationProcessorContext context, Element annotationSource) {
+        return annotationSource.getAnnotationMirrors()
+                .stream()
+                .map(am -> newAnnotationDataImpl(context, am))
+                .collect(Collectors.joining(",\n", "new AnnotationMetadataImpl(List.of(\n", "))"));
+    }
+
+    private static String newAnnotationDataImpl(AnnotationProcessorContext context, AnnotationMirror annotationMirror) {
+        StringBuilder sb = new StringBuilder("new AnnotationDataImpl(");
+        Element annotationElement = annotationMirror.getAnnotationType().asElement();
+        sb.append(annotationElement.asType());
+        sb.append(".class, ");
+        if (!annotationMirror.getElementValues().isEmpty()) {
+            sb.append("Map.ofEntries(");
+            List<String> entries = new LinkedList<>();
+            for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : context.processingEnvironment().getElementUtils().getElementValuesWithDefaults(annotationMirror).entrySet()) {
+                String name = entry.getKey().getSimpleName().toString();
+                String valueString = annotationValueLiteral(context, entry.getValue());
+                entries.add("Map.entry(\"" + name + "\", " + valueString + ")");
+            }
+            sb.append(String.join(",", entries));
+            sb.append("))");
+        } else {
+            sb.append("java.util.Collections.emptyMap())");
+        }
+        return sb.toString();
+    }
+
+    private static String annotationValueLiteral(AnnotationProcessorContext context, AnnotationValue annotationValue) {
+        Object value = annotationValue.getValue();
+        if (value instanceof String str) {
+            return "\"" + ProcessorUtils.escapeStringForCode(str) + "\"";
+        } else if (value instanceof Boolean bool) {
+            return bool.toString();
+        } else if (value instanceof Byte) {
+            return "(byte)" + value;
+        } else if (value instanceof Short) {
+            return "(short)" + value;
+        } else if (value instanceof Integer) {
+            return value.toString();
+        } else if (value instanceof Long) {
+            return value + "L";
+        } else if (value instanceof Float) {
+            return value + "F";
+        } else if (value instanceof Double) {
+            return value + "D";
+        } else if (value instanceof TypeMirror type) {
+            return type + ".class";
+        } else if (value instanceof VariableElement ve) {
+            return ve.asType() + "." + ve;
+        } else if (value instanceof AnnotationMirror am) {
+            return newAnnotationDataImpl(context, am);
+        } else if (value instanceof List<?> list) {
+            return list.stream()
+                    .map(AnnotationValue.class::cast)
+                    .map(av -> annotationValueLiteral(context, av))
+                    .collect(Collectors.joining(",", "List.of(", ")"));
+        } else {
+            return null;
+        }
     }
 }

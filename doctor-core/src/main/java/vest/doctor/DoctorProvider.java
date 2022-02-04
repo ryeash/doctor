@@ -34,10 +34,10 @@ public interface DoctorProvider<T> extends Provider<T>, AutoCloseable {
     List<Class<?>> allProvidedTypes();
 
     /**
-     * All annotation types attached to the provided type.
+     * Get the annotation metadata attached to the provider.
      */
-    default List<Class<? extends Annotation>> allAnnotationTypes() {
-        return Collections.emptyList();
+    default AnnotationMetadata annotationMetadata() {
+        return AnnotationMetadata.EMPTY;
     }
 
     /**

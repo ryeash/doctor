@@ -57,10 +57,10 @@ public class ConstructorProviderDefinition extends AbstractProviderDefinition {
     public ClassBuilder getClassBuilder() {
         ClassBuilder classBuilder = super.getClassBuilder();
 
-        classBuilder.addMethod("public String toString()", b ->
+        classBuilder.addMethod("@Override public String toString()", b ->
                 b.line(" return \"ConstructorProvider(" + providedType.getSimpleName() + "):\" + hashCode();"));
 
-        classBuilder.addMethod("public void validateDependencies(" + ProviderRegistry.class.getSimpleName() + " {{providerRegistry}})", b -> {
+        classBuilder.addMethod("@Override public void validateDependencies(" + ProviderRegistry.class.getSimpleName() + " {{providerRegistry}})", b -> {
             for (VariableElement parameter : injectableConstructor.getParameters()) {
                 for (ParameterLookupCustomizer parameterLookupCustomizer : context.customizations(ParameterLookupCustomizer.class)) {
                     String checkCode = parameterLookupCustomizer.dependencyCheckCode(context, parameter, Constants.PROVIDER_REGISTRY);
@@ -75,7 +75,7 @@ public class ConstructorProviderDefinition extends AbstractProviderDefinition {
             }
         });
 
-        classBuilder.addMethod("public " + providedType.getSimpleName() + " get()", b -> {
+        classBuilder.addMethod("@Override public " + providedType.getSimpleName() + " get()", b -> {
             b.line("try {");
             b.line(providedType.getSimpleName() + " instance = " + context.constructorCall(this, injectableConstructor, Constants.PROVIDER_REGISTRY) + ";");
             if (!markedWith(SkipInjection.class)) {
