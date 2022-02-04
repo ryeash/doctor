@@ -2,7 +2,6 @@ package demo.app;
 
 import jakarta.inject.Singleton;
 import vest.doctor.aop.Aspects;
-import vest.doctor.aop.Attribute;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,8 +21,6 @@ public class TCAspects {
     }
 
     @Aspects(StringModificationAspect.class)
-    @Attribute(name = "number", value = "${number}")
-    @Attribute(name = "letter", value = "${letter:M}")
     public String parrot(String name) throws IOException {
         return name;
     }

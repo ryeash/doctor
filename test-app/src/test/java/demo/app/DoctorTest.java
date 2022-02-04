@@ -175,10 +175,10 @@ public class DoctorTest extends AbstractTestAppTest {
     public void aspects() throws IOException {
         TCAspects instance = providerRegistry().getInstance(TCAspects.class);
         instance.execute("name", List.of("a", "b"));
-        assertEquals(instance.parrot("hi"), "hi altered42M");
+        assertEquals(instance.parrot("hi"), "hi altered");
 
         CoffeeMaker aspect = providerRegistry().getInstance(CoffeeMaker.class, "coffee-aspect");
-        assertEquals(aspect.brew(), "french pressing altered1L");
+        assertEquals(aspect.brew(), "french pressing altered");
     }
 
     @Test

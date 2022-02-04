@@ -20,14 +20,11 @@ import vest.doctor.processing.ProviderDefinition;
 import vest.doctor.processing.ProviderDependency;
 
 import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.TypeMirror;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collection;
@@ -194,7 +191,7 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                     .addImportClass(AnnotationMetadata.class)
                     .addImportClass("vest.doctor.runtime.AnnotationDataImpl")
                     .addImportClass("vest.doctor.runtime.AnnotationMetadataImpl");
-            classBuilder.addField("private static final AnnotationMetadata annotationMetadata = ", writeAnnotationData(context, annotationSource));
+            classBuilder.addField("private static final AnnotationMetadata annotationMetadata = ", ProcessorUtils.writeNewAnnotationMetadata(context, annotationSource));
             classBuilder.addMethod("@Override public AnnotationMetadata annotationMetadata()",
                     mb -> mb.line("return annotationMetadata;"));
         }
@@ -256,68 +253,5 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                 .flatMap(Collection::stream)
                 .map(context.processingEnvironment().getElementUtils()::getTypeElement)
                 .collect(Collectors.toList());
-    }
-
-
-    private String writeAnnotationData(AnnotationProcessorContext context, Element annotationSource) {
-        return annotationSource.getAnnotationMirrors()
-                .stream()
-                .map(am -> newAnnotationDataImpl(context, am))
-                .collect(Collectors.joining(",\n", "new AnnotationMetadataImpl(List.of(\n", "))"));
-    }
-
-    private static String newAnnotationDataImpl(AnnotationProcessorContext context, AnnotationMirror annotationMirror) {
-        StringBuilder sb = new StringBuilder("new AnnotationDataImpl(");
-        Element annotationElement = annotationMirror.getAnnotationType().asElement();
-        sb.append(annotationElement.asType());
-        sb.append(".class, ");
-        if (!annotationMirror.getElementValues().isEmpty()) {
-            sb.append("Map.ofEntries(");
-            List<String> entries = new LinkedList<>();
-            for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : context.processingEnvironment().getElementUtils().getElementValuesWithDefaults(annotationMirror).entrySet()) {
-                String name = entry.getKey().getSimpleName().toString();
-                String valueString = annotationValueLiteral(context, entry.getValue());
-                entries.add("Map.entry(\"" + name + "\", " + valueString + ")");
-            }
-            sb.append(String.join(",", entries));
-            sb.append("))");
-        } else {
-            sb.append("java.util.Collections.emptyMap())");
-        }
-        return sb.toString();
-    }
-
-    private static String annotationValueLiteral(AnnotationProcessorContext context, AnnotationValue annotationValue) {
-        Object value = annotationValue.getValue();
-        if (value instanceof String str) {
-            return "\"" + ProcessorUtils.escapeStringForCode(str) + "\"";
-        } else if (value instanceof Boolean bool) {
-            return bool.toString();
-        } else if (value instanceof Byte) {
-            return "(byte)" + value;
-        } else if (value instanceof Short) {
-            return "(short)" + value;
-        } else if (value instanceof Integer) {
-            return value.toString();
-        } else if (value instanceof Long) {
-            return value + "L";
-        } else if (value instanceof Float) {
-            return value + "F";
-        } else if (value instanceof Double) {
-            return value + "D";
-        } else if (value instanceof TypeMirror type) {
-            return type + ".class";
-        } else if (value instanceof VariableElement ve) {
-            return ve.asType() + "." + ve;
-        } else if (value instanceof AnnotationMirror am) {
-            return newAnnotationDataImpl(context, am);
-        } else if (value instanceof List<?> list) {
-            return list.stream()
-                    .map(AnnotationValue.class::cast)
-                    .map(av -> annotationValueLiteral(context, av))
-                    .collect(Collectors.joining(",", "List.of(", ")"));
-        } else {
-            return null;
-        }
     }
 }

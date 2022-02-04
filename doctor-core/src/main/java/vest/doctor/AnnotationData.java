@@ -30,9 +30,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default String stringValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    String stringValue(String attributeName);
 
     /**
      * Get a list of string values.
@@ -50,9 +48,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default List<String> stringArrayValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    List<String> stringArrayValue(String attributeName);
 
     /**
      * Get a boolean value.
@@ -70,9 +66,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default boolean booleanValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    boolean booleanValue(String attributeName);
 
     /**
      * Get a list of boolean values.
@@ -90,9 +84,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default List<Boolean> booleanArrayValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    List<Boolean> booleanArrayValue(String attributeName);
 
     /**
      * Get a byte value.
@@ -110,9 +102,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default byte byteValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    byte byteValue(String attributeName);
 
     /**
      * Get a list of byte values.
@@ -130,9 +120,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default List<Byte> byteArrayValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    List<Byte> byteArrayValue(String attributeName);
 
     /**
      * Get a short value.
@@ -150,9 +138,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default short shortValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    short shortValue(String attributeName);
 
     /**
      * Get a list of short values.
@@ -170,9 +156,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default List<Short> shortArrayValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    List<Short> shortArrayValue(String attributeName);
 
     /**
      * Get an int value.
@@ -190,9 +174,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default int intValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    int intValue(String attributeName);
 
     /**
      * Get a list of integer values.
@@ -210,9 +192,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default List<Integer> intArrayValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    List<Integer> intArrayValue(String attributeName);
 
     /**
      * Get a long value.
@@ -230,9 +210,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default long longValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    long longValue(String attributeName);
 
     /**
      * Get a list of long values.
@@ -250,9 +228,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default List<Long> longArrayValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    List<Long> longArrayValue(String attributeName);
 
     /**
      * Get a float value.
@@ -270,9 +246,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default float floatValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    float floatValue(String attributeName);
 
     /**
      * Get a list of float values.
@@ -290,9 +264,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default List<Float> floatArrayValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    List<Float> floatArrayValue(String attributeName);
 
     /**
      * Get a double value.
@@ -310,9 +282,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default double doubleValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    double doubleValue(String attributeName);
 
     /**
      * Get a list of double values.
@@ -330,9 +300,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default List<Double> doubleArrayValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    List<Double> doubleArrayValue(String attributeName);
 
     /**
      * Get an enum value.
@@ -350,9 +318,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default Enum<?> enumValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    Enum<?> enumValue(String attributeName);
 
     /**
      * Get a list of enum values.
@@ -370,9 +336,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default List<Enum<?>> enumArrayValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    List<Enum<?>> enumArrayValue(String attributeName);
 
     /**
      * Get a Class value.
@@ -390,9 +354,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default Class<?> classValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    Class<?> classValue(String attributeName);
 
     /**
      * Get a list of class values.
@@ -410,9 +372,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default List<Class<?>> classArrayValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    List<Class<?>> classArrayValue(String attributeName);
 
     /**
      * Get an Annotation value.
@@ -430,9 +390,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default AnnotationData annotationValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    AnnotationData annotationValue(String attributeName);
 
     /**
      * Get a list of annotation values.
@@ -450,9 +408,7 @@ public interface AnnotationData {
      * @throws IllegalArgumentException if the annotation does not have a method with the given name
      * @throws ClassCastException       if the annotation value is not the expected type
      */
-    default List<AnnotationData> annotationArrayValue(String attributeName) {
-        throw new IllegalArgumentException("unknown annotation attribute: " + attributeName);
-    }
+    List<AnnotationData> annotationArrayValue(String attributeName);
 
     /**
      * Get an object value. Returns null if no annotation with the given name exists.

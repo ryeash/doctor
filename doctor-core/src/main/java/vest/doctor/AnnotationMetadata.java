@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 /**
  * A container for the {@link AnnotationData} marked on a provider source.
@@ -24,9 +23,7 @@ public interface AnnotationMetadata extends Iterable<AnnotationData> {
      *
      * @return a stream of {@link AnnotationData}
      */
-    default Stream<AnnotationData> stream() {
-        return StreamSupport.stream(this.spliterator(), false);
-    }
+    Stream<AnnotationData> stream();
 
     /**
      * Find one annotation that matches the given type
