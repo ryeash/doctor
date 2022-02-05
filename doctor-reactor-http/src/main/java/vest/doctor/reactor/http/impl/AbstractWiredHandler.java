@@ -2,6 +2,7 @@ package vest.doctor.reactor.http.impl;
 
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
@@ -58,16 +59,12 @@ public abstract class AbstractWiredHandler implements Handler {
             Iterator<Filter> iterator = requestContext.attribute(FILTER_ITERATOR);
             if (iterator.hasNext()) {
                 Filter filter = iterator.next();
-                try {
-                    return filter.filter(requestContext, this::doNextFilter);
-                } catch (Throwable t) {
-                    throw new RuntimeException("error processing request", t);
-                }
+                return filter.filter(requestContext, this::doNextFilter);
             }
             Object result = handle(requestContext);
             return bodyInterchange.write(requestContext, responseType(), result);
         } catch (Throwable t) {
-            return exceptionHandler.handle(requestContext, t);
+            return Mono.error(t);
         }
     }
 }

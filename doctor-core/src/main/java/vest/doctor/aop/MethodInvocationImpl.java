@@ -13,9 +13,6 @@ public final class MethodInvocationImpl implements MethodInvocation {
     private final MethodMetadata methodMetadata;
     private final List<Object> argumentList;
     private final MethodInvoker<?> methodInvoker;
-    private Object result;
-    private boolean invoked = false;
-    private boolean invokable = true;
 
     public MethodInvocationImpl(MethodMetadata methodMetadata, List<Object> argumentList, MethodInvoker<?> methodInvoker) {
         this.methodMetadata = methodMetadata;
@@ -62,28 +59,7 @@ public final class MethodInvocationImpl implements MethodInvocation {
     @Override
     @SuppressWarnings("unchecked")
     public <T> T invoke() throws Exception {
-        if (!invokable) {
-            throw new UnsupportedOperationException("method may not be invoked from this context");
-        }
-        invoked = true;
-        result = methodInvoker.apply(this);
-        return (T) result;
-    }
-
-    @Override
-    public boolean invoked() {
-        return invoked;
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public <T> T getResult() {
-        return (T) result;
-    }
-
-    @Override
-    public void setResult(Object result) {
-        this.result = result;
+        return (T) methodInvoker.apply(this);
     }
 
     @Override
@@ -96,10 +72,6 @@ public final class MethodInvocationImpl implements MethodInvocation {
     @Override
     public AnnotationMetadata annotationMetadata() {
         return methodMetadata.annotationData();
-    }
-
-    public void setInvokable(boolean invokable) {
-        this.invokable = invokable;
     }
 
     @Override

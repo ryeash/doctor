@@ -1,15 +1,20 @@
 package demo.app;
 
 import jakarta.inject.Singleton;
-import vest.doctor.aop.After;
+import vest.doctor.aop.Aspect;
+import vest.doctor.aop.AspectChain;
 import vest.doctor.aop.MethodInvocation;
 
 @Singleton
-public class StringModificationAspect implements After {
+public class StringModificationAspect implements Aspect {
+
     @Override
-    public void after(MethodInvocation invocation) {
-        if (invocation.getResult() instanceof String) {
-            invocation.setResult(invocation.getResult() + " altered");
+    public <T> T execute(MethodInvocation methodInvocation, AspectChain chain) {
+        T result = chain.next(methodInvocation);
+        if (result instanceof String str) {
+            return (T) (str + " altered");
+        } else {
+            return result;
         }
     }
 }

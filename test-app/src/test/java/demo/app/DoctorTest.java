@@ -232,9 +232,6 @@ public class DoctorTest extends AbstractTestAppTest {
     @Test
     public void annotationMetadata() {
         DoctorProvider<TCQualifierInterpolation> p = providerRegistry().getProvider(TCQualifierInterpolation.class, "name-interpolated");
-        for (AnnotationData data : p.annotationMetadata()) {
-            System.out.println(data);
-        }
         String s = p.annotationMetadata().stream()
                 .filter(m -> m.type() == Named.class)
                 .map(m -> m.stringValue("value"))

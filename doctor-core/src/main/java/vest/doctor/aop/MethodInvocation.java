@@ -72,27 +72,6 @@ public sealed interface MethodInvocation permits MethodInvocationImpl {
     <T> T invoke() throws Exception;
 
     /**
-     * Check if the underlying method has been invoked.
-     *
-     * @return true if {@link #invoke()} has been called one or more times
-     */
-    boolean invoked();
-
-    /**
-     * Get the result of the method invocation.
-     *
-     * @return the method invocation result
-     */
-    <T> T getResult();
-
-    /**
-     * Set (or override) the result of the method invocation.
-     *
-     * @param result the result to set
-     */
-    void setResult(Object result);
-
-    /**
      * Get the {@link Method} that was invoked.
      * <p>
      * Note: One of the main reasons to use a code generation library like Doctor is to avoid
