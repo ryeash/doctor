@@ -228,15 +228,17 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
         if (method.getParameters().isEmpty()) {
             paramTypes = "Collections.emptyList()";
         } else {
-            paramTypes = method.getParameters().stream()
-                    .map(ProcessorUtils::newTypeInfo)
+            paramTypes = method.getParameters()
+                    .stream()
+                    .map(GenericInfo::new)
+                    .map(gi -> gi.newTypeInfo(context))
                     .collect(Collectors.joining(", ", "List.of(", ")"));
         }
         String returnType;
         if (method.getReturnType().getKind() == TypeKind.VOID) {
             returnType = "null";
         } else {
-            returnType = ProcessorUtils.newTypeInfo(new GenericInfo(method.getReturnType()));
+            returnType = new GenericInfo(method, method.getReturnType()).newTypeInfo(context);
         }
 
         constructor.line("this.", metadataName, " =  new MethodMetadata(delegate, \"", method.getSimpleName(), "\", ", paramTypes, ", ", returnType, ",", ProcessorUtils.writeNewAnnotationMetadata(context, method), ");");

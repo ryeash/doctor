@@ -21,7 +21,7 @@ public class TCAspects {
     }
 
     @Aspects(StringModificationAspect.class)
-    public String parrot(String name) throws IOException {
+    public String parrot(@ParameterAnnotation("toast") String name) throws IOException {
         return name;
     }
 

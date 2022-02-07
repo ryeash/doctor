@@ -1,5 +1,6 @@
 package vest.doctor.aop;
 
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -13,6 +14,21 @@ public final class AspectCoordinator {
     }
 
     public <T> T call(MethodInvocation methodInvocation) {
-        return new AspectChainImpl(aspects).next(methodInvocation);
+        return new AspectChainImpl(aspects.iterator()).next(methodInvocation);
+    }
+
+    record AspectChainImpl(Iterator<Aspect> iterator) implements AspectChain {
+        @Override
+        public <T> T next(MethodInvocation methodInvocation) {
+            if (iterator.hasNext()) {
+                return iterator.next().execute(methodInvocation, this);
+            } else {
+                try {
+                    return methodInvocation.invoke();
+                } catch (Throwable t) {
+                    throw new AspectException("error executing aspects", t);
+                }
+            }
+        }
     }
 }

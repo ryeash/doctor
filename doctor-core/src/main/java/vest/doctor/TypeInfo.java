@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
  */
 public final class TypeInfo {
     private final Class<?> rawType;
+    private final AnnotationMetadata annotationData;
     private final List<TypeInfo> parameterTypes;
 
     /**
@@ -19,7 +20,18 @@ public final class TypeInfo {
      * @param parameterTypes the parameter types
      */
     public TypeInfo(Class<?> rawType, TypeInfo... parameterTypes) {
-        this(rawType, List.of(parameterTypes));
+        this(rawType, AnnotationMetadata.EMPTY, List.of(parameterTypes));
+    }
+
+    /**
+     * Create a new type information object with the given raw type, annotation metdata, and parameter types.
+     *
+     * @param rawType        the raw type
+     * @param annotationData the annotation metadata
+     * @param parameterTypes the parameter types
+     */
+    public TypeInfo(Class<?> rawType, AnnotationMetadata annotationData, TypeInfo... parameterTypes) {
+        this(rawType, annotationData, List.of(parameterTypes));
     }
 
     /**
@@ -29,7 +41,19 @@ public final class TypeInfo {
      * @param parameterTypes the parameter types
      */
     public TypeInfo(Class<?> rawType, List<TypeInfo> parameterTypes) {
+        this(rawType, AnnotationMetadata.EMPTY, parameterTypes);
+    }
+
+    /**
+     * Create a new type information object with the given raw type, annotation metdata, and parameter types.
+     *
+     * @param rawType        the raw type
+     * @param annotationData the annotation metadata
+     * @param parameterTypes the parameter types
+     */
+    public TypeInfo(Class<?> rawType, AnnotationMetadata annotationData, List<TypeInfo> parameterTypes) {
         this.rawType = rawType;
+        this.annotationData = Objects.requireNonNull(annotationData);
         if (rawType != null) {
             this.parameterTypes = Collections.unmodifiableList(parameterTypes);
         } else {
@@ -42,6 +66,10 @@ public final class TypeInfo {
      */
     public Class<?> getRawType() {
         return rawType;
+    }
+
+    public AnnotationMetadata annotationMetadata() {
+        return annotationData;
     }
 
     /**

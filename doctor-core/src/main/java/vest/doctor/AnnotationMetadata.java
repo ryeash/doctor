@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 public interface AnnotationMetadata extends Iterable<AnnotationData> {
 
     /**
-     * An {@link AnnotationMetadata} with no annotation values.
+     * Metadata with no annotation values.
      */
     AnnotationMetadata EMPTY = new EmptyMetadata();
 
