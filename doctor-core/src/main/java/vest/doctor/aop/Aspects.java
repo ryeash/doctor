@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 
 /**
  * Used on a class or method to indicate which aspects to use when invoking the method(s). When a class is marked
- * with this annotation, _all_ methods in the class will be wired with the listed aspects.
+ * with this annotation, <strong>all</strong> methods in the class will be wired with the listed aspects.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
