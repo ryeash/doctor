@@ -9,6 +9,7 @@ import vest.doctor.processing.CodeProcessingException;
 import vest.doctor.processing.ProviderDefinition;
 import vest.doctor.processing.ProviderDependency;
 
+import javax.lang.model.AnnotatedConstruct;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
@@ -274,30 +275,6 @@ public class ProcessorUtils {
                 : s;
     }
 
-    public static String newTypeInfo(VariableElement variableElement) {
-        return newTypeInfo(new GenericInfo(variableElement.asType()));
-    }
-
-    public static String newTypeInfo(GenericInfo genericInfo) {
-        TypeMirror type = genericInfo.type();
-        if (type.getKind().isPrimitive()) {
-            return "new TypeInfo(" + rawPrimitiveClass(type) + ")";
-        }
-
-        TypeMirror reportedType = rawClass(type);
-
-        if (reportedType == null) {
-            return "new TypeInfo(Object.class)";
-        }
-        String prefix = "new TypeInfo(" + typeWithoutParameters(reportedType) + ".class";
-        if (!genericInfo.hasTypeParameters()) {
-            return prefix + ")";
-        } else {
-            String param = genericInfo.parameterTypes().stream().map(ProcessorUtils::newTypeInfo).collect(Collectors.joining(", "));
-            return prefix + ", " + param + ")";
-        }
-    }
-
     public static String providerLookupCode(AnnotationProcessorContext context, VariableElement variableElement, String providerRegistryRef) {
         try {
             TypeElement typeElement = context.toTypeElement(variableElement.asType());
@@ -369,7 +346,7 @@ public class ProcessorUtils {
         throw new CodeProcessingException("can not inject type: " + mirror);
     }
 
-    private static String rawPrimitiveClass(TypeMirror mirror) {
+    public static String rawPrimitiveClass(TypeMirror mirror) {
         if (!mirror.getKind().isPrimitive()) {
             throw new CodeProcessingException("expected a primitive type");
         }
@@ -386,7 +363,7 @@ public class ProcessorUtils {
         };
     }
 
-    private static TypeMirror rawClass(TypeMirror mirror) {
+    public static TypeMirror rawClass(TypeMirror mirror) {
         switch (mirror.getKind()) {
             case DECLARED:
             case ARRAY:
@@ -414,7 +391,10 @@ public class ProcessorUtils {
         }
     }
 
-    public static String writeNewAnnotationMetadata(AnnotationProcessorContext context, Element annotationSource) {
+    public static String writeNewAnnotationMetadata(AnnotationProcessorContext context, AnnotatedConstruct annotationSource) {
+        if (annotationSource.getAnnotationMirrors().isEmpty()) {
+            return "AnnotationMetadata.EMPTY";
+        }
         return annotationSource.getAnnotationMirrors()
                 .stream()
                 .map(am -> newAnnotationDataImpl(context, am))

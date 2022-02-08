@@ -7,10 +7,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Singleton
-@Aspects(LoggingAspect.class)
+@Aspects({LoggingAspect.class, MapModifyingAspect.class})
 public class TCAspects {
 
     private final boolean dummy = true;
@@ -21,7 +22,7 @@ public class TCAspects {
     }
 
     @Aspects(StringModificationAspect.class)
-    public String parrot(String name) throws IOException {
+    public String parrot(@ParameterAnnotation("toast") String name) throws IOException {
         return name;
     }
 
@@ -37,6 +38,10 @@ public class TCAspects {
 
     public <T extends String & CharSequence, R extends InputStream> List<T> parametric(Class<T> type, boolean[] booleans) {
         return Collections.emptyList();
+    }
+
+    public Map<String, Object> mapping(Map<String, Object> input) {
+        return input;
     }
 
     private void privateMethodShouldntBeAProblem() {

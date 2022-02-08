@@ -1,70 +1,86 @@
 package vest.doctor.aop;
 
-import java.util.LinkedList;
+import vest.doctor.AnnotationMetadata;
+import vest.doctor.TypeInfo;
+
+import java.lang.reflect.Method;
+import java.util.Iterator;
 import java.util.List;
 
 /**
- * Internally used to coordinate aspects and method invocations.
+ * Internally used to coordinate aspect execution.
  */
-public final class AspectCoordinator implements Before, Around, After {
-    private final List<Before> befores = new LinkedList<>();
-    private final List<Around> arounds = new LinkedList<>();
-    private final List<After> afters = new LinkedList<>();
+public final class AspectCoordinator {
+    private final List<Aspect> aspects;
 
     public AspectCoordinator(Aspect... delegates) {
-        for (Aspect delegate : delegates) {
-            if (delegate instanceof Before before) {
-                befores.add(before);
-            }
-            if (delegate instanceof Around around) {
-                arounds.add(around);
-            }
-            if (delegate instanceof After after) {
-                afters.add(after);
-            }
+        aspects = List.of(delegates);
+    }
+
+    public <T> T call(MethodInvocation methodInvocation) {
+        return new ChainedInvocation(methodInvocation, aspects.iterator()).next();
+    }
+
+    record ChainedInvocation(MethodInvocation delegate,
+                             Iterator<Aspect> iterator) implements MethodInvocation {
+        @Override
+        public Object getContainingInstance() {
+            return delegate.getContainingInstance();
         }
-    }
 
-    public <T> T call(MethodInvocation invocation) {
-        before(invocation);
-        execute(invocation);
-        after(invocation);
-        return invocation.getResult();
-    }
-
-    @Override
-    public void before(MethodInvocation invocation) {
-        ((MethodInvocationImpl) invocation).setInvokable(false);
-        if (!befores.isEmpty()) {
-            for (Before before : befores) {
-                before.before(invocation);
-            }
+        @Override
+        public String getMethodName() {
+            return delegate.getMethodName();
         }
-    }
 
-    @Override
-    public void execute(MethodInvocation invocation) {
-        ((MethodInvocationImpl) invocation).setInvokable(true);
-        try {
-            if (!arounds.isEmpty()) {
-                for (Around around : arounds) {
-                    around.execute(invocation);
-                }
+        @Override
+        public List<TypeInfo> getMethodParameters() {
+            return delegate.getMethodParameters();
+        }
+
+        @Override
+        public TypeInfo getReturnType() {
+            return delegate.getReturnType();
+        }
+
+        @Override
+        public int arity() {
+            return delegate.arity();
+        }
+
+        @Override
+        public List<ArgValue<?>> getArgumentValues() {
+            return delegate.getArgumentValues();
+        }
+
+        @Override
+        public <T> ArgValue<T> getArgumentValue(int i) {
+            return delegate.getArgumentValue(i);
+        }
+
+        @Override
+        public <T> T invoke() throws Exception {
+            return delegate.invoke();
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T next() {
+            if (iterator.hasNext()) {
+                return (T) iterator.next().execute(new ChainedInvocation(delegate, iterator));
             } else {
-                invocation.invoke();
+                return delegate.next();
             }
-        } catch (Throwable t) {
-            throw new AspectException("error executing aspects", t);
         }
-    }
 
-    @Override
-    public void after(MethodInvocation invocation) {
-        ((MethodInvocationImpl) invocation).setInvokable(false);
-        if (!afters.isEmpty()) {
-            for (After after : afters) {
-                after.after(invocation);
-            }
+        @Override
+        public Method getMethod() throws NoSuchMethodException {
+            return delegate.getMethod();
+        }
+
+        @Override
+        public AnnotationMetadata annotationMetadata() {
+            return delegate.annotationMetadata();
         }
     }
 }

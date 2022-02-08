@@ -7,10 +7,10 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 /**
- * Represents an invocation of a method. Providing details about the method that was called as well as the arguments the
- * method was called with. Allows manipulation of arguments and invocation result.
+ * Represents an invocation of a method; providing details about the method that was called as well as the arguments the
+ * method was called with.
  */
-public sealed interface MethodInvocation permits MethodInvocationImpl {
+public sealed interface MethodInvocation permits MethodInvocationImpl, AspectCoordinator.ChainedInvocation {
 
     /**
      * Get the instance upon which the method was invoked.
@@ -48,23 +48,23 @@ public sealed interface MethodInvocation permits MethodInvocationImpl {
     int arity();
 
     /**
+     * Get the list of arguments this invocation was called with.
+     */
+    List<ArgValue<?>> getArgumentValues();
+
+    /**
      * Get the value of an argument from a specific position.
      *
      * @param i the position of the argument to get
      * @return the argument
      */
-    <T> T getArgumentValue(int i);
-
-    /**
-     * Set the value of an argument at a specific position.
-     *
-     * @param i the position of the argument to set
-     * @param o the argument
-     */
-    void setArgumentValue(int i, Object o);
+    <T> ArgValue<T> getArgumentValue(int i);
 
     /**
      * Invoke the method.
+     * <p>
+     * Note: unless the aspect needs to explicitly execute the method (which can short
+     * circuit aspect execution) the {@link #next()} method should be used instead of this one.
      *
      * @return the result of invocation
      * @throws Exception for any error encountered
@@ -72,25 +72,12 @@ public sealed interface MethodInvocation permits MethodInvocationImpl {
     <T> T invoke() throws Exception;
 
     /**
-     * Check if the underlying method has been invoked.
+     * Continue this method invocation by passing it to the next configured aspect, or,
+     * if there are no more aspects to apply, invoke the method and return the result.
      *
-     * @return true if {@link #invoke()} has been called one or more times
+     * @return the result of invocation
      */
-    boolean invoked();
-
-    /**
-     * Get the result of the method invocation.
-     *
-     * @return the method invocation result
-     */
-    <T> T getResult();
-
-    /**
-     * Set (or override) the result of the method invocation.
-     *
-     * @param result the result to set
-     */
-    void setResult(Object result);
+    <T> T next();
 
     /**
      * Get the {@link Method} that was invoked.

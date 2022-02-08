@@ -6,6 +6,7 @@ import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
+import vest.doctor.AnnotationMetadata;
 import vest.doctor.ExplicitProvidedTypes;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.TypeInfo;
@@ -35,6 +36,7 @@ import javax.lang.model.type.TypeMirror;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -120,6 +122,10 @@ public class RouterWriter implements ProviderDefinitionListener {
                 .addImportClass(ProviderRegistry.class)
                 .addImportClass(RequestContext.class)
                 .addImportClass(Publisher.class)
+                .addImportClass(AnnotationMetadata.class)
+                .addImportClass(Map.class)
+                .addImportClass("vest.doctor.runtime.AnnotationMetadataImpl")
+                .addImportClass("vest.doctor.runtime.AnnotationDataImpl")
                 .addImportClass(Flux.class)
                 .addImportClass(List.class)
                 .addImportClass(Optional.class)
@@ -155,17 +161,18 @@ public class RouterWriter implements ProviderDefinitionListener {
             throw new CodeProcessingException("endpoint methods must declare specific return types (not Object)", method);
         }
 
-        cb.addField("private static final TypeInfo responseType = ", ProcessorUtils.newTypeInfo(new GenericInfo(method.getReturnType())));
+        cb.addField("private static final TypeInfo responseType = ", new GenericInfo(method, method.getReturnType()).newTypeInfo(context));
         cb.addMethod("@Override public TypeInfo responseType()", mb -> mb.line("return responseType;"));
 
         boolean bodyIsPublisher = false;
-        TypeMirror bodyParam = bodyParameter(method);
+        VariableElement bodyElement = bodyParameter(method);
+        TypeMirror bodyParam = bodyElement != null ? bodyElement.asType() : null;
         String bodyType;
         if (bodyParam != null) {
             GenericInfo genericInfo = new GenericInfo(bodyParam);
             bodyIsPublisher = ProcessorUtils.isCompatibleWith(context, genericInfo.type(), Publisher.class);
             bodyType = "bodyType_" + method.getSimpleName() + context.nextId();
-            cb.addField("private static final TypeInfo ", bodyType, "=", ProcessorUtils.newTypeInfo(new GenericInfo(bodyParam)));
+            cb.addField("private static final TypeInfo ", bodyType, "=", new GenericInfo(bodyElement).newTypeInfo(context));
         } else {
             bodyType = "null";
         }
@@ -220,11 +227,10 @@ public class RouterWriter implements ProviderDefinitionListener {
         throw new CodeProcessingException("unsupported parameter - no HttpParameterWriter is registered to handle", parameter);
     }
 
-    public static TypeMirror bodyParameter(ExecutableElement method) {
+    public static VariableElement bodyParameter(ExecutableElement method) {
         return method.getParameters()
                 .stream()
                 .filter(m -> m.getAnnotation(Param.Body.class) != null)
-                .map(VariableElement::asType)
                 .findFirst()
                 .orElse(null);
     }

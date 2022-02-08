@@ -1,5 +1,9 @@
 package vest.doctor.codegen;
 
+import vest.doctor.processing.AnnotationProcessorContext;
+
+import javax.lang.model.AnnotatedConstruct;
+import javax.lang.model.element.Element;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ErrorType;
@@ -32,10 +36,24 @@ public class GenericInfo {
         return Optional.empty();
     }
 
+    private final AnnotatedConstruct element;
     private final TypeMirror type;
     private final List<GenericInfo> generics;
 
+    public GenericInfo(Element element) {
+        this.element = element;
+        this.type = element.asType();
+        this.generics = Collections.unmodifiableList(type.accept(new GenericInfoVisitor(), null));
+    }
+
     public GenericInfo(TypeMirror type) {
+        this.element = null;
+        this.type = type;
+        this.generics = Collections.unmodifiableList(type.accept(new GenericInfoVisitor(), null));
+    }
+
+    public GenericInfo(AnnotatedConstruct element, TypeMirror type) {
+        this.element = element;
         this.type = type;
         this.generics = Collections.unmodifiableList(type.accept(new GenericInfoVisitor(), null));
     }
@@ -50,6 +68,36 @@ public class GenericInfo {
 
     public boolean hasTypeParameters() {
         return generics != null && !generics.isEmpty();
+    }
+
+    public String newTypeInfo(AnnotationProcessorContext context) {
+        StringBuilder sb = new StringBuilder("new TypeInfo(");
+        if (type.getKind().isPrimitive()) {
+            sb.append(ProcessorUtils.rawPrimitiveClass(type));
+        } else {
+            TypeMirror reportedType = ProcessorUtils.rawClass(type);
+            if (reportedType == null) {
+                sb.append("Object.class");
+            } else {
+                sb.append(ProcessorUtils.typeWithoutParameters(reportedType)).append(".class");
+            }
+        }
+
+        if (element != null) {
+            String newAnnotationMetadata = ProcessorUtils.writeNewAnnotationMetadata(context, element);
+            sb.append(",").append(newAnnotationMetadata);
+        }
+
+        if (!hasTypeParameters()) {
+            sb.append(")");
+        } else {
+            String param = parameterTypes()
+                    .stream()
+                    .map(gi -> gi.newTypeInfo(context))
+                    .collect(Collectors.joining(", "));
+            sb.append(", ").append(param).append(")");
+        }
+        return sb.toString();
     }
 
     @Override
