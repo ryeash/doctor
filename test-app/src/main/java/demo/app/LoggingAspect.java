@@ -14,7 +14,7 @@ public class LoggingAspect implements Aspect {
     private static final Logger log = LoggerFactory.getLogger(LoggingAspect.class);
 
     @Override
-    public <T> T execute(MethodInvocation methodInvocation) {
+    public Object execute(MethodInvocation methodInvocation) {
         try {
             Method method = methodInvocation.getMethod();
             log.info("{}", Arrays.toString(method.getDeclaredAnnotations()));

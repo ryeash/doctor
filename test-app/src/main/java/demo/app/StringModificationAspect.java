@@ -11,8 +11,8 @@ import vest.doctor.aop.MethodInvocation;
 public class StringModificationAspect implements Aspect {
 
     @Override
-    public <T> T execute(MethodInvocation methodInvocation) {
-        T result = methodInvocation.next();
+    public Object execute(MethodInvocation methodInvocation) {
+        Object result = methodInvocation.next();
 
         if (methodInvocation.getContainingInstance() instanceof TCAspects
                 && methodInvocation.getMethodName().equals("parrot")) {
@@ -34,7 +34,7 @@ public class StringModificationAspect implements Aspect {
                 });
 
         if (result instanceof String str) {
-            return (T) (str + " altered");
+            return (str + " altered");
         } else {
             return result;
         }

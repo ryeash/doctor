@@ -13,6 +13,5 @@ public record MethodMetadata(
         String methodName,
         List<TypeInfo> methodParameters,
         TypeInfo returnType,
-        AnnotationMetadata annotationData
-) {
+        AnnotationMetadata annotationData) {
 }

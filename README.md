@@ -386,7 +386,7 @@ via [ProcessorConfiguration](doctor-core/src/main/java/vest/doctor/processing/Pr
 
 # Aspect Oriented Programming (AOP)
 
-AOP is supported for any provided type that is an interface or a public, non-final class.
+AOP is supported for any provided type that is an interface or a public, non-final class with a zero-arg constructor.
 
 ### Basics
 
@@ -394,10 +394,10 @@ First, create an aspect class:
 
 ```java
 @Prototype // aspects must have a scope to be eligible for use
-public class TimingAspect implements Around {
+public class TimingAspect implements Aspect {
     @Override
-    public void execute(MethodInvocation methodInvocation) {
-        timeAndObserve(methodInvocation::invoke);
+    public Object execute(MethodInvocation methodInvocation) {
+        return timeAndObserve(methodInvocation::next);
     }
 }
 ```
@@ -443,32 +443,6 @@ thing.doSomething() // <- method will be both timed and observed
 In the previous example, the TimingAspect class is marked as @Prototype, but each instance of the aspect-ed class will
 call Provider.get() once. So for the lifetime of the aspect-ed Thing singleton, only one instance of the TimingAspect
 will be created and used.
-
-### Aspect Stages
-
-There are three stages of aspect injection: before, around, and after; each aspect can implement any or all of them.
-
-```java
-@Singleton
-public class AspectDemo implements Before, Around, After {
-
-    @Override
-    public void before(MethodInvocation invocation) {
-        // inspect or modify arguments to a method call
-    }
-
-    @Override
-    public void execute(MethodInvocation methodInvocation) {
-        // should call methodInvocation.invoke()
-        // this is the only stage where invoke() can be called
-    }
-
-    @Override
-    public void after(MethodInvocation invocation) {
-        // inspect or modify the result of an invocation
-    }
-}
-```
 
 ## Property injection with annotation values
 

@@ -12,7 +12,7 @@ public class TimingAspect implements Aspect {
     private static final Logger log = LoggerFactory.getLogger(TimingAspect.class);
 
     @Override
-    public <T> T execute(MethodInvocation methodInvocation) {
+    public Object execute(MethodInvocation methodInvocation) {
         long start = System.nanoTime();
         try {
             return methodInvocation.next();

@@ -64,9 +64,10 @@ public final class AspectCoordinator {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public <T> T next() {
             if (iterator.hasNext()) {
-                return iterator.next().execute(new ChainedInvocation(delegate, iterator));
+                return (T) iterator.next().execute(new ChainedInvocation(delegate, iterator));
             } else {
                 return delegate.next();
             }

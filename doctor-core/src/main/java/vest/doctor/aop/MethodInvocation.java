@@ -7,8 +7,8 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 /**
- * Represents an invocation of a method. Providing details about the method that was called as well as the arguments the
- * method was called with. Allows manipulation of arguments and result.
+ * Represents an invocation of a method; providing details about the method that was called as well as the arguments the
+ * method was called with.
  */
 public sealed interface MethodInvocation permits MethodInvocationImpl, AspectCoordinator.ChainedInvocation {
 

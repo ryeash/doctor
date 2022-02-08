@@ -12,7 +12,7 @@ import java.util.Map;
 public class MapModifyingAspect implements Aspect {
 
     @Override
-    public <T> T execute(MethodInvocation methodInvocation) {
+    public Object execute(MethodInvocation methodInvocation) {
         if (methodInvocation.arity() > 0) {
             ArgValue<Object> arg0 = methodInvocation.getArgumentValue(0);
             if (arg0.type().getRawType() == Map.class) {
@@ -23,12 +23,12 @@ public class MapModifyingAspect implements Aspect {
                 arg0.set(replaced);
             }
         }
-        T result = methodInvocation.next();
+        Object result = methodInvocation.next();
         if (result instanceof Map map) {
             map.put("_modified", true);
             map.put("_arity", methodInvocation.arity());
             map.put("_methodName", methodInvocation.getMethodName());
-            return (T) map;
+            return map;
         } else {
             return result;
         }
