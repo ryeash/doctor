@@ -4,7 +4,6 @@ import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vest.doctor.aop.Aspect;
-import vest.doctor.aop.AspectChain;
 import vest.doctor.aop.AspectException;
 import vest.doctor.aop.MethodInvocation;
 
@@ -13,10 +12,10 @@ public class TimingAspect implements Aspect {
     private static final Logger log = LoggerFactory.getLogger(TimingAspect.class);
 
     @Override
-    public <T> T execute(MethodInvocation methodInvocation, AspectChain chain) {
+    public <T> T execute(MethodInvocation methodInvocation) {
         long start = System.nanoTime();
         try {
-            return chain.next(methodInvocation);
+            return methodInvocation.next();
         } catch (Exception e) {
             throw new AspectException("error executing", e);
         } finally {

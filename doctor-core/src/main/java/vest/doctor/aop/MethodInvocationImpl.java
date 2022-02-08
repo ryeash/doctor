@@ -4,19 +4,19 @@ import vest.doctor.AnnotationMetadata;
 import vest.doctor.TypeInfo;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 public final class MethodInvocationImpl implements MethodInvocation {
 
     private final MethodMetadata methodMetadata;
-    private final List<Object> argumentList;
+    private final List<ArgValue<?>> argumentList;
     private final MethodInvoker<?> methodInvoker;
 
-    public MethodInvocationImpl(MethodMetadata methodMetadata, List<Object> argumentList, MethodInvoker<?> methodInvoker) {
+    public MethodInvocationImpl(MethodMetadata methodMetadata, List<ArgValue<?>> argumentList, MethodInvoker<?> methodInvoker) {
         this.methodMetadata = methodMetadata;
-        this.argumentList = new ArrayList<>(argumentList);
+        this.argumentList = Collections.unmodifiableList(argumentList);
         this.methodInvoker = methodInvoker;
     }
 
@@ -46,20 +46,29 @@ public final class MethodInvocationImpl implements MethodInvocation {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public <T> T getArgumentValue(int i) {
-        return (T) argumentList.get(i);
+    public List<ArgValue<?>> getArgumentValues() {
+        return argumentList;
     }
 
     @Override
-    public void setArgumentValue(int i, Object o) {
-        argumentList.set(i, o);
+    @SuppressWarnings("unchecked")
+    public <T> ArgValue<T> getArgumentValue(int i) {
+        return (ArgValue<T>) argumentList.get(i);
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public <T> T invoke() throws Exception {
         return (T) methodInvoker.apply(this);
+    }
+
+    @Override
+    public <T> T next() {
+        try {
+            return invoke();
+        } catch (Exception e) {
+            throw new AspectException("error executing aspect method", e);
+        }
     }
 
     @Override

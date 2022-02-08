@@ -1,5 +1,9 @@
 package vest.doctor.aop;
 
+import vest.doctor.AnnotationMetadata;
+import vest.doctor.TypeInfo;
+
+import java.lang.reflect.Method;
 import java.util.Iterator;
 import java.util.List;
 
@@ -14,21 +18,68 @@ public final class AspectCoordinator {
     }
 
     public <T> T call(MethodInvocation methodInvocation) {
-        return new AspectChainImpl(aspects.iterator()).next(methodInvocation);
+        return new ChainedInvocation(methodInvocation, aspects.iterator()).next();
     }
 
-    record AspectChainImpl(Iterator<Aspect> iterator) implements AspectChain {
+    record ChainedInvocation(MethodInvocation delegate,
+                             Iterator<Aspect> iterator) implements MethodInvocation {
         @Override
-        public <T> T next(MethodInvocation methodInvocation) {
+        public Object getContainingInstance() {
+            return delegate.getContainingInstance();
+        }
+
+        @Override
+        public String getMethodName() {
+            return delegate.getMethodName();
+        }
+
+        @Override
+        public List<TypeInfo> getMethodParameters() {
+            return delegate.getMethodParameters();
+        }
+
+        @Override
+        public TypeInfo getReturnType() {
+            return delegate.getReturnType();
+        }
+
+        @Override
+        public int arity() {
+            return delegate.arity();
+        }
+
+        @Override
+        public List<ArgValue<?>> getArgumentValues() {
+            return delegate.getArgumentValues();
+        }
+
+        @Override
+        public <T> ArgValue<T> getArgumentValue(int i) {
+            return delegate.getArgumentValue(i);
+        }
+
+        @Override
+        public <T> T invoke() throws Exception {
+            return delegate.invoke();
+        }
+
+        @Override
+        public <T> T next() {
             if (iterator.hasNext()) {
-                return iterator.next().execute(methodInvocation, this);
+                return iterator.next().execute(new ChainedInvocation(delegate, iterator));
             } else {
-                try {
-                    return methodInvocation.invoke();
-                } catch (Throwable t) {
-                    throw new AspectException("error executing aspects", t);
-                }
+                return delegate.next();
             }
+        }
+
+        @Override
+        public Method getMethod() throws NoSuchMethodException {
+            return delegate.getMethod();
+        }
+
+        @Override
+        public AnnotationMetadata annotationMetadata() {
+            return delegate.annotationMetadata();
         }
     }
 }

@@ -392,6 +392,9 @@ public class ProcessorUtils {
     }
 
     public static String writeNewAnnotationMetadata(AnnotationProcessorContext context, AnnotatedConstruct annotationSource) {
+        if (annotationSource.getAnnotationMirrors().isEmpty()) {
+            return "AnnotationMetadata.EMPTY";
+        }
         return annotationSource.getAnnotationMirrors()
                 .stream()
                 .map(am -> newAnnotationDataImpl(context, am))

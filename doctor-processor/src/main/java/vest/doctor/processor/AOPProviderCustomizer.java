@@ -5,6 +5,8 @@ import vest.doctor.AnnotationMetadata;
 import vest.doctor.Factory;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.TypeInfo;
+import vest.doctor.aop.ArgValue;
+import vest.doctor.aop.ArgValueImpl;
 import vest.doctor.aop.Aspect;
 import vest.doctor.aop.AspectCoordinator;
 import vest.doctor.aop.AspectWrappingProvider;
@@ -42,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -83,6 +86,8 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
                 .addImportClass(MethodMetadata.class)
                 .addImportClass(MethodInvocation.class)
                 .addImportClass(MethodInvocationImpl.class)
+                .addImportClass(ArgValue.class)
+                .addImportClass(ArgValueImpl.class)
                 .addImportClass(Map.class)
                 .addImportClass(List.class)
                 .addImportClass(AnnotationData.class)
@@ -104,7 +109,7 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
         } else if (canExtend(typeElement)) {
             classBuilder.setExtendsClass(typeElement.getQualifiedName().toString());
         } else {
-            throw new CodeProcessingException("aspects can only be applied to interfaces and public non-final classes with an empty constructor - invalid class", typeElement);
+            throw new CodeProcessingException("aspects can only be applied to interfaces and public non-final classes with a zero-arg constructor - invalid class", typeElement);
         }
         classBuilder.addField("private final ", typeElement.getSimpleName(), " delegate");
 
@@ -257,18 +262,19 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
         });
 
 
-        StringBuilder sb = new StringBuilder();
         String arguments;
         if (method.getParameters().isEmpty()) {
             arguments = "Collections.emptyList()";
         } else {
-            arguments = method.getParameters().stream()
-                    .map(VariableElement::getSimpleName)
+            AtomicInteger i = new AtomicInteger(0);
+            arguments = method.getParameters()
+                    .stream()
+                    .map(p -> "new ArgValueImpl(" + metadataName + ".methodParameters().get(" + i.getAndIncrement() + "),\"" + ProcessorUtils.escapeStringForCode(p.getSimpleName().toString()) + "\"," + p.getSimpleName() + ")")
                     .collect(Collectors.joining(", ", "List.of(", ")"));
         }
         StringBuilder invoker = new StringBuilder();
         String invokerParams = IntStream.range(0, method.getParameters().size())
-                .mapToObj(i -> "inv.getArgumentValue(" + i + ")")
+                .mapToObj(i -> "inv.getArgumentValue(" + i + ").get()")
                 .collect(Collectors.joining(", ", "(", ")"));
         String execute = "((" + method.getEnclosingElement().asType() + ") inv.getContainingInstance())." + method.getSimpleName() + invokerParams + ";";
         invoker.append("inv -> {");
@@ -280,7 +286,7 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
         }
         invoker.append("}");
 
-        sb.append("MethodInvocation invocation = new MethodInvocationImpl(")
+        StringBuilder sb = new StringBuilder("MethodInvocation invocation = new MethodInvocationImpl(")
                 .append(metadataName)
                 .append(", ")
                 .append(arguments)

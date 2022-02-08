@@ -16,7 +16,9 @@ import vest.doctor.event.ReloadProviders;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -179,6 +181,16 @@ public class DoctorTest extends AbstractTestAppTest {
 
         CoffeeMaker aspect = providerRegistry().getInstance(CoffeeMaker.class, "coffee-aspect");
         assertEquals(aspect.brew(), "french pressing altered");
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("string", "str");
+        Map<String, Object> mapping = instance.mapping(map);
+        assertEquals(mapping.get("string"), "str");
+        assertEquals(mapping.get("_pre"), true);
+        assertEquals(mapping.get("_modified"), true);
+        assertEquals(mapping.get("_arity"), 1);
+        assertEquals(mapping.get("_paramName"), "input");
+        assertEquals(mapping.get("_methodName"), "mapping");
     }
 
     @Test

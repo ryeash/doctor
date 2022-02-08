@@ -8,9 +8,9 @@ import java.util.List;
 
 /**
  * Represents an invocation of a method. Providing details about the method that was called as well as the arguments the
- * method was called with. Allows manipulation of arguments and invocation result.
+ * method was called with. Allows manipulation of arguments and result.
  */
-public sealed interface MethodInvocation permits MethodInvocationImpl {
+public sealed interface MethodInvocation permits MethodInvocationImpl, AspectCoordinator.ChainedInvocation {
 
     /**
      * Get the instance upon which the method was invoked.
@@ -48,28 +48,36 @@ public sealed interface MethodInvocation permits MethodInvocationImpl {
     int arity();
 
     /**
+     * Get the list of arguments this invocation was called with.
+     */
+    List<ArgValue<?>> getArgumentValues();
+
+    /**
      * Get the value of an argument from a specific position.
      *
      * @param i the position of the argument to get
      * @return the argument
      */
-    <T> T getArgumentValue(int i);
-
-    /**
-     * Set the value of an argument at a specific position.
-     *
-     * @param i the position of the argument to set
-     * @param o the argument
-     */
-    void setArgumentValue(int i, Object o);
+    <T> ArgValue<T> getArgumentValue(int i);
 
     /**
      * Invoke the method.
+     * <p>
+     * Note: unless the aspect needs to explicitly execute the method (which can short
+     * circuit aspect execution) the {@link #next()} method should be used instead of this one.
      *
      * @return the result of invocation
      * @throws Exception for any error encountered
      */
     <T> T invoke() throws Exception;
+
+    /**
+     * Continue this method invocation by passing it to the next configured aspect, or,
+     * if there are no more aspects to apply, invoke the method and return the result.
+     *
+     * @return the result of invocation
+     */
+    <T> T next();
 
     /**
      * Get the {@link Method} that was invoked.

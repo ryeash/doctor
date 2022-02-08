@@ -5,15 +5,14 @@ import org.testng.Assert;
 import vest.doctor.AnnotationData;
 import vest.doctor.TypeInfo;
 import vest.doctor.aop.Aspect;
-import vest.doctor.aop.AspectChain;
 import vest.doctor.aop.MethodInvocation;
 
 @Singleton
 public class StringModificationAspect implements Aspect {
 
     @Override
-    public <T> T execute(MethodInvocation methodInvocation, AspectChain chain) {
-        T result = chain.next(methodInvocation);
+    public <T> T execute(MethodInvocation methodInvocation) {
+        T result = methodInvocation.next();
 
         if (methodInvocation.getContainingInstance() instanceof TCAspects
                 && methodInvocation.getMethodName().equals("parrot")) {
