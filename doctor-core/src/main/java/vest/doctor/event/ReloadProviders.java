@@ -4,5 +4,5 @@ package vest.doctor.event;
  * An event that can be sent to trigger reloading {@link vest.doctor.Reloadable} scope
  * providers.
  */
-public final class ReloadProviders {
+public record ReloadProviders() {
 }

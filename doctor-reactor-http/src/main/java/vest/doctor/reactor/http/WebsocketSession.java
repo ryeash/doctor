@@ -24,7 +24,7 @@ public interface WebsocketSession extends Publisher<WebSocketFrame> {
     UUID id();
 
     /**
-     * The {@link WebsocketInbound} for received frames from the client.
+     * The {@link WebsocketInbound} for receiving frames from the client.
      */
     WebsocketInbound inbound();
 

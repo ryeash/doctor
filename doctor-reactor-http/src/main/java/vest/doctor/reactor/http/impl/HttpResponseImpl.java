@@ -82,7 +82,9 @@ public class HttpResponseImpl implements HttpResponse {
         for (Map.Entry<String, String> header : response.responseHeaders()) {
             sb.append(header.getKey()).append(": ").append(header.getValue()).append("\n\r");
         }
-        sb.append(body);
+        if (body != null) {
+            sb.append(body);
+        }
         return sb.toString();
     }
 }

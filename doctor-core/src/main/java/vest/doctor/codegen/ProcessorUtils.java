@@ -37,7 +37,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ProcessorUtils {
+public final class ProcessorUtils {
 
     public static AnnotationMirror getScope(AnnotationProcessorContext context, Element element) {
         List<AnnotationMirror> scopes = getAnnotationsExtends(context, element, Scope.class);

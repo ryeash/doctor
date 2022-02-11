@@ -1,6 +1,7 @@
 module doctor.reactor.http {
     requires static java.compiler;
     requires doctor.core;
+    requires doctor.runtime;
     requires jakarta.inject;
 
     requires io.netty.common;

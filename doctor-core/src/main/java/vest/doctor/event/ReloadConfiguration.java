@@ -5,5 +5,5 @@ import vest.doctor.ConfigurationFacade;
 /**
  * An event that can be sent to trigger a {@link ConfigurationFacade#reload()}.
  */
-public final class ReloadConfiguration {
+public record ReloadConfiguration() {
 }

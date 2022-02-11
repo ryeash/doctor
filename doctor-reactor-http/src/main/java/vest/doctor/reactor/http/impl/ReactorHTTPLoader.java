@@ -7,6 +7,7 @@ import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
+import jakarta.inject.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.scheduler.Scheduler;
@@ -42,6 +43,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
 
 public class ReactorHTTPLoader implements ApplicationLoader {
@@ -71,19 +74,14 @@ public class ReactorHTTPLoader implements ApplicationLoader {
         writers.add(jacksonInterchange);
         writers.sort(Prioritized.COMPARATOR);
         BodyInterchange bodyInterchange = new BodyInterchange(readers, writers);
-        providerRegistry.register(AdHocProvider.createDefault(bodyInterchange));
+        providerRegistry.register(AdHocProvider.createPrimary(bodyInterchange));
+
+        registerSchedulers(providerRegistry, configuration);
 
         CompositeExceptionHandler compositeExceptionHandler = new CompositeExceptionHandler();
         providerRegistry.getInstances(ExceptionHandler.class)
                 .forEach(compositeExceptionHandler::addHandler);
-        providerRegistry.register(AdHocProvider.createDefault(compositeExceptionHandler));
-
-        Scheduler scheduler = Schedulers.newBoundedElastic(configuration.getWorkerThreads(), configuration.getWorkerThreads() * 2,
-                new CustomThreadFactory(true,
-                        configuration.getWorkerThreadFormat(),
-                        LoggingUncaughtExceptionHandler.INSTANCE,
-                        getClass().getClassLoader()), 60);
-        providerRegistry.register(new AdHocProvider<>(Scheduler.class, scheduler, RunOn.DEFAULT_SCHEDULER, List.of(Scheduler.class)));
+        providerRegistry.register(AdHocProvider.createPrimary(compositeExceptionHandler));
 
         NioEventLoopGroup bossGroup = new NioEventLoopGroup(configuration.getTcpManagementThreads(),
                 new CustomThreadFactory(false,
@@ -180,9 +178,6 @@ public class ReactorHTTPLoader implements ApplicationLoader {
 
         conf.setTcpManagementThreads(httpConf.get("tcp.threads", 1, Integer::valueOf));
         conf.setTcpThreadFormat(httpConf.get("tcp.threadFormat", "netty-tcp-%d"));
-        conf.setWorkerThreads(httpConf.get("worker.threads", 16, Integer::valueOf));
-        conf.setWorkerThreadFormat(httpConf.get("worker.threadFormat", "netty-worker-%d"));
-
         conf.setProtocols(httpConf.getList("protocol", List.of(HttpProtocol.HTTP11), HttpProtocol::valueOf));
 
         try {
@@ -212,6 +207,41 @@ public class ReactorHTTPLoader implements ApplicationLoader {
         conf.setMinGzipSize(httpConf.get("minGzipSize", 812, Integer::valueOf));
         conf.setRouterPrefix(httpConf.get("routePrefix", ""));
         return conf;
+    }
+
+    private void registerSchedulers(ProviderRegistry providerRegistry, HttpServerConfiguration configuration) {
+        Set<String> schedulerNames = providerRegistry.configuration().uniquePropertyGroups("doctor.reactor.schedulers.");
+        schedulerNames.add(RunOn.DEFAULT_SCHEDULER);
+        int defaultParallelism = Math.max(Runtime.getRuntime().availableProcessors() * 2, 8);
+        for (String name : schedulerNames) {
+            ConfigurationFacade subsection = providerRegistry.configuration().subsection("doctor.reactor.schedulers." + name + ".");
+            String type = subsection.get("type", "fixed");
+            Scheduler s = switch (type.toLowerCase()) {
+                case "fixed" -> Schedulers.newParallel(
+                        subsection.get("maxThreads", defaultParallelism, Integer::parseInt),
+                        buildThreadFactory(providerRegistry, name, subsection));
+                case "elastic" -> Schedulers.newBoundedElastic(
+                        subsection.get("maxThreads", defaultParallelism, Integer::parseInt),
+                        subsection.get("queuedTaskCap", 256, Integer::parseInt),
+                        buildThreadFactory(providerRegistry, name, subsection),
+                        subsection.get("ttlSeconds", 60, Integer::parseInt));
+                case "single" -> Schedulers.newSingle(buildThreadFactory(providerRegistry, name, subsection));
+                default -> throw new IllegalArgumentException("unknown scheduler type " + type + " for scheduler named: " + name);
+            };
+            providerRegistry.register(new AdHocProvider<>(Scheduler.class, s, name, List.of(Scheduler.class)));
+        }
+    }
+
+    private ThreadFactory buildThreadFactory(ProviderRegistry providerRegistry, String name, ConfigurationFacade subsection) {
+        String uncaughtExceptionHandlerQualifier = subsection.get("uncaughtExceptionHandler");
+        Thread.UncaughtExceptionHandler uncaughtExceptionHandler = providerRegistry.getProviderOpt(Thread.UncaughtExceptionHandler.class, uncaughtExceptionHandlerQualifier)
+                .map(Provider::get)
+                .orElse(vest.doctor.runtime.LoggingUncaughtExceptionHandler.INSTANCE);
+        return new CustomThreadFactory(
+                subsection.get("daemonize", true, Boolean::valueOf),
+                subsection.get("nameFormat", name + "-%d"),
+                uncaughtExceptionHandler,
+                null);
     }
 
     @Override

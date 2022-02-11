@@ -193,7 +193,7 @@ public class ReactorTest extends AbstractTestAppTest {
                 .post("/root/multipart")
                 .then()
                 .statusCode(200)
-                .body(containsString("doctor.reactor.http"));
+                .body(containsString("doctor.reactor {"));
     }
 
     @Test
