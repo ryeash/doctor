@@ -60,17 +60,17 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
 
     private Flux<?> internalRead(RequestContext ctx, TypeInfo typeInfo) {
         JavaType javaType = jacksonType(objectMapper, typeInfo);
-
-        AsyncParser<?> parser = parserFactories.stream()
-                .map(f -> f.build(ctx, javaType))
-                .findFirst()
-                .orElseThrow(() -> new UnsupportedOperationException("no async parser can handle this type: " + typeInfo));
-
-        return ctx.request()
-                .body()
-                .asByteBuffer()
-                .flatMapIterable(new AsyncTokenizer(objectMapper))
-                .handle(parser);
+        for (AsyncParserFactory parserFactory : parserFactories) {
+            AsyncParser<?> parser = parserFactory.build(ctx, javaType);
+            if (parser != null) {
+                return ctx.request()
+                        .body()
+                        .asByteBuffer()
+                        .flatMapIterable(new AsyncTokenizer(objectMapper))
+                        .handle(parser);
+            }
+        }
+        throw new UnsupportedOperationException("no async parser can handle this type: " + typeInfo);
     }
 
     @Override

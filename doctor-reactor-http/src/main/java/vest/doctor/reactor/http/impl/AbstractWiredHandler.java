@@ -1,6 +1,8 @@
 package vest.doctor.reactor.http.impl;
 
 import org.reactivestreams.Publisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -13,6 +15,7 @@ import vest.doctor.reactor.http.Filter;
 import vest.doctor.reactor.http.Handler;
 import vest.doctor.reactor.http.HttpResponse;
 import vest.doctor.reactor.http.RequestContext;
+import vest.doctor.reactor.http.ResponseBody;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -20,6 +23,7 @@ import java.util.List;
 
 public abstract class AbstractWiredHandler implements Handler {
 
+    private static final Logger log = LoggerFactory.getLogger(AbstractWiredHandler.class);
     protected static final String FILTER_ITERATOR = "doctor.reactor.http.filterIterator";
     protected final ProviderRegistry providerRegistry;
     protected final List<Filter> filters;
@@ -46,7 +50,7 @@ public abstract class AbstractWiredHandler implements Handler {
         return Flux.just(requestContext)
                 .subscribeOn(workerScheduler)
                 .switchMap(this::doNextFilter)
-                .onErrorResume(error -> exceptionHandler.handle(requestContext, error))
+                .onErrorResume(error -> handleError(requestContext, error))
                 .switchMap(HttpResponse::send);
     }
 
@@ -65,6 +69,15 @@ public abstract class AbstractWiredHandler implements Handler {
             return bodyInterchange.write(requestContext, responseType(), result);
         } catch (Throwable t) {
             return Mono.error(t);
+        }
+    }
+
+    private Publisher<HttpResponse> handleError(RequestContext requestContext, Throwable error) {
+        try {
+            return exceptionHandler.handle(requestContext, error);
+        } catch (Throwable t) {
+            log.error("error thrown by error handler", t);
+            return Mono.just(requestContext.response().status(500).body(ResponseBody.empty()));
         }
     }
 }

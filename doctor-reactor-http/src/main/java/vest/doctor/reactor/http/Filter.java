@@ -15,7 +15,7 @@ public interface Filter extends Prioritized {
      *
      * @param requestContext the request context
      * @param chain          the next step in the filter chain
-     * @return the response - possibly with new chained actions attached
+     * @return the response publisher
      */
     Publisher<HttpResponse> filter(RequestContext requestContext, FilterChain chain) throws Exception;
 }

@@ -15,6 +15,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.netty.DisposableServer;
 import reactor.netty.NettyPipeline;
 import reactor.netty.http.HttpProtocol;
+import reactor.netty.http.server.HttpRouteHandlerMetadata;
 import reactor.netty.http.server.HttpServer;
 import vest.doctor.AdHocProvider;
 import vest.doctor.ApplicationLoader;
@@ -39,6 +40,7 @@ import vest.doctor.reactor.http.jackson.JacksonInterchange;
 
 import java.io.File;
 import java.net.InetSocketAddress;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -76,7 +78,7 @@ public class ReactorHTTPLoader implements ApplicationLoader {
         BodyInterchange bodyInterchange = new BodyInterchange(readers, writers);
         providerRegistry.register(AdHocProvider.createPrimary(bodyInterchange));
 
-        registerSchedulers(providerRegistry, configuration);
+        registerSchedulers(providerRegistry);
 
         CompositeExceptionHandler compositeExceptionHandler = new CompositeExceptionHandler();
         providerRegistry.getInstances(ExceptionHandler.class)
@@ -110,7 +112,7 @@ public class ReactorHTTPLoader implements ApplicationLoader {
         HttpMaxContentEnforcer maxContentEnforcer = new HttpMaxContentEnforcer(configuration.getMaxContentLength());
 
         DisposableServer disposableServer = httpServer.runOn(bossGroup)
-                .cookieCodec(ServerCookieEncoder.LAX, ServerCookieDecoder.LAX)
+                .cookieCodec(ServerCookieEncoder.STRICT, ServerCookieDecoder.LAX)
                 .doOnConnection(c -> c.channel().pipeline().addAfter(NettyPipeline.HttpCodec, "maxLengthEnforcer", maxContentEnforcer))
                 .protocol(configuration.getProtocols().toArray(HttpProtocol[]::new))
                 .compress(configuration.getMinGzipSize())
@@ -151,6 +153,7 @@ public class ReactorHTTPLoader implements ApplicationLoader {
                                     routes.ws(finalPath, handler);
                                 }
                             });
+                    routes.comparator(RouteSorter.INSTANCE);
                 })
                 .bind()
                 .block();
@@ -209,7 +212,7 @@ public class ReactorHTTPLoader implements ApplicationLoader {
         return conf;
     }
 
-    private void registerSchedulers(ProviderRegistry providerRegistry, HttpServerConfiguration configuration) {
+    private void registerSchedulers(ProviderRegistry providerRegistry) {
         Set<String> schedulerNames = providerRegistry.configuration().uniquePropertyGroups("doctor.reactor.schedulers.");
         schedulerNames.add(RunOn.DEFAULT_SCHEDULER);
         int defaultParallelism = Math.max(Runtime.getRuntime().availableProcessors() * 2, 8);
@@ -247,5 +250,36 @@ public class ReactorHTTPLoader implements ApplicationLoader {
     @Override
     public int priority() {
         return 10000;
+    }
+
+    private static final class RouteSorter implements Comparator<HttpRouteHandlerMetadata> {
+
+        public static final RouteSorter INSTANCE = new RouteSorter();
+
+        @Override
+        public int compare(HttpRouteHandlerMetadata o1, HttpRouteHandlerMetadata o2) {
+            String path1 = Optional.ofNullable(o1.getPath()).orElse("");
+            String path2 = Optional.ofNullable(o2.getPath()).orElse("");
+            // compare specificity of the path
+            for (int i = 0; i < path1.length() && i < path2.length(); i++) {
+                int ca = path1.charAt(i);
+                int cb = path2.charAt(i);
+                if (ca != cb) {
+                    return Integer.compare(charSortValue(ca), charSortValue(cb));
+                }
+            }
+
+            // if all else fails, just do a length comparison
+            return Integer.compare(path1.length(), path2.length());
+        }
+
+        private static int charSortValue(int c) {
+            return switch (c) {
+                case '{' -> 10000;
+                case '*' -> 100000;
+                // default to sorting alphabetically
+                default -> c;
+            };
+        }
     }
 }

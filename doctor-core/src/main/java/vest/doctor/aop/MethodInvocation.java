@@ -64,7 +64,7 @@ public sealed interface MethodInvocation permits MethodInvocationImpl, AspectCoo
      * Invoke the method.
      * <p>
      * Note: unless the aspect needs to explicitly execute the method (which can short
-     * circuit aspect execution) the {@link #next()} method should be used instead of this one.
+     * circuit aspect execution), {@link #next()} should be used instead.
      *
      * @return the result of invocation
      * @throws Exception for any error encountered
