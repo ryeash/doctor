@@ -1,5 +1,7 @@
 package vest.doctor.event;
 
+import jakarta.inject.Provider;
+
 /**
  * Handle to the event system. Used to publish events to {@link EventConsumer EventConsumers},
  * and add new event consumers via {@link #addConsumer(Class, EventConsumer)}.
@@ -17,7 +19,15 @@ public interface EventBus {
      * Add a new event consumer that will be notified when type compatible events are published.
      *
      * @param eventType the event type the consumer listens for
-     * @param consumer  the action
+     * @param consumer  the event consumer
      */
     <T> void addConsumer(Class<T> eventType, EventConsumer<? super T> consumer);
+
+    /**
+     * Add a new event consumer that will be notified when type compatible events are published.
+     *
+     * @param eventType the event type the consumer listens for
+     * @param provider  the provider for the event consumer
+     */
+    <T> void addConsumer(Class<T> eventType, Provider<? extends EventConsumer<? super T>> provider);
 }

@@ -1,10 +1,5 @@
 package vest.doctor.processor;
 
-import jakarta.inject.Provider;
-import vest.doctor.ApplicationLoader;
-import vest.doctor.DoctorProvider;
-import vest.doctor.ProviderRegistry;
-import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.Constants;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
@@ -15,11 +10,8 @@ import vest.doctor.processing.CodeProcessingException;
 import vest.doctor.processing.ProviderDefinition;
 import vest.doctor.processing.ProviderDefinitionListener;
 
-import java.util.concurrent.ExecutorService;
-
 public class EventConsumersWriter implements ProviderDefinitionListener {
 
-    private ClassBuilder events;
     private MethodBuilder stage4;
 
     @Override
@@ -33,33 +25,16 @@ public class EventConsumersWriter implements ProviderDefinitionListener {
                     .map(method -> method.getParameters().get(0))
                     .map(param -> param.asType().toString() + ".class")
                     .orElseThrow(() -> new CodeProcessingException("couldn't determine event type for consumer: " + providerDefinition.providedType()));
-            stage4.line("bus.addConsumer(", type, ",", ProcessorUtils.getProviderCode(providerDefinition), ".get());");
-        }
-    }
-
-    @Override
-    public void finish(AnnotationProcessorContext context) {
-        if (events != null) {
-            events.writeClass(context.filer());
-            context.addServiceImplementation(ApplicationLoader.class, events.getFullyQualifiedClassName());
-            events = null;
+            stage4.line("bus.addConsumer(", type, ",", ProcessorUtils.getProviderCode(providerDefinition), ");");
         }
     }
 
     private void initBuilders(AnnotationProcessorContext context) {
-        if (events != null) {
+        if (stage4 != null) {
             return;
         }
-        String className = "EventSystemLoader__" + context.nextId();
-        events = new ClassBuilder()
-                .addImportClass(ProviderRegistry.class)
-                .addImportClass(DoctorProvider.class)
-                .addImportClass(Provider.class)
-                .addImportClass(EventBus.class)
-                .addImportClass(ExecutorService.class)
-                .addImplementsInterface(ApplicationLoader.class)
-                .setClassName(context.generatedPackage() + "." + className);
-        stage4 = events.newMethod("public void stage4(", ProviderRegistry.class, " {{providerRegistry}})");
+        stage4 = context.appLoaderStage4()
+                .addImportClass(EventBus.class);
         stage4.line("EventBus bus = " + Constants.PROVIDER_REGISTRY + ".getInstance(" + EventBus.class.getCanonicalName() + ".class, null);");
     }
 }

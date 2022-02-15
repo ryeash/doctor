@@ -24,14 +24,6 @@ public class StringModificationAspect implements Aspect {
                     .orElse(null);
             Assert.assertEquals(value, "toast");
         }
-        methodInvocation.getMethodParameters()
-                .stream()
-                .map(TypeInfo::annotationMetadata)
-                .map(am -> am.findOneMap(ParameterAnnotation.class, "value", AnnotationData::stringValue))
-                .findFirst()
-                .ifPresent(str -> {
-                    System.out.println("FOUND A PARAMETER ANNOTATION: " + str);
-                });
 
         if (result instanceof String str) {
             return (str + " altered");

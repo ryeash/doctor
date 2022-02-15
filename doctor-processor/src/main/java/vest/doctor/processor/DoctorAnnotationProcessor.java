@@ -254,6 +254,31 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
                 .add(fullyQualifiedClassName);
     }
 
+    @Override
+    public MethodBuilder appLoaderStage1() {
+        return appLoaderWriter.stage1();
+    }
+
+    @Override
+    public MethodBuilder appLoaderStage2() {
+        return appLoaderWriter.stage2();
+    }
+
+    @Override
+    public MethodBuilder appLoaderStage3() {
+        return appLoaderWriter.stage3();
+    }
+
+    @Override
+    public MethodBuilder appLoaderStage4() {
+        return appLoaderWriter.stage4();
+    }
+
+    @Override
+    public MethodBuilder appLoaderStage5() {
+        return appLoaderWriter.stage5();
+    }
+
     private void errorChecking(ProviderDefinition providerDefinition) {
         for (VariableElement variableElement : ProcessorUtils.allFields(this, providerDefinition.providedType())) {
             if (variableElement.getAnnotation(Inject.class) != null) {

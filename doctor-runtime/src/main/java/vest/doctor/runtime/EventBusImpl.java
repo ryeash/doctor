@@ -1,5 +1,6 @@
 package vest.doctor.runtime;
 
+import jakarta.inject.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vest.doctor.event.ErrorEvent;
@@ -21,16 +22,21 @@ final class EventBusImpl implements EventBus, EventConsumer<ErrorEvent> {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T> void addConsumer(Class<T> eventType, EventConsumer<? super T> consumer) {
-        consumers.add(new ConsumerHolder(eventType, (EventConsumer<Object>) consumer));
+        addConsumer(eventType, () -> consumer);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> void addConsumer(Class<T> eventType, Provider<? extends EventConsumer<? super T>> provider) {
+        consumers.add(new ConsumerHolder(eventType, (Provider<EventConsumer<Object>>) provider));
     }
 
     @Override
     public void publish(Object event) {
         for (ConsumerHolder eventConsumer : consumers) {
             if (eventConsumer.type.isInstance(event)) {
-                eventConsumer.consumer.accept(event);
+                eventConsumer.consumer.get().accept(event);
             }
         }
     }
@@ -50,6 +56,6 @@ final class EventBusImpl implements EventBus, EventConsumer<ErrorEvent> {
         log.error("error published to event bus", event.error());
     }
 
-    private record ConsumerHolder(Class<?> type, EventConsumer<Object> consumer) {
+    private record ConsumerHolder(Class<?> type, Provider<? extends EventConsumer<Object>> consumer) {
     }
 }

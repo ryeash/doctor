@@ -1,6 +1,7 @@
 package vest.doctor.processing;
 
 import vest.doctor.ProviderRegistry;
+import vest.doctor.codegen.MethodBuilder;
 
 import javax.annotation.processing.Filer;
 import javax.annotation.processing.Messager;
@@ -129,10 +130,11 @@ public interface AnnotationProcessorContext {
 
     /**
      * Get the package name to use for whatever is generated for the given {@link Element}.
+     *
      * @param element the element
      * @return a package name
      */
-   default String generatedPackageName(Element element){
+    default String generatedPackageName(Element element) {
         return processingEnvironment()
                 .getElementUtils()
                 .getPackageOf(element)
@@ -191,4 +193,34 @@ public interface AnnotationProcessorContext {
     }
 
     void addServiceImplementation(Class<?> serviceInterface, String fullyQualifiedClassName);
+
+    /**
+     * Get the {@link MethodBuilder} to append code to the
+     * primary {@link vest.doctor.ApplicationLoader#stage1(ProviderRegistry)} method.
+     */
+    MethodBuilder appLoaderStage1();
+
+    /**
+     * Get the {@link MethodBuilder} to append code to the
+     * primary {@link vest.doctor.ApplicationLoader#stage2(ProviderRegistry)} method.
+     */
+    MethodBuilder appLoaderStage2();
+
+    /**
+     * Get the {@link MethodBuilder} to append code to the
+     * primary {@link vest.doctor.ApplicationLoader#stage3(ProviderRegistry)} method.
+     */
+    MethodBuilder appLoaderStage3();
+
+    /**
+     * Get the {@link MethodBuilder} to append code to the
+     * primary {@link vest.doctor.ApplicationLoader#stage4(ProviderRegistry)} method.
+     */
+    MethodBuilder appLoaderStage4();
+
+    /**
+     * Get the {@link MethodBuilder} to append code to the
+     * primary {@link vest.doctor.ApplicationLoader#stage5(ProviderRegistry)} method.
+     */
+    MethodBuilder appLoaderStage5();
 }

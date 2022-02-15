@@ -11,13 +11,15 @@ import vest.doctor.processing.AnnotationProcessorContext;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 public class AppLoaderWriter {
 
     private final AnnotationProcessorContext context;
     private final ClassBuilder appLoader;
-    private final MethodBuilder stage3;
+    private final Map<Integer, MethodBuilder> stages = new ConcurrentSkipListMap<>();
     private boolean changed;
 
     public AppLoaderWriter(AnnotationProcessorContext context) {
@@ -33,11 +35,12 @@ public class AppLoaderWriter {
                 .addImportClass(Provider.class)
                 .addImportClass(DoctorProvider.class)
                 .addImportClass(PrimaryProviderWrapper.class)
+                .addImportClass("org.slf4j.Logger")
+                .addImportClass("org.slf4j.LoggerFactory")
                 .addClassAnnotation("@SuppressWarnings(\"unchecked\")")
-                .addField("private final List<", DoctorProvider.class, "<?>> eagerList = new LinkedList<>()");
-        this.stage3 = appLoader.newMethod("public void stage3(", ProviderRegistry.class, " {{providerRegistry}})");
-        MethodBuilder stage5 = appLoader.newMethod("public void stage5(", ProviderRegistry.class, " {{providerRegistry}})");
-        stage5.line("eagerList.stream().filter(Objects::nonNull).forEach(", Provider.class, "::get);");
+                .addField("private final List<", DoctorProvider.class, "<?>> eagerList = new LinkedList<>()")
+                .addField("private final static Logger log = LoggerFactory.getLogger(", className, ".class)");
+        stage5().line("eagerList.stream().filter(Objects::nonNull).forEach(", Provider.class, "::get);");
         changed = false;
     }
 
@@ -46,9 +49,30 @@ public class AppLoaderWriter {
         return appLoader;
     }
 
+    public MethodBuilder stage1() {
+        return stage(1);
+    }
+
+    public MethodBuilder stage2() {
+        return stage(2);
+    }
+
     public MethodBuilder stage3() {
+        return stage(3);
+    }
+
+    public MethodBuilder stage4() {
+        return stage(4);
+    }
+
+    public MethodBuilder stage5() {
+        return stage(5);
+    }
+
+    private MethodBuilder stage(int stageNumber) {
         changed = true;
-        return stage3;
+        return stages.computeIfAbsent(stageNumber, n -> classBuilder()
+                .newMethod("@Override public void stage", n, "(", ProviderRegistry.class, " {{providerRegistry}})"));
     }
 
     public void finish() {

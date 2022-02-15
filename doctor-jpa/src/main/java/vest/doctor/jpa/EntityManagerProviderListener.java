@@ -1,9 +1,7 @@
 package vest.doctor.jpa;
 
 import vest.doctor.AdHocProvider;
-import vest.doctor.ApplicationLoader;
 import vest.doctor.ProviderRegistry;
-import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
 import vest.doctor.processing.AnnotationProcessorContext;
@@ -32,12 +30,9 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
     public void process(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
         PersistenceContext[] persistenceContexts = providerDefinition.annotationSource().getAnnotationsByType(PersistenceContext.class);
         if (persistenceContexts != null && persistenceContexts.length > 0) {
-            ClassBuilder jpaAppLoader;
             MethodBuilder stage2;
-            String generatedClassName = context.generatedPackage() + ".JPALoader__" + context.nextId();
-            jpaAppLoader = new ClassBuilder()
-                    .setClassName(generatedClassName)
-                    .addImplementsInterface(ApplicationLoader.class)
+
+            stage2 = context.appLoaderStage2()
                     .addImportClass(EntityManager.class)
                     .addImportClass(EntityManagerFactory.class)
                     .addImportClass(Persistence.class)
@@ -47,10 +42,7 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
                     .addImportClass(Map.class)
                     .addImportClass(LinkedHashMap.class)
                     .addImportClass("org.slf4j.Logger")
-                    .addImportClass("org.slf4j.LoggerFactory")
-                    .addField("private final static Logger log = LoggerFactory.getLogger(", generatedClassName, ".class)");
-
-            stage2 = jpaAppLoader.newMethod("public void stage2(ProviderRegistry {{providerRegistry}})");
+                    .addImportClass("org.slf4j.LoggerFactory");
 
             for (PersistenceContext persistenceContext : persistenceContexts) {
                 String pcName = Objects.requireNonNull(persistenceContext.name(), "@PersistenceContext annotations must have a name defined that matches the persistence unit name in the xml");
@@ -82,8 +74,6 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
                 context.addSatisfiedDependency(EntityManagerFactory.class, '"' + pcName + '"');
                 context.addSatisfiedDependency(EntityManager.class, '"' + pcName + '"');
             }
-            jpaAppLoader.writeClass(context.filer());
-            context.addServiceImplementation(ApplicationLoader.class, jpaAppLoader.getFullyQualifiedClassName());
         }
     }
 }
