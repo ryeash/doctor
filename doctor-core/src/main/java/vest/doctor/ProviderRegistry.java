@@ -1,6 +1,7 @@
 package vest.doctor;
 
 import jakarta.inject.Provider;
+import vest.doctor.conf.ConfigurationFacade;
 
 import java.lang.annotation.Annotation;
 import java.util.List;

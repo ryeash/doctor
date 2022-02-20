@@ -19,11 +19,11 @@ import reactor.netty.http.server.HttpRouteHandlerMetadata;
 import reactor.netty.http.server.HttpServer;
 import vest.doctor.AdHocProvider;
 import vest.doctor.ApplicationLoader;
-import vest.doctor.ConfigurationFacade;
 import vest.doctor.CustomThreadFactory;
 import vest.doctor.DoctorProvider;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.conf.ConfigurationFacade;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.ServiceStarted;
 import vest.doctor.reactor.http.BodyReader;
@@ -40,12 +40,13 @@ import vest.doctor.reactor.http.jackson.JacksonInterchange;
 
 import java.io.File;
 import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
 
@@ -170,7 +171,7 @@ public class ReactorHTTPLoader implements ApplicationLoader {
     }
 
     private HttpServerConfiguration buildConf(ProviderRegistry providerRegistry) {
-        ConfigurationFacade httpConf = providerRegistry.configuration().subsection("doctor.reactor.http.");
+        ConfigurationFacade httpConf = providerRegistry.configuration().getSubConfiguration("doctor.reactor.http");
 
         HttpServerConfiguration conf = new HttpServerConfiguration();
 
@@ -213,11 +214,12 @@ public class ReactorHTTPLoader implements ApplicationLoader {
     }
 
     private void registerSchedulers(ProviderRegistry providerRegistry) {
-        Set<String> schedulerNames = providerRegistry.configuration().uniquePropertyGroups("doctor.reactor.schedulers.");
+        ConfigurationFacade schedulers = providerRegistry.configuration().getSubConfiguration("doctor.reactor.schedulers");
+        Collection<String> schedulerNames = new HashSet<>(schedulers.propertyNames());
         schedulerNames.add(RunOn.DEFAULT_SCHEDULER);
         int defaultParallelism = Math.max(Runtime.getRuntime().availableProcessors() * 2, 8);
         for (String name : schedulerNames) {
-            ConfigurationFacade subsection = providerRegistry.configuration().subsection("doctor.reactor.schedulers." + name + ".");
+            ConfigurationFacade subsection = schedulers.getSubConfiguration(name);
             String type = subsection.get("type", "fixed");
             Scheduler s = switch (type.toLowerCase()) {
                 case "fixed" -> Schedulers.newParallel(

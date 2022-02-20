@@ -1,14 +1,14 @@
 package demo.app;
 
-import vest.doctor.ConfigurationFacade;
-import vest.doctor.runtime.DefaultConfigurationFacade;
+import vest.doctor.conf.ConfigurationFacade;
+import vest.doctor.runtime.CompositeConfigurationFacade;
 
 import java.util.function.Supplier;
 
 public class CustomConfigBuilder implements Supplier<ConfigurationFacade> {
     @Override
     public ConfigurationFacade get() {
-        return DefaultConfigurationFacade.defaultConfigurationFacade()
+        return CompositeConfigurationFacade.defaultConfigurationFacade()
                 .addSource(new TCConfigReload());
     }
 }

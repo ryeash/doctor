@@ -1,6 +1,6 @@
 package vest.doctor.test;
 
-import vest.doctor.ConfigurationFacade;
+import vest.doctor.conf.ConfigurationFacade;
 import vest.doctor.runtime.Doctor;
 
 import java.lang.annotation.Documented;
@@ -32,7 +32,7 @@ public @interface TestConfiguration {
     String[] modules() default {};
 
     /**
-     * Set the configuration builder that will build the {@link vest.doctor.ConfigurationFacade}
+     * Set the configuration builder that will build the {@link vest.doctor.conf.ConfigurationFacade}
      * used with the doctor instance. The class must have a public zero-arg constructor.
      */
     Class<? extends Supplier<? extends ConfigurationFacade>> configurationBuilder() default DefaultConfigurationFacadeBuilder.class;

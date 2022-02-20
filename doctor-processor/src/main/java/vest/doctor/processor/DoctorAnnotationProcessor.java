@@ -1,7 +1,6 @@
 package vest.doctor.processor;
 
 import jakarta.inject.Inject;
-import vest.doctor.ConfigurationFacade;
 import vest.doctor.DoctorProvider;
 import vest.doctor.Eager;
 import vest.doctor.Primary;
@@ -11,6 +10,7 @@ import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
+import vest.doctor.conf.ConfigurationFacade;
 import vest.doctor.event.EventBus;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;

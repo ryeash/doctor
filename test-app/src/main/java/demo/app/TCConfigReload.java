@@ -1,8 +1,9 @@
 package demo.app;
 
-import vest.doctor.ConfigurationSource;
+import vest.doctor.conf.ConfigurationSource;
 
-import java.util.stream.Stream;
+import java.util.Collection;
+import java.util.List;
 
 public class TCConfigReload implements ConfigurationSource {
     public static boolean reloaded = false;
@@ -13,8 +14,23 @@ public class TCConfigReload implements ConfigurationSource {
     }
 
     @Override
-    public Stream<String> propertyNames() {
-        return Stream.empty();
+    public List<String> getList(String propertyName) {
+        return null;
+    }
+
+    @Override
+    public ConfigurationSource getSubConfiguration(String path) {
+        return null;
+    }
+
+    @Override
+    public List<ConfigurationSource> getSubConfigurations(String path) {
+        return null;
+    }
+
+    @Override
+    public Collection<String> propertyNames() {
+        return List.of();
     }
 
     @Override

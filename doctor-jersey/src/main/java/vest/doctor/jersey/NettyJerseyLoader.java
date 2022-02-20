@@ -7,9 +7,9 @@ import jakarta.ws.rs.Path;
 import org.glassfish.jersey.server.ResourceConfig;
 import vest.doctor.AdHocProvider;
 import vest.doctor.ApplicationLoader;
-import vest.doctor.ConfigurationFacade;
 import vest.doctor.DoctorProvider;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.conf.ConfigurationFacade;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.ServiceStarted;
 import vest.doctor.jersey.ext.DoctorCustomValueParamProvider;
@@ -21,7 +21,6 @@ import vest.doctor.netty.ServerBootstrapCustomizer;
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -36,9 +35,10 @@ public final class NettyJerseyLoader implements ApplicationLoader {
         }
 
         ResourceConfig config = new ResourceConfig();
-        for (Map.Entry<Object, Object> entry : providerRegistry.configuration().toProperties().entrySet()) {
-            config.property((String) entry.getKey(), entry.getValue());
-        }
+        // TODO
+//        for (Map.Entry<Object, Object> entry : providerRegistry.configuration().toProperties().entrySet()) {
+//            config.property((String) entry.getKey(), entry.getValue());
+//        }
 
         config.register(new DoctorCustomValueParamProvider(providerRegistry));
         config.register(new DoctorBinder(providerRegistry));
@@ -63,7 +63,7 @@ public final class NettyJerseyLoader implements ApplicationLoader {
 
     public HttpServerConfiguration init(ProviderRegistry providerRegistry) {
         HttpServerConfiguration httpConfig = new HttpServerConfiguration();
-        ConfigurationFacade cf = providerRegistry.configuration().subsection("doctor.jersey.http.");
+        ConfigurationFacade cf = providerRegistry.configuration().getSubConfiguration("doctor.jersey.http");
 
         httpConfig.setTcpManagementThreads(cf.get("tcp.threads", 1, Integer::valueOf));
         httpConfig.setTcpThreadFormat(cf.get("tcp.threadFormat", "netty-jersey-tcp-%d"));

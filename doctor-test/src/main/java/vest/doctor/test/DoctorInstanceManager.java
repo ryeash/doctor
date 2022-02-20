@@ -1,7 +1,7 @@
 package vest.doctor.test;
 
-import vest.doctor.ConfigurationFacade;
 import vest.doctor.InjectionException;
+import vest.doctor.conf.ConfigurationFacade;
 import vest.doctor.runtime.Doctor;
 import vest.doctor.runtime.StructuredConfigurationSource;
 

@@ -8,8 +8,8 @@ import jakarta.inject.Provider;
 import org.hibernate.AssertionFailure;
 import org.testng.annotations.Test;
 import vest.doctor.AnnotationData;
-import vest.doctor.ConfigurationFacade;
 import vest.doctor.DoctorProvider;
+import vest.doctor.conf.ConfigurationFacade;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.ReloadConfiguration;
 import vest.doctor.event.ReloadProviders;
@@ -74,9 +74,10 @@ public class DoctorTest extends AbstractTestAppTest {
         assertTrue(conf.get("boolean", Boolean::valueOf));
         assertEquals(conf.get("override.this"), "overridden");
 
-        List<String> dbProps = providerRegistry().configuration().subsection("db.")
-                .propertyNames().collect(Collectors.toList());
-        assertEquals(dbProps, List.of("url", "username", "password"));
+        ConfigurationFacade db = providerRegistry().configuration().getSubConfiguration("db");
+        assertNotNull(db.get("url"));
+        assertNotNull(db.get("username"));
+        assertNotNull(db.get("password"));
     }
 
     @Test

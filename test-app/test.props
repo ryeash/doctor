@@ -1,21 +1,28 @@
-number=42
-boolean=true
-string=value
+number:42
+boolean :true
+string = value
 
 override {
-    this=original
+    this: original
 }
 
-list=42, 12, 97
-set=one, two, two, three
+list [42, 12, 97]
+set [one, two, two, three]
 
 db {
-    url = "jdbc:hsqldb:mem:mymemdb"
-    username = unused
-    password = nothing
+    url: "jdbc:hsqldb:mem:mymemdb"
+    username: 'unused'
+    password: nothing
 }
 
-configurableInterval=9 ms
+configurableInterval: "9 ms"
+
+dot.nested.object {
+    a: b
+    c: d
+}
+
+valueAfterNesting: 1
 
 executors {
     scheduled {
@@ -29,3 +36,27 @@ executors {
         maxThreads: 32
     }
 }
+
+executors.fixed {
+    type: fixed
+    minThreads: 2
+    maxThreads: 32
+}
+
+array [a,b,c,
+d,
+e]
+
+arrayOfObjects [
+    {
+        field: value1
+    },
+    {
+        field: value2
+        array [
+            {
+                double: 2.2
+            }
+        ]
+    }
+]

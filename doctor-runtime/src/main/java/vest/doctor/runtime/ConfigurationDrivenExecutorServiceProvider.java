@@ -1,10 +1,10 @@
 package vest.doctor.runtime;
 
 import jakarta.inject.Provider;
-import vest.doctor.ConfigurationFacade;
 import vest.doctor.CustomThreadFactory;
 import vest.doctor.DoctorProvider;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.conf.ConfigurationFacade;
 
 import java.lang.annotation.Annotation;
 import java.util.List;
@@ -66,7 +66,7 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
 
     public ConfigurationDrivenExecutorServiceProvider(ProviderRegistry providerRegistry, String name, ThreadPoolType forceType) {
         this.providerRegistry = providerRegistry;
-        this.executorConfig = providerRegistry.configuration().subsection("executors." + name + ".");
+        this.executorConfig = providerRegistry.configuration().getSubConfiguration("executors." + name);
         this.name = name;
         if (forceType != null) {
             this.type = forceType;
