@@ -15,7 +15,7 @@ import java.util.List;
 public final class AdHocProvider<T> implements DoctorProvider<T> {
 
     @SuppressWarnings("unchecked")
-    public static <T> AdHocProvider<T> createDefault(T instance, Class<?>... additionalTypes) {
+    public static <T> AdHocProvider<T> createPrimary(T instance, Class<?>... additionalTypes) {
         List<Class<?>> allTypes = new LinkedList<>();
         allTypes.add(instance.getClass());
         Collections.addAll(allTypes, additionalTypes);

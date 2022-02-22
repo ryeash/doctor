@@ -23,9 +23,10 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <slf4j.version>1.7.33</slf4j.version>
+        <slf4j.version>1.7.36</slf4j.version>
         <maven.deploy.skip>true</maven.deploy.skip>
-        <netty.version>4.1.72.Final</netty.version>
+        <netty.version>4.1.74.Final</netty.version>
+        <jackson.version>2.13.1</jackson.version>
     </properties>
 
     <dependencyManagement>
@@ -33,6 +34,16 @@
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>jul-to-slf4j</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
                 <version>${slf4j.version}</version>
             </dependency>
             <dependency>
@@ -48,7 +59,7 @@
             <dependency>
                 <groupId>io.rest-assured</groupId>
                 <artifactId>rest-assured</artifactId>
-                <version>4.4.0</version>
+                <version>4.5.0</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>
@@ -119,22 +130,22 @@
                     </execution>
                 </executions>
             </plugin>
-            <!--            <plugin>-->
-            <!--                <groupId>org.apache.maven.plugins</groupId>-->
-            <!--                <artifactId>maven-javadoc-plugin</artifactId>-->
-            <!--                <version>3.1.1</version>-->
-            <!--                <executions>-->
-            <!--                    <execution>-->
-            <!--                        <id>attach-javadocs</id>-->
-            <!--                        <goals>-->
-            <!--                            <goal>jar</goal>-->
-            <!--                        </goals>-->
-            <!--                        <configuration>-->
-            <!--                            <additionalOptions>-Xdoclint:none</additionalOptions>-->
-            <!--                        </configuration>-->
-            <!--                    </execution>-->
-            <!--                </executions>-->
-            <!--            </plugin>-->
+            <!--<plugin>-->
+            <!--    <groupId>org.apache.maven.plugins</groupId>-->
+            <!--    <artifactId>maven-javadoc-plugin</artifactId>-->
+            <!--    <version>3.1.1</version>-->
+            <!--    <executions>-->
+            <!--        <execution>-->
+            <!--            <id>attach-javadocs</id>-->
+            <!--            <goals>-->
+            <!--                <goal>jar</goal>-->
+            <!--            </goals>-->
+            <!--            <configuration>-->
+            <!--                <additionalOptions>-Xdoclint:none</additionalOptions>-->
+            <!--            </configuration>-->
+            <!--        </execution>-->
+            <!--    </executions>-->
+            <!--</plugin>-->
         </plugins>
     </build>
 

@@ -1,6 +1,6 @@
 package vest.doctor.runtime;
 
-import vest.doctor.ConfigurationFacade;
+import vest.doctor.conf.ConfigurationFacade;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
@@ -24,16 +24,16 @@ public final class Main {
         String modules = a.option("modules", 'm');
         String properties = a.option("properties", 'p', "");
 
-        ConfigurationFacade facade = new DefaultConfigurationFacade()
+        ConfigurationFacade facade = new CompositeConfigurationFacade()
                 .addSource(new EnvironmentVariablesConfigurationSource())
                 .addSource(new SystemPropertiesConfigurationSource());
 
-        DefaultConfigurationFacade.split(properties.trim())
+        Utils.split(properties.trim(), ',')
                 .stream()
                 .map(FileLocation::new)
                 .map(StructuredConfigurationSource::new)
                 .forEach(facade::addSource);
-        Doctor doctor = new Doctor(facade, DefaultConfigurationFacade.split(modules), new ArgsLoader(a));
+        Doctor doctor = new Doctor(facade, Utils.split(modules, ','), new ArgsLoader(a));
         if (!doctorRef.compareAndSet(null, doctor)) {
             try (doctor) {
                 throw new IllegalStateException("the main method has already been called");

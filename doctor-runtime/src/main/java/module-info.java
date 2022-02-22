@@ -5,6 +5,8 @@ module doctor.runtime {
 
     requires jakarta.inject;
     requires org.slf4j;
+    requires com.fasterxml.jackson.dataformat.toml;
+    requires com.fasterxml.jackson.core;
 
     exports vest.doctor.runtime;
 }

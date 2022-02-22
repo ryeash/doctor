@@ -12,7 +12,6 @@
     <artifactId>doctor-reactor-http</artifactId>
 
     <properties>
-        <jackson.version>2.13.1</jackson.version>
         <maven.deploy.skip>false</maven.deploy.skip>
     </properties>
 

@@ -97,7 +97,7 @@ public class DefaultBodyReaderWriter implements BodyReader, BodyWriter {
         } else if (responseData instanceof Publisher<?> pub) {
             if (responseTypeInfo.matches(Publisher.class, Object.class)) {
                 if (SUPPORTED_TYPES.contains(responseTypeInfo.getParameterTypes().get(0).getRawType())) {
-                    return Flux.from(pub).map(o -> mapSupported(requestContext, responseTypeInfo, o));
+                    return Flux.from(pub).map(o -> mapSupported(requestContext, o));
                 }
             } else {
                 throw new UnsupportedOperationException("please correctly mark the return types for endpoint methods: " + requestContext);
@@ -125,7 +125,7 @@ public class DefaultBodyReaderWriter implements BodyReader, BodyWriter {
         return requestContext;
     }
 
-    private HttpResponse mapSupported(RequestContext requestContext, TypeInfo responseTypeInfo, Object responseData) {
+    private HttpResponse mapSupported(RequestContext requestContext, Object responseData) {
         if (responseData instanceof RequestContext ctx) {
             return ctx.response();
         } else if (responseData instanceof HttpResponse httpResponse) {

@@ -21,7 +21,7 @@ public @interface RunOn {
     String DEFAULT_SCHEDULER = "workerGroup";
 
     /**
-     * The qualifier of the provided {@link java.util.concurrent.ExecutorService} that will execute
+     * The qualifier of the provided {@link reactor.core.scheduler.Scheduler} that will execute
      * the endpoint method (or methods when marked at the class level).
      */
     String value() default DEFAULT_SCHEDULER;

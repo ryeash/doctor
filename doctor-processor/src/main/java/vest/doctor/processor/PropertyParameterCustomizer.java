@@ -28,7 +28,7 @@ public class PropertyParameterCustomizer implements ParameterLookupCustomizer {
             if (ProcessorUtils.isCompatibleWith(context, variableElement.asType(), Optional.class)) {
                 return "";
             } else {
-                return Objects.class.getCanonicalName() + ".requireNonNull(" + providerRegistryRef + ".configuration().get(\"" + property.value() + "\"), \"missing required property '" + property.value() + "'\");";
+                return Objects.class.getCanonicalName() + ".requireNonNull(" + PropertyCodeGen.getPropertyCode(context, variableElement, property.value(), variableElement.asType(), providerRegistryRef) + ", \"missing required property '" + property.value() + "'\");";
             }
         }
         return null;

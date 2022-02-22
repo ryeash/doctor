@@ -1,8 +1,9 @@
 package vest.doctor.runtime;
 
-import vest.doctor.ConfigurationSource;
+import vest.doctor.conf.ConfigurationSource;
 
-import java.util.stream.Stream;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Configuration source that gets properties from {@link System#getenv(String)}.
@@ -15,7 +16,32 @@ public class EnvironmentVariablesConfigurationSource implements ConfigurationSou
     }
 
     @Override
-    public Stream<String> propertyNames() {
-        return System.getenv().keySet().stream();
+    public List<String> getList(String propertyName) {
+        String s = get(propertyName);
+        if (s == null) {
+            return null;
+        } else {
+            return Utils.split(s, ',');
+        }
+    }
+
+    @Override
+    public ConfigurationSource getSubConfiguration(String path) {
+        return null;
+    }
+
+    @Override
+    public List<ConfigurationSource> getSubConfigurations(String path) {
+        return null;
+    }
+
+    @Override
+    public Collection<String> propertyNames() {
+        return System.getenv().keySet();
+    }
+
+    @Override
+    public void reload() {
+
     }
 }

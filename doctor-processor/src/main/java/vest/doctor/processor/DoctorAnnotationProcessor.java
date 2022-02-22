@@ -1,7 +1,6 @@
 package vest.doctor.processor;
 
 import jakarta.inject.Inject;
-import vest.doctor.ConfigurationFacade;
 import vest.doctor.DoctorProvider;
 import vest.doctor.Eager;
 import vest.doctor.Primary;
@@ -11,6 +10,7 @@ import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
+import vest.doctor.conf.ConfigurationFacade;
 import vest.doctor.event.EventBus;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
@@ -252,6 +252,31 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
     public void addServiceImplementation(Class<?> serviceInterface, String fullyQualifiedClassName) {
         serviceImplementations.computeIfAbsent(serviceInterface, v -> new HashSet<>())
                 .add(fullyQualifiedClassName);
+    }
+
+    @Override
+    public MethodBuilder appLoaderStage1() {
+        return appLoaderWriter.stage1();
+    }
+
+    @Override
+    public MethodBuilder appLoaderStage2() {
+        return appLoaderWriter.stage2();
+    }
+
+    @Override
+    public MethodBuilder appLoaderStage3() {
+        return appLoaderWriter.stage3();
+    }
+
+    @Override
+    public MethodBuilder appLoaderStage4() {
+        return appLoaderWriter.stage4();
+    }
+
+    @Override
+    public MethodBuilder appLoaderStage5() {
+        return appLoaderWriter.stage5();
     }
 
     private void errorChecking(ProviderDefinition providerDefinition) {

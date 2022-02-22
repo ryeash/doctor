@@ -28,6 +28,7 @@ import vest.doctor.reactor.http.Param.Query;
 import vest.doctor.reactor.http.Path;
 import vest.doctor.reactor.http.RequestContext;
 import vest.doctor.reactor.http.ResponseBody;
+import vest.doctor.reactor.http.RunOn;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -54,6 +55,7 @@ public class ReactorEndpoint {
 
     @GET
     @Path("/params/{path}")
+    @RunOn("background")
     public String params(@Param.Path String path,
                          @Query Integer size,
                          @Header("X-Param") String param,
@@ -68,7 +70,7 @@ public class ReactorEndpoint {
         Assert.assertNotNull(ctx);
         Assert.assertNotNull(request);
         Assert.assertNotNull(response);
-        System.out.println(ctx);
+        System.out.println(Thread.currentThread().getName() + "  " + ctx);
         return path + " " + size + " " + param + " " + cook + " " + bean + " " + thing + " " + thingProvider.get() + " " + attribute;
     }
 

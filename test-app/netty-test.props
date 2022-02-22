@@ -2,7 +2,22 @@ doctor.netty.http {
     bind: "localhost:61233"
 }
 
-doctor.reactor.http {
-    bind: "0.0.0.0:60222"
-    maxContentLength: 2048
+doctor.reactor {
+    http {
+        bind: "0.0.0.0:60222"
+        maxContentLength: 2048
+    }
+    schedulers {
+        workerGroup {
+            type: fixed
+            maxThreads: 32
+            nameFormat: netty-reactor-worker-%d
+        }
+        background {
+            type: elastic
+            maxThreads: 16
+            queuedTaskCap: 1024
+            nameFormat: background-%d
+        }
+    }
 }

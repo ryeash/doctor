@@ -6,9 +6,9 @@ import jakarta.inject.Named;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import org.testng.Assert;
-import vest.doctor.ConfigurationFacade;
 import vest.doctor.DoctorProvider;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.conf.ConfigurationFacade;
 
 import java.util.List;
 import java.util.stream.Stream;

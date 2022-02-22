@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 /**
  * Utility class used during annotation processing.
  */
-public class GenericInfo {
+public final class GenericInfo {
 
     public static Optional<TypeMirror> firstParameterizedType(TypeMirror type) {
         GenericInfo info = new GenericInfo(type);

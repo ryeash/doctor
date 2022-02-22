@@ -142,6 +142,7 @@ public record AnnotationDataImpl(Class<? extends Annotation> type,
         }
     }
 
+    @SuppressWarnings("unchecked")
     private <T> List<T> getListValueWithCheck(String attributeName, Class<T> check) {
         if (!values.containsKey(attributeName)) {
             throw new IllegalArgumentException("unknown annotation attribute \"" + attributeName + "\" for annotation type " + type);

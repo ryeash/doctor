@@ -16,9 +16,7 @@ public final class ReloadableScopeProvider<T> extends DoctorProviderWrapper<T> {
 
     public ReloadableScopeProvider(DoctorProvider<T> delegate, ProviderRegistry providerRegistry) {
         super(delegate);
-        providerRegistry.getProvider(EventBus.class)
-                .get()
-                .addConsumer(ReloadProviders.class, this::clearValue);
+        providerRegistry.getInstance(EventBus.class).addConsumer(ReloadProviders.class, this::clearValue);
         this.eventBus = providerRegistry.getInstance(EventBus.class);
     }
 

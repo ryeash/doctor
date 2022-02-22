@@ -7,6 +7,7 @@ import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
+import jakarta.inject.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.scheduler.Scheduler;
@@ -14,14 +15,15 @@ import reactor.core.scheduler.Schedulers;
 import reactor.netty.DisposableServer;
 import reactor.netty.NettyPipeline;
 import reactor.netty.http.HttpProtocol;
+import reactor.netty.http.server.HttpRouteHandlerMetadata;
 import reactor.netty.http.server.HttpServer;
 import vest.doctor.AdHocProvider;
 import vest.doctor.ApplicationLoader;
-import vest.doctor.ConfigurationFacade;
 import vest.doctor.CustomThreadFactory;
 import vest.doctor.DoctorProvider;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.conf.ConfigurationFacade;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.ServiceStarted;
 import vest.doctor.reactor.http.BodyReader;
@@ -38,10 +40,14 @@ import vest.doctor.reactor.http.jackson.JacksonInterchange;
 
 import java.io.File;
 import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
 
 public class ReactorHTTPLoader implements ApplicationLoader {
@@ -71,19 +77,14 @@ public class ReactorHTTPLoader implements ApplicationLoader {
         writers.add(jacksonInterchange);
         writers.sort(Prioritized.COMPARATOR);
         BodyInterchange bodyInterchange = new BodyInterchange(readers, writers);
-        providerRegistry.register(AdHocProvider.createDefault(bodyInterchange));
+        providerRegistry.register(AdHocProvider.createPrimary(bodyInterchange));
+
+        registerSchedulers(providerRegistry);
 
         CompositeExceptionHandler compositeExceptionHandler = new CompositeExceptionHandler();
         providerRegistry.getInstances(ExceptionHandler.class)
                 .forEach(compositeExceptionHandler::addHandler);
-        providerRegistry.register(AdHocProvider.createDefault(compositeExceptionHandler));
-
-        Scheduler scheduler = Schedulers.newBoundedElastic(configuration.getWorkerThreads(), configuration.getWorkerThreads() * 2,
-                new CustomThreadFactory(true,
-                        configuration.getWorkerThreadFormat(),
-                        LoggingUncaughtExceptionHandler.INSTANCE,
-                        getClass().getClassLoader()), 60);
-        providerRegistry.register(new AdHocProvider<>(Scheduler.class, scheduler, RunOn.DEFAULT_SCHEDULER, List.of(Scheduler.class)));
+        providerRegistry.register(AdHocProvider.createPrimary(compositeExceptionHandler));
 
         NioEventLoopGroup bossGroup = new NioEventLoopGroup(configuration.getTcpManagementThreads(),
                 new CustomThreadFactory(false,
@@ -112,7 +113,7 @@ public class ReactorHTTPLoader implements ApplicationLoader {
         HttpMaxContentEnforcer maxContentEnforcer = new HttpMaxContentEnforcer(configuration.getMaxContentLength());
 
         DisposableServer disposableServer = httpServer.runOn(bossGroup)
-                .cookieCodec(ServerCookieEncoder.LAX, ServerCookieDecoder.LAX)
+                .cookieCodec(ServerCookieEncoder.STRICT, ServerCookieDecoder.LAX)
                 .doOnConnection(c -> c.channel().pipeline().addAfter(NettyPipeline.HttpCodec, "maxLengthEnforcer", maxContentEnforcer))
                 .protocol(configuration.getProtocols().toArray(HttpProtocol[]::new))
                 .compress(configuration.getMinGzipSize())
@@ -153,6 +154,7 @@ public class ReactorHTTPLoader implements ApplicationLoader {
                                     routes.ws(finalPath, handler);
                                 }
                             });
+                    routes.comparator(RouteSorter.INSTANCE);
                 })
                 .bind()
                 .block();
@@ -169,7 +171,7 @@ public class ReactorHTTPLoader implements ApplicationLoader {
     }
 
     private HttpServerConfiguration buildConf(ProviderRegistry providerRegistry) {
-        ConfigurationFacade httpConf = providerRegistry.configuration().subsection("doctor.reactor.http.");
+        ConfigurationFacade httpConf = providerRegistry.configuration().getSubConfiguration("doctor.reactor.http");
 
         HttpServerConfiguration conf = new HttpServerConfiguration();
 
@@ -180,9 +182,6 @@ public class ReactorHTTPLoader implements ApplicationLoader {
 
         conf.setTcpManagementThreads(httpConf.get("tcp.threads", 1, Integer::valueOf));
         conf.setTcpThreadFormat(httpConf.get("tcp.threadFormat", "netty-tcp-%d"));
-        conf.setWorkerThreads(httpConf.get("worker.threads", 16, Integer::valueOf));
-        conf.setWorkerThreadFormat(httpConf.get("worker.threadFormat", "netty-worker-%d"));
-
         conf.setProtocols(httpConf.getList("protocol", List.of(HttpProtocol.HTTP11), HttpProtocol::valueOf));
 
         try {
@@ -214,8 +213,75 @@ public class ReactorHTTPLoader implements ApplicationLoader {
         return conf;
     }
 
+    private void registerSchedulers(ProviderRegistry providerRegistry) {
+        ConfigurationFacade schedulers = providerRegistry.configuration().getSubConfiguration("doctor.reactor.schedulers");
+        Collection<String> schedulerNames = new HashSet<>(schedulers.propertyNames());
+        schedulerNames.add(RunOn.DEFAULT_SCHEDULER);
+        int defaultParallelism = Math.max(Runtime.getRuntime().availableProcessors() * 2, 8);
+        for (String name : schedulerNames) {
+            ConfigurationFacade subsection = schedulers.getSubConfiguration(name);
+            String type = subsection.get("type", "fixed");
+            Scheduler s = switch (type.toLowerCase()) {
+                case "fixed" -> Schedulers.newParallel(
+                        subsection.get("maxThreads", defaultParallelism, Integer::parseInt),
+                        buildThreadFactory(providerRegistry, name, subsection));
+                case "elastic" -> Schedulers.newBoundedElastic(
+                        subsection.get("maxThreads", defaultParallelism, Integer::parseInt),
+                        subsection.get("queuedTaskCap", 256, Integer::parseInt),
+                        buildThreadFactory(providerRegistry, name, subsection),
+                        subsection.get("ttlSeconds", 60, Integer::parseInt));
+                case "single" -> Schedulers.newSingle(buildThreadFactory(providerRegistry, name, subsection));
+                default -> throw new IllegalArgumentException("unknown scheduler type " + type + " for scheduler named: " + name);
+            };
+            providerRegistry.register(new AdHocProvider<>(Scheduler.class, s, name, List.of(Scheduler.class)));
+        }
+    }
+
+    private ThreadFactory buildThreadFactory(ProviderRegistry providerRegistry, String name, ConfigurationFacade subsection) {
+        String uncaughtExceptionHandlerQualifier = subsection.get("uncaughtExceptionHandler");
+        Thread.UncaughtExceptionHandler uncaughtExceptionHandler = providerRegistry.getProviderOpt(Thread.UncaughtExceptionHandler.class, uncaughtExceptionHandlerQualifier)
+                .map(Provider::get)
+                .orElse(vest.doctor.runtime.LoggingUncaughtExceptionHandler.INSTANCE);
+        return new CustomThreadFactory(
+                subsection.get("daemonize", true, Boolean::valueOf),
+                subsection.get("nameFormat", name + "-%d"),
+                uncaughtExceptionHandler,
+                null);
+    }
+
     @Override
     public int priority() {
         return 10000;
+    }
+
+    private static final class RouteSorter implements Comparator<HttpRouteHandlerMetadata> {
+
+        public static final RouteSorter INSTANCE = new RouteSorter();
+
+        @Override
+        public int compare(HttpRouteHandlerMetadata o1, HttpRouteHandlerMetadata o2) {
+            String path1 = Optional.ofNullable(o1.getPath()).orElse("");
+            String path2 = Optional.ofNullable(o2.getPath()).orElse("");
+            // compare specificity of the path
+            for (int i = 0; i < path1.length() && i < path2.length(); i++) {
+                int ca = path1.charAt(i);
+                int cb = path2.charAt(i);
+                if (ca != cb) {
+                    return Integer.compare(charSortValue(ca), charSortValue(cb));
+                }
+            }
+
+            // if all else fails, just do a length comparison
+            return Integer.compare(path1.length(), path2.length());
+        }
+
+        private static int charSortValue(int c) {
+            return switch (c) {
+                case '{' -> 10000;
+                case '*' -> 100000;
+                // default to sorting alphabetically
+                default -> c;
+            };
+        }
     }
 }

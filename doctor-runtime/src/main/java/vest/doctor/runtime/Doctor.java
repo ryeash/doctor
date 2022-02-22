@@ -5,10 +5,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vest.doctor.AdHocProvider;
 import vest.doctor.ApplicationLoader;
-import vest.doctor.ConfigurationFacade;
 import vest.doctor.DoctorProvider;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.conf.ConfigurationFacade;
 import vest.doctor.event.ApplicationShutdown;
 import vest.doctor.event.ApplicationStarted;
 import vest.doctor.event.EventBus;
@@ -47,7 +47,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
      * @return a new Doctor instance
      */
     public static Doctor load() {
-        return new Doctor(DefaultConfigurationFacade.defaultConfigurationFacade(), Collections.emptyList());
+        return new Doctor(CompositeConfigurationFacade.defaultConfigurationFacade(), Collections.emptyList());
     }
 
     /**
@@ -57,7 +57,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
      * @return a new Doctor instance
      */
     public static Doctor load(List<String> modules) {
-        return new Doctor(DefaultConfigurationFacade.defaultConfigurationFacade(), modules);
+        return new Doctor(CompositeConfigurationFacade.defaultConfigurationFacade(), modules);
     }
 
     /**
@@ -67,7 +67,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
      * @return a new Doctor instance
      */
     public static Doctor load(String... modules) {
-        return new Doctor(DefaultConfigurationFacade.defaultConfigurationFacade(), List.of(modules));
+        return new Doctor(CompositeConfigurationFacade.defaultConfigurationFacade(), List.of(modules));
     }
 
     /**

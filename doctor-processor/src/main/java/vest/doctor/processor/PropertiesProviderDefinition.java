@@ -1,12 +1,12 @@
 package vest.doctor.processor;
 
-import vest.doctor.ConfigurationFacade;
 import vest.doctor.Properties;
 import vest.doctor.Property;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
+import vest.doctor.conf.ConfigurationFacade;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
 
@@ -83,8 +83,9 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
                         Property property = method.getAnnotation(Property.class);
                         if (property != null) {
                             String propertyName = propertyPrefix + property.value();
-                            b.line(Objects.class, ".requireNonNull({{providerRegistry}}.configuration().get({{providerRegistry}}.resolvePlaceholders(\"",
-                                    propertyName, "\")), \"missing required property '", propertyName, "'\");");
+                            b.line(Objects.class, ".requireNonNull(",
+                                    PropertyCodeGen.getPropertyCode(context, method, propertyName, method.getReturnType(), "providerRegistry"),
+                                    ", \"missing required property '", propertyName, "'\");");
                         }
                     }
                 }
