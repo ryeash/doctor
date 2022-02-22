@@ -35,10 +35,6 @@ public final class NettyJerseyLoader implements ApplicationLoader {
         }
 
         ResourceConfig config = new ResourceConfig();
-        // TODO
-//        for (Map.Entry<Object, Object> entry : providerRegistry.configuration().toProperties().entrySet()) {
-//            config.property((String) entry.getKey(), entry.getValue());
-//        }
 
         config.register(new DoctorCustomValueParamProvider(providerRegistry));
         config.register(new DoctorBinder(providerRegistry));

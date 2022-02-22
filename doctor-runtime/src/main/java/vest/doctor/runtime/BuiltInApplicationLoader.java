@@ -19,8 +19,6 @@ public class BuiltInApplicationLoader implements ApplicationLoader {
     @Override
     public void stage1(ProviderRegistry providerRegistry) {
         providerRegistry.register(new AdHocProvider<>(ConfigurationFacade.class, providerRegistry.configuration(), null));
-        // TODO
-//        providerRegistry.register(new AdHocProvider<>(Properties.class, providerRegistry.configuration().toProperties(), null));
 
         Map<String, ConfigurationDrivenExecutorServiceProvider.ThreadPoolType> executors = new HashMap<>();
         providerRegistry.configuration()
