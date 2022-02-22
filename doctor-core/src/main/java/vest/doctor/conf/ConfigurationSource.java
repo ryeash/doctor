@@ -33,7 +33,7 @@ public interface ConfigurationSource {
     ConfigurationSource getSubConfiguration(String path);
 
     /**
-     * Get a list of nested configuration sources.
+     * Get a list of nested configuration sources, i.e. an array of nested configuration maps.
      *
      * @param path the path to the configuration array
      * @return the sub config list or null if this source does not have a property map under the given name

@@ -36,7 +36,6 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>jakarta.annotation</groupId>
@@ -62,7 +61,7 @@
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
-            <version>5.0.0</version>
+            <version>5.0.1</version>
         </dependency>
         <dependency>
             <groupId>org.hsqldb</groupId>
@@ -82,7 +81,7 @@
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
-            <scope>test</scope>
+            <version>4.5.0</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty.websocket</groupId>

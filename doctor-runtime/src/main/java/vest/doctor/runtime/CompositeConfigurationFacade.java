@@ -5,6 +5,7 @@ import vest.doctor.conf.ConfigurationSource;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -120,7 +121,7 @@ public class CompositeConfigurationFacade implements ConfigurationFacade {
                 return list.stream()
                         .map(this::resolvePlaceholders)
                         .map(converter)
-                        .collect(Collectors.toSet());
+                        .collect(Collectors.toCollection(LinkedHashSet::new));
             }
         }
         return defaultValue;
@@ -148,6 +149,9 @@ public class CompositeConfigurationFacade implements ConfigurationFacade {
     public String resolvePlaceholders(String value) {
         if (value == null || value.isEmpty()) {
             return null;
+        }
+        if (!value.contains(MACRO_OPEN)) {
+            return value;
         }
         StringBuilder sb = new StringBuilder();
 

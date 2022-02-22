@@ -1,13 +1,15 @@
 package vest.doctor.aop;
 
 /**
- * Marker class for all aspect interfaces.
+ * An aspect modifies invocations of methods to add or modify behavior; generally for crosscutting
+ * functionality that should be applied to many methods, e.g. logging and tracing.
+ *
  * <br><br>
  * In general an aspect can be broken into three steps - before, execution, and after:
  * <code><pre>
  * {@literal @}Singleton
  * public class DemoAspect implements Aspect {
- *  public <T> T execute(MethodInvocation methodInvocation) {
+ *  public Object execute(MethodInvocation methodInvocation) {
  *      // before
  *      System.out.println("this is happening before execution");
  *
