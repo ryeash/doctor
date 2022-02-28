@@ -7,7 +7,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotates endpoint parameters to indicate from which part of the HTTP request to get the value.
+ * Meta annotation that marks an endpoint parameter annotation.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

@@ -12,6 +12,7 @@ import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeClass;
 import vest.doctor.InjectionException;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.conf.ConfigurationFacade;
 import vest.doctor.runtime.Doctor;
 
 import java.lang.annotation.Annotation;
@@ -68,6 +69,13 @@ public abstract class AbstractDoctorTest extends Assert {
      */
     public ProviderRegistry providerRegistry() {
         return Objects.requireNonNull(doctor, "this test was not properly initialized");
+    }
+
+    /**
+     * Alias for <code>providerRegistry().configuration()</code>
+     */
+    public ConfigurationFacade configuration() {
+        return providerRegistry().configuration();
     }
 
     private static void reflectiveInject(ProviderRegistry providerRegistry, Object instance) {

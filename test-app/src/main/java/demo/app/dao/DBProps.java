@@ -15,4 +15,7 @@ public interface DBProps {
 
     @Property("password")
     String password();
+
+    @Property("timeout")
+    int timeout();
 }

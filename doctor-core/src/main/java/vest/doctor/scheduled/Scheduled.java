@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
  * Marks a method to be automatically scheduled with the default {@link java.util.concurrent.ScheduledExecutorService}
  * provided by the {@link ProviderRegistry}.
  * <p>
- * One and only one of {@link #interval()} or {@link #cron()} may be set.
+ * Only one of {@link #interval()} or {@link #cron()} may be set.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

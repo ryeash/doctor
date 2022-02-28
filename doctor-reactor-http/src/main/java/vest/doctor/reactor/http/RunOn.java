@@ -7,8 +7,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Set the {@link reactor.core.scheduler.Scheduler} to use to run the endpoint method (or methods if marked at the class level).
- * The scheduler must be provided via the {@link vest.doctor.ProviderRegistry}.
+ * Set the name (@Named qualifier) of the {@link reactor.core.scheduler.Scheduler} to use to run the endpoint method
+ * (or methods if marked at the class level). The scheduler must be provided via the {@link vest.doctor.ProviderRegistry}.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

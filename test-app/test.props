@@ -13,6 +13,7 @@ db {
     url: "jdbc:hsqldb:mem:mymemdb"
     username: 'unused'
     password: nothing
+    timeout: 12
 }
 
 configurableInterval: "9 ms"
