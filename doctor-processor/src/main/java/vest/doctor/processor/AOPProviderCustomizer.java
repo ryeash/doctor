@@ -119,7 +119,7 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
         constructor.line("this.delegate = delegate;");
 
         Map<String, String> initializedAspects = new HashMap<>();
-        ProcessorUtils.allUniqueMethods(context, providerDefinition.providedType())
+        ProcessorUtils.allMethods(context, providerDefinition.providedType())
                 .stream()
                 .filter(method -> {
                     // nothing we can do for final, private, or static methods
@@ -269,7 +269,7 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
             AtomicInteger i = new AtomicInteger(0);
             arguments = method.getParameters()
                     .stream()
-                    .map(p -> "new ArgValueImpl(" + metadataName + ".methodParameters().get(" + i.getAndIncrement() + "),\"" + ProcessorUtils.escapeStringForCode(p.getSimpleName().toString()) + "\"," + p.getSimpleName() + ")")
+                    .map(p -> "new ArgValueImpl(" + metadataName + ".methodParameters().get(" + i.getAndIncrement() + ")," + ProcessorUtils.escapeAndQuoteStringForCode(p.getSimpleName().toString()) + "," + p.getSimpleName() + ")")
                     .collect(Collectors.joining(", ", "List.of(", ")"));
         }
         StringBuilder invoker = new StringBuilder();

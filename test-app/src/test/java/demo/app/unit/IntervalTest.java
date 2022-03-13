@@ -17,7 +17,7 @@ public class IntervalTest extends Assert {
 
         assertInterval("1us", 1, TimeUnit.MICROSECONDS);
         assertInterval("1s", 1, TimeUnit.SECONDS);
-        assertInterval("1m", 1, TimeUnit.MINUTES);
+        assertInterval("1 m", 1, TimeUnit.MINUTES);
         assertInterval("1d", 1, TimeUnit.DAYS);
         assertInterval("1h", 1, TimeUnit.HOURS);
 

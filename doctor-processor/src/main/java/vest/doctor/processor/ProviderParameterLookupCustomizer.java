@@ -1,6 +1,7 @@
 package vest.doctor.processor;
 
 import jakarta.inject.Provider;
+import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.ProcessorUtils;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.ParameterLookupCustomizer;
@@ -24,20 +25,24 @@ public class ProviderParameterLookupCustomizer implements ParameterLookupCustomi
 
     @Override
     public String dependencyCheckCode(AnnotationProcessorContext context, VariableElement variableElement, String providerRegistryRef) {
-        TypeElement typeElement = context.toTypeElement(variableElement.asType());
+        TypeMirror typeMirror = variableElement.asType();
         String qualifier = ProcessorUtils.getQualifier(context, variableElement);
-        if (ProcessorUtils.isCompatibleWith(context, typeElement, Optional.class)) {
+        if (ProcessorUtils.isCompatibleWith(context, typeMirror, Optional.class)) {
             return "";
         }
 
-        if (ProcessorUtils.isCompatibleWith(context, typeElement, Provider.class)
-                || ProcessorUtils.isCompatibleWith(context, typeElement, Iterable.class)
-                || ProcessorUtils.isCompatibleWith(context, typeElement, Stream.class)) {
-            TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
-            return ProcessorUtils.getProviderCode(typeMirror, qualifier) + ";";
+        if (ProcessorUtils.isCompatibleWith(context, typeMirror, ProviderRegistry.class)) {
+            return "";
+        }
+
+        if (ProcessorUtils.isCompatibleWith(context, typeMirror, Provider.class)
+                || ProcessorUtils.isCompatibleWith(context, typeMirror, Iterable.class)
+                || ProcessorUtils.isCompatibleWith(context, typeMirror, Stream.class)) {
+            return ProcessorUtils.getProviderCode(unwrapJustOne(variableElement.asType()), qualifier) + ";";
         }
 
         if (variableElement.asType().getKind() == TypeKind.ARRAY) {
+            TypeElement typeElement = context.toTypeElement(variableElement.asType());
             return ProcessorUtils.getProviderCode(typeElement, qualifier) + ";";
         }
         return ProcessorUtils.getProviderCode(variableElement.asType(), qualifier) + ";";

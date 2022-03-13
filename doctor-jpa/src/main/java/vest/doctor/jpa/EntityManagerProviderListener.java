@@ -60,7 +60,7 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
                     stage2.line(properties, ".put({{providerRegistry}}.resolvePlaceholders(\"", property.name(), "\"), {{providerRegistry}}.resolvePlaceholders(\"", property.value(), "\"));");
                 }
                 stage2.line("EntityManagerFactory ", emf, " = Persistence.createEntityManagerFactory({{providerRegistry}}.resolvePlaceholders(\"", pcName, "\"), ", properties, ");");
-                stage2.line("{{providerRegistry}}.register(new AdHocProvider<>(EntityManagerFactory.class, ", emf, ", \"", ProcessorUtils.escapeStringForCode(pcName), "\",", emf, "::close));");
+                stage2.line("{{providerRegistry}}.register(new AdHocProvider<>(EntityManagerFactory.class, ", emf, ",", ProcessorUtils.escapeAndQuoteStringForCode(pcName), ",", emf, "::close));");
 
                 stage2.line("EntityManager ", em, " = null;");
                 stage2.line("try{");
@@ -70,7 +70,7 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
                 stage2.line("log.debug(\"full error stack\", e);");
                 stage2.line(em, " = ", emf, ".createEntityManager(", properties, ");");
                 stage2.line("}");
-                stage2.line("{{providerRegistry}}.register(new AdHocProvider<>(EntityManager.class, ", em, ", \"", ProcessorUtils.escapeStringForCode(pcName), "\",", em, "::close));");
+                stage2.line("{{providerRegistry}}.register(new AdHocProvider<>(EntityManager.class, ", em, ",", ProcessorUtils.escapeAndQuoteStringForCode(pcName), ",", em, "::close));");
                 context.addSatisfiedDependency(EntityManagerFactory.class, '"' + pcName + '"');
                 context.addSatisfiedDependency(EntityManager.class, '"' + pcName + '"');
             }

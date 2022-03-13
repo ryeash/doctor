@@ -5,12 +5,7 @@ import vest.doctor.ApplicationLoader;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
 
-final class ArgsLoader implements ApplicationLoader {
-    private final Args args;
-
-    ArgsLoader(Args args) {
-        this.args = args;
-    }
+record ArgsLoader(Args args) implements ApplicationLoader {
 
     @Override
     public void stage1(ProviderRegistry providerRegistry) {

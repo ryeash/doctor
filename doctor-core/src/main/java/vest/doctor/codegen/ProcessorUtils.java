@@ -4,6 +4,7 @@ import jakarta.inject.Named;
 import jakarta.inject.Provider;
 import jakarta.inject.Qualifier;
 import jakarta.inject.Scope;
+import vest.doctor.ProviderRegistry;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
 import vest.doctor.processing.ProviderDefinition;
@@ -58,7 +59,7 @@ public final class ProcessorUtils {
         }
         Named named = element.getAnnotation(Named.class);
         if (named != null) {
-            return "\"" + escapeStringForCode(named.value()) + "\"";
+            return escapeAndQuoteStringForCode(named.value());
         }
 
         if (!qualifiers.isEmpty()) {
@@ -96,7 +97,7 @@ public final class ProcessorUtils {
                 .sorted()
                 .collect(Collectors.joining(", ", "(", ")"));
         sb.append(valuesString);
-        return "\"" + escapeStringForCode(sb.toString()) + "\"";
+        return escapeAndQuoteStringForCode(sb.toString());
     }
 
 
@@ -117,6 +118,10 @@ public final class ProcessorUtils {
         } else {
             return value.toString();
         }
+    }
+
+    public static String escapeAndQuoteStringForCode(String str) {
+        return "\"" + escapeStringForCode(str) + "\"";
     }
 
     public static String escapeStringForCode(String str) {
@@ -140,11 +145,11 @@ public final class ProcessorUtils {
     private static final Map<TypeElement, Set<TypeElement>> HIERARCHY_CACHE = new HashMap<>();
 
     public static Set<TypeElement> hierarchy(AnnotationProcessorContext context, TypeElement type) {
+        if (type == null) {
+            return Set.of();
+        }
         if (HIERARCHY_CACHE.containsKey(type)) {
             return HIERARCHY_CACHE.get(type);
-        }
-        if (type == null) {
-            return Collections.emptySet();
         }
         Set<TypeElement> allClasses = new LinkedHashSet<>();
         List<TypeElement> allInterfaces = new LinkedList<>();
@@ -173,22 +178,9 @@ public final class ProcessorUtils {
         return ElementFilter.methodsIn(context.processingEnvironment().getElementUtils().getAllMembers(type))
                 .stream()
                 .filter(method -> !method.getEnclosingElement().asType().toString().equals(Object.class.getCanonicalName()))
-                .collect(Collectors.toList());
-    }
-
-    public static List<ExecutableElement> allUniqueMethods(AnnotationProcessorContext context, TypeElement type) {
-        return allMethods(context, type)
-                .stream()
                 .map(UniqueMethod::new)
                 .distinct()
                 .map(UniqueMethod::unwrap)
-                .collect(Collectors.toList());
-    }
-
-    public static List<VariableElement> allFields(AnnotationProcessorContext context, TypeElement type) {
-        return ElementFilter.fieldsIn(context.processingEnvironment().getElementUtils().getAllMembers(type))
-                .stream()
-                .filter(method -> !method.getEnclosingElement().asType().toString().equals(Object.class.getCanonicalName()))
                 .collect(Collectors.toList());
     }
 
@@ -248,20 +240,18 @@ public final class ProcessorUtils {
     }
 
     public static String getProviderCode(String type, String qualifier) {
-        return Constants.PROVIDER_REGISTRY + ".getProvider(" + type + ".class" + ", " + qualifier + ")";
+        if (Objects.equals(type, ProviderRegistry.class.getCanonicalName())) {
+            return Constants.PROVIDER_REGISTRY;
+        } else {
+            return Constants.PROVIDER_REGISTRY + ".getProvider(" + type + ".class" + ", " + qualifier + ")";
+        }
     }
 
     public static <T> void ifClassExists(String fullyQualifiedClassName, Consumer<Class<? extends T>> action) {
-        ifClassesExists(Collections.singletonList(fullyQualifiedClassName), action);
-    }
-
-    public static <T> void ifClassesExists(Collection<String> fullyQualifiedClassNames, Consumer<Class<? extends T>> action) {
         try {
-            for (String fullyQualifiedClassName : fullyQualifiedClassNames) {
-                @SuppressWarnings("unchecked")
-                Class<? extends T> c = (Class<? extends T>) Class.forName(fullyQualifiedClassName);
-                action.accept(c);
-            }
+            @SuppressWarnings("unchecked")
+            Class<? extends T> c = (Class<? extends T>) Class.forName(fullyQualifiedClassName);
+            action.accept(c);
         } catch (ClassNotFoundException e) {
             // ignored
         }
@@ -294,6 +284,10 @@ public final class ProcessorUtils {
                 return providerRegistryRef + ".getProvider(" + typeMirror + ".class, " + qualifier + ")";
             }
 
+            if (ProcessorUtils.isCompatibleWith(context, typeElement, ProviderRegistry.class)) {
+                return providerRegistryRef;
+            }
+
             if (ProcessorUtils.isCompatibleWith(context, typeElement, Iterable.class)) {
                 TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
                 String methodCall = getProvidersCode(typeMirror, qualifier, providerRegistryRef);
@@ -323,7 +317,7 @@ public final class ProcessorUtils {
             }
             String type = ProcessorUtils.typeWithoutParameters(variableElement.asType());
             return providerRegistryRef + ".getInstance(" + type + ".class, " + qualifier + ")";
-        } catch (CodeProcessingException e) {
+        } catch (Throwable e) {
             throw new CodeProcessingException("error wiring parameter", variableElement, e);
         }
     }
@@ -343,7 +337,7 @@ public final class ProcessorUtils {
             }
             return genericInfo.type();
         }
-        throw new CodeProcessingException("can not inject type: " + mirror);
+        throw new CodeProcessingException("not type parameters provided for: " + mirror);
     }
 
     public static String rawPrimitiveClass(TypeMirror mirror) {
@@ -405,7 +399,7 @@ public final class ProcessorUtils {
         StringBuilder sb = new StringBuilder("new AnnotationDataImpl(");
         Element annotationElement = annotationMirror.getAnnotationType().asElement();
         sb.append(annotationElement.asType());
-        sb.append(".class, ");
+        sb.append(".class,");
         if (!annotationMirror.getElementValues().isEmpty()) {
             sb.append("Map.ofEntries(");
             List<String> entries = new LinkedList<>();
@@ -425,7 +419,7 @@ public final class ProcessorUtils {
     private static String annotationValueLiteral(AnnotationProcessorContext context, AnnotationValue annotationValue) {
         Object value = annotationValue.getValue();
         if (value instanceof String str) {
-            return "\"" + ProcessorUtils.escapeStringForCode(str) + "\"";
+            return escapeAndQuoteStringForCode(str);
         } else if (value instanceof Boolean bool) {
             return bool.toString();
         } else if (value instanceof Byte) {

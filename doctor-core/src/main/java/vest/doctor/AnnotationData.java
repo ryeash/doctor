@@ -2,12 +2,13 @@ package vest.doctor;
 
 import java.lang.annotation.Annotation;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A runtime wrapper around a static annotation attached to a provided type.
- * All values on the annotations are referenced via the string name of their method name.
+ * All values on the annotations are referenced via the string name of their method.
  */
-public interface AnnotationData {
+public interface AnnotationData extends Iterable<Map.Entry<String, Object>> {
 
     /**
      * The annotation type.
@@ -411,7 +412,7 @@ public interface AnnotationData {
     List<AnnotationData> annotationArrayValue(String attributeName);
 
     /**
-     * Get an object value. Returns null if no annotation with the given name exists.
+     * Get an object value. Returns null if no value with the given name exists.
      *
      * @param attributeName the annotation method name
      * @return the annotation value

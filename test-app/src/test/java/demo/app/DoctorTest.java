@@ -304,6 +304,7 @@ public class DoctorTest extends AbstractTestAppTest {
 
         assertEquals(provider.annotationMetadata().stringValue(Everything.class, "string"), "a");
         assertEquals(provider.annotationMetadata().stringArrayValue(Everything.class, "strings"), List.of("b", "c"));
+        assertEquals(provider.annotationMetadata().stringValue(Everything.class, "defaultString"), "default");
         assertEquals(provider.annotationMetadata().byteValue(Everything.class, "byteVal"), (byte) 1);
         assertEquals(provider.annotationMetadata().byteArrayValue(Everything.class, "byteArr"), List.of((byte) 2, (byte) 3));
         assertEquals(provider.annotationMetadata().shortValue(Everything.class, "shortVal"), (short) 4);

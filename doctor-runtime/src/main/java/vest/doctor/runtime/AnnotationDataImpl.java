@@ -3,6 +3,7 @@ package vest.doctor.runtime;
 import vest.doctor.AnnotationData;
 
 import java.lang.annotation.Annotation;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -95,6 +96,7 @@ public record AnnotationDataImpl(Class<? extends Annotation> type,
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public List<Enum<?>> enumArrayValue(String attributeName) {
         return (List) getListValueWithCheck(attributeName, Enum.class);
     }
@@ -105,6 +107,7 @@ public record AnnotationDataImpl(Class<? extends Annotation> type,
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public List<Class<?>> classArrayValue(String attributeName) {
         return (List) getListValueWithCheck(attributeName, Class.class);
     }
@@ -122,6 +125,11 @@ public record AnnotationDataImpl(Class<? extends Annotation> type,
     @Override
     public Object objectValue(String attributeName) {
         return values.get(attributeName);
+    }
+
+    @Override
+    public Iterator<Map.Entry<String, Object>> iterator() {
+        return values.entrySet().iterator();
     }
 
     @Override
@@ -155,6 +163,6 @@ public record AnnotationDataImpl(Class<? extends Annotation> type,
                 return list;
             }
         }
-        throw new ClassCastException("annotation attribute " + attributeName + " is not of type " + check);
+        throw new ClassCastException("annotation array attribute " + attributeName + " is not of type " + check);
     }
 }

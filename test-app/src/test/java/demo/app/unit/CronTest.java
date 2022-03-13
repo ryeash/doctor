@@ -77,6 +77,7 @@ public class CronTest {
             assertEquals(date.getMinute(), 0);
             assertEquals(date.getHour(), 0);
             assertEquals(date.getDayOfMonth(), 1);
+            assertEquals(date.getMonth(), Month.JANUARY);
             assertEquals(date.getDayOfWeek(), DayOfWeek.TUESDAY);
         });
     }

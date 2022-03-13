@@ -115,8 +115,11 @@ public class RouterWriter implements ProviderDefinitionListener {
         checkMethodParams(context, method);
         boolean isVoid = method.getReturnType().getKind() == TypeKind.VOID;
 
+        String packageName = context.generatedPackageName(method.getEnclosingElement());
+        providerDefinition.providedType();
+
         String className = "WiredHandler_" + context.nextId();
-        String qualifiedClassName = context.generatedPackage() + "." + className;
+        String qualifiedClassName = packageName + "." + className;
         ClassBuilder cb = new ClassBuilder()
                 .setClassName(qualifiedClassName)
                 .addImportClass(ProviderRegistry.class)
@@ -140,13 +143,13 @@ public class RouterWriter implements ProviderDefinitionListener {
                 .addClassAnnotation("@Singleton")
                 .addClassAnnotation("@ExplicitProvidedTypes({Handler.class})")
                 .setExtendsClass(AbstractWiredHandler.class)
-                .addField("private static final List<String> methods = List.of(", httpMethods.stream().map(ProcessorUtils::escapeStringForCode).collect(Collectors.joining("\",\"", "\"", "\"")) + ")")
-                .addField("private static final List<String> paths = List.of(", paths.stream().map(ProcessorUtils::escapeStringForCode).collect(Collectors.joining("\",\"", "\"", "\"")) + ")")
+                .addField("private static final List<String> methods = List.of(", httpMethods.stream().map(ProcessorUtils::escapeAndQuoteStringForCode).collect(Collectors.joining(",")) + ")")
+                .addField("private static final List<String> paths = List.of(", paths.stream().map(ProcessorUtils::escapeAndQuoteStringForCode).collect(Collectors.joining(",")) + ")")
                 .addField("private final Provider<", providerDefinition.providedType(), "> provider");
 
         String executorName = getExecutorName(method);
         cb.addMethod("@Inject public " + className + "(ProviderRegistry providerRegistry)", mb -> {
-            mb.line("super(providerRegistry, \"", ProcessorUtils.escapeStringForCode(executorName), "\");");
+            mb.line("super(providerRegistry,", ProcessorUtils.escapeAndQuoteStringForCode(executorName), ");");
             mb.line("this.provider = ", ProcessorUtils.getProviderCode(providerDefinition), ";");
         });
 

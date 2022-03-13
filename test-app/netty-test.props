@@ -1,6 +1,3 @@
-doctor.netty.http {
-    bind: "localhost:61233"
-}
 
 doctor.reactor {
     http {

@@ -18,7 +18,7 @@ public class EventConsumersWriter implements ProviderDefinitionListener {
     public void process(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
         if (ProcessorUtils.isCompatibleWith(context, providerDefinition.providedType(), EventConsumer.class)) {
             initBuilders(context);
-            String type = ProcessorUtils.allUniqueMethods(context, providerDefinition.providedType())
+            String type = ProcessorUtils.allMethods(context, providerDefinition.providedType())
                     .stream()
                     .filter(method -> method.getParameters().size() == 1 && method.getSimpleName().toString().equals("accept"))
                     .findFirst()

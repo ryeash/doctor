@@ -17,6 +17,8 @@ public @interface Everything {
 
     String[] strings();
 
+    String defaultString() default "default";
+
     byte byteVal();
 
     byte[] byteArr();

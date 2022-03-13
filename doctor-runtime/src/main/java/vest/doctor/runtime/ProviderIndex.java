@@ -1,6 +1,5 @@
 package vest.doctor.runtime;
 
-import vest.doctor.AnnotationData;
 import vest.doctor.DoctorProvider;
 
 import java.lang.annotation.Annotation;
@@ -8,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -21,7 +19,6 @@ final class ProviderIndex {
     private final Lock writeLock = new ReentrantLock();
     private final Map<String, Map<String, DoctorProvider<?>>> primary = new HashMap<>(64);
     private final Map<String, Map<String, Collection<DoctorProvider<?>>>> secondary = new HashMap<>(128);
-    private final Map<String, Collection<DoctorProvider<?>>> annotationTypeToProvider = new HashMap<>(128);
 
     void setProvider(DoctorProvider<?> provider) {
         Objects.requireNonNull(provider);
@@ -39,10 +36,6 @@ final class ProviderIndex {
             for (Class<?> type : provider.allProvidedTypes()) {
                 Map<String, Collection<DoctorProvider<?>>> sub = secondary.computeIfAbsent(type.getName(), t -> new HashMap<>());
                 sub.computeIfAbsent(provider.qualifier(), q -> new ArrayList<>()).add(provider);
-            }
-
-            for (AnnotationData annotation : provider.annotationMetadata()) {
-                annotationTypeToProvider.computeIfAbsent(annotation.type().getName(), a -> new HashSet<>(16)).add(provider);
             }
         } finally {
             writeLock.unlock();
@@ -77,7 +70,10 @@ final class ProviderIndex {
     }
 
     Stream<DoctorProvider<?>> getProvidersWithAnnotation(Class<? extends Annotation> type) {
-        return annotationTypeToProvider.getOrDefault(type.getName(), Collections.emptyList()).stream();
+        return allProviders()
+                .filter(p -> p.annotationMetadata()
+                        .stream()
+                        .anyMatch(am -> am.type() == type));
     }
 
     Stream<DoctorProvider<?>> allProviders() {
