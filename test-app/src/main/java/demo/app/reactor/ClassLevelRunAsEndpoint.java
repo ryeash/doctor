@@ -1,17 +1,17 @@
 package demo.app.reactor;
 
 import jakarta.inject.Singleton;
-import vest.doctor.reactor.http.GET;
-import vest.doctor.reactor.http.Path;
+import vest.doctor.reactor.http.Endpoint;
+import vest.doctor.reactor.http.HttpMethod;
 import vest.doctor.reactor.http.RunOn;
 
 @Singleton
 @RunOn("websocketScheduler")
-@Path("/isolated")
+@Endpoint("/isolated")
 public class ClassLevelRunAsEndpoint {
 
-    @GET
-    @Path("/classLevelRunAs")
+    @HttpMethod.GET
+    @Endpoint("/classLevelRunAs")
     public String get() {
         return Thread.currentThread().getName();
     }

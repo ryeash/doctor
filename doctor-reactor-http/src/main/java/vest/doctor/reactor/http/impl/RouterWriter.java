@@ -18,11 +18,11 @@ import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
 import vest.doctor.processing.ProviderDefinition;
 import vest.doctor.processing.ProviderDefinitionListener;
+import vest.doctor.reactor.http.Endpoint;
 import vest.doctor.reactor.http.Handler;
 import vest.doctor.reactor.http.HttpMethod;
 import vest.doctor.reactor.http.HttpParameterWriter;
 import vest.doctor.reactor.http.Param;
-import vest.doctor.reactor.http.Path;
 import vest.doctor.reactor.http.RequestContext;
 import vest.doctor.reactor.http.RunOn;
 
@@ -44,16 +44,17 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class RouterWriter implements ProviderDefinitionListener {
+    public static final String BODY_REF_NAME = "body";
     private final Set<ExecutableElement> processedMethods = new HashSet<>();
 
     @Override
     public void process(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
-        if (providerDefinition.annotationSource().getAnnotation(Path.class) == null) {
+        if (providerDefinition.annotationSource().getAnnotation(Endpoint.class) == null) {
             return;
         }
 
-        String[] roots = Optional.ofNullable(providerDefinition.annotationSource().getAnnotation(Path.class))
-                .map(Path::value)
+        String[] roots = Optional.ofNullable(providerDefinition.annotationSource().getAnnotation(Endpoint.class))
+                .map(Endpoint::value)
                 .orElse(new String[]{"/"});
 
         ProcessorUtils.allMethods(context, providerDefinition.providedType())
@@ -63,11 +64,11 @@ public class RouterWriter implements ProviderDefinitionListener {
                 .forEach(method -> {
                     List<String> httpMethods = getMethods(method);
                     if (!httpMethods.isEmpty()) {
-                        String[] paths = Optional.ofNullable(method.getAnnotation(Path.class))
-                                .map(Path::value)
+                        String[] paths = Optional.ofNullable(method.getAnnotation(Endpoint.class))
+                                .map(Endpoint::value)
                                 .orElse(new String[]{});
                         addRoute(context, providerDefinition, httpMethods, paths(roots, paths), method);
-                    } else if (method.getAnnotation(Path.class) != null) {
+                    } else if (method.getAnnotation(Endpoint.class) != null) {
                         throw new CodeProcessingException("http method is required for endpoints, e.g. @GET", method);
                     }
                 });
@@ -184,10 +185,10 @@ public class RouterWriter implements ProviderDefinitionListener {
         MethodBuilder handler = cb.newMethod("@Override protected Object handle(RequestContext requestContext) throws Exception");
 
         if (bodyIsPublisher) {
-            handler.line(bodyParam, " body = bodyInterchange.read(requestContext, ", bodyType, ");");
+            handler.line(bodyParam, " ", BODY_REF_NAME, "=bodyInterchange.read(requestContext,", bodyType, ");");
         } else {
             String bodyTypeString = bodyParam != null ? bodyParam.toString() : "Object";
-            handler.line(bodyTypeString, " body = Flux.<", bodyTypeString, ">from(bodyInterchange.read(requestContext, ", bodyType, ")).blockLast();");
+            handler.line(bodyTypeString, " ", BODY_REF_NAME, "=Flux.<", bodyTypeString, ">from(bodyInterchange.read(requestContext, ", bodyType, ")).blockLast();");
         }
         String parameters = method.getParameters().stream()
                 .map(p -> parameterWriting(context, cb, p, p, "requestContext"))
