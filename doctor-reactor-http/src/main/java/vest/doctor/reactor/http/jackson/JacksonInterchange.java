@@ -81,17 +81,12 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
             if (!res.headers().contains(HttpHeaderNames.CONTENT_TYPE)) {
                 res.headers().set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON + ";charset=utf-8");
             }
-            if (responseTypeInfo.matches(Publisher.class, Object.class)) {
-                return Flux.from((Publisher<?>) response)
-                        .map(this::writeJsonBytes)
-                        .map(ResponseBody::of)
-                        .map(ctx.response()::body);
-            } else {
-                return Flux.just(response)
-                        .map(this::writeJsonBytes)
-                        .map(ResponseBody::of)
-                        .map(ctx.response()::body);
-            }
+            Flux<?> flux = responseTypeInfo.matches(Publisher.class, Object.class)
+                    ? Flux.from((Publisher<?>) response)
+                    : Flux.just(response);
+            return flux.map(this::writeJsonBytes)
+                    .map(ResponseBody::of)
+                    .map(ctx.response()::body);
         } else {
             return null;
         }

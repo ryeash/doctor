@@ -112,7 +112,7 @@ public interface ProviderRegistry {
     <T> Optional<DoctorProvider<T>> getProviderOpt(Class<T> type, String qualifier);
 
     /**
-     * Get all providers that can satisfy the given type.
+     * Get all providers that can satisfy the given type. Provider qualifiers are ignored.
      *
      * @param type the provided type to get
      * @return a stream of all providers for the given type

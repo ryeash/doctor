@@ -124,10 +124,8 @@ public class BeanParamStringWriter implements HttpParameterWriter {
     }
 
     private static ExecutableElement findCorrespondingSetter(AnnotationProcessorContext context, VariableElement field, TypeElement beanType) {
-        return ProcessorUtils.hierarchy(context, beanType)
+        return ProcessorUtils.allMethods(context, beanType)
                 .stream()
-                .flatMap(t -> ElementFilter.methodsIn(t.getEnclosedElements()).stream())
-                .distinct()
                 .filter(method -> method.getParameters().size() == 1)
                 .filter(method -> {
                     String methodName = method.getSimpleName().toString();

@@ -9,23 +9,18 @@ import org.reactivestreams.Publisher;
 import org.testng.Assert;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import vest.doctor.reactor.http.DELETE;
-import vest.doctor.reactor.http.GET;
+import vest.doctor.reactor.http.Endpoint;
 import vest.doctor.reactor.http.HttpRequest;
 import vest.doctor.reactor.http.HttpResponse;
-import vest.doctor.reactor.http.OPTIONS;
-import vest.doctor.reactor.http.POST;
-import vest.doctor.reactor.http.PUT;
-import vest.doctor.reactor.http.Param;
 import vest.doctor.reactor.http.Param.Attribute;
 import vest.doctor.reactor.http.Param.Bean;
 import vest.doctor.reactor.http.Param.Body;
 import vest.doctor.reactor.http.Param.Context;
 import vest.doctor.reactor.http.Param.Cookie;
 import vest.doctor.reactor.http.Param.Header;
+import vest.doctor.reactor.http.Param.Path;
 import vest.doctor.reactor.http.Param.Provided;
 import vest.doctor.reactor.http.Param.Query;
-import vest.doctor.reactor.http.Path;
 import vest.doctor.reactor.http.RequestContext;
 import vest.doctor.reactor.http.ResponseBody;
 import vest.doctor.reactor.http.RunOn;
@@ -37,26 +32,32 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
+import static vest.doctor.reactor.http.HttpMethod.DELETE;
+import static vest.doctor.reactor.http.HttpMethod.GET;
+import static vest.doctor.reactor.http.HttpMethod.OPTIONS;
+import static vest.doctor.reactor.http.HttpMethod.POST;
+import static vest.doctor.reactor.http.HttpMethod.PUT;
+
 @Singleton
-@Path("/root")
+@Endpoint("/root")
 public class ReactorEndpoint {
 
     @GET
-    @Path("/hello")
+    @Endpoint("/hello")
     public String hello() {
         return "Hello World!";
     }
 
     @POST
-    @Path("/throughput")
+    @Endpoint("/throughput")
     public byte[] throughput(@Body byte[] body) {
         return body;
     }
 
     @GET
-    @Path("/params/{path}")
+    @Endpoint("/params/{path}")
     @RunOn("background")
-    public String params(@Param.Path String path,
+    public String params(@Path String path,
                          @Query Integer size,
                          @Header("X-Param") String param,
                          @Cookie String cook,
@@ -81,39 +82,39 @@ public class ReactorEndpoint {
 
     @GET
     @POST
-    @Path({"/multimethod", "/multimethod2"})
+    @Endpoint({"/multimethod", "/multimethod2"})
     public String multiMethodAndPath(@Context HttpRequest request) {
         return request.method().toString();
     }
 
     @POST
-    @Path("/json")
+    @Endpoint("/json")
     public Person json(@Body Person person) {
         return person;
     }
 
     @POST
-    @Path("/jsonpub")
+    @Endpoint("/jsonpub")
     public Publisher<Person> json(@Body Publisher<Person> person) {
         return person;
     }
 
     @PUT
-    @Path("/echo")
+    @Endpoint("/echo")
     public Publisher<ByteBuf> echo(@Body Publisher<ByteBuf> dataStream) {
         return Flux.from(dataStream)
                 .map(ByteBuf::retain);
     }
 
     @DELETE
-    @Path("/responseobject")
+    @Endpoint("/responseobject")
     public HttpResponse responseObject(@Context HttpResponse response) {
         return response.header("X-RouteHeader", "true")
                 .body(ResponseBody.of("responseObject"));
     }
 
     @DELETE
-    @Path("/responseobjectpub")
+    @Endpoint("/responseobjectpub")
     public Publisher<HttpResponse> responseObjectPub(@Context HttpResponse response) {
         return Mono.just(response)
                 .map(r -> r.header("X-RouteHeader", "true")
@@ -121,19 +122,19 @@ public class ReactorEndpoint {
     }
 
     @GET
-    @Path("/future")
+    @Endpoint("/future")
     public CompletableFuture<String> futureString() {
         return CompletableFuture.supplyAsync(() -> "future", ForkJoinPool.commonPool());
     }
 
     @GET
-    @Path("/locale")
+    @Endpoint("/locale")
     public String locale(@Header("Accept-Language") Locale locale) {
         return locale.toString();
     }
 
     @POST
-    @Path("/multipart")
+    @Endpoint("/multipart")
     public Publisher<String> multipart(@Body Publisher<HttpData> form) {
         return Flux.from(form)
                 .map(data -> data.content().toString(StandardCharsets.UTF_8))
@@ -141,19 +142,19 @@ public class ReactorEndpoint {
     }
 
     @GET
-    @Path("/splat/**")
+    @Endpoint("/splat/**")
     public String splat(@Context RequestContext ctx) {
         return ctx.request().uri().toString();
     }
 
     @OPTIONS
-    @Path("/asyncError")
+    @Endpoint("/asyncError")
     public Publisher<String> asyncError() {
         return Flux.error(new IOException("error"));
     }
 
     @OPTIONS
-    @Path("/syncError")
+    @Endpoint("/syncError")
     public ByteBuf syncError() throws IOException {
         throw new IOException("error");
     }

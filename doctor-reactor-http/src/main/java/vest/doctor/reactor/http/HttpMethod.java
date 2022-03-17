@@ -18,4 +18,54 @@ public @interface HttpMethod {
      * The method name.
      */
     String value();
+
+    /**
+     * Marks an endpoint method to indicate the handler responds to HTTP DELETE requests.
+     */
+    @Documented
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.METHOD})
+    @HttpMethod("DELETE")
+    @interface DELETE {
+    }
+
+    /**
+     * Marks an endpoint method to indicate the handler responds to HTTP GET requests.
+     */
+    @Documented
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.METHOD})
+    @HttpMethod("GET")
+    @interface GET {
+    }
+
+    /**
+     * Marks an endpoint method to indicate the handler responds to HTTP OPTIONS requests.
+     */
+    @Documented
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.METHOD})
+    @HttpMethod("OPTIONS")
+    @interface OPTIONS {
+    }
+
+    /**
+     * Marks an endpoint method to indicate the handler responds to HTTP POST requests.
+     */
+    @Documented
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.METHOD})
+    @HttpMethod("POST")
+    @interface POST {
+    }
+
+    /**
+     * Marks an endpoint method to indicate the handler responds to HTTP PUT requests.
+     */
+    @Documented
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.METHOD})
+    @HttpMethod("PUT")
+    @interface PUT {
+    }
 }

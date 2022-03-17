@@ -63,7 +63,8 @@ public class ReactorHTTPLoader implements ApplicationLoader {
 
         DefaultBodyReaderWriter defRW = new DefaultBodyReaderWriter();
 
-        ObjectMapper objectMapper = providerRegistry.getInstanceOpt(ObjectMapper.class).orElseGet(() -> JacksonInterchange.defaultConfig(providerRegistry));
+        ObjectMapper objectMapper = providerRegistry.getInstanceOpt(ObjectMapper.class)
+                .orElseGet(() -> JacksonInterchange.defaultConfig(providerRegistry));
         List<AsyncParserFactory> parserFactories = providerRegistry.getInstances(AsyncParserFactory.class).collect(Collectors.toCollection(LinkedList::new));
         parserFactories.add(new GenericJsonBeanParserFactory());
         JacksonInterchange jacksonInterchange = new JacksonInterchange(objectMapper, parserFactories);

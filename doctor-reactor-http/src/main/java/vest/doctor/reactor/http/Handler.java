@@ -20,6 +20,7 @@ public interface Handler extends BiFunction<HttpServerRequest, HttpServerRespons
 
     /**
      * The paths this handler will match against.
+     * Path matching is based on reactor.netty.http.server.HttpPredicate.UriPathTemplate.
      */
     List<String> path();
 }

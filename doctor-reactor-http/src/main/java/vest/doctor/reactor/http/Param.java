@@ -7,7 +7,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotates endpoint parameters to indicate from which part of the HTTP request to get the value.
+ * Meta annotation that marks an endpoint parameter annotation.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
@@ -15,6 +15,7 @@ import java.lang.annotation.Target;
 public @interface Param {
 
     /**
+     * HTTP endpoint parameter annotation.
      * Parameter value will be pulled from {@link HttpRequest#pathParam(String)}.
      */
     @Documented
@@ -22,6 +23,10 @@ public @interface Param {
     @Target({ElementType.PARAMETER, ElementType.METHOD, ElementType.FIELD})
     @Param
     @interface Path {
+        /**
+         * The name of the path parameter, e.g. for the endpoint path "/app/v1/{type}"
+         * the string "type" can be used as the path parameter name.
+         */
         String value() default "";
     }
 
@@ -33,6 +38,9 @@ public @interface Param {
     @Target({ElementType.PARAMETER, ElementType.METHOD, ElementType.FIELD})
     @Param
     @interface Query {
+        /**
+         * The name of the query parameter.
+         */
         String value() default "";
     }
 
@@ -44,6 +52,9 @@ public @interface Param {
     @Target({ElementType.PARAMETER, ElementType.METHOD, ElementType.FIELD})
     @Param
     @interface Header {
+        /**
+         * The name of the header.
+         */
         String value() default "";
     }
 
@@ -55,6 +66,9 @@ public @interface Param {
     @Target({ElementType.PARAMETER, ElementType.METHOD, ElementType.FIELD})
     @Param
     @interface Cookie {
+        /**
+         * The name of the cookie.
+         */
         String value() default "";
     }
 
@@ -88,6 +102,9 @@ public @interface Param {
     @Target({ElementType.PARAMETER, ElementType.METHOD, ElementType.FIELD})
     @Param
     @interface Attribute {
+        /**
+         * The name of the attribute.
+         */
         String value() default "";
     }
 

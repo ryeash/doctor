@@ -34,6 +34,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.ElementFilter;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 import java.io.IOException;
@@ -280,9 +281,9 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
     }
 
     private void errorChecking(ProviderDefinition providerDefinition) {
-        for (VariableElement variableElement : ProcessorUtils.allFields(this, providerDefinition.providedType())) {
-            if (variableElement.getAnnotation(Inject.class) != null) {
-                throw new CodeProcessingException("field injection is not supported", variableElement);
+        for (VariableElement field : ElementFilter.fieldsIn(processingEnvironment().getElementUtils().getAllMembers(providerDefinition.providedType()))) {
+            if (field.getAnnotation(Inject.class) != null) {
+                throw new CodeProcessingException("field injection is not supported", field);
             }
         }
         ProcessorUtils.<Annotation>ifClassExists("javax.annotation.PreDestroy", preDestroy -> {

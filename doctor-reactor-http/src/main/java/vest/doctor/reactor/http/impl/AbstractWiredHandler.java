@@ -21,6 +21,9 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+/**
+ * Used internally for generated handlers based on endpoint methods.
+ */
 public abstract class AbstractWiredHandler implements Handler {
 
     private static final Logger log = LoggerFactory.getLogger(AbstractWiredHandler.class);

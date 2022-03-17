@@ -174,6 +174,14 @@ public interface AnnotationProcessorContext {
         }
     }
 
+    /**
+     * Builds a code string for the parameters to call the given executable element with.
+     *
+     * @param providerDefinition  the provider definition for the type that the executable element is associated with
+     * @param executableElement   the executable element
+     * @param providerRegistryRef the name to user to reference the {@link ProviderRegistry} is the code string
+     * @return a comma separated list of calls to get the parameter to the executable element
+     */
     default String buildParametersList(ProviderDefinition providerDefinition, ExecutableElement executableElement, String providerRegistryRef) {
         return executableElement.getParameters().stream()
                 .map(ve -> {
@@ -192,6 +200,19 @@ public interface AnnotationProcessorContext {
                 .collect(Collectors.joining(",\n\t", "", ""));
     }
 
+    /**
+     * Add a new class to the generated services list that can be loaded using {@link java.util.ServiceLoader}.
+     * <p>
+     * Example:
+     * <pre>
+     * <code>context.addServiceImplementation(ApplicationLoader.class, "my.custom.service.CustomAppLoader");</code>
+     * </pre>
+     * will create or update the generated META-INF/services/vest.doctor.ApplicationLoader file
+     * and append `my.custom.service.CustomAppLoader`
+     *
+     * @param serviceInterface        the service interface the class implements
+     * @param fullyQualifiedClassName the name of the class to list in the service file
+     */
     void addServiceImplementation(Class<?> serviceInterface, String fullyQualifiedClassName);
 
     /**

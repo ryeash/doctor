@@ -14,7 +14,6 @@ public class ArgsTest {
                 "-e", "extra",
                 "--debug",
                 "--withValue", "something"});
-        // validation expects the arguments: vest.assist.app.BootConfig -e extra --debug --withValue=something
         Assert.assertEquals(args.length(), 7);
 
         Assert.assertEquals(args.first(), "vest.app.BootConfig");

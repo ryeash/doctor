@@ -102,6 +102,32 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         return new Doctor(configurationFacade, modules);
     }
 
+    /**
+     * Can be used as the application main when packaging/running applications backed by doctor.
+     * When used as the main for an application, the arguments to the application will be made
+     * injectable via the {@link Args} class.
+     * <p>
+     * Supported arguments/flags:<br>
+     * -m, --modules : a comma delimited list of modules to enable<br>
+     * -p, --properties : a comma delimited list of properties files to load (in precedence order)
+     */
+    public static void main(String[] args) {
+        Args a = new Args(args);
+        String modules = a.option("modules", 'm');
+        String properties = a.option("properties", 'p', "");
+
+        ConfigurationFacade facade = new CompositeConfigurationFacade()
+                .addSource(new EnvironmentVariablesConfigurationSource())
+                .addSource(new SystemPropertiesConfigurationSource());
+
+        Utils.split(properties.trim(), ',')
+                .stream()
+                .map(FileLocation::new)
+                .map(StructuredConfigurationSource::new)
+                .forEach(facade::addSource);
+        new Doctor(facade, Utils.split(modules, ','), new ArgsLoader(a));
+    }
+
     private final List<String> activeModules;
     private final ProviderIndex providerIndex;
     private final ConfigurationFacade configurationFacade;

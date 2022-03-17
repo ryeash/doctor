@@ -1,7 +1,7 @@
 package demo.app.reactor;
 
 import jakarta.inject.Inject;
-import vest.doctor.reactor.http.Param;
+import vest.doctor.reactor.http.Param.Path;
 
 import java.util.Optional;
 
@@ -20,7 +20,7 @@ public class BeanParamObject {
     private Optional<String> cook;
 
     @Inject
-    public BeanParamObject(@Param.Path String path) {
+    public BeanParamObject(@Path String path) {
         this.path = path;
     }
 

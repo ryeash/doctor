@@ -1,5 +1,7 @@
 package vest.doctor;
 
+import vest.doctor.conf.ConfigurationFacade;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

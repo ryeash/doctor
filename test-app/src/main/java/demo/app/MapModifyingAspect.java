@@ -12,6 +12,7 @@ import java.util.Map;
 public class MapModifyingAspect implements Aspect {
 
     @Override
+    @SuppressWarnings("unchecked")
     public Object execute(MethodInvocation methodInvocation) {
         if (methodInvocation.arity() > 0) {
             ArgValue<Object> arg0 = methodInvocation.getArgumentValue(0);

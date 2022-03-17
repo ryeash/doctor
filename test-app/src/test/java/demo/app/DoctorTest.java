@@ -1,6 +1,7 @@
 package demo.app;
 
 import demo.app.dao.DAO;
+import demo.app.dao.DBProps;
 import demo.app.dao.User;
 import demo.app.ignored.TCIgnoredClass;
 import jakarta.inject.Named;
@@ -67,22 +68,31 @@ public class DoctorTest extends AbstractTestAppTest {
     }
 
     @Test
-    public void configuration() {
-        ConfigurationFacade conf = providerRegistry().configuration();
+    public void configurationTest() {
+        ConfigurationFacade conf = configuration();
         assertEquals(conf.get("string"), "value");
         assertEquals((int) conf.<Integer>get("number", Integer::valueOf), 42);
         assertTrue(conf.get("boolean", Boolean::valueOf));
         assertEquals(conf.get("override.this"), "overridden");
 
-        ConfigurationFacade db = providerRegistry().configuration().getSubConfiguration("db");
+        ConfigurationFacade db = configuration().getSubConfiguration("db");
         assertNotNull(db.get("url"));
         assertNotNull(db.get("username"));
         assertNotNull(db.get("password"));
+
+        assertEquals(conf.get("dot.nested.object.a"), "b");
+        assertEquals(conf.get("dot.nested.object.c"), "d");
     }
 
     @Test
     public void properties() {
         providerRegistry().getInstance(TCProperties.class);
+
+        DBProps dbProps = providerRegistry().getInstance(DBProps.class);
+        assertEquals(dbProps.url(), "jdbc:hsqldb:mem:mymemdb");
+        assertEquals(dbProps.username(), "unused");
+        assertEquals(dbProps.password(), "nothing");
+        assertEquals(dbProps.timeout(), 12);
     }
 
     @Test
@@ -294,6 +304,7 @@ public class DoctorTest extends AbstractTestAppTest {
 
         assertEquals(provider.annotationMetadata().stringValue(Everything.class, "string"), "a");
         assertEquals(provider.annotationMetadata().stringArrayValue(Everything.class, "strings"), List.of("b", "c"));
+        assertEquals(provider.annotationMetadata().stringValue(Everything.class, "defaultString"), "default");
         assertEquals(provider.annotationMetadata().byteValue(Everything.class, "byteVal"), (byte) 1);
         assertEquals(provider.annotationMetadata().byteArrayValue(Everything.class, "byteArr"), List.of((byte) 2, (byte) 3));
         assertEquals(provider.annotationMetadata().shortValue(Everything.class, "shortVal"), (short) 4);
