@@ -43,7 +43,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class RouterWriter implements ProviderDefinitionListener {
+public class HandlerWriter implements ProviderDefinitionListener {
     public static final String BODY_REF_NAME = "body";
     private final Set<ExecutableElement> processedMethods = new HashSet<>();
 
@@ -158,7 +158,7 @@ public class RouterWriter implements ProviderDefinitionListener {
         cb.addMethod("@Override public List<String> path()", mb -> mb.line("return paths;"));
         cb.addMethod("@Override public String toString()", mb -> {
             String summary = method.getEnclosingElement().asType() + "#" + method.getSimpleName() + method.getParameters().stream().map(VariableElement::asType).map(String::valueOf).collect(Collectors.joining(", ", "(", ")"));
-            mb.line("return \"", ProcessorUtils.escapeStringForCode(summary), "#\"+hashCode();");
+            mb.line("return \"", ProcessorUtils.escapeStringForCode(summary), "\";");
         });
 
         if (method.getReturnType().toString().equalsIgnoreCase(Object.class.getCanonicalName())) {
@@ -231,7 +231,7 @@ public class RouterWriter implements ProviderDefinitionListener {
         throw new CodeProcessingException("unsupported parameter - no HttpParameterWriter is registered to handle", parameter);
     }
 
-    public static VariableElement bodyParameter(ExecutableElement method) {
+    private static VariableElement bodyParameter(ExecutableElement method) {
         return method.getParameters()
                 .stream()
                 .filter(m -> m.getAnnotation(Param.Body.class) != null)

@@ -9,6 +9,7 @@ import org.reactivestreams.Publisher;
 import org.testng.Assert;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import vest.doctor.Eager;
 import vest.doctor.reactor.http.Endpoint;
 import vest.doctor.reactor.http.HttpRequest;
 import vest.doctor.reactor.http.HttpResponse;
@@ -39,6 +40,7 @@ import static vest.doctor.reactor.http.HttpMethod.POST;
 import static vest.doctor.reactor.http.HttpMethod.PUT;
 
 @Singleton
+@Eager
 @Endpoint("/root")
 public class ReactorEndpoint {
 

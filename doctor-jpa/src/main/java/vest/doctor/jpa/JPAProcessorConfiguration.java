@@ -1,10 +1,10 @@
 package vest.doctor.jpa;
 
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.PersistenceContexts;
 import vest.doctor.processing.CustomizationPoint;
 import vest.doctor.processing.ProcessorConfiguration;
 
-import javax.persistence.PersistenceContext;
-import javax.persistence.PersistenceContexts;
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.List;

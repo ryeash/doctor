@@ -16,9 +16,9 @@ First, create the META-INF/persistence.xml in your project, example using hibern
     <persistence-unit name="default">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
         <properties>
-            <property name="javax.persistence.jdbc.driver" value="org.hsqldb.jdbc.JDBCDriver"/>
-            <property name="javax.persistence.jdbc.user" value="SA"/>
-            <property name="javax.persistence.jdbc.password" value=""/>
+            <property name="jakarta.persistence.jdbc.driver" value="org.hsqldb.jdbc.JDBCDriver"/>
+            <property name="jakarta.persistence.jdbc.user" value="SA"/>
+            <property name="jakarta.persistence.jdbc.password" value=""/>
             <property name="hibernate.show_sql" value="false"/>
             <property name="hibernate.hikari.connectionTimeout" value="20000"/>
             <property name="hibernate.hikari.minimumIdle" value="1"/>
@@ -40,7 +40,7 @@ Then add the persistence context annotation to any provided class:
 @PersistenceContext(name = "default", // < matches the name from persistence.xml
         properties = {
                 // additional properties can be added to the persistence configuration
-                @PersistenceProperty(name = "javax.persistence.jdbc.url", value = "${db.url}"),
+                @PersistenceProperty(name = "jakarta.persistence.jdbc.url", value = "${db.url}"),
                 @PersistenceProperty(name = "hibernate.hbm2ddl.auto", value = "create")
         })
 public class DAO {

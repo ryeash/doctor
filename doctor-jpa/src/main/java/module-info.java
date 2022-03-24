@@ -3,7 +3,7 @@ module doctor.jpa {
 
     requires doctor.core;
     requires jakarta.inject;
-    requires java.persistence;
+    requires jakarta.persistence;
 
     exports vest.doctor.jpa;
 }

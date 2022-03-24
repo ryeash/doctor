@@ -40,6 +40,7 @@ public final class CachedScopeProvider<T> extends DoctorProviderWrapper<T> {
     @Override
     public void close() throws Exception {
         destroy(value);
+        super.close();
     }
 
     private void cleanupPrevious() {

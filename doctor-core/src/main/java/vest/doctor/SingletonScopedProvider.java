@@ -28,5 +28,6 @@ public final class SingletonScopedProvider<T> extends DoctorProviderWrapper<T> {
     @Override
     public void close() throws Exception {
         destroy(instance);
+        super.close();
     }
 }

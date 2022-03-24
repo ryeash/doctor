@@ -83,9 +83,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
                         Property property = method.getAnnotation(Property.class);
                         if (property != null) {
                             String propertyName = propertyPrefix + property.value();
-                            b.line(Objects.class, ".requireNonNull(",
-                                    PropertyCodeGen.getPropertyCode(context, method, propertyName, method.getReturnType(), "providerRegistry"),
-                                    ", \"missing required property '", propertyName, "'\");");
+                            b.line(PropertyCodeGen.getPropertyCode(context, method, propertyName, method.getReturnType(), "providerRegistry"), ";");
                         }
                     }
                 }

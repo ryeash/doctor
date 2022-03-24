@@ -121,11 +121,12 @@ public class ReactorHTTPLoader implements ApplicationLoader {
                 .host(configuration.getBindAddress().getHostName())
                 .port(configuration.getBindAddress().getPort())
                 .route(routes -> {
+                    log.info("Adding routes...");
                     providerRegistry.getInstances(Handler.class)
                             .forEach(handler -> {
                                 for (String method : handler.method()) {
                                     for (String path : handler.path()) {
-                                        String finalPath = RouterWriter.squeeze(configuration.getRouterPrefix() + "/" + path, '/');
+                                        String finalPath = HandlerWriter.squeeze(configuration.getRouterPrefix() + "/" + path, '/');
                                         log.info("Route: {} {} {}", method, finalPath, handler);
                                         switch (method.trim().toUpperCase()) {
                                             case "GET" -> {
@@ -143,14 +144,16 @@ public class ReactorHTTPLoader implements ApplicationLoader {
                                 }
                             });
 
+                    log.info("Adding filters...");
                     providerRegistry.getInstances(Filter.class)
                             .sorted(Prioritized.COMPARATOR)
                             .forEach(filter -> log.info("Filter: {}", filter));
 
+                    log.info("Adding websockets...");
                     providerRegistry.getInstances(Websocket.class)
                             .forEach(handler -> {
                                 for (String path : handler.path()) {
-                                    String finalPath = RouterWriter.squeeze(configuration.getRouterPrefix() + "/" + path, '/');
+                                    String finalPath = HandlerWriter.squeeze(configuration.getRouterPrefix() + "/" + path, '/');
                                     log.info("Websocket: {} {}", finalPath, handler);
                                     routes.ws(finalPath, handler);
                                 }

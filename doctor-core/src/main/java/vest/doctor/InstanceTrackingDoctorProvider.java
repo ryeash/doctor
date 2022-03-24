@@ -29,6 +29,7 @@ public abstract class InstanceTrackingDoctorProvider<T> extends DoctorProviderWr
                 destroy(next);
             }
         }
+        super.close();
     }
 
     private void destroyUnchecked(T value) {

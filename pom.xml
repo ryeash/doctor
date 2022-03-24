@@ -25,8 +25,8 @@
         <maven.compiler.target>17</maven.compiler.target>
         <slf4j.version>1.7.36</slf4j.version>
         <maven.deploy.skip>true</maven.deploy.skip>
-        <netty.version>4.1.74.Final</netty.version>
-        <jackson.version>2.13.1</jackson.version>
+        <netty.version>4.1.75.Final</netty.version>
+        <jackson.version>2.13.2</jackson.version>
     </properties>
 
     <dependencyManagement>
@@ -54,12 +54,12 @@
             <dependency>
                 <groupId>org.testng</groupId>
                 <artifactId>testng</artifactId>
-                <version>7.4.0</version>
+                <version>7.5</version>
             </dependency>
             <dependency>
                 <groupId>io.rest-assured</groupId>
                 <artifactId>rest-assured</artifactId>
-                <version>4.5.0</version>
+                <version>4.5.1</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>

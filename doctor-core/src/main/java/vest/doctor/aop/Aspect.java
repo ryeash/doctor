@@ -16,7 +16,9 @@ package vest.doctor.aop;
  *      // execution
  *      // either allow the aspect chain to proceed
  *      Object result = methodInvocation.next();
- *      // or, short circuit
+ *      // or, short circuit by invoking the method directly
+ *      Object result = methodInvocation.invoke();
+ *      // or, short circuit by returning a cached result
  *      String result = "my result";
  *
  *      // after

@@ -162,6 +162,7 @@ public interface ProviderRegistry {
 
     /**
      * Determine if the given type can be satisfied by a registered provider.
+     * The same as calling <code>hasProvider(type, null)</code>
      *
      * @param type the type to check
      * @return true if a provider exists that can satisfy the given type (and a null qualifier)
