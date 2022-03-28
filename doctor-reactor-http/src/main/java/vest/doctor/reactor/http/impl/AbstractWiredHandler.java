@@ -15,7 +15,6 @@ import vest.doctor.reactor.http.Filter;
 import vest.doctor.reactor.http.Handler;
 import vest.doctor.reactor.http.HttpResponse;
 import vest.doctor.reactor.http.RequestContext;
-import vest.doctor.reactor.http.ResponseBody;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -80,7 +79,8 @@ public abstract class AbstractWiredHandler implements Handler {
             return exceptionHandler.handle(requestContext, error);
         } catch (Throwable t) {
             log.error("error thrown by error handler", t);
-            return Mono.just(requestContext.response().status(500).body(ResponseBody.empty()));
+            requestContext.response().status(500);
+            return requestContext;
         }
     }
 }

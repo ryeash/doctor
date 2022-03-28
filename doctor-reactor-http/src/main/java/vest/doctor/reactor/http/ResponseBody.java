@@ -72,7 +72,7 @@ public interface ResponseBody {
      * Create an empty response body.
      */
     static ResponseBody empty() {
-        return () -> Mono.just(LastHttpContent.EMPTY_LAST_CONTENT);
+        return EmptyResponseBody.INSTANCE;
     }
 
     record DefaultResponseBody(ByteBuf buf) implements ResponseBody {
@@ -88,4 +88,15 @@ public interface ResponseBody {
             return publisher;
         }
     }
+
+    record EmptyResponseBody() implements ResponseBody {
+
+        private static final EmptyResponseBody INSTANCE = new EmptyResponseBody();
+
+        @Override
+        public Publisher<HttpContent> content() {
+            return Mono.just(LastHttpContent.EMPTY_LAST_CONTENT);
+        }
+    }
+
 }

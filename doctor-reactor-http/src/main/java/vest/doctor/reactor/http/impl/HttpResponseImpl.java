@@ -9,6 +9,7 @@ import vest.doctor.reactor.http.HttpResponse;
 import vest.doctor.reactor.http.ResponseBody;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class HttpResponseImpl implements HttpResponse {
@@ -56,7 +57,7 @@ public class HttpResponseImpl implements HttpResponse {
 
     @Override
     public HttpResponse body(ResponseBody body) {
-        this.body = body;
+        this.body = Objects.requireNonNull(body);
         return this;
     }
 
@@ -73,7 +74,7 @@ public class HttpResponseImpl implements HttpResponse {
 
     @Override
     public Publisher<Void> send() {
-        return response.sendObject(body.content());
+        return response.sendObject(body != null ? body.content() : ResponseBody.empty().content());
     }
 
     @Override
