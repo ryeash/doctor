@@ -9,7 +9,8 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * The primary means of interacting with the generated provider instances at runtime in application code.
+ * The primary means of (programmatically) interacting with the generated provider
+ * instances at runtime in application code.
  */
 public interface ProviderRegistry {
 

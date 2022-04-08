@@ -139,7 +139,7 @@ public abstract class AbstractDoctorTest extends Assert {
     }
 
     private static String qualifier(AnnotatedElement annotatedElement) {
-        return getAnnotationWithExtension(annotatedElement, Qualifier.class)
+        return qualifierOpt(annotatedElement)
                 .map(a -> {
                     if (a instanceof Named named) {
                         return named.value();
@@ -151,13 +151,13 @@ public abstract class AbstractDoctorTest extends Assert {
                 .orElse(null);
     }
 
-    private static Optional<Annotation> getAnnotationWithExtension(AnnotatedElement annotatedElement, Class<? extends Annotation> parentAnnotation) {
+    private static Optional<Annotation> qualifierOpt(AnnotatedElement annotatedElement) {
         for (Annotation annotation : annotatedElement.getAnnotations()) {
-            if (annotation.annotationType() == parentAnnotation) {
+            if (annotation.annotationType() == Qualifier.class) {
                 return Optional.of(annotation);
             }
             for (Annotation extendsAnnotations : annotation.annotationType().getAnnotations()) {
-                if (extendsAnnotations.annotationType() == parentAnnotation) {
+                if (extendsAnnotations.annotationType() == Qualifier.class) {
                     return Optional.of(annotation);
                 }
             }
