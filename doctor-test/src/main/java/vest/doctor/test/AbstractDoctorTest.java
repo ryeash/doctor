@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Listeners;
 import vest.doctor.InjectionException;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.conf.ConfigurationFacade;
@@ -37,6 +38,7 @@ import java.util.stream.Stream;
  * a doctor instance using the {@link TestConfiguration} annotation. The annotation is required
  * and the test will fail to start with an {@link IllegalStateException} if missing.
  */
+@Listeners(TestOrderRandomizer.class)
 public abstract class AbstractDoctorTest extends Assert {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());

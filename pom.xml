@@ -12,6 +12,7 @@
         <module>doctor-core</module>
         <module>doctor-processor</module>
         <module>doctor-runtime</module>
+        <module>doctor-reactive</module>
         <module>doctor-jersey</module>
         <module>doctor-reactor-http</module>
         <module>doctor-jpa</module>

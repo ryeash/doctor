@@ -66,9 +66,10 @@ public abstract class AbstractWiredHandler implements Handler {
             if (iterator.hasNext()) {
                 Filter filter = iterator.next();
                 return filter.filter(requestContext, this::doNextFilter);
+            } else {
+                Object result = handle(requestContext);
+                return bodyInterchange.write(requestContext, responseType(), result);
             }
-            Object result = handle(requestContext);
-            return bodyInterchange.write(requestContext, responseType(), result);
         } catch (Throwable t) {
             return Mono.error(t);
         }
