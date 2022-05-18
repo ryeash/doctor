@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-public class TrackingSubscription implements ReactiveSubscription {
+public final class TrackingSubscription implements ReactiveSubscription {
 
     private final AtomicReference<FlowState> state = new AtomicReference<>(FlowState.UNSUBSCRIBED);
     private final AtomicLong requested = new AtomicLong(0);

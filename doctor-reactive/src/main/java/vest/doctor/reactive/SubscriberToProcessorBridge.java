@@ -2,7 +2,7 @@ package vest.doctor.reactive;
 
 import java.util.concurrent.Flow;
 
-public class SubscriberToProcessorBridge<I> extends StandardProcessors.IdentityProcessor<I> {
+public final class SubscriberToProcessorBridge<I> extends StandardProcessors.IdentityProcessor<I> {
 
     private final Flow.Subscriber<I> subscriber;
 

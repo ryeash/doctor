@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Test(invocationCount = 5)
-public class MiscTest extends Assert {
+public class FloTest extends Assert {
 
     final ExecutorService BACKGROUND = Executors.newCachedThreadPool();
     final List<String> list = List.of("a", "b", "c", "d", "e", "f");
@@ -84,6 +84,7 @@ public class MiscTest extends Assert {
     public void parallel() {
         List<String> join = Flo.start(String.class)
                 .parallel(BACKGROUND)
+                .observe(s -> System.out.println(Thread.currentThread().getName() + " " + s))
                 .collect(Collectors.toList())
                 .subscribe()
                 .emitAll(list)
@@ -115,20 +116,20 @@ public class MiscTest extends Assert {
 
     public void filter() {
         List<String> result = Flo.start(String.class)
-                .drop(s -> s.equals("b"))
+                .drop(s -> s.equals("b") || s.equals("e"))
                 .collect(Collectors.toList())
                 .subscribe()
                 .justThese(list)
                 .join();
-        assertEquals(result, List.of("a", "c", "d", "e", "f"));
+        assertEquals(result, List.of("a", "c", "d", "f"));
 
         result = Flo.start(String.class)
-                .keep(s -> s.equals("b"))
+                .take(s -> s.equals("b") || s.equals("e"))
                 .collect(Collectors.toList())
                 .subscribe()
                 .justThese(list)
                 .join();
-        assertEquals(result, List.of("b"));
+        assertEquals(result, List.of("b", "e"));
     }
 
     public void filterWhile() {
@@ -283,7 +284,6 @@ public class MiscTest extends Assert {
         assertTrue(errored.get());
     }
 
-    @Test
     public void standardSubscriber() {
         AtomicBoolean subscribed = new AtomicBoolean(false);
         AtomicReference<String> value = new AtomicReference<>(null);
@@ -318,7 +318,6 @@ public class MiscTest extends Assert {
         assertTrue(completed.get());
     }
 
-    @Test
     public void onComplete() {
         AtomicBoolean complete = new AtomicBoolean(false);
         Flo.start(String.class)
@@ -332,7 +331,6 @@ public class MiscTest extends Assert {
         assertTrue(complete.get());
     }
 
-    @Test
     public void onError() {
         AtomicBoolean errored = new AtomicBoolean(false);
         Flo.start(String.class)

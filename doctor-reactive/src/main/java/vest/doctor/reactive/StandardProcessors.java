@@ -7,7 +7,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class StandardProcessors {
+public final class StandardProcessors {
+
+    private StandardProcessors() {
+    }
 
     public static abstract class IdentityProcessor<I> extends AbstractProcessor<I, I> {
         @Override

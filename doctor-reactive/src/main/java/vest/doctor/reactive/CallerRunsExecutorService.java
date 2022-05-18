@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 /**
  * An {@link ExecutorService} that invokes all tasks in the caller thread.
  */
-public class CallerRunsExecutorService implements ExecutorService {
+public final class CallerRunsExecutorService implements ExecutorService {
 
     private static final class CallerRunsExecutorServiceHolder {
         private static final ExecutorService INSTANCE = new CallerRunsExecutorService();

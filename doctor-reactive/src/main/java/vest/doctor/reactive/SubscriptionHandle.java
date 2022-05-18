@@ -2,17 +2,22 @@ package vest.doctor.reactive;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
-import java.util.concurrent.atomic.AtomicReference;
 
-public class SubscriptionHandle<I, O> {
+public final class SubscriptionHandle<I, O> {
 
+    private final ReactiveSubscription subscription;
     private final CompletableFuture<O> future;
-    private final Flo<I, O> flow;
+    private final Flow.Processor<I, O> processor;
 
     public SubscriptionHandle(Flo<I, O> flow, long initialRequest) {
+        this.subscription = new TrackingSubscription();
         this.future = new CompletableFuture<>();
-        this.flow = flow.process(new CompletableTerminalSubscriber<>(initialRequest, future));
-        this.flow.head.onSubscribe(new TrackingSubscription());
+        this.processor = flow.process(new CompletableTerminalSubscriber<>(initialRequest, future)).toProcessor();
+        this.processor.onSubscribe(subscription);
+    }
+
+    public ReactiveSubscription subscription() {
+        return subscription;
     }
 
     public CompletableFuture<O> future() {
@@ -20,13 +25,13 @@ public class SubscriptionHandle<I, O> {
     }
 
     public SubscriptionHandle<I, O> emitOne(I item) {
-        flow.head.onNext(item);
+        processor.onNext(item);
         return this;
     }
 
     public SubscriptionHandle<I, O> emitAll(Iterable<? extends I> items) {
         for (I o : items) {
-            flow.head.onNext(o);
+            processor.onNext(o);
         }
         return this;
     }
@@ -40,12 +45,12 @@ public class SubscriptionHandle<I, O> {
     }
 
     public SubscriptionHandle<I, O> done() {
-        flow.head.onComplete();
+        processor.onComplete();
         return this;
     }
 
     public SubscriptionHandle<I, O> error(Throwable t) {
-        flow.head.onError(t);
+        processor.onError(t);
         return this;
     }
 
@@ -53,46 +58,4 @@ public class SubscriptionHandle<I, O> {
         return future.join();
     }
 
-    private static final class CompletableTerminalSubscriber<O> extends StandardProcessors.IdentityProcessor<O> {
-
-        private final AtomicReference<O> last;
-        private final long initialRequest;
-        private final CompletableFuture<O> future;
-
-        private CompletableTerminalSubscriber(long initialRequest, CompletableFuture<O> future) {
-            this.last = new AtomicReference<>();
-            this.initialRequest = initialRequest;
-            this.future = future;
-        }
-
-        @Override
-        public void subscribe(Flow.Subscriber<? super O> subscriber) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void onSubscribe(Flow.Subscription subscription) {
-            super.onSubscribe(subscription);
-            if (initialRequest > 0) {
-                subscription.request(initialRequest);
-            }
-        }
-
-        @Override
-        public void onError(Throwable throwable) {
-            subscription.transition(FlowState.ERROR);
-            future.completeExceptionally(throwable);
-        }
-
-        @Override
-        public void onComplete() {
-            subscription.transition(FlowState.COMPLETED);
-            future.complete(last.get());
-        }
-
-        @Override
-        protected void handleNextItem(O item) {
-            last.set(item);
-        }
-    }
 }

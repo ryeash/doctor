@@ -9,7 +9,7 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ParallelProcessor<I> extends StandardProcessors.IdentityProcessor<I> {
+public final class ParallelProcessor<I> extends StandardProcessors.IdentityProcessor<I> {
 
     private final ExecutorService subscribeOn;
     private final ExecutorService manageOn;
@@ -41,7 +41,7 @@ public class ParallelProcessor<I> extends StandardProcessors.IdentityProcessor<I
     @Override
     public void onComplete() {
         completed.set(true);
-        processQueue();
+        subscribeOn.submit(this::queueLoop);
     }
 
     @Override
@@ -52,10 +52,6 @@ public class ParallelProcessor<I> extends StandardProcessors.IdentityProcessor<I
             inFlight.decrementAndGet();
             throw new BufferOverflowException();
         }
-        processQueue();
-    }
-
-    private void processQueue() {
         subscribeOn.submit(this::queueLoop);
     }
 

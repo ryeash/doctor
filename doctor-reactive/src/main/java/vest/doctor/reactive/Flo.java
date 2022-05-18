@@ -81,7 +81,7 @@ public class Flo<S, I> {
         return process(new StandardProcessors.ItemProcessor1<>(action));
     }
 
-    public Flo<S, I> keep(Predicate<I> filter) {
+    public Flo<S, I> take(Predicate<I> filter) {
         return process(new StandardProcessors.ItemFilter<>(filter, true));
     }
 
@@ -120,11 +120,11 @@ public class Flo<S, I> {
     }
 
     public Flo<S, I> parallel() {
-        return parallel(ForkJoinPool.commonPool(), CallerRunsExecutorService.instance());
+        return parallel(ForkJoinPool.commonPool(), CallerRunsExecutorService.instance(), Flow.defaultBufferSize());
     }
 
     public Flo<S, I> parallel(ExecutorService subscribeOn) {
-        return parallel(subscribeOn, CallerRunsExecutorService.instance());
+        return parallel(subscribeOn, CallerRunsExecutorService.instance(), Flow.defaultBufferSize());
     }
 
     public Flo<S, I> parallel(ExecutorService subscribeOn, ExecutorService manageOn) {
@@ -146,6 +146,10 @@ public class Flo<S, I> {
     public <O> Flo<S, O> process(Flow.Processor<I, O> processor) {
         tail.subscribe(processor);
         return new Flo<>(head, processor);
+    }
+
+    public Flow.Processor<S, I> toProcessor() {
+        return new CompositeProcessor<>(head, tail);
     }
 
     public SubscriptionHandle<S, I> subscribe() {

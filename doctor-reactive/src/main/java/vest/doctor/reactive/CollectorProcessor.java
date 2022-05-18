@@ -2,7 +2,7 @@ package vest.doctor.reactive;
 
 import java.util.stream.Collector;
 
-public class CollectorProcessor<I, A, O> extends AbstractProcessor<I, O> {
+public final class CollectorProcessor<I, A, O> extends AbstractProcessor<I, O> {
 
     private final Collector<? super I, A, O> collector;
     private final A container;
