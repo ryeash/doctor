@@ -1,6 +1,7 @@
 package vest.doctor.reactive;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.Objects;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 import java.util.concurrent.ForkJoinPool;
@@ -12,11 +13,14 @@ import java.util.function.Predicate;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
-public class Flo<S, I> {
+public abstract class Flo<S, I> {
+
+    public static <I> Flo<?, I> just(I item) {
+        return new Bounded<>(item, new Source<>());
+    }
 
     public static <I> Flo<I, I> start() {
-        Source<I> objectSource = new Source<>();
-        return new Flo<>(objectSource, objectSource);
+        return new Unbound<>(new Source<>());
     }
 
     @SuppressWarnings("unused")
@@ -24,12 +28,25 @@ public class Flo<S, I> {
         return start();
     }
 
+    public static <I> Flo<I, I> empty() {
+        return new Empty<>(new Source<>());
+    }
+
+    @SuppressWarnings("unused")
+    public static <I> Flo<I, I> empty(Class<I> type) {
+        return new Empty<>(new Source<>());
+    }
+
     final Flow.Subscriber<S> head;
     final Flow.Publisher<I> tail;
 
-    public Flo(Flow.Subscriber<S> head, Flow.Processor<?, I> tail) {
-        this.head = head;
-        this.tail = tail;
+    public Flo(Flow.Processor<S, I> processor) {
+        this(processor, processor);
+    }
+
+    public Flo(Flow.Subscriber<S> head, Flow.Publisher<I> tail) {
+        this.head = Objects.requireNonNull(head);
+        this.tail = Objects.requireNonNull(tail);
     }
 
     public Flo<S, I> onSubscribe(Consumer<ReactiveSubscription> action) {
@@ -56,7 +73,7 @@ public class Flo<S, I> {
         return process(new StandardProcessors.ItemMapper<>(mapper));
     }
 
-    public <O> Flo<S, O> mapFuture(Function<I, CompletableFuture<O>> mapper) {
+    public <O> Flo<S, O> mapFuture(Function<I, ? extends CompletionStage<O>> mapper) {
         return map(mapper).onNext((future, subscription, subscriber) ->
                 future.whenComplete((next, error) -> {
                     if (subscriber != null) {
@@ -69,11 +86,11 @@ public class Flo<S, I> {
                 }));
     }
 
-    public <O> Flo<S, O> flatMapIterable(Function<I, Iterable<O>> mapper) {
+    public <O> Flo<S, O> flatMapIterable(Function<I, ? extends Iterable<O>> mapper) {
         return map(mapper).onNext(Iterable::forEach);
     }
 
-    public <O> Flo<S, O> flatMapStream(Function<I, Stream<O>> mapper) {
+    public <O> Flo<S, O> flatMapStream(Function<I, ? extends Stream<O>> mapper) {
         return map(mapper).onNext(Stream::forEach);
     }
 
@@ -145,7 +162,7 @@ public class Flo<S, I> {
 
     public <O> Flo<S, O> process(Flow.Processor<I, O> processor) {
         tail.subscribe(processor);
-        return new Flo<>(head, processor);
+        return newFlo(head, processor);
     }
 
     public Flow.Processor<S, I> toProcessor() {
@@ -156,7 +173,77 @@ public class Flo<S, I> {
         return subscribe(Long.MAX_VALUE);
     }
 
-    public SubscriptionHandle<S, I> subscribe(long initialRequest) {
-        return new SubscriptionHandle<>(this, initialRequest);
+    public abstract SubscriptionHandle<S, I> subscribe(long initialRequest);
+
+    protected abstract <O> Flo<S, O> newFlo(Flow.Subscriber<S> head, Flow.Publisher<O> tail);
+
+
+    private static final class Unbound<S, I> extends Flo<S, I> {
+
+        public Unbound(Flow.Processor<S, I> processor) {
+            super(processor, processor);
+        }
+
+        public Unbound(Flow.Subscriber<S> head, Flow.Publisher<I> tail) {
+            super(head, tail);
+        }
+
+        @Override
+        public SubscriptionHandle<S, I> subscribe(long initialRequest) {
+            return new StandardSubscriptionHandle<>(this, initialRequest);
+        }
+
+        @Override
+        protected <O> Flo<S, O> newFlo(Flow.Subscriber<S> head, Flow.Publisher<O> tail) {
+            return new Unbound<>(head, tail);
+        }
+    }
+
+    private static final class Bounded<S, I> extends Flo<S, I> {
+
+        private final S item;
+
+        public Bounded(S item, Flow.Processor<S, I> processor) {
+            this(item, processor, processor);
+        }
+
+
+        public Bounded(S item, Flow.Subscriber<S> head, Flow.Publisher<I> tail) {
+            super(head, tail);
+            this.item = Objects.requireNonNull(item);
+        }
+
+        @Override
+        public SubscriptionHandle<S, I> subscribe(long initialRequest) {
+            StandardSubscriptionHandle<S, I> subscribe = new StandardSubscriptionHandle<>(this, initialRequest);
+            subscribe.just(item);
+            return subscribe;
+        }
+
+        @Override
+        protected <O> Flo<S, O> newFlo(Flow.Subscriber<S> head, Flow.Publisher<O> tail) {
+            return new Bounded<>(item, head, tail);
+        }
+    }
+
+    private static final class Empty<S, I> extends Flo<S, I> {
+
+        public Empty(Flow.Processor<S, I> processor) {
+            super(processor, processor);
+        }
+
+        public Empty(Flow.Subscriber<S> head, Flow.Publisher<I> tail) {
+            super(head, tail);
+        }
+
+        @Override
+        public SubscriptionHandle<S, I> subscribe(long initialRequest) {
+            return new StandardSubscriptionHandle<>(this, initialRequest).done();
+        }
+
+        @Override
+        protected <O> Flo<S, O> newFlo(Flow.Subscriber<S> head, Flow.Publisher<O> tail) {
+            return new Empty<>(head, tail);
+        }
     }
 }

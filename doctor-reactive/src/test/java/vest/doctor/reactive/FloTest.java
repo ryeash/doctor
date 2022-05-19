@@ -12,6 +12,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Test(invocationCount = 5)
@@ -21,24 +22,12 @@ public class FloTest extends Assert {
     final List<String> list = List.of("a", "b", "c", "d", "e", "f");
     final List<String> capitalized = list.stream().map(String::toUpperCase).collect(Collectors.toList());
 
-    public void basicCompletionSignal() {
-        SubscriptionHandle<String, String> realize = Flo.start(String.class)
-                .map(String::toUpperCase)
-                .subscribe();
-        CompletableFuture<String> future = realize.future();
-        realize.emitOne("alpha");
-        realize.done();
-        assertEquals(future.join(), "ALPHA");
-    }
-
     public void collect() {
-        String result = Flo.start(String.class)
+        String result = Flo.just("alpha")
                 .flatMapStream(s -> s.chars().mapToObj(c -> "" + (char) c))
                 .map(String::toUpperCase)
                 .collect(Collectors.joining())
                 .subscribe()
-                .emitOne("alpha")
-                .done()
                 .join();
         assertEquals(result, "ALPHA");
     }
@@ -47,19 +36,18 @@ public class FloTest extends Assert {
         String join = Flo.start(String.class)
                 .flatMapStream(s -> s.chars().mapToObj(c -> "" + (char) c))
                 .<String>onNext((item, emitter) -> {
-                    Flo.start(String.class)
+                    Flo.just(item)
                             .map(String::toUpperCase)
                             .observe(emitter::accept)
-                            .subscribe()
-                            .justOne(item);
+                            .subscribe();
                 })
                 .collect(Collectors.joining())
                 .subscribe()
-                .emitOne("alpha")
-                .emitOne(" ")
-                .emitOne("bravo")
-                .emitOne(" ")
-                .emitOne("charlie")
+                .emit("alpha")
+                .emit(" ")
+                .emit("bravo")
+                .emit(" ")
+                .emit("charlie")
                 .done()
                 .join();
         assertEquals(join, "ALPHA BRAVO CHARLIE");
@@ -75,7 +63,7 @@ public class FloTest extends Assert {
                 .recover(err -> "RECOVER")
                 .collect(Collectors.joining(" "))
                 .subscribe()
-                .emitAll(List.of("a", "ERROR", "c"))
+                .emit(List.of("a", "ERROR", "c"))
                 .done()
                 .join();
         assertEquals(join, "a RECOVER c");
@@ -87,7 +75,7 @@ public class FloTest extends Assert {
                 .observe(s -> System.out.println(Thread.currentThread().getName() + " " + s))
                 .collect(Collectors.toList())
                 .subscribe()
-                .emitAll(list)
+                .emit(list)
                 .done()
                 .join();
         assertTrue(join.containsAll(list));
@@ -97,7 +85,7 @@ public class FloTest extends Assert {
                 .parallel(BACKGROUND, BACKGROUND)
                 .collect(Collectors.toList())
                 .subscribe()
-                .emitAll(list)
+                .emit(list)
                 .done()
                 .join();
         assertTrue(join.containsAll(list));
@@ -107,7 +95,7 @@ public class FloTest extends Assert {
                 .parallel()
                 .collect(Collectors.toList())
                 .subscribe()
-                .emitAll(list)
+                .emit(list)
                 .done()
                 .join();
         assertTrue(join.containsAll(list));
@@ -119,7 +107,7 @@ public class FloTest extends Assert {
                 .drop(s -> s.equals("b") || s.equals("e"))
                 .collect(Collectors.toList())
                 .subscribe()
-                .justThese(list)
+                .just(list)
                 .join();
         assertEquals(result, List.of("a", "c", "d", "f"));
 
@@ -127,7 +115,7 @@ public class FloTest extends Assert {
                 .take(s -> s.equals("b") || s.equals("e"))
                 .collect(Collectors.toList())
                 .subscribe()
-                .justThese(list)
+                .just(list)
                 .join();
         assertEquals(result, List.of("b", "e"));
     }
@@ -138,7 +126,7 @@ public class FloTest extends Assert {
                 .takeWhile(s -> !s.equals("e"))
                 .collect(Collectors.toList())
                 .subscribe()
-                .justThese(list)
+                .just(list)
                 .join();
         assertEquals(result, List.of("b", "c", "d"));
 
@@ -147,7 +135,7 @@ public class FloTest extends Assert {
                 .takeWhile(s -> !s.equals("e"))
                 .collect(Collectors.toList())
                 .subscribe()
-                .justThese(list)
+                .just(list)
                 .join();
         assertEquals(result, List.of("c", "d"));
 
@@ -156,7 +144,7 @@ public class FloTest extends Assert {
                 .takeWhile(s -> !s.equals("e"), true)
                 .collect(Collectors.toList())
                 .subscribe()
-                .justThese(list)
+                .just(list)
                 .join();
         assertEquals(result, List.of("b", "c", "d", "e"));
     }
@@ -166,7 +154,7 @@ public class FloTest extends Assert {
                 .skip(2)
                 .collect(Collectors.toList())
                 .subscribe()
-                .justThese(list)
+                .just(list)
                 .join();
         assertEquals(result, List.of("c", "d", "e", "f"));
 
@@ -174,7 +162,7 @@ public class FloTest extends Assert {
                 .limit(3)
                 .collect(Collectors.toList())
                 .subscribe()
-                .justThese(list)
+                .just(list)
                 .join();
         assertEquals(result, List.of("a", "b", "c"));
 
@@ -183,7 +171,7 @@ public class FloTest extends Assert {
                 .limit(2)
                 .collect(Collectors.toList())
                 .subscribe()
-                .justThese(list)
+                .just(list)
                 .join();
         assertEquals(result, List.of("c", "d"));
     }
@@ -193,7 +181,7 @@ public class FloTest extends Assert {
                 .mapFuture(s -> CompletableFuture.completedFuture(s.toUpperCase()))
                 .collect(Collectors.toList())
                 .subscribe()
-                .justOne("alpha")
+                .just("alpha")
                 .join();
         assertEquals(result, List.of("ALPHA"));
     }
@@ -203,7 +191,7 @@ public class FloTest extends Assert {
                 .flatMapIterable(s -> Arrays.asList(s.toString().split(" ")))
                 .collect(Collectors.joining(" "))
                 .subscribe()
-                .justOne(String.join(" ", list))
+                .just(String.join(" ", list))
                 .join();
         assertEquals(join, String.join(" ", list));
     }
@@ -216,7 +204,7 @@ public class FloTest extends Assert {
                 })
                 .collect(Collectors.toList())
                 .subscribe(1);
-        BACKGROUND.submit(() -> subscribe.justThese(list));
+        BACKGROUND.submit(() -> subscribe.just(list));
         List<String> result = subscribe.join();
         assertEquals(result, capitalized);
     }
@@ -228,7 +216,7 @@ public class FloTest extends Assert {
                     throw new IllegalArgumentException("error");
                 })
                 .subscribe();
-        subscribe.justOne("a");
+        subscribe.just("a");
         assertThrows(CompletionException.class, subscribe::join);
     }
 
@@ -240,7 +228,7 @@ public class FloTest extends Assert {
                     throw new IllegalArgumentException("error");
                 })
                 .subscribe();
-        subscribe.justOne("a");
+        subscribe.just("a");
         assertThrows(CompletionException.class, subscribe::join);
     }
 
@@ -254,31 +242,27 @@ public class FloTest extends Assert {
                 })
                 .map(String::toUpperCase)
                 .subscribe()
-                .justOne("a")
+                .just("a")
                 .join();
         assertTrue(subcribed.get());
         assertTrue(completed.get());
 
         AtomicBoolean canceled = new AtomicBoolean(false);
         Flo.start(String.class)
-                .onSubscribe(s -> {
-                    s.addStateListener(FlowState.CANCELLED, (sub) -> canceled.set(true));
-                })
+                .onSubscribe(s -> s.addStateListener(FlowState.CANCELLED, (sub) -> canceled.set(true)))
                 .map(String::toUpperCase)
                 .onNext((item, subscription, subscriber) -> subscription.cancel())
                 .subscribe()
-                .justOne("a")
+                .just("a")
                 .join();
         assertTrue(canceled.get());
 
         AtomicBoolean errored = new AtomicBoolean(false);
         SubscriptionHandle<String, String> error = Flo.start(String.class)
-                .onSubscribe(s -> {
-                    s.addStateListener(FlowState.ERROR, (sub) -> errored.set(true));
-                })
+                .onSubscribe(s -> s.addStateListener(FlowState.ERROR, (sub) -> errored.set(true)))
                 .map(String::toUpperCase)
                 .subscribe()
-                .emitOne("a")
+                .emit("a")
                 .error(new IllegalArgumentException("error"));
         assertThrows(error::join);
         assertTrue(errored.get());
@@ -311,7 +295,7 @@ public class FloTest extends Assert {
                     }
                 })
                 .subscribe()
-                .justOne("alpha")
+                .just("alpha")
                 .join();
         assertTrue(subscribed.get());
         assertEquals(value.get(), "alpha");
@@ -326,7 +310,7 @@ public class FloTest extends Assert {
                     subscriber.onComplete();
                 })
                 .subscribe()
-                .justOne("a")
+                .just("a")
                 .join();
         assertTrue(complete.get());
     }
@@ -339,9 +323,35 @@ public class FloTest extends Assert {
                     subscriber.onError(error);
                 })
                 .subscribe()
-                .emitOne("a")
+                .emit("a")
                 .error(new IllegalArgumentException());
         assertTrue(errored.get());
+    }
+
+    public void mono() {
+        List<String> result = Flo.just(list)
+                .flatMapIterable(Function.identity())
+                .observe(System.out::println)
+                .collect(Collectors.toList())
+                .subscribe()
+                .join();
+        assertEquals(result, list);
+    }
+
+    public void empty() {
+        String result = Flo.<String>empty()
+                .subscribe()
+                .join();
+        assertNull(result);
+
+        result = Flo.empty(String.class)
+                .onComplete(((subscription, subscriber) -> {
+                    subscriber.onNext("finished value");
+                    subscriber.onComplete();
+                }))
+                .subscribe()
+                .join();
+        assertEquals(result, "finished value");
     }
 
 }
