@@ -66,7 +66,7 @@ public final class ParallelProcessor<I> extends StandardProcessors.IdentityProce
                 inFlight.decrementAndGet();
             }
         }
-        if (completed.get() && inFlight.get() == 0) {
+        if (inFlight.get() == 0 && completed.compareAndSet(true, false)) {
             manageOn.submit(super::onComplete);
         }
     }

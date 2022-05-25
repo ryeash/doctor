@@ -1,0 +1,30 @@
+
+doctor.netty.http {
+    bind: "localhost:9998,localhost:9999"
+    tcp {
+        threads: 1
+        threadFormat: netty-tcp-%d
+        socketBacklog: 1024
+    }
+    worker {
+        threads: 16
+        threadFormat: netty-worker-%d
+    }
+    ssl {
+        selfSigned: false
+        keyCertChainFile: ""
+        keyFile: ""
+        keyPassword: ""
+    }
+    maxInitialLineLength: 8192
+    maxHeaderSize: 8192
+    maxChunkSize: 8192
+    validateHeaders: false
+    initialBufferSize: 8192
+    maxContentLength: 8388608
+    minGzipSize: 812
+
+    caseInsensitiveMatching: false
+    debugRequestRouting: false
+    routePrefix: ""
+}

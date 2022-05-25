@@ -15,12 +15,16 @@ import java.util.stream.Stream;
 
 public abstract class Flo<S, I> {
 
+    public static <I, O> Flo<I, O> from(Flow.Processor<I, O> processor) {
+        return new Unbounded<>(processor);
+    }
+
     public static <I> Flo<?, I> just(I item) {
         return new Bounded<>(item, new Source<>());
     }
 
     public static <I> Flo<I, I> start() {
-        return new Unbound<>(new Source<>());
+        return new Unbounded<>(new Source<>());
     }
 
     @SuppressWarnings("unused")
@@ -37,8 +41,12 @@ public abstract class Flo<S, I> {
         return new Empty<>(new Source<>());
     }
 
-    final Flow.Subscriber<S> head;
-    final Flow.Publisher<I> tail;
+    public static <I> Flo<I, I> error(Throwable error) {
+        return new Error<>(error, new Source<>());
+    }
+
+    private final Flow.Subscriber<S> head;
+    private Flow.Publisher<I> tail;
 
     public Flo(Flow.Processor<S, I> processor) {
         this(processor, processor);
@@ -59,6 +67,10 @@ public abstract class Flo<S, I> {
 
     public <O> Flo<S, O> onNext(BiConsumer<I, Consumer<? super O>> action) {
         return process(new StandardProcessors.ItemProcessor2<>(action));
+    }
+
+    public Flo<S, I> onComplete(Runnable runnable) {
+        return process(new StandardProcessors.CompletionProcessor0<>(runnable));
     }
 
     public Flo<S, I> onComplete(BiConsumer<ReactiveSubscription, Flow.Subscriber<? super I>> consumer) {
@@ -160,9 +172,11 @@ public abstract class Flo<S, I> {
         return process(new SubscriberToProcessorBridge<>(subscriber));
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public <O> Flo<S, O> process(Flow.Processor<I, O> processor) {
         tail.subscribe(processor);
-        return newFlo(head, processor);
+        this.tail = (Flow.Publisher) processor;
+        return (Flo) this;
     }
 
     public Flow.Processor<S, I> toProcessor() {
@@ -175,27 +189,15 @@ public abstract class Flo<S, I> {
 
     public abstract SubscriptionHandle<S, I> subscribe(long initialRequest);
 
-    protected abstract <O> Flo<S, O> newFlo(Flow.Subscriber<S> head, Flow.Publisher<O> tail);
+    private static final class Unbounded<S, I> extends Flo<S, I> {
 
-
-    private static final class Unbound<S, I> extends Flo<S, I> {
-
-        public Unbound(Flow.Processor<S, I> processor) {
+        public Unbounded(Flow.Processor<S, I> processor) {
             super(processor, processor);
-        }
-
-        public Unbound(Flow.Subscriber<S> head, Flow.Publisher<I> tail) {
-            super(head, tail);
         }
 
         @Override
         public SubscriptionHandle<S, I> subscribe(long initialRequest) {
             return new StandardSubscriptionHandle<>(this, initialRequest);
-        }
-
-        @Override
-        protected <O> Flo<S, O> newFlo(Flow.Subscriber<S> head, Flow.Publisher<O> tail) {
-            return new Unbound<>(head, tail);
         }
     }
 
@@ -206,7 +208,6 @@ public abstract class Flo<S, I> {
         public Bounded(S item, Flow.Processor<S, I> processor) {
             this(item, processor, processor);
         }
-
 
         public Bounded(S item, Flow.Subscriber<S> head, Flow.Publisher<I> tail) {
             super(head, tail);
@@ -219,11 +220,6 @@ public abstract class Flo<S, I> {
             subscribe.just(item);
             return subscribe;
         }
-
-        @Override
-        protected <O> Flo<S, O> newFlo(Flow.Subscriber<S> head, Flow.Publisher<O> tail) {
-            return new Bounded<>(item, head, tail);
-        }
     }
 
     private static final class Empty<S, I> extends Flo<S, I> {
@@ -232,18 +228,30 @@ public abstract class Flo<S, I> {
             super(processor, processor);
         }
 
-        public Empty(Flow.Subscriber<S> head, Flow.Publisher<I> tail) {
-            super(head, tail);
-        }
-
         @Override
         public SubscriptionHandle<S, I> subscribe(long initialRequest) {
             return new StandardSubscriptionHandle<>(this, initialRequest).done();
         }
+    }
+
+    private static final class Error<S, I> extends Flo<S, I> {
+
+        private final Throwable error;
+
+        public Error(Throwable error, Flow.Processor<S, I> processor) {
+            this(error, processor, processor);
+        }
+
+        public Error(Throwable error, Flow.Subscriber<S> head, Flow.Publisher<I> tail) {
+            super(head, tail);
+            this.error = Objects.requireNonNull(error);
+        }
 
         @Override
-        protected <O> Flo<S, O> newFlo(Flow.Subscriber<S> head, Flow.Publisher<O> tail) {
-            return new Empty<>(head, tail);
+        public SubscriptionHandle<S, I> subscribe(long initialRequest) {
+            StandardSubscriptionHandle<S, I> subscribe = new StandardSubscriptionHandle<>(this, initialRequest);
+            subscribe.error(error);
+            return subscribe;
         }
     }
 }

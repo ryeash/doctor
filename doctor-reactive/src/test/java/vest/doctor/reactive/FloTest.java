@@ -331,11 +331,11 @@ public class FloTest extends Assert {
     public void mono() {
         List<String> result = Flo.just(list)
                 .flatMapIterable(Function.identity())
-                .observe(System.out::println)
+                .map(String::toUpperCase)
                 .collect(Collectors.toList())
                 .subscribe()
                 .join();
-        assertEquals(result, list);
+        assertEquals(result, capitalized);
     }
 
     public void empty() {

@@ -190,6 +190,19 @@ public final class StandardProcessors {
         }
     }
 
+    public static final class CompletionProcessor0<I> extends IdentityProcessor<I> {
+        private final Runnable runnable;
+
+        public CompletionProcessor0(Runnable runnable) {
+            this.runnable = runnable;
+        }
+
+        @Override
+        public void onComplete() {
+            runnable.run();
+        }
+    }
+
     public static final class CompletionProcessor2<I> extends IdentityProcessor<I> {
         private final BiConsumer<ReactiveSubscription, Flow.Subscriber<? super I>> consumer;
 
