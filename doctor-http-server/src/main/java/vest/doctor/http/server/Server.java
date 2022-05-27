@@ -133,7 +133,7 @@ public class Server extends SimpleChannelInboundHandler<HttpObject> implements A
 
                 Flo<HttpContent, HttpContent> bodyData = Flo.start(HttpContent.class).parallel(ctx.executor());
                 StreamingRequestBody body = new StreamingRequestBody(ctx, bodyData);
-                ctx.channel().attr(CONTEXT_BODY).set(bodyData.toProcessor());
+                ctx.channel().attr(CONTEXT_BODY).set(bodyData);
                 ctx.channel().attr(BODY_SIZE).set(new AtomicInteger(0));
 
                 ServerRequest req = new ServerRequest(request, body);
@@ -145,7 +145,7 @@ public class Server extends SimpleChannelInboundHandler<HttpObject> implements A
                 } catch (Throwable t) {
                     handle = Flo.error(t);
                 }
-                handle.onError((error, subscription, subscriber) -> handleError(requestContext, error).observe(subscriber::onNext).subscribe())
+                handle.recover((error, subscription, subscriber) -> handleError(requestContext, error).observe(subscriber::onNext).subscribe())
                         .observe(r -> writeResponse(ctx, r))
                         .subscribe();
                 // ensure the body flow is subscribed

@@ -13,10 +13,14 @@ import java.util.function.Predicate;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
-public abstract class Flo<S, I> {
+public abstract class Flo<S, I> implements Flow.Processor<S, I> {
 
     public static <I, O> Flo<I, O> from(Flow.Processor<I, O> processor) {
-        return new Unbounded<>(processor);
+        if (processor instanceof Flo<I, O> flo) {
+            return flo;
+        } else {
+            return new Unbounded<>(processor);
+        }
     }
 
     public static <I> Flo<?, I> just(I item) {
@@ -61,32 +65,12 @@ public abstract class Flo<S, I> {
         return process(new StandardProcessors.OnSubscribeProcessor<>(action));
     }
 
-    public <O> Flo<S, O> onNext(TriConsumer<I, ReactiveSubscription, Flow.Subscriber<? super O>> action) {
-        return process(new StandardProcessors.ItemProcessor3<>(action));
-    }
-
-    public <O> Flo<S, O> onNext(BiConsumer<I, Consumer<? super O>> action) {
-        return process(new StandardProcessors.ItemProcessor2<>(action));
-    }
-
-    public Flo<S, I> onComplete(Runnable runnable) {
-        return process(new StandardProcessors.CompletionProcessor0<>(runnable));
-    }
-
-    public Flo<S, I> onComplete(BiConsumer<ReactiveSubscription, Flow.Subscriber<? super I>> consumer) {
-        return process(new StandardProcessors.CompletionProcessor2<>(consumer));
-    }
-
-    public Flo<S, I> onError(TriConsumer<Throwable, ReactiveSubscription, Flow.Subscriber<? super I>> action) {
-        return process(new StandardProcessors.ErrorProcessor3<>(action));
-    }
-
     public <O> Flo<S, O> map(Function<I, O> mapper) {
         return process(new StandardProcessors.ItemMapper<>(mapper));
     }
 
     public <O> Flo<S, O> mapFuture(Function<I, ? extends CompletionStage<O>> mapper) {
-        return map(mapper).onNext((future, subscription, subscriber) ->
+        return map(mapper).process((future, subscription, subscriber) ->
                 future.whenComplete((next, error) -> {
                     if (subscriber != null) {
                         if (error != null) {
@@ -99,11 +83,11 @@ public abstract class Flo<S, I> {
     }
 
     public <O> Flo<S, O> flatMapIterable(Function<I, ? extends Iterable<O>> mapper) {
-        return map(mapper).onNext(Iterable::forEach);
+        return map(mapper).process(Iterable::forEach);
     }
 
     public <O> Flo<S, O> flatMapStream(Function<I, ? extends Stream<O>> mapper) {
-        return map(mapper).onNext(Stream::forEach);
+        return map(mapper).process(Stream::forEach);
     }
 
     public Flo<S, I> observe(Consumer<I> action) {
@@ -144,7 +128,7 @@ public abstract class Flo<S, I> {
         return takeWhile(i -> limit.decrementAndGet() > 0, true);
     }
 
-    public <A, O> Flo<S, O> collect(Collector<? super I, A, O> collector) {
+    public <A, R> Flo<S, R> collect(Collector<? super I, A, R> collector) {
         return process(new CollectorProcessor<>(collector));
     }
 
@@ -164,12 +148,37 @@ public abstract class Flo<S, I> {
         return process(new ParallelProcessor<>(subscribeOn, manageOn, bufferSize));
     }
 
+    public Flo<S, I> whenComplete(Runnable runnable) {
+        return process(new StandardProcessors.CompletionProcessor0<>(runnable));
+    }
+
+    public Flo<S, I> whenComplete(BiConsumer<ReactiveSubscription, Flow.Subscriber<? super I>> consumer) {
+        return process(new StandardProcessors.CompletionProcessor2<>(consumer));
+    }
+
     public Flo<S, I> recover(Function<Throwable, I> mapper) {
         return process(new StandardProcessors.ErrorProcessor<>(mapper));
     }
 
-    public Flo<S, I> process(Flow.Subscriber<I> subscriber) {
-        return process(new SubscriberToProcessorBridge<>(subscriber));
+    public Flo<S, I> recover(TriConsumer<Throwable, ReactiveSubscription, Flow.Subscriber<? super I>> action) {
+        return process(new StandardProcessors.ErrorProcessor3<>(action));
+    }
+
+    public <R> Flo<S, R> process(TriConsumer<I, ReactiveSubscription, Flow.Subscriber<? super R>> action) {
+        return process(new StandardProcessors.ItemProcessor3<>(action));
+    }
+
+    public <R> Flo<S, R> process(BiConsumer<I, Consumer<? super R>> action) {
+        return process(new StandardProcessors.ItemProcessor2<>(action));
+    }
+
+    @SuppressWarnings("unchecked")
+    public Flo<S, I> process(Flow.Subscriber<? super I> subscriber) {
+        if (subscriber instanceof Flow.Processor processor) {
+            return process(processor);
+        } else {
+            return process(new SubscriberToProcessorBridge<>(subscriber));
+        }
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -179,15 +188,40 @@ public abstract class Flo<S, I> {
         return (Flo) this;
     }
 
-    public Flow.Processor<S, I> toProcessor() {
-        return new CompositeProcessor<>(head, tail);
-    }
-
     public SubscriptionHandle<S, I> subscribe() {
         return subscribe(Long.MAX_VALUE);
     }
 
     public abstract SubscriptionHandle<S, I> subscribe(long initialRequest);
+
+    //
+    // Flow.Processor implementation
+    //
+
+    @Override
+    public void subscribe(Flow.Subscriber<? super I> subscriber) {
+        process(subscriber);
+    }
+
+    @Override
+    public void onSubscribe(Flow.Subscription subscription) {
+        head.onSubscribe(subscription);
+    }
+
+    @Override
+    public void onNext(S item) {
+        head.onNext(item);
+    }
+
+    @Override
+    public void onError(Throwable throwable) {
+        head.onError(throwable);
+    }
+
+    @Override
+    public void onComplete() {
+        head.onComplete();
+    }
 
     private static final class Unbounded<S, I> extends Flo<S, I> {
 

@@ -35,12 +35,11 @@ public class FloTest extends Assert {
     public void flatFlo() {
         String join = Flo.start(String.class)
                 .flatMapStream(s -> s.chars().mapToObj(c -> "" + (char) c))
-                .<String>onNext((item, emitter) -> {
-                    Flo.just(item)
-                            .map(String::toUpperCase)
-                            .observe(emitter::accept)
-                            .subscribe();
-                })
+                .<String>process((item, emitter) ->
+                        Flo.just(item)
+                                .map(String::toUpperCase)
+                                .observe(emitter::accept)
+                                .subscribe())
                 .collect(Collectors.joining())
                 .subscribe()
                 .emit("alpha")
@@ -198,7 +197,7 @@ public class FloTest extends Assert {
 
     public void trickle() {
         SubscriptionHandle<String, List<String>> subscribe = Flo.start(String.class)
-                .<String>onNext((item, subscription, subscriber) -> {
+                .<String>process((item, subscription, subscriber) -> {
                     subscriber.onNext(item.toUpperCase());
                     subscription.request(1);
                 })
@@ -251,7 +250,7 @@ public class FloTest extends Assert {
         Flo.start(String.class)
                 .onSubscribe(s -> s.addStateListener(FlowState.CANCELLED, (sub) -> canceled.set(true)))
                 .map(String::toUpperCase)
-                .onNext((item, subscription, subscriber) -> subscription.cancel())
+                .process((item, subscription, subscriber) -> subscription.cancel())
                 .subscribe()
                 .just("a")
                 .join();
@@ -305,7 +304,7 @@ public class FloTest extends Assert {
     public void onComplete() {
         AtomicBoolean complete = new AtomicBoolean(false);
         Flo.start(String.class)
-                .onComplete((subscription, subscriber) -> {
+                .whenComplete((subscription, subscriber) -> {
                     complete.set(true);
                     subscriber.onComplete();
                 })
@@ -318,7 +317,7 @@ public class FloTest extends Assert {
     public void onError() {
         AtomicBoolean errored = new AtomicBoolean(false);
         Flo.start(String.class)
-                .onError((error, subscription, subscriber) -> {
+                .recover((error, subscription, subscriber) -> {
                     errored.set(true);
                     subscriber.onError(error);
                 })
@@ -345,7 +344,7 @@ public class FloTest extends Assert {
         assertNull(result);
 
         result = Flo.empty(String.class)
-                .onComplete(((subscription, subscriber) -> {
+                .whenComplete(((subscription, subscriber) -> {
                     subscriber.onNext("finished value");
                     subscriber.onComplete();
                 }))

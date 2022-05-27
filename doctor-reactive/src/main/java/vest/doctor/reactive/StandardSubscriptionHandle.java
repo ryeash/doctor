@@ -12,7 +12,7 @@ public final class StandardSubscriptionHandle<I, O> implements SubscriptionHandl
     StandardSubscriptionHandle(Flo<I, O> flow, long initialRequest) {
         this.subscription = new TrackingSubscription();
         this.future = new CompletableFuture<>();
-        this.processor = flow.process(new CompletableTerminalSubscriber<>(initialRequest, future)).toProcessor();
+        this.processor = flow.process(new CompletableTerminalSubscriber<>(initialRequest, future));
         this.processor.onSubscribe(subscription);
     }
 

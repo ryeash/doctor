@@ -39,7 +39,7 @@ class MultiPartDataImpl implements MultiPartData {
     public Flo<?, Part> parts() {
         if (valid) {
             return body.flow()
-                    .<Part>onNext(this::nextData)
+                    .<Part>process(this::nextData)
                     .takeWhile(p -> !p.last(), true);
         } else {
             return body.flow()

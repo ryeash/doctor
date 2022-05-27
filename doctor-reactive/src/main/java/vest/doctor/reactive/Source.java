@@ -23,7 +23,7 @@ public final class Source<I> extends StandardProcessors.IdentityProcessor<I> {
     public void handleNextItem(I item) {
         // TODO: state checks
         if (subscription.state() != FlowState.SUBSCRIBED) {
-            return; // TODO: is silent rejection a good idea? ... doubtful
+            throw new IllegalStateException("incorrect flow state - expected " + FlowState.SUBSCRIBED + " is " + subscription.state());
         }
         if (subscriber != null && subscription.getAndDecrementRequested() > 0) {
             subscriber.onNext(item);
