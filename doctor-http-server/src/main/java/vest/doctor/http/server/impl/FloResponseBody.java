@@ -32,7 +32,6 @@ public class FloResponseBody implements ResponseBody {
             if (error != null) {
                 channelPromise.setFailure(error);
             } else {
-                channelPromise.setSuccess();
                 f.addListener(new PromiseNotifier<>(channelPromise));
             }
         }

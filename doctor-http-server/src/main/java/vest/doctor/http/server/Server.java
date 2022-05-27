@@ -139,13 +139,14 @@ public class Server extends SimpleChannelInboundHandler<HttpObject> implements A
                 ServerRequest req = new ServerRequest(request, body);
                 Response response = new ServerResponse(req);
                 RequestContext requestContext = new RequestContextImpl(req, response, ctx);
-                Flo<?, Response> handle;
+                Flow.Processor<?, Response> handle;
                 try {
                     handle = handler.handle(requestContext);
                 } catch (Throwable t) {
                     handle = Flo.error(t);
                 }
-                handle.recover((error, subscription, subscriber) -> handleError(requestContext, error).observe(subscriber::onNext).subscribe())
+                Flo.from(handle)
+                        .recover((error, subscription, subscriber) -> handleError(requestContext, error).observe(subscriber::onNext).subscribe())
                         .observe(r -> writeResponse(ctx, r))
                         .subscribe();
                 // ensure the body flow is subscribed

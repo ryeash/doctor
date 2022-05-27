@@ -9,7 +9,7 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public final class ParallelProcessor<I> extends StandardProcessors.IdentityProcessor<I> {
+public final class ParallelProcessor<I> extends Processors.IdentityProcessor<I> {
 
     private final ExecutorService subscribeOn;
     private final ExecutorService manageOn;

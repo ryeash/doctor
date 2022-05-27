@@ -5,6 +5,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -15,6 +16,10 @@ import java.util.stream.Stream;
 
 public abstract class Flo<S, I> implements Flow.Processor<S, I> {
 
+    public static <I> Flo<I, I> from(Flow.Subscriber<I> processor) {
+        return from(new SubscriberToProcessorBridge<>(processor));
+    }
+
     public static <I, O> Flo<I, O> from(Flow.Processor<I, O> processor) {
         if (processor instanceof Flo<I, O> flo) {
             return flo;
@@ -23,7 +28,7 @@ public abstract class Flo<S, I> implements Flow.Processor<S, I> {
         }
     }
 
-    public static <I> Flo<?, I> just(I item) {
+    public static <I> Flo<I, I> just(I item) {
         return new Bounded<>(item, new Source<>());
     }
 
@@ -62,11 +67,11 @@ public abstract class Flo<S, I> implements Flow.Processor<S, I> {
     }
 
     public Flo<S, I> onSubscribe(Consumer<ReactiveSubscription> action) {
-        return process(new StandardProcessors.OnSubscribeProcessor<>(action));
+        return process(new Processors.SubscribeProcessor<>(action));
     }
 
     public <O> Flo<S, O> map(Function<I, O> mapper) {
-        return process(new StandardProcessors.ItemMapper<>(mapper));
+        return process(new Processors.NextProcessor<>(new Functions.ItemMapper<>(mapper)));
     }
 
     public <O> Flo<S, O> mapFuture(Function<I, ? extends CompletionStage<O>> mapper) {
@@ -82,6 +87,11 @@ public abstract class Flo<S, I> implements Flow.Processor<S, I> {
                 }));
     }
 
+    public <O> Flo<S, O> flatMapFlow(Function<I, ? extends Flow.Processor<S, O>> mapper) {
+        return map(mapper).process((processor, subscription, subscriber) ->
+                Flo.from(processor).observe(subscriber::onNext).errorListener(subscriber::onError).subscribe());
+    }
+
     public <O> Flo<S, O> flatMapIterable(Function<I, ? extends Iterable<O>> mapper) {
         return map(mapper).process(Iterable::forEach);
     }
@@ -91,11 +101,11 @@ public abstract class Flo<S, I> implements Flow.Processor<S, I> {
     }
 
     public Flo<S, I> observe(Consumer<I> action) {
-        return process(new StandardProcessors.ItemProcessor1<>(action));
+        return process(new Processors.NextProcessor<>(new Functions.ItemObserver<>(action)));
     }
 
     public Flo<S, I> take(Predicate<I> filter) {
-        return process(new StandardProcessors.ItemFilter<>(filter, true));
+        return process(new Processors.NextProcessor<>(new Functions.ItemFilter<>(filter, true)));
     }
 
     public Flo<S, I> takeWhile(Predicate<I> filter) {
@@ -103,11 +113,11 @@ public abstract class Flo<S, I> implements Flow.Processor<S, I> {
     }
 
     public Flo<S, I> takeWhile(Predicate<I> filter, boolean keepLast) {
-        return process(new StandardProcessors.KeepWhileFilter<>(filter, keepLast));
+        return process(new Processors.NextProcessor<>(new Functions.KeepWhileFilter<>(filter, keepLast)));
     }
 
     public Flo<S, I> drop(Predicate<I> filter) {
-        return process(new StandardProcessors.ItemFilter<>(filter, false));
+        return process(new Processors.NextProcessor<>(new Functions.ItemFilter<>(filter, false)));
     }
 
     public Flo<S, I> dropUntil(Predicate<I> filter) {
@@ -115,7 +125,7 @@ public abstract class Flo<S, I> implements Flow.Processor<S, I> {
     }
 
     public Flo<S, I> dropUntil(Predicate<I> filter, boolean includeFirst) {
-        return process(new StandardProcessors.DropUntilFilter<>(filter, includeFirst));
+        return process(new Processors.NextProcessor<>(new Functions.DropUntilFilter<>(filter, includeFirst, new AtomicBoolean(false))));
     }
 
     public Flo<S, I> skip(long n) {
@@ -149,27 +159,31 @@ public abstract class Flo<S, I> implements Flow.Processor<S, I> {
     }
 
     public Flo<S, I> whenComplete(Runnable runnable) {
-        return process(new StandardProcessors.CompletionProcessor0<>(runnable));
+        return process(new Processors.CompleteProcessor<>(new Functions.CompletionListener<>(runnable)));
     }
 
     public Flo<S, I> whenComplete(BiConsumer<ReactiveSubscription, Flow.Subscriber<? super I>> consumer) {
-        return process(new StandardProcessors.CompletionProcessor2<>(consumer));
+        return process(new Processors.CompleteProcessor<>(consumer));
     }
 
     public Flo<S, I> recover(Function<Throwable, I> mapper) {
-        return process(new StandardProcessors.ErrorProcessor<>(mapper));
+        return process(new Processors.ErrorProcessor<>(new Functions.ErrorRecovery<>(mapper)));
     }
 
     public Flo<S, I> recover(TriConsumer<Throwable, ReactiveSubscription, Flow.Subscriber<? super I>> action) {
-        return process(new StandardProcessors.ErrorProcessor3<>(action));
+        return process(new Processors.ErrorProcessor<>(action));
+    }
+
+    public Flo<S, I> errorListener(Consumer<Throwable> action) {
+        return process(new Processors.ErrorProcessor<>(new Functions.ErrorListener<>(action)));
     }
 
     public <R> Flo<S, R> process(TriConsumer<I, ReactiveSubscription, Flow.Subscriber<? super R>> action) {
-        return process(new StandardProcessors.ItemProcessor3<>(action));
+        return process(new Processors.NextProcessor<>(action));
     }
 
     public <R> Flo<S, R> process(BiConsumer<I, Consumer<? super R>> action) {
-        return process(new StandardProcessors.ItemProcessor2<>(action));
+        return process(new Processors.NextProcessor<>(new Functions.ItemProcessor<>(action)));
     }
 
     @SuppressWarnings("unchecked")

@@ -4,7 +4,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicReference;
 
-public final class CompletableTerminalSubscriber<O> extends StandardProcessors.IdentityProcessor<O> {
+public final class CompletableTerminalSubscriber<O> extends Processors.IdentityProcessor<O> {
 
     private final AtomicReference<O> last;
     private final long initialRequest;

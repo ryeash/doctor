@@ -2,7 +2,7 @@ package vest.doctor.reactive;
 
 import java.util.concurrent.Flow;
 
-public final class SubscriberToProcessorBridge<I> extends StandardProcessors.IdentityProcessor<I> {
+public final class SubscriberToProcessorBridge<I> extends Processors.IdentityProcessor<I> {
 
     private final Flow.Subscriber<I> subscriber;
 
@@ -12,8 +12,8 @@ public final class SubscriberToProcessorBridge<I> extends StandardProcessors.Ide
 
     @Override
     public void onSubscribe(Flow.Subscription subscription) {
-        super.onSubscribe(subscription);
         subscriber.onSubscribe(subscription);
+        super.onSubscribe(subscription);
     }
 
     @Override

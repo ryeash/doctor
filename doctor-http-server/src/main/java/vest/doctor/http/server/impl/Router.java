@@ -181,7 +181,7 @@ public final class Router implements Handler {
         }
 //        long start = System.nanoTime();
 //        try {
-            return doNextFilter(requestContext);
+        return doNextFilter(requestContext);
 //        } finally {
 //            System.out.println("handle raw: " + TimeUnit.MICROSECONDS.convert(Duration.ofNanos(System.nanoTime() - start)));
 //        }
@@ -197,11 +197,11 @@ public final class Router implements Handler {
             addTraceMessage(requestContext, next, pathParams != null);
             if (pathParams != null) {
                 requestContext.attribute(Router.PATH_PARAMS, pathParams);
-                return filter.filter(requestContext, this::doNextFilter);
+                return Flo.from(filter.filter(requestContext, this::doNextFilter));
             }
         }
-        return selectHandler(requestContext)
-                .handle(requestContext)
+        Handler handler = selectHandler(requestContext);
+        return Flo.from(handler.handle(requestContext))
                 .observe(response -> attachRouteDebugging(requestContext, response));
     }
 

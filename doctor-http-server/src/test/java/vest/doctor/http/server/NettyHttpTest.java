@@ -78,7 +78,7 @@ public class NettyHttpTest {
                 })
                 .filter("/*", (ctx, chain) -> {
                     long start = System.nanoTime();
-                    return chain.next(ctx)
+                    return Flo.from(chain.next(ctx))
                             .map(response -> response.header("X-Timing", TimeUnit.MILLISECONDS.convert(Duration.ofNanos(System.nanoTime() - start))));
                 })
                 .after("/hello/*", response -> {
@@ -244,7 +244,7 @@ public class NettyHttpTest {
         assertEquals(res, bytes);
     }
 
-    @Test(invocationCount = 2)
+    @Test(invocationCount = 5)
     public void throughput() {
         long start = System.nanoTime();
         IntStream.range(0, 1000)

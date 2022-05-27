@@ -1,6 +1,6 @@
 package vest.doctor.http.server;
 
-import vest.doctor.reactive.Flo;
+import java.util.concurrent.Flow;
 
 /**
  * A handle to the next step in the filter chain.
@@ -15,5 +15,5 @@ public interface FilterChain {
      * @return the future response
      * @throws Exception for any error processing the filter chain
      */
-    Flo<?, Response> next(RequestContext requestContext) throws Exception;
+    Flow.Processor<?, Response> next(RequestContext requestContext) throws Exception;
 }

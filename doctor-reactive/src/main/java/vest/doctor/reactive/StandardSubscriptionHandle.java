@@ -9,7 +9,7 @@ public final class StandardSubscriptionHandle<I, O> implements SubscriptionHandl
     private final CompletableFuture<O> future;
     private final Flow.Processor<I, O> processor;
 
-    StandardSubscriptionHandle(Flo<I, O> flow, long initialRequest) {
+    public StandardSubscriptionHandle(Flo<I, O> flow, long initialRequest) {
         this.subscription = new TrackingSubscription();
         this.future = new CompletableFuture<>();
         this.processor = flow.process(new CompletableTerminalSubscriber<>(initialRequest, future));

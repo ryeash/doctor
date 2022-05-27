@@ -353,4 +353,28 @@ public class FloTest extends Assert {
         assertEquals(result, "finished value");
     }
 
+    public void mapFlow() {
+        List<String> join = Flo.just(list)
+                .flatMapFlow(item -> Flo.just(item).flatMapIterable(s -> s).map(String::toUpperCase))
+                .collect(Collectors.toList())
+                .subscribe()
+                .join();
+        assertEquals(join, capitalized);
+
+        SubscriptionHandle<String, List<String>> done = Flo.start(String.class)
+                .flatMapFlow(item -> Flo.just(item).map(s -> {
+                    if (s.equals("b")) {
+                        throw new IllegalArgumentException("errored " + s);
+                    }
+                    return s.toUpperCase();
+                }))
+                .collect(Collectors.toList())
+                .subscribe()
+                .emit("a")
+                .emit("b")
+                .emit("c")
+                .done();
+        assertThrows(done::join);
+    }
+
 }

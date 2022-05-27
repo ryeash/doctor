@@ -3,7 +3,7 @@ package vest.doctor.reactive;
 import java.nio.BufferOverflowException;
 import java.util.concurrent.Flow;
 
-public final class Source<I> extends StandardProcessors.IdentityProcessor<I> {
+public final class Source<I> extends Processors.IdentityProcessor<I> {
 
     @Override
     public void onSubscribe(Flow.Subscription subscription) {

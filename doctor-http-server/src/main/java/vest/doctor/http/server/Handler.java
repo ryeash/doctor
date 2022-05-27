@@ -1,6 +1,6 @@
 package vest.doctor.http.server;
 
-import vest.doctor.reactive.Flo;
+import java.util.concurrent.Flow;
 
 /**
  * Handles an HTTP request.
@@ -14,5 +14,5 @@ public interface Handler {
      * @return an asynchronous Response result
      * @throws Exception for any error during processing
      */
-    Flo<?, Response> handle(RequestContext requestContext) throws Exception;
+    Flow.Processor<?, Response> handle(RequestContext requestContext) throws Exception;
 }
