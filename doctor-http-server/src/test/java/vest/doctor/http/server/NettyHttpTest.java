@@ -155,10 +155,7 @@ public class NettyHttpTest {
         req().get("/")
                 .then()
                 .statusCode(200);
-    }
 
-    @Test
-    public void hello() {
         req().get("/hello/goodbye")
                 .then()
                 .body(Matchers.equalTo("goodbye"))
@@ -244,7 +241,7 @@ public class NettyHttpTest {
         assertEquals(res, bytes);
     }
 
-    @Test(invocationCount = 5)
+    @Test(invocationCount = 2)
     public void throughput() {
         long start = System.nanoTime();
         IntStream.range(0, 1000)

@@ -8,18 +8,21 @@ import io.netty.util.concurrent.PromiseNotifier;
 import vest.doctor.http.server.ResponseBody;
 import vest.doctor.reactive.Flo;
 
+import java.util.concurrent.Flow;
+
 public class FloResponseBody implements ResponseBody {
 
-    private final Flo<?, HttpContent> flow;
+    private final Flow.Processor<?, HttpContent> processor;
 
-    public FloResponseBody(Flo<?, HttpContent> flow) {
-        this.flow = flow;
+    public FloResponseBody(Flow.Processor<?, HttpContent> processor) {
+        this.processor = processor;
     }
 
     @Override
     public ChannelFuture writeTo(ChannelHandlerContext channel) {
         ChannelPromise channelPromise = channel.newPromise();
-        flow.map(channel::write)
+        Flo.from(processor)
+                .map(channel::write)
                 .whenComplete(channel::flush)
                 .subscribe()
                 .future()

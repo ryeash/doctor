@@ -12,7 +12,6 @@ import vest.doctor.http.server.impl.DefaultResponseBody;
 import vest.doctor.http.server.impl.FloResponseBody;
 import vest.doctor.http.server.impl.SendFileResponseBody;
 import vest.doctor.http.server.impl.StreamingResponseBody;
-import vest.doctor.reactive.Flo;
 
 import java.io.File;
 import java.io.InputStream;
@@ -20,6 +19,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import java.util.concurrent.Flow;
 
 /**
  * Defines an object that can be sent as an HTTP response body.
@@ -120,7 +120,7 @@ public interface ResponseBody {
      * @param flo the processing flow
      * @return a new {@link ResponseBody}
      */
-    static ResponseBody of(Flo<?, HttpContent> flo) {
+    static ResponseBody of(Flow.Processor<?, HttpContent> flo) {
         return new FloResponseBody(flo);
     }
 
