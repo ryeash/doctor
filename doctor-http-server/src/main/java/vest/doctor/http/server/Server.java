@@ -138,7 +138,7 @@ public class Server extends SimpleChannelInboundHandler<HttpObject> implements A
 
                 ServerRequest req = new ServerRequest(request, body);
                 Response response = new ServerResponse(req);
-                RequestContext requestContext = new RequestContextImpl(req, response, ctx);
+                final RequestContext requestContext = new RequestContextImpl(req, response, ctx);
                 Flow.Processor<?, Response> handle;
                 try {
                     handle = handler.handle(requestContext);
