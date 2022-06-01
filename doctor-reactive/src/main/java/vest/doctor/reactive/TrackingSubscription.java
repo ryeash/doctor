@@ -5,7 +5,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -14,7 +13,7 @@ public final class TrackingSubscription implements ReactiveSubscription {
 
     private final AtomicReference<FlowState> state = new AtomicReference<>(FlowState.UNSUBSCRIBED);
     private final AtomicLong requested = new AtomicLong(0);
-    private final Map<FlowState, List<Consumer<Flow.Subscription>>> transitionListeners = new HashMap<>();
+    private final Map<FlowState, List<Consumer<ReactiveSubscription>>> transitionListeners = new HashMap<>();
 
     @Override
     public void request(long n) {
@@ -71,7 +70,7 @@ public final class TrackingSubscription implements ReactiveSubscription {
     }
 
     @Override
-    public void addStateListener(FlowState state, Consumer<Flow.Subscription> action) {
+    public void addStateListener(FlowState state, Consumer<ReactiveSubscription> action) {
         if (this.state.get() == state) {
             action.accept(this);
         } else {
@@ -79,13 +78,13 @@ public final class TrackingSubscription implements ReactiveSubscription {
         }
     }
 
-    protected void checkSubscribed() {
+    private void checkSubscribed() {
         if (state.get() != FlowState.SUBSCRIBED) {
             throw new IllegalStateException("illegal state - required " + FlowState.SUBSCRIBED + " but was " + state.get());
         }
     }
 
-    protected void runListeners(FlowState state) {
+    private void runListeners(FlowState state) {
         Optional.ofNullable(transitionListeners.get(state))
                 .stream()
                 .flatMap(List::stream)

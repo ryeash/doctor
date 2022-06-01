@@ -1,5 +1,6 @@
 package vest.doctor.reactive;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 
@@ -50,7 +51,7 @@ public final class StandardSubscriptionHandle<I, O> implements SubscriptionHandl
     }
 
     public SubscriptionHandle<I, O> error(Throwable t) {
-        processor.onError(t);
+        processor.onError(Objects.requireNonNull(t));
         return this;
     }
 

@@ -4,6 +4,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -30,6 +31,23 @@ public class FloTest extends Assert {
                 .subscribe()
                 .join();
         assertEquals(result, "ALPHA");
+    }
+
+    public void partition() {
+        for (Integer size : Arrays.asList(1, 3, 4)) {
+            List<String> joined = Flo.just(list)
+                    .flatMapIterable(Function.identity())
+                    .parallel(BACKGROUND)
+                    .partition(size)
+                    .parallel(BACKGROUND)
+                    .observe(list -> assertTrue(list.size() <= size))
+                    .flatMapIterable(Function.identity())
+                    .collect(Collectors.toList())
+                    .subscribe()
+                    .join();
+            Collections.sort(joined);
+            assertEquals(joined, list);
+        }
     }
 
     public void flatFlo() {

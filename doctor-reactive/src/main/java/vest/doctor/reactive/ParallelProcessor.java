@@ -41,7 +41,7 @@ public final class ParallelProcessor<I> extends Processors.IdentityProcessor<I> 
     @Override
     public void onComplete() {
         completed.set(true);
-        subscribeOn.submit(this::queueLoop);
+        manageOn.submit(this::queueLoop);
     }
 
     @Override

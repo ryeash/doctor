@@ -21,7 +21,6 @@ public final class Source<I> extends Processors.IdentityProcessor<I> {
 
     @Override
     public void handleNextItem(I item) {
-        // TODO: state checks
         if (subscription.state() != FlowState.SUBSCRIBED) {
             throw new IllegalStateException("incorrect flow state - expected " + FlowState.SUBSCRIBED + " is " + subscription.state());
         }
