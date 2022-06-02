@@ -3,6 +3,12 @@ package vest.doctor.reactive;
 import java.nio.BufferOverflowException;
 import java.util.concurrent.Flow;
 
+/**
+ * A source processor that validates subscription state before allowing items to be emitted into
+ * the processing flow.
+ *
+ * @param <I> the acceptable type for items emitted into the processor flow
+ */
 public final class Source<I> extends Processors.IdentityProcessor<I> {
 
     @Override

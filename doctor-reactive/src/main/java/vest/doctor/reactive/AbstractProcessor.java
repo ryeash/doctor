@@ -74,7 +74,7 @@ public abstract class AbstractProcessor<I, O> implements Flow.Processor<I, O> {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "->" + subscriber;
+        return getClass().getSimpleName() + (subscriber != null ? "->" + subscriber : "");
     }
 
     protected Flow.Subscriber<? super O> subscriberOrVoid() {

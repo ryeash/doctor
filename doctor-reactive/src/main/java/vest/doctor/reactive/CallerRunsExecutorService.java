@@ -20,6 +20,9 @@ public final class CallerRunsExecutorService implements ExecutorService {
         private static final ExecutorService INSTANCE = new CallerRunsExecutorService();
     }
 
+    /**
+     * @return the singleton instance of the {@link CallerRunsExecutorService}.
+     */
     public static ExecutorService instance() {
         return CallerRunsExecutorServiceHolder.INSTANCE;
     }
@@ -75,17 +78,15 @@ public final class CallerRunsExecutorService implements ExecutorService {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) {
         return tasks.stream()
                 .map(c -> {
                     try {
                         return CompletableFuture.completedFuture(c.call());
                     } catch (Throwable t) {
-                        return CompletableFuture.failedFuture(t);
+                        return CompletableFuture.<T>failedFuture(t);
                     }
                 })
-                .map(f -> (Future<T>) f)
                 .collect(Collectors.toList());
     }
 

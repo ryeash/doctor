@@ -34,7 +34,7 @@ public class FloTest extends Assert {
     }
 
     public void partition() {
-        for (Integer size : Arrays.asList(1, 3, 4)) {
+        for (Integer size : Arrays.asList(2, 3, 4, 10)) {
             List<String> joined = Flo.just(list)
                     .flatMapIterable(Function.identity())
                     .parallel(BACKGROUND)
@@ -43,6 +43,7 @@ public class FloTest extends Assert {
                     .observe(list -> assertTrue(list.size() <= size))
                     .flatMapIterable(Function.identity())
                     .collect(Collectors.toList())
+                    .observe(System.out::println)
                     .subscribe()
                     .join();
             Collections.sort(joined);
@@ -393,6 +394,19 @@ public class FloTest extends Assert {
                 .emit("c")
                 .done();
         assertThrows(done::join);
+    }
+
+    public void stringer(){
+        Flo<List<String>, List<String>> flo = Flo.just(list)
+                .flatMapIterable(Function.identity())
+                .parallel(BACKGROUND)
+                .partition(3)
+                .parallel(BACKGROUND)
+                .observe(list -> assertTrue(list.size() <= 6))
+                .flatMapIterable(Function.identity())
+                .collect(Collectors.toList())
+                .observe(System.out::println);
+        System.out.println(flo);
     }
 
 }

@@ -28,6 +28,11 @@ public final class Processors {
             super.onSubscribe(subscription);
             action.accept(this.subscription);
         }
+
+        @Override
+        public String toString() {
+            return action.toString() + (subscriber != null ? "->" + subscriber : "");
+        }
     }
 
     public static final class NextProcessor<I, O> extends AbstractProcessor<I, O> {
@@ -41,6 +46,11 @@ public final class Processors {
         @Override
         protected void handleNextItem(I item) {
             action.accept(item, subscription, subscriberOrVoid());
+        }
+
+        @Override
+        public String toString() {
+            return action.toString() + (subscriber != null ? "->" + subscriber : "");
         }
     }
 
@@ -61,6 +71,11 @@ public final class Processors {
                 super.onError(e);
             }
         }
+
+        @Override
+        public String toString() {
+            return consumer.toString() + (subscriber != null ? "->" + subscriber : "");
+        }
     }
 
     public static final class CompleteProcessor<I> extends IdentityProcessor<I> {
@@ -73,6 +88,11 @@ public final class Processors {
         @Override
         public void onComplete() {
             consumer.accept(subscription, subscriberOrVoid());
+        }
+
+        @Override
+        public String toString() {
+            return consumer.toString() + (subscriber != null ? "->" + subscriber : "");
         }
     }
 }

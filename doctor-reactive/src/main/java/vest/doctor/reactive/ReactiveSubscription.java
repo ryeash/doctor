@@ -14,12 +14,12 @@ public interface ReactiveSubscription extends Flow.Subscription {
     FlowState state();
 
     /**
-     * @return get the number of items currently requested via calls to{@link #request(long)}.
+     * @return the number of items currently requested via calls to{@link #request(long)}.
      */
     long requested();
 
     /**
-     * @return get the current number of requested items and decrement the value by 1.
+     * @return the current number of requested items and decrement the value by 1.
      */
     long getAndDecrementRequested();
 

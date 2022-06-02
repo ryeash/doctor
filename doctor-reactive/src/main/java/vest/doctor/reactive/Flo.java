@@ -1,5 +1,7 @@
 package vest.doctor.reactive;
 
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
@@ -12,6 +14,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
@@ -344,8 +347,28 @@ public abstract class Flo<S, T> implements Flow.Processor<S, T> {
         return process(new CollectorProcessor<>(collector));
     }
 
+    /**
+     * Add a partitioning stage to this processing flow that collects items into lists of
+     * <code>size</code> or less length and then emits those lists downstream.
+     *
+     * @param size the maximum size for the partitioned lists
+     * @return the next step in the composed processing flow
+     */
     public Flo<S, List<T>> partition(int size) {
-        return process(new PartitioningProcessor<>(size));
+        return partition(size, LinkedList::new);
+    }
+
+    /**
+     * Add a partitioning stage to this processing flow that collects items into collections of
+     * <code>size</code> or less length and then emits those collections downstream.
+     *
+     * @param size             the maximum size for the partitioned lists
+     * @param containerCreator the supplier of the collections
+     * @param <C>              the collection type
+     * @return the next step in the composed processing flow
+     */
+    public <C extends Collection<T>> Flo<S, C> partition(int size, Supplier<C> containerCreator) {
+        return process(new PartitioningProcessor<>(size, containerCreator));
     }
 
     /**
@@ -558,6 +581,11 @@ public abstract class Flo<S, T> implements Flow.Processor<S, T> {
     @Override
     public void onComplete() {
         head.onComplete();
+    }
+
+    @Override
+    public String toString() {
+        return "Flo{" + head + '}';
     }
 
     private static final class Unbounded<S, I> extends Flo<S, I> {

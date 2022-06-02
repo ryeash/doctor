@@ -18,6 +18,11 @@ public final class Functions {
             action.accept(item);
             subscriber.onNext(item);
         }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName();
+        }
     }
 
     record ItemMapper<I, O>(Function<I, O> mapper)
@@ -26,6 +31,11 @@ public final class Functions {
         public void accept(I item, ReactiveSubscription subscription, Flow.Subscriber<? super O> subscriber) {
             subscriber.onNext(mapper.apply(item));
         }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName();
+        }
     }
 
     record ItemProcessor<I, O>(BiConsumer<I, Consumer<? super O>> action)
@@ -33,6 +43,11 @@ public final class Functions {
         @Override
         public void accept(I item, ReactiveSubscription subscription, Flow.Subscriber<? super O> subscriber) {
             action.accept(item, subscriber::onNext);
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName();
         }
     }
 
@@ -43,6 +58,11 @@ public final class Functions {
             if (predicate.test(item) == keep) {
                 subscriber.onNext(item);
             }
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName();
         }
     }
 
@@ -59,6 +79,11 @@ public final class Functions {
                 subscription.cancel();
             }
         }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName();
+        }
     }
 
     record DropUntilFilter<I>(Predicate<I> predicate, boolean includeFirst, AtomicBoolean keep)
@@ -74,6 +99,11 @@ public final class Functions {
                 }
             }
         }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName();
+        }
     }
 
     record CompletionListener<I>(Runnable listener)
@@ -84,6 +114,11 @@ public final class Functions {
             listener.run();
             subscriber.onComplete();
         }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName();
+        }
     }
 
     record ErrorRecovery<O>(Function<Throwable, O> mapper)
@@ -92,6 +127,11 @@ public final class Functions {
         @Override
         public void accept(Throwable throwable, ReactiveSubscription subscription, Flow.Subscriber<? super O> subscriber) {
             subscriber.onNext(mapper.apply(throwable));
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName();
         }
     }
 
@@ -102,6 +142,11 @@ public final class Functions {
         public void accept(Throwable throwable, ReactiveSubscription subscription, Flow.Subscriber<? super O> subscriber) {
             action.accept(throwable);
             subscriber.onError(throwable);
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName();
         }
     }
 }
