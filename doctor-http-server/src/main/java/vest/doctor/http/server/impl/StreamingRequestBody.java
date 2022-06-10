@@ -6,10 +6,10 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.util.ReferenceCounted;
 import vest.doctor.http.server.RequestBody;
-import vest.doctor.reactive.Flo;
+import vest.doctor.reactive.Rx;
 
 import java.nio.charset.StandardCharsets;
-import java.util.function.UnaryOperator;
+import java.util.concurrent.Flow;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -24,33 +24,21 @@ public class StreamingRequestBody implements RequestBody {
             (a, b) -> a);
 
     private final ByteBufAllocator alloc;
-    private Flo<?, HttpContent> dataFlow;
-    private volatile boolean used = false;
+    private final Flow.Publisher<HttpContent> source;
 
-    public StreamingRequestBody(ChannelHandlerContext ctx, Flo<?, HttpContent> dataFlow) {
+    public StreamingRequestBody(ChannelHandlerContext ctx, Flow.Publisher<HttpContent> source) {
         this.alloc = ctx.alloc();
-        this.dataFlow = dataFlow;
+        this.source = source;
     }
 
     @Override
-    public Flo<?, HttpContent> flow() {
-        if (used) {
-            throw new IllegalStateException("the request body has already been consumed");
-        }
-        used = true;
-        return dataFlow;
+    public Rx<HttpContent> flow() {
+        return Rx.from(source).runOnComplete(() -> {
+        });
     }
 
     @Override
-    public void inspect(UnaryOperator<Flo<?, HttpContent>> inspection) {
-        if (used) {
-            throw new IllegalStateException("the request body has already been consumed");
-        }
-        this.dataFlow = inspection.apply(dataFlow);
-    }
-
-    @Override
-    public Flo<?, ByteBuf> asBuffer() {
+    public Flow.Publisher<ByteBuf> asBuffer() {
         return flow()
                 .collect(Collector.of(alloc::compositeBuffer,
                         (composite, content) -> composite.addComponent(true, content.content()),
@@ -59,7 +47,7 @@ public class StreamingRequestBody implements RequestBody {
     }
 
     @Override
-    public Flo<?, String> asString() {
+    public Flow.Publisher<String> asString() {
         return flow()
                 .map(c -> {
                     try {
@@ -72,15 +60,10 @@ public class StreamingRequestBody implements RequestBody {
     }
 
     @Override
-    public <T> Flo<?, T> ignored() {
+    public <T> Flow.Publisher<T> ignored() {
         return flow()
                 .map(ReferenceCounted::release)
                 .collect(IGNORING_COLLECTOR)
                 .map(c -> null);
-    }
-
-    @Override
-    public boolean used() {
-        return used;
     }
 }

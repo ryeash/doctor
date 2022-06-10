@@ -9,18 +9,17 @@ public final class TerminalSubscriber<I> implements Flow.Subscriber<I> {
     private final AtomicReference<I> last = new AtomicReference<>(null);
     private final CompletableFuture<I> future;
     private final long initialRequest;
-    private final CompletableFuture<Void> initialized;
+    private Flow.Subscription subscription;
 
     public TerminalSubscriber(CompletableFuture<I> future, long initialRequest) {
         this.future = future;
         this.initialRequest = initialRequest;
-        this.initialized = new CompletableFuture<>();
     }
 
     @Override
     public void onSubscribe(Flow.Subscription subscription) {
+        this.subscription = subscription;
         subscription.request(initialRequest);
-        initialized.complete(null);
     }
 
     @Override
@@ -30,15 +29,16 @@ public final class TerminalSubscriber<I> implements Flow.Subscriber<I> {
 
     @Override
     public void onError(Throwable throwable) {
-        future.completeExceptionally(throwable);
+        if (!future.isDone()) {
+            subscription.cancel();
+            future.completeExceptionally(throwable);
+        }
     }
 
     @Override
     public void onComplete() {
-        future.complete(last.getAndSet(null));
-    }
-
-    public CompletableFuture<Void> initialized() {
-        return initialized;
+        if (!future.isDone()) {
+            future.complete(last.getAndSet(null));
+        }
     }
 }

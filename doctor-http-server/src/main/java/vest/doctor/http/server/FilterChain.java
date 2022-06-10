@@ -15,5 +15,5 @@ public interface FilterChain {
      * @return the future response
      * @throws Exception for any error processing the filter chain
      */
-    Flow.Processor<?, Response> next(RequestContext requestContext) throws Exception;
+    Flow.Publisher<Response> next(RequestContext requestContext) throws Exception;
 }

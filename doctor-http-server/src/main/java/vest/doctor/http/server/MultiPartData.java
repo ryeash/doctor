@@ -1,7 +1,8 @@
 package vest.doctor.http.server;
 
 import io.netty.buffer.ByteBuf;
-import vest.doctor.reactive.Flo;
+
+import java.util.concurrent.Flow;
 
 /**
  * Represents a multi-part upload from the client.
@@ -16,7 +17,7 @@ public interface MultiPartData {
     /**
      * Get the parts of the multipart request body as an asynchronous flow.
      */
-    Flo<?, Part> parts();
+    Flow.Publisher<Part> parts();
 
     /**
      * Represents a single part of a multipart upload.

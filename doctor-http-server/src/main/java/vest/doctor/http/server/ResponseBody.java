@@ -120,7 +120,7 @@ public interface ResponseBody {
      * @param flo the processing flow
      * @return a new {@link ResponseBody}
      */
-    static ResponseBody of(Flow.Processor<?, HttpContent> flo) {
+    static ResponseBody of(Flow.Publisher<? extends HttpContent> flo) {
         return new FloResponseBody(flo);
     }
 

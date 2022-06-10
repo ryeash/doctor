@@ -18,7 +18,6 @@ public class Stitch<I, O> extends AbstractProcessor<I, O> {
                     .subscribe()
                     .join();
         } catch (Throwable t) {
-
             onError(t);
         }
     }

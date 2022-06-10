@@ -14,5 +14,5 @@ public interface Handler {
      * @return an asynchronous Response result
      * @throws Exception for any error during processing
      */
-    Flow.Processor<?, Response> handle(RequestContext requestContext) throws Exception;
+    Flow.Publisher<Response> handle(RequestContext requestContext) throws Exception;
 }

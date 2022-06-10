@@ -10,7 +10,7 @@ import vest.doctor.http.server.Request;
 import vest.doctor.http.server.RequestContext;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
-import vest.doctor.reactive.Flo;
+import vest.doctor.reactive.Rx;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -72,8 +73,8 @@ public final class Router implements Handler {
      */
     public static final String MATCH_ALL_PATH_SPEC = "/*";
 
-    private static final Handler NOT_FOUND = ctx -> ctx.request().body()
-            .ignored()
+    private static final Handler NOT_FOUND = ctx -> Rx.from(ctx.request().body()
+                    .ignored())
             .map(r -> ctx.response().status(HttpResponseStatus.NOT_FOUND)
                     .body(ResponseBody.empty()));
 
@@ -167,7 +168,7 @@ public final class Router implements Handler {
     }
 
     @Override
-    public Flo<?, Response> handle(RequestContext requestContext) throws Exception {
+    public Flow.Publisher<Response> handle(RequestContext requestContext) throws Exception {
         if (conf.isDebugRequestRouting()) {
             requestContext.attribute(DEBUG_START_ATTRIBUTE, System.nanoTime());
             Request request = requestContext.request();
@@ -179,15 +180,10 @@ public final class Router implements Handler {
             Iterator<FilterAndPath> iterator = filters.iterator();
             requestContext.attribute(FILTER_ITERATOR, iterator);
         }
-//        long start = System.nanoTime();
-//        try {
         return doNextFilter(requestContext);
-//        } finally {
-//            System.out.println("handle raw: " + TimeUnit.MICROSECONDS.convert(Duration.ofNanos(System.nanoTime() - start)));
-//        }
     }
 
-    private Flo<?, Response> doNextFilter(RequestContext requestContext) throws Exception {
+    private Flow.Publisher<Response> doNextFilter(RequestContext requestContext) throws Exception {
         Iterator<FilterAndPath> iterator = requestContext.attribute(FILTER_ITERATOR);
         while (iterator.hasNext()) {
             FilterAndPath next = iterator.next();
@@ -197,11 +193,11 @@ public final class Router implements Handler {
             addTraceMessage(requestContext, next, pathParams != null);
             if (pathParams != null) {
                 requestContext.attribute(Router.PATH_PARAMS, pathParams);
-                return Flo.from(filter.filter(requestContext, this::doNextFilter));
+                return Rx.from(filter.filter(requestContext, this::doNextFilter));
             }
         }
         Handler handler = selectHandler(requestContext);
-        return Flo.from(handler.handle(requestContext))
+        return Rx.from(handler.handle(requestContext))
                 .observe(response -> attachRouteDebugging(requestContext, response));
     }
 

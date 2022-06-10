@@ -1,7 +1,7 @@
 package vest.doctor.http.server;
 
 import vest.doctor.Prioritized;
-import vest.doctor.reactive.Flo;
+import vest.doctor.reactive.Rx;
 
 import java.util.Objects;
 import java.util.concurrent.Flow;
@@ -21,7 +21,7 @@ public interface Filter extends Prioritized {
      * @param chain          the next step in the filter chain
      * @return the response; possibly with new chained actions attached
      */
-    Flow.Processor<?, Response> filter(RequestContext requestContext, FilterChain chain) throws Exception;
+    Flow.Publisher<Response> filter(RequestContext requestContext, FilterChain chain) throws Exception;
 
     /**
      * Create a filter that operates on the request before it is sent to a {@link Handler}.
@@ -45,15 +45,15 @@ public interface Filter extends Prioritized {
 
     record Before(UnaryOperator<RequestContext> function) implements Filter {
         @Override
-        public Flow.Processor<?, Response> filter(RequestContext requestContext, FilterChain chain) throws Exception {
+        public Flow.Publisher<Response> filter(RequestContext requestContext, FilterChain chain) throws Exception {
             return chain.next(function.apply(requestContext));
         }
     }
 
     record After(UnaryOperator<Response> function) implements Filter {
         @Override
-        public Flow.Processor<?, Response> filter(RequestContext requestContext, FilterChain chain) throws Exception {
-            return Flo.from(chain.next(requestContext)).map(function);
+        public Flow.Publisher<Response> filter(RequestContext requestContext, FilterChain chain) throws Exception {
+            return Rx.from(chain.next(requestContext)).map(function);
         }
     }
 }

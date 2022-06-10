@@ -1,7 +1,9 @@
 package vest.doctor.http.server;
 
 import io.netty.buffer.ByteBuf;
-import vest.doctor.reactive.Flo;
+import vest.doctor.reactive.Rx;
+
+import java.util.concurrent.Flow;
 
 /**
  * Handles an HTTP request.
@@ -9,10 +11,10 @@ import vest.doctor.reactive.Flo;
 @FunctionalInterface
 public interface SynchronousHandler extends Handler {
     @Override
-    default Flo<?, Response> handle(RequestContext requestContext) throws Exception {
-        return requestContext.request()
-                .body()
-                .asBuffer()
+    default Flow.Publisher<Response> handle(RequestContext requestContext) throws Exception {
+        return Rx.from(requestContext.request()
+                        .body()
+                        .asBuffer())
                 .map(body -> {
                     try {
                         return handleSync(requestContext, body);

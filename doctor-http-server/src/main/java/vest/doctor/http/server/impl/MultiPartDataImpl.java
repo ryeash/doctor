@@ -12,8 +12,9 @@ import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import vest.doctor.http.server.MultiPartData;
 import vest.doctor.http.server.RequestBody;
-import vest.doctor.reactive.Flo;
+import vest.doctor.reactive.Rx;
 
+import java.util.concurrent.Flow;
 import java.util.function.Consumer;
 
 class MultiPartDataImpl implements MultiPartData {
@@ -36,14 +37,19 @@ class MultiPartDataImpl implements MultiPartData {
         return valid;
     }
 
-    public Flo<?, Part> parts() {
+    public Flow.Publisher<Part> parts() {
         if (valid) {
-            return body.flow()
-                    .<Part>process(this::nextData)
-                    .takeWhile(p -> !p.last(), true);
+            return Rx.from(body.flow())
+                    .<Part>onNext((content, subscription, subscriber) -> nextData(content, subscriber::onNext))
+                    .onNext((part, subscription, subscriber) -> {
+                        subscriber.onNext(part);
+                        if (part.last()) {
+                            subscriber.onComplete();
+                        }
+                    });
         } else {
-            return body.flow()
-                    .map(content -> {
+            return Rx.from(body.ignored())
+                    .map(ignored -> {
                         throw new HttpException(HttpResponseStatus.BAD_REQUEST, "expecting a multipart request");
                     });
         }

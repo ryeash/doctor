@@ -1,7 +1,5 @@
 package vest.doctor.reactive;
 
-import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
@@ -57,12 +55,11 @@ public class Rx<T> implements Flow.Publisher<T> {
     }
 
     final Runnable onSubscribe;
-    final Flow.Publisher<?> source;
-    final List<Flow.Processor<?, ?>> chain = new LinkedList<>();
+    Flow.Publisher<T> current;
 
-    public Rx(Runnable onSubscribe, Flow.Publisher<T> source) {
+    public Rx(Runnable onSubscribe, Flow.Publisher<T> current) {
         this.onSubscribe = onSubscribe;
-        this.source = source;
+        this.current = current;
     }
 
     public Rx<T> observe(Consumer<T> action) {
@@ -185,7 +182,8 @@ public class Rx<T> implements Flow.Publisher<T> {
 
     @SuppressWarnings("unchecked")
     public <R> Rx<R> chain(Flow.Processor<T, R> processor) {
-        chain.add(processor);
+        current.subscribe(processor);
+        current = (Flow.Publisher<T>) processor;
         return (Rx<R>) this;
     }
 
@@ -193,47 +191,19 @@ public class Rx<T> implements Flow.Publisher<T> {
         return subscribe(Long.MAX_VALUE);
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public CompletableFuture<T> subscribe(long initialRequest) {
         CompletableFuture<T> future = new CompletableFuture<>();
         TerminalSubscriber<T> terminal = new TerminalSubscriber<>(future, initialRequest);
-
-        Flow.Subscriber first;
-        if (chain.isEmpty()) {
-            first = terminal;
-        } else {
-            first = chain.get(0);
-            Flow.Processor temp = null;
-            for (Flow.Processor<?, ?> processor : chain) {
-                if (temp != null) {
-                    temp.subscribe(processor);
-                }
-                temp = processor;
-            }
-            temp.subscribe(terminal);
+        current.subscribe(terminal);
+        if (onSubscribe != null) {
+            onSubscribe.run();
         }
-        source.subscribe(first);
-        return terminal.initialized()
-                .thenRun(orNothing(onSubscribe))
-                .thenCombine(future, (ignored, value) -> value);
+        return future;
     }
 
     @Override
     public void subscribe(Flow.Subscriber<? super T> subscriber) {
         chain(subscriber);
-    }
-
-    @Override
-    public String toString() {
-        return "Builder{" +
-                "onSubscribe=" + onSubscribe +
-                ", chain=" + chain +
-                '}';
-    }
-
-    private static Runnable orNothing(Runnable runnable) {
-        return runnable != null ? runnable : () -> {
-        };
     }
 
     record RunWithItem<T>(SubmissionPublisher<T> publisher, T item) implements Runnable {

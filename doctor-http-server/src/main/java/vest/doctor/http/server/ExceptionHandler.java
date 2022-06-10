@@ -1,7 +1,8 @@
 package vest.doctor.http.server;
 
 import vest.doctor.Prioritized;
-import vest.doctor.reactive.Flo;
+
+import java.util.concurrent.Flow;
 
 
 /**
@@ -21,7 +22,7 @@ public interface ExceptionHandler extends Prioritized {
      *
      * @param requestContext the requestContext that caused the exception
      * @param error          the error from the handler
-     * @return a {@link Flo response publisher} to send a response to the client
+     * @return a {@link Flow.Publisher response publisher} to send a response to the client
      */
-    Flo<?, Response> handle(RequestContext requestContext, Throwable error);
+    Flow.Publisher<Response> handle(RequestContext requestContext, Throwable error);
 }

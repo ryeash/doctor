@@ -17,7 +17,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import vest.doctor.http.server.impl.Router;
-import vest.doctor.reactive.Flo;
+import vest.doctor.reactive.Rx;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -34,8 +34,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -50,6 +53,7 @@ import static org.hamcrest.Matchers.is;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
+@Test(invocationCount = 2)
 public class NettyHttpTest {
     Server server;
 
@@ -71,14 +75,14 @@ public class NettyHttpTest {
                 })
                 .filter((ctx, chain) -> {
                     if (Objects.equals(ctx.request().queryParam("shortcircuit"), "true")) {
-                        return Flo.just(ctx.response().status(500).body(ResponseBody.of("shortcircuited")));
+                        return Rx.one(ctx.response().status(500).body(ResponseBody.of("shortcircuited")));
                     } else {
                         return chain.next(ctx);
                     }
                 })
                 .filter("/*", (ctx, chain) -> {
                     long start = System.nanoTime();
-                    return Flo.from(chain.next(ctx))
+                    return Rx.from(chain.next(ctx))
                             .map(response -> response.header("X-Timing", TimeUnit.MILLISECONDS.convert(Duration.ofNanos(System.nanoTime() - start))));
                 })
                 .after("/hello/*", response -> {
@@ -100,26 +104,22 @@ public class NettyHttpTest {
                 .get("/exception", request -> {
                     throw new RuntimeException("I threw an error");
                 })
-                .get("/futureexception", ctx -> Flo.error(new RuntimeException("I threw an error")))
+                .get("/futureexception", ctx -> Rx.error(new RuntimeException("I threw an error")))
                 .postSync("/readablebody", (ctx, body) -> ctx.response()
                         .body(ResponseBody.of(body.toString(StandardCharsets.UTF_8))))
-                .post("/", ctx -> Flo.just(ctx.response()
-                        .body(ResponseBody.of(ctx.request().body().flow()))
-                        .header("Content-Type", "text/plain")))
-                .get("/file", ctx -> ctx.request()
-                        .body()
-                        .ignored()
+                .post("/", ctx -> {
+                    return Rx.one(ctx.response()
+                            .body(ResponseBody.of(ctx.request().body().flow()))
+                            .header("Content-Type", "text/plain"));
+                })
+                .get("/file", ctx -> Rx.from(ctx.request().body().ignored())
                         .map(ctx::response)
                         .observe(r -> r.body(ResponseBody.sendFile(new File("./pom.xml")))))
-                .post("/string", ctx -> ctx.request()
-                        .body()
-                        .asString()
+                .post("/string", ctx -> Rx.from(ctx.request().body().asString())
                         .map(ResponseBody::of)
                         .map(ctx.response()::body))
-                .post("/multipart", ctx -> ctx.request()
-                        .multiPartBody()
-                        .parts()
-                        .take(part -> part.type().equals("FileUpload"))
+                .post("/multipart", ctx -> Rx.from(ctx.request().multiPartBody().parts())
+                        .filter(part -> part.type().equals("FileUpload"))
                         .map(MultiPartData.Part::data)
                         .map(buf -> {
                             try {
@@ -150,7 +150,6 @@ public class NettyHttpTest {
                 .baseUri("http://localhost:61234");
     }
 
-    @Test
     public void init() {
         req().get("/")
                 .then()
@@ -167,14 +166,12 @@ public class NettyHttpTest {
                 .body(Matchers.equalTo("goodbye"));
     }
 
-    @Test
     public void empty() {
         req().get("/empty")
                 .then()
                 .body(Matchers.equalTo(""));
     }
 
-    @Test
     public void stream() {
         byte[] bytes = req()
                 .get("/stream")
@@ -186,7 +183,6 @@ public class NettyHttpTest {
         assertEquals(bytes.length, 1024);
     }
 
-    @Test
     public void compression() {
         byte[] bytes = randomBytes();
         byte[] gzipped = gzipCompress(bytes);
@@ -198,7 +194,6 @@ public class NettyHttpTest {
         assertEquals(as, bytes);
     }
 
-    @Test
     public void postSync() {
         String test = "test";
         String as = req().body(test)
@@ -208,7 +203,6 @@ public class NettyHttpTest {
         assertEquals(as, test);
     }
 
-    @Test
     public void exception() {
         req().get("/exception")
                 .then()
@@ -219,7 +213,6 @@ public class NettyHttpTest {
                 .statusCode(500);
     }
 
-    @Test
     public void shortCircuit() {
         req()
                 .queryParam("shortcircuit", "true")
@@ -230,7 +223,6 @@ public class NettyHttpTest {
     }
 
 
-    @Test
     public void postFlow() {
         byte[] bytes = randomBytes();
         byte[] res = req()
@@ -241,19 +233,23 @@ public class NettyHttpTest {
         assertEquals(res, bytes);
     }
 
-    @Test(invocationCount = 2)
     public void throughput() {
         long start = System.nanoTime();
-        IntStream.range(0, 1000)
-                .parallel()
-                .forEach(i -> req().body(randomBytes())
-                        .post("/")
-                        .then()
-                        .statusCode(200));
+        ExecutorService background = Executors.newWorkStealingPool(Runtime.getRuntime().availableProcessors() * 2);
+        CompletableFuture.supplyAsync(() -> {
+            IntStream.range(0, 100)
+                    .parallel()
+                    .forEach(i -> req().body(randomBytes())
+                            .post("/")
+//                            .prettyPeek()
+                            .then()
+
+                            .statusCode(200));
+            return null;
+        }, background).join();
         System.out.println(TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + "ms");
     }
 
-    @Test
     public void connectionClose() {
         req()
                 .header("Connection", "close")
@@ -262,14 +258,12 @@ public class NettyHttpTest {
                 .statusCode(200);
     }
 
-    @Test
     public void notFound() {
         req().get("/nothing_to_see_here")
                 .then()
                 .statusCode(404);
     }
 
-    @Test
     public void fileServer() {
         req().get("/file")
                 .then()
@@ -277,7 +271,6 @@ public class NettyHttpTest {
                 .body(containsString("<dependencies>"));
     }
 
-    @Test
     public void string() {
         req().body("string")
                 .post("/string")
@@ -286,7 +279,6 @@ public class NettyHttpTest {
                 .body(equalTo("string"));
     }
 
-    @Test
     public void multipart() {
         req().multiPart(new File("./pom.xml"))
                 .post("/multipart")
@@ -295,7 +287,6 @@ public class NettyHttpTest {
                 .body(containsString("<dependencies>"));
     }
 
-    @Test
     public void ws() throws Exception {
         String destUri = "ws://localhost:61234/grumpy";
         WebSocketClient client = new WebSocketClient();

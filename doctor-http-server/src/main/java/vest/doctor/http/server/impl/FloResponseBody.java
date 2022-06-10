@@ -6,32 +6,33 @@ import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.util.concurrent.PromiseNotifier;
 import vest.doctor.http.server.ResponseBody;
-import vest.doctor.reactive.Flo;
+import vest.doctor.reactive.Rx;
 
 import java.util.concurrent.Flow;
+import java.util.function.BiConsumer;
 
 public class FloResponseBody implements ResponseBody {
 
-    private final Flow.Processor<?, HttpContent> processor;
+    private final Rx<? extends HttpContent> processor;
 
-    public FloResponseBody(Flow.Processor<?, HttpContent> processor) {
-        this.processor = processor;
+    public FloResponseBody(Flow.Publisher<? extends HttpContent> processor) {
+        this.processor = Rx.from(processor);
     }
 
     @Override
     public ChannelFuture writeTo(ChannelHandlerContext channel) {
         ChannelPromise channelPromise = channel.newPromise();
-        Flo.from(processor)
+        Rx.from(processor)
                 .map(channel::write)
-                .whenComplete(channel::flush)
+                .runOnComplete(channel::flush)
                 .subscribe()
-                .future()
-                .whenComplete(new JoinFP(channelPromise)::signal);
+                .whenComplete(new JoinFP(channelPromise));
         return channelPromise;
     }
 
-    record JoinFP(ChannelPromise channelPromise) {
-        void signal(ChannelFuture f, Throwable error) {
+    record JoinFP(ChannelPromise channelPromise) implements BiConsumer<ChannelFuture, Throwable> {
+        @Override
+        public void accept(ChannelFuture f, Throwable error) {
             if (error != null) {
                 channelPromise.setFailure(error);
             } else {
