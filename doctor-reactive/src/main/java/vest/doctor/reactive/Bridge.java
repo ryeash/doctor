@@ -2,11 +2,10 @@ package vest.doctor.reactive;
 
 import java.util.concurrent.Flow;
 
-public final class SubscriberToProcessorBridge<I> extends Processors.IdentityProcessor<I> {
+public final class Bridge<I> extends AbstractProcessor<I, I> {
+    private final Flow.Subscriber<? super I> subscriber;
 
-    private final Flow.Subscriber<I> subscriber;
-
-    public SubscriberToProcessorBridge(Flow.Subscriber<I> subscriber) {
+    public Bridge(Flow.Subscriber<? super I> subscriber) {
         this.subscriber = subscriber;
     }
 
@@ -17,20 +16,20 @@ public final class SubscriberToProcessorBridge<I> extends Processors.IdentityPro
     }
 
     @Override
-    public void handleNextItem(I item) throws Exception {
+    public void onNext(I item) {
         subscriber.onNext(item);
-        super.handleNextItem(item);
+        super.onNext(item);
     }
 
     @Override
     public void onError(Throwable throwable) {
-        super.onError(throwable);
         subscriber.onError(throwable);
+        super.onError(throwable);
     }
 
     @Override
     public void onComplete() {
-        super.onComplete();
         subscriber.onComplete();
+        super.onComplete();
     }
 }

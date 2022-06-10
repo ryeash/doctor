@@ -9,7 +9,7 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public final class ParallelProcessor<I> extends Processors.IdentityProcessor<I> {
+public final class ParallelProcessor<I> extends AbstractProcessor<I, I> {
 
     private final ExecutorService subscribeOn;
     private final ExecutorService manageOn;
@@ -28,8 +28,10 @@ public final class ParallelProcessor<I> extends Processors.IdentityProcessor<I> 
     @Override
     public void onSubscribe(Flow.Subscription subscription) {
         super.onSubscribe(subscription);
-        if (this.subscription.requested() < bufferSize) {
-            this.subscription.request(this.bufferSize - this.subscription.requested());
+        if (bufferSize > 0) {
+            subscription.request(bufferSize);
+        } else {
+            subscription.request(Long.MAX_VALUE);
         }
     }
 
@@ -45,7 +47,7 @@ public final class ParallelProcessor<I> extends Processors.IdentityProcessor<I> 
     }
 
     @Override
-    protected void handleNextItem(I item) {
+    public void onNext(I item) {
         inFlight.incrementAndGet();
         boolean added = queue.offer(item);
         if (!added) {
@@ -59,7 +61,7 @@ public final class ParallelProcessor<I> extends Processors.IdentityProcessor<I> 
         I value;
         while ((value = queue.poll()) != null) {
             try {
-                super.handleNextItem(value);
+                super.onNext(value);
             } catch (Exception e) {
                 throw new RuntimeException("error processing " + value, e);
             } finally {

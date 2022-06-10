@@ -2,7 +2,7 @@ package vest.doctor.reactive;
 
 import java.util.concurrent.Flow;
 
-final class VoidSubscriber<T> implements Flow.Subscriber<T> {
+public final class VoidSubscriber<T> implements Flow.Subscriber<T> {
     private static final Flow.Subscriber<Object> INSTANCE = new VoidSubscriber<>();
 
     @SuppressWarnings("unchecked")
@@ -24,5 +24,10 @@ final class VoidSubscriber<T> implements Flow.Subscriber<T> {
 
     @Override
     public void onComplete() {
+    }
+
+    @Override
+    public String toString() {
+        return "void";
     }
 }
