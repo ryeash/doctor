@@ -148,7 +148,7 @@ public class Server extends SimpleChannelInboundHandler<HttpObject> implements A
                     handle = Rx.error(t);
                 }
                 Rx.from(handle)
-                        .onError((error, subscription, subscriber) -> handleError(requestContext, error).observe(subscriber::onNext).subscribe())
+                        .recover((error) -> handleError(requestContext, error))
                         .observe(r -> writeResponse(ctx, r))
                         .subscribe();
             }
@@ -173,14 +173,14 @@ public class Server extends SimpleChannelInboundHandler<HttpObject> implements A
         }
     }
 
-    private Rx<Response> handleError(RequestContext ctx, Throwable error) {
+    private Response handleError(RequestContext ctx, Throwable error) {
         try {
-            return Rx.from(config.getExceptionHandler().handle(ctx, error));
+            return config.getExceptionHandler().handle(ctx, error);
         } catch (Throwable fatal) {
             log.error("error mapping exception", fatal);
             log.error("original exception", error);
             ctx.channelContext().close();
-            return Rx.one(ctx.request().createResponse().status(500));
+            return ctx.response().status(500).body(ResponseBody.empty());
         }
     }
 

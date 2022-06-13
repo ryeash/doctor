@@ -22,8 +22,7 @@ public class FloResponseBody implements ResponseBody {
     @Override
     public ChannelFuture writeTo(ChannelHandlerContext channel) {
         ChannelPromise channelPromise = channel.newPromise();
-        Rx.from(processor)
-                .map(channel::write)
+        processor.map(channel::write)
                 .runOnComplete(channel::flush)
                 .subscribe()
                 .whenComplete(new JoinFP(channelPromise));

@@ -33,6 +33,8 @@ public class StreamingRequestBody implements RequestBody {
 
     @Override
     public Rx<HttpContent> flow() {
+        // TODO: find a better way to start the composition
+        // this is needed because without the initial subscriber to SubmissionPublisher, we lose data
         return Rx.from(source).runOnComplete(() -> {
         });
     }

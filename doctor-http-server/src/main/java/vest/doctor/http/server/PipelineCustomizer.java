@@ -2,6 +2,7 @@ package vest.doctor.http.server;
 
 import io.netty.channel.ChannelPipeline;
 import vest.doctor.Prioritized;
+import vest.doctor.http.server.impl.HttpServerChannelInitializer;
 
 /**
  * Customizes the channel pipeline used for the netty http channels.

@@ -8,13 +8,11 @@ import vest.doctor.http.server.ExceptionHandler;
 import vest.doctor.http.server.RequestContext;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
-import vest.doctor.reactive.Rx;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.Flow;
 
 /**
  * {@link ExceptionHandler} implementation that combines multiple handlers together
@@ -38,7 +36,7 @@ public final class CompositeExceptionHandler implements ExceptionHandler {
     }
 
     @Override
-    public Flow.Publisher<Response> handle(RequestContext requestContext, Throwable error) {
+    public Response handle(RequestContext requestContext, Throwable error) {
         for (ExceptionHandler handler : handlers) {
             if (handler.type().isInstance(error)) {
                 return handler.handle(requestContext, error);
@@ -52,10 +50,10 @@ public final class CompositeExceptionHandler implements ExceptionHandler {
         return "CompositeExceptionHandler" + handlers;
     }
 
-    private Rx<Response> defaultWorkflow(RequestContext requestContext, Throwable error) {
+    private Response defaultWorkflow(RequestContext requestContext, Throwable error) {
         if (error == null) {
             log.error("null exception somehow", new Exception());
-            return Rx.one(requestContext.response().status(500));
+            return requestContext.response().status(500).body(ResponseBody.empty());
         }
         Objects.requireNonNull(error, "handle error was given a null error");
         log.error("error during route execution; request uri: {}", requestContext.request().uri(), error);
@@ -63,9 +61,9 @@ public final class CompositeExceptionHandler implements ExceptionHandler {
         Throwable temp = error;
         for (int i = 0; i < 7 && temp != null; i++) {
             if (temp instanceof HttpException http) {
-                return Rx.one(requestContext.response()
+                return requestContext.response()
                         .status(http.status())
-                        .body(http.body()));
+                        .body(http.body());
             }
             temp = temp.getCause();
         }
@@ -77,8 +75,8 @@ public final class CompositeExceptionHandler implements ExceptionHandler {
         } else if (error instanceof InvocationTargetException && error.getCause() != null) {
             body = error.getCause().getMessage();
         }
-        return Rx.one(requestContext.response()
+        return requestContext.response()
                 .status(status)
-                .body(ResponseBody.of(body)));
+                .body(ResponseBody.of(body));
     }
 }

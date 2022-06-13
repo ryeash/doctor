@@ -89,24 +89,24 @@ public class NettyHttpTest {
                     response.headers().set(HttpHeaderNames.SERVER, "doctor");
                     return response;
                 })
-                .getSync("/", (ctx, body) -> ctx.response().body(ResponseBody.of("ok")))
-                .getSync("/hello/{name}", (ctx, body) -> {
+                .get("/", Handler.sync((ctx, body) -> ctx.response().body(ResponseBody.of("ok"))))
+                .get("/hello/{name}", Handler.sync((ctx, body) -> {
                     Map<String, String> pathParams = ctx.attribute(Router.PATH_PARAMS);
                     return ctx.response()
                             .body(ResponseBody.of(pathParams.get("name")));
-                })
-                .getSync("/empty", (ctx, body) -> ctx.response().body(ResponseBody.empty()))
-                .getSync("/stream", (ctx, body) -> {
+                }))
+                .get("/empty", Handler.sync((ctx, body) -> ctx.response().body(ResponseBody.empty())))
+                .get("/stream", Handler.sync((ctx, body) -> {
                     byte[] bytes = new byte[1024];
                     Arrays.fill(bytes, (byte) 'a');
                     return ctx.response().body(ResponseBody.of(new ByteArrayInputStream(bytes)));
-                })
+                }))
                 .get("/exception", request -> {
                     throw new RuntimeException("I threw an error");
                 })
                 .get("/futureexception", ctx -> Rx.error(new RuntimeException("I threw an error")))
-                .postSync("/readablebody", (ctx, body) -> ctx.response()
-                        .body(ResponseBody.of(body.toString(StandardCharsets.UTF_8))))
+                .post("/readablebody", Handler.sync((ctx, body) -> ctx.response()
+                        .body(ResponseBody.of(body.toString(StandardCharsets.UTF_8)))))
                 .post("/", ctx -> {
                     return Rx.one(ctx.response()
                             .body(ResponseBody.of(ctx.request().body().flow()))

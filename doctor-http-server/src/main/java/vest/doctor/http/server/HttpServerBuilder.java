@@ -246,67 +246,6 @@ public final class HttpServerBuilder {
     }
 
     /**
-     * Add a synchronous GET request handler to the router.
-     *
-     * @param pathSpec the path specification for the handler, e.g. /api/v2/{type}/{collection}
-     * @param handler  the handler that will be routed for requests matching the method and path specification
-     * @return this builder
-     * @see #route(HttpMethod, String, Handler)
-     */
-    public HttpServerBuilder getSync(String pathSpec, SynchronousHandler handler) {
-        return routeSync(HttpMethod.GET, pathSpec, handler);
-    }
-
-    /**
-     * Add a synchronous PUT request handler to the router.
-     *
-     * @param pathSpec the path specification for the handler, e.g. /api/v2/{type}/{collection}
-     * @param handler  the handler that will be routed for requests matching the method and path specification
-     * @return this builder
-     * @see #route(HttpMethod, String, Handler)
-     */
-    public HttpServerBuilder putSync(String pathSpec, SynchronousHandler handler) {
-        return routeSync(HttpMethod.PUT, pathSpec, handler);
-    }
-
-    /**
-     * Add a synchronous POST request handler to the router.
-     *
-     * @param pathSpec the path specification for the handler, e.g. /api/v2/{type}/{collection}
-     * @param handler  the handler that will be routed for requests matching the method and path specification
-     * @return this builder
-     * @see #route(HttpMethod, String, Handler)
-     */
-    public HttpServerBuilder postSync(String pathSpec, SynchronousHandler handler) {
-        return routeSync(HttpMethod.POST, pathSpec, handler);
-    }
-
-    /**
-     * Add a synchronous DELETE request handler to the router.
-     *
-     * @param pathSpec the path specification for the handler, e.g. /api/v2/{type}/{collection}
-     * @param handler  the handler that will be routed for requests matching the method and path specification
-     * @return this builder
-     * @see #route(HttpMethod, String, Handler)
-     */
-    public HttpServerBuilder deleteSync(String pathSpec, SynchronousHandler handler) {
-        return routeSync(HttpMethod.DELETE, pathSpec, handler);
-    }
-
-    /**
-     * Add a request handler to the router that will handle any request that matches the
-     * given path specification (http method is ignored).
-     *
-     * @param pathSpec the path specification for the handler, e.g. /api/v2/{type}/{collection}
-     * @param handler  the handler that will be routed for requests matching the method and path specification
-     * @return this builder
-     * @see #route(HttpMethod, String, Handler)
-     */
-    public HttpServerBuilder anySync(String pathSpec, SynchronousHandler handler) {
-        return routeSync(Router.ANY, pathSpec, handler);
-    }
-
-    /**
      * Add a request handler to the router.
      *
      * @param method  the http method for the route, e.g. "GET"
@@ -315,19 +254,6 @@ public final class HttpServerBuilder {
      * @return this builder
      */
     public HttpServerBuilder route(String method, String path, Handler handler) {
-        router.route(method, path, handler);
-        return this;
-    }
-
-    /**
-     * Add a synchronous request handler to the router.
-     *
-     * @param method  the http method for the route, e.g. "GET"
-     * @param path    the path specification for the handler, e.g. /api/v2/{type}/{collection}
-     * @param handler the handler that will be routed for requests matching the method and path specification
-     * @return this builder
-     */
-    public HttpServerBuilder routeSync(HttpMethod method, String path, SynchronousHandler handler) {
         router.route(method, path, handler);
         return this;
     }

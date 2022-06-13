@@ -5,7 +5,7 @@ import io.netty.buffer.ByteBuf;
 import java.util.concurrent.Flow;
 
 /**
- * Represents a multi-part upload from the client.
+ * Represents a multipart upload from the client.
  */
 public interface MultiPartData {
 

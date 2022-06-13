@@ -11,7 +11,6 @@ import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
 import vest.doctor.http.server.MultiPartData;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.RequestBody;
-import vest.doctor.http.server.Response;
 
 import java.net.URI;
 import java.nio.charset.Charset;
@@ -149,11 +148,6 @@ public class ServerRequest implements Request {
             sb.append(body);
         }
         return sb.toString();
-    }
-
-    @Override
-    public Response createResponse() {
-        return new ServerResponse(this);
     }
 
     public static String[] divide(String str, char delimiter) {
