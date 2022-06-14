@@ -53,7 +53,7 @@ import static org.hamcrest.Matchers.is;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
-@Test(invocationCount = 2)
+@Test(invocationCount = 5)
 public class NettyHttpTest {
     Server server;
 

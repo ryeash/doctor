@@ -22,7 +22,7 @@ public interface Handler {
     Flow.Publisher<Response> handle(RequestContext requestContext) throws Exception;
 
     /**
-     * Create a request Handler with a synchronous function. The request body will automatically be buffered
+     * Create a request Handler with a synchronous function. The request body will be buffered
      * into a single {@link ByteBuf}.
      *
      * @param function the handler function that returns a {@link Response}

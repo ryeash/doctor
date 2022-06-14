@@ -10,7 +10,7 @@ import java.util.concurrent.Flow;
 public interface MultiPartData {
 
     /**
-     * Verify if the client sent multipart data.
+     * Verify if the client sent conforming multipart data.
      */
     boolean valid();
 

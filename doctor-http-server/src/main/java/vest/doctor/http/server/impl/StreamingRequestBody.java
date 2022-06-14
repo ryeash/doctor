@@ -10,6 +10,7 @@ import vest.doctor.reactive.Rx;
 
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Flow;
+import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -44,7 +45,9 @@ public class StreamingRequestBody implements RequestBody {
         return flow()
                 .collect(Collector.of(alloc::compositeBuffer,
                         (composite, content) -> composite.addComponent(true, content.content()),
-                        (a, b) -> a.addComponent(true, b)))
+                        (a, b) -> a.addComponent(true, b),
+                        Function.identity(),
+                        Collector.Characteristics.IDENTITY_FINISH))
                 .map(o -> o);
     }
 

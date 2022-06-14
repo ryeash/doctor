@@ -9,7 +9,7 @@ import vest.doctor.Prioritized;
 public interface ExceptionHandler extends Prioritized {
 
     /**
-     * The type of exception that is handled by the implementation.
+     * The type of exception that is handled by this implementation.
      */
     Class<? extends Throwable> type();
 

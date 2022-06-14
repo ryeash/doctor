@@ -11,31 +11,30 @@ import java.util.concurrent.Flow;
 public interface RequestBody {
 
     /**
-     * Get the flow of request body data. A call to this method will mark this object
-     * as 'consumed' and any further method calls.
+     * Get the {@link Flow.Publisher} of request body data.
      *
-     * @return a flow of request body contents
+     * @return a publisher of request body contents
      */
     Flow.Publisher<HttpContent> flow();
 
     /**
      * Collect the body into a single buffer.
      *
-     * @return a flow of the request body as a single buffer
+     * @return a publisher of the request body as a single buffer
      */
     Flow.Publisher<ByteBuf> asBuffer();
 
     /**
-     * Read and collect the body data into a single UTF-8 string.
+     * Collect the body data into a single UTF-8 string.
      *
-     * @return a flow of the request body as a single string
+     * @return a publisher of the request body as a single string
      */
     Flow.Publisher<String> asString();
 
     /**
      * Ignore the body data.
      *
-     * @return a flow of a single null element indicating the successful read of all body data
+     * @return a publisher of a single null element indicating the successful read of all body data
      */
     <T> Flow.Publisher<T> ignored();
 }
