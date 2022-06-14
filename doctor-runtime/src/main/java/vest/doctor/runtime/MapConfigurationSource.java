@@ -23,6 +23,7 @@ public record MapConfigurationSource(Map<String, Object> map) implements Configu
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public List<String> getList(String propertyName) {
         Object val = getInternal(propertyName);
         if (val == null) {
@@ -35,6 +36,7 @@ public record MapConfigurationSource(Map<String, Object> map) implements Configu
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public ConfigurationSource getSubConfiguration(String path) {
         Object val = getInternal(path);
         if (val == null) {
@@ -76,6 +78,7 @@ public record MapConfigurationSource(Map<String, Object> map) implements Configu
     public void reload() {
     }
 
+    @SuppressWarnings("unchecked")
     private Object getInternal(String path) {
         if (path.indexOf('.') < 0) {
             return map.get(path);

@@ -45,7 +45,7 @@ public class HttpServerConfiguration {
     /**
      * The number of threads used to handle requests.
      */
-    private int workerThreads = Math.max(Runtime.getRuntime().availableProcessors() * 2, 8);
+    private int workerThreads = Runtime.getRuntime().availableProcessors();
 
     /**
      * The thread prefix / pool name to use for the worker thread event loop group.

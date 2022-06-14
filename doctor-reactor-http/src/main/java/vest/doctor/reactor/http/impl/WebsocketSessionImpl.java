@@ -42,11 +42,13 @@ public final class WebsocketSessionImpl implements WebsocketSession {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T attribute(String name) {
         return (T) attributes.get(name);
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T attributeOrElse(String attribute, T orElse) {
         return (T) attributes.getOrDefault(attribute, orElse);
     }
