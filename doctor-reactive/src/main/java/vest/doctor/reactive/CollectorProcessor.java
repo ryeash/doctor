@@ -5,12 +5,12 @@ import java.util.stream.Collector;
 
 public final class CollectorProcessor<I, A, O> extends AbstractProcessor<I, O> {
 
-    private final Collector<? super I, A, O> collector;
+    private final Collector<? super I, A, ? extends O> collector;
     private final A container;
     private final boolean concurrent;
     private final AtomicBoolean collecting = new AtomicBoolean(true);
 
-    public CollectorProcessor(Collector<? super I, A, O> collector) {
+    public CollectorProcessor(Collector<? super I, A, ? extends O> collector) {
         this.collector = collector;
         this.container = collector.supplier().get();
         this.concurrent = collector.characteristics().contains(Collector.Characteristics.CONCURRENT);

@@ -70,7 +70,19 @@ public class Server extends SimpleChannelInboundHandler<HttpObject> implements A
         ServerBootstrap bootstrap = new ServerBootstrap();
         this.bossGroup = new NioEventLoopGroup(config.getTcpManagementThreads(), new CustomThreadFactory(false, config.getTcpThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()));
         this.workerGroup = new NioEventLoopGroup(config.getWorkerThreads(), new CustomThreadFactory(true, config.getWorkerThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()));
-        bootstrap.group(bossGroup, workerGroup);
+//        this.workerGroup = Executors.newFixedThreadPool(config.getWorkerThreads(), new CustomThreadFactory(true, config.getWorkerThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()));
+//        this.workerGroup = new ForkJoinPool(
+//                config.getWorkerThreads(),
+//                new CustomThreadFactory(true, config.getWorkerThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()),
+//                LoggingUncaughtExceptionHandler.INSTANCE,
+//                true,
+//                config.getWorkerThreads(),
+//                config.getWorkerThreads(),
+//                1,
+//                null,
+//                60,
+//                TimeUnit.SECONDS);
+        bootstrap.group(bossGroup);
         bootstrap.channelFactory(NioServerSocketChannel::new)
                 .option(ChannelOption.SO_BACKLOG, config.getSocketBacklog())
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
@@ -101,6 +113,7 @@ public class Server extends SimpleChannelInboundHandler<HttpObject> implements A
         }
         doQuietly(bossGroup::shutdownGracefully);
         if (workerGroup != null) {
+//            doQuietly(workerGroup::shutdownNow);
             doQuietly(workerGroup::shutdownGracefully);
         }
     }
@@ -120,56 +133,66 @@ public class Server extends SimpleChannelInboundHandler<HttpObject> implements A
                 ctx.close();
                 return;
             }
-
             if (object instanceof HttpRequest request) {
-                String upgradeHeader = request.headers().get(HttpHeaderNames.UPGRADE);
-                if (upgradeHeader != null) {
-                    wsRouter.handleWebsocketUpgrade(ctx, request, upgradeHeader);
-                    return;
-                }
-
-                if (HttpUtil.is100ContinueExpected(request)) {
-                    ctx.writeAndFlush(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE));
-                }
-
-                SubmissionPublisher<HttpContent> publisher = new SubmissionPublisher<>(workerGroup, 32);
-                StreamingRequestBody body = new StreamingRequestBody(ctx, publisher);
-                ctx.channel().attr(CONTEXT_BODY).set(publisher);
-                ctx.channel().attr(BODY_SIZE).set(new AtomicInteger(0));
-
-                ServerRequest req = new ServerRequest(request, body);
-                Response response = new ServerResponse(req);
-                final RequestContext requestContext = new RequestContextImpl(req, response, ctx);
-                Flow.Publisher<Response> handle;
-                try {
-                    handle = handler.handle(requestContext);
-                } catch (Throwable t) {
-                    publisher.closeExceptionally(t);
-                    handle = Rx.error(t);
-                }
-                Rx.from(handle)
-                        .recover((error) -> handleError(requestContext, error))
-                        .observe(r -> writeResponse(ctx, r))
-                        .subscribe();
+                handleRequest(ctx, request);
             }
-
             if (object instanceof HttpContent content) {
-                AtomicInteger size = ctx.channel().attr(BODY_SIZE).get();
-                if (size.addAndGet(content.content().readableBytes()) > config.getMaxContentLength()) {
-                    throw new HttpException(HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE, "");
-                }
-                SubmissionPublisher<HttpContent> bodyFlow = ctx.channel().attr(CONTEXT_BODY).get();
-                if (bodyFlow != null && !bodyFlow.isClosed()) {
-                    bodyFlow.submit(content.retain());
-                    if (content instanceof LastHttpContent) {
-                        bodyFlow.close();
-                        ctx.channel().attr(CONTEXT_BODY).set(null);
-                    }
-                }
+                handleContent(ctx, content);
             }
         } catch (Throwable t) {
-            log.error("error doing http stuff", t);
+            log.error("error handling http object", t);
             throw t;
+        }
+    }
+
+    private void handleRequest(ChannelHandlerContext ctx, HttpRequest request) {
+        String upgradeHeader = request.headers().get(HttpHeaderNames.UPGRADE);
+        if (upgradeHeader != null) {
+            wsRouter.handleWebsocketUpgrade(ctx, request, upgradeHeader);
+            return;
+        }
+
+        if (HttpUtil.is100ContinueExpected(request)) {
+            ctx.writeAndFlush(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE));
+        }
+
+//      SubmissionPublisher<HttpContent> publisher = new SubmissionPublisher<>();
+        SubmissionPublisher<HttpContent> publisher = new SubmissionPublisher<>(workerGroup, Flow.defaultBufferSize());
+        StreamingRequestBody body = new StreamingRequestBody(ctx, publisher);
+        ctx.channel().attr(CONTEXT_BODY).set(publisher);
+        ctx.channel().attr(BODY_SIZE).set(new AtomicInteger(0));
+
+        ServerRequest req = new ServerRequest(request, body);
+        Response response = new ServerResponse(req);
+        final RequestContext requestContext = new RequestContextImpl(req, response, ctx);
+        Flow.Publisher<Response> handle;
+        try {
+            handle = handler.handle(requestContext);
+        } catch (Throwable t) {
+            publisher.closeExceptionally(t);
+            handle = Rx.error(t);
+        }
+        Rx.from(handle)
+                .recover((error) -> handleError(requestContext, error))
+                .observe(r -> writeResponse(ctx, r))
+                .subscribe();
+    }
+
+    private void handleContent(ChannelHandlerContext ctx, HttpContent content) {
+        AtomicInteger size = ctx.channel().attr(BODY_SIZE).get();
+        if (size.addAndGet(content.content().readableBytes()) > config.getMaxContentLength()) {
+            throw new HttpException(HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE, "");
+        }
+        SubmissionPublisher<HttpContent> publisher = ctx.channel().attr(CONTEXT_BODY).get();
+        if (!publisher.isClosed()) {
+            HttpContent retained = content.retain();
+            publisher.submit(retained);
+            if (content instanceof LastHttpContent) {
+                publisher.close();
+                ctx.channel().attr(CONTEXT_BODY).set(null);
+            }
+        } else {
+            content.release();
         }
     }
 

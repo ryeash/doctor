@@ -41,6 +41,9 @@ public final class HttpServerBuilder {
      * @see HttpServerConfiguration#setWorkerThreads(int)
      */
     public HttpServerBuilder setWorkerThreads(int workerThreads) {
+        if (workerThreads < 2) {
+            throw new IllegalArgumentException("worker thread count must be >1");
+        }
         config.setWorkerThreads(workerThreads);
         return this;
     }

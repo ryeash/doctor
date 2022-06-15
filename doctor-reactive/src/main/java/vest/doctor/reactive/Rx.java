@@ -91,7 +91,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @param action the observer action
      * @return the next step in the processing composition
      */
-    public Rx<T> observe(Consumer<T> action) {
+    public Rx<T> observe(Consumer<? super T> action) {
         return onNext(new Observer<>(action));
     }
 
@@ -117,15 +117,14 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @return the next step in the processing composition
      */
     public <R> Rx<R> mapFuture(Function<T, ? extends CompletionStage<R>> mapper) {
-        return map(mapper).onNext((future, subscription, subscriber) -> {
-            future.whenComplete((value, error) -> {
-                if (error != null) {
-                    subscriber.onError(error);
-                } else {
-                    subscriber.onNext(value);
-                }
-            });
-        });
+        return map(mapper).onNext((future, subscription, subscriber) ->
+                future.whenComplete((value, error) -> {
+                    if (error != null) {
+                        subscriber.onError(error);
+                    } else {
+                        subscriber.onNext(value);
+                    }
+                }));
     }
 
     /**
@@ -210,7 +209,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @param <R>       the new published item type
      * @return the next step in the processing composition
      */
-    public <R> Rx<R> collect(Collector<? super T, ?, R> collector) {
+    public <R> Rx<R> collect(Collector<? super T, ?, ? extends R> collector) {
         return chain(new CollectorProcessor<>(collector));
     }
 
@@ -403,7 +402,8 @@ public class Rx<T> implements Flow.Publisher<T> {
         }
     }
 
-    record Observer<T>(Consumer<T> consumer) implements TriConsumer<T, Flow.Subscription, Flow.Subscriber<? super T>> {
+    record Observer<T>(
+            Consumer<? super T> consumer) implements TriConsumer<T, Flow.Subscription, Flow.Subscriber<? super T>> {
         @Override
         public void accept(T t, Flow.Subscription subscription, Flow.Subscriber<? super T> subscriber) {
             consumer.accept(t);

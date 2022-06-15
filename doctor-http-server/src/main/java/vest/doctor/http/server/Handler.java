@@ -36,6 +36,8 @@ public interface Handler {
                                 return function.apply(requestContext, body);
                             } catch (Exception e) {
                                 throw new RuntimeException(e);
+                            }finally {
+                                body.release();
                             }
                         });
     }

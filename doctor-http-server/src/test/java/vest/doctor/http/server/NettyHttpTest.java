@@ -60,6 +60,7 @@ public class NettyHttpTest {
     @BeforeClass(alwaysRun = true)
     public void initServer() {
         this.server = new HttpServerBuilder()
+                .setWorkerThreads(2)
                 .addBindAddress(new InetSocketAddress("localhost", 61234))
                 .after("/*", response -> {
                     response.headers().set("X-Filter", "true");
@@ -241,9 +242,7 @@ public class NettyHttpTest {
                     .parallel()
                     .forEach(i -> req().body(randomBytes())
                             .post("/")
-//                            .prettyPeek()
                             .then()
-
                             .statusCode(200));
             return null;
         }, background).join();

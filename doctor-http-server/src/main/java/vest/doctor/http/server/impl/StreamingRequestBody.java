@@ -10,7 +10,6 @@ import vest.doctor.reactive.Rx;
 
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Flow;
-import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -34,9 +33,10 @@ public class StreamingRequestBody implements RequestBody {
 
     @Override
     public Rx<HttpContent> flow() {
-        // TODO: find a better way to start the composition
         // this is needed because without the initial subscriber to SubmissionPublisher, we lose data
-        return Rx.from(source).runOnComplete(() -> {
+        return Rx.from(source).onError((error, sub, downstream) -> {
+            error.printStackTrace();
+            downstream.onError(error);
         });
     }
 
@@ -46,9 +46,8 @@ public class StreamingRequestBody implements RequestBody {
                 .collect(Collector.of(alloc::compositeBuffer,
                         (composite, content) -> composite.addComponent(true, content.content()),
                         (a, b) -> a.addComponent(true, b),
-                        Function.identity(),
-                        Collector.Characteristics.IDENTITY_FINISH))
-                .map(o -> o);
+                        composite -> composite,
+                        Collector.Characteristics.IDENTITY_FINISH));
     }
 
     @Override
