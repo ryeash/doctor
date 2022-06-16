@@ -35,6 +35,34 @@ public class Rx<T> implements Flow.Publisher<T> {
     }
 
     /**
+     * Create a new reactive flow that will, when subscribed, publish the given item and then close
+     * the flow, i.e. call {@link Flow.Subscriber#onComplete()}.
+     *
+     * @param item       the item to publish
+     * @param threadPool the executor to use for async delivery
+     * @param <I>        the published item type
+     * @return a new Rx composition
+     */
+    public static <I> Rx<I> one(I item, ExecutorService threadPool) {
+        return one(item, threadPool, Flow.defaultBufferSize());
+    }
+
+    /**
+     * Create a new reactive flow that will, when subscribed, publish the given item and then close
+     * the flow, i.e. call {@link Flow.Subscriber#onComplete()}.
+     *
+     * @param item          the item to publish
+     * @param threadPool    the executor to use for async delivery
+     * @param maxBufferSize the maximum capacity for subscriber's buffers
+     * @param <I>           the published item type
+     * @return a new Rx composition
+     */
+    public static <I> Rx<I> one(I item, ExecutorService threadPool, int maxBufferSize) {
+        SubmissionPublisher<I> pub = new SubmissionPublisher<>(threadPool, maxBufferSize);
+        return new Rx<>(new RunWithItem<>(pub, item), pub);
+    }
+
+    /**
      * Create a new reactive flow that will, when subscribed, publish the given items and then close
      * the flow, i.e. call {@link Flow.Subscriber#onComplete()}.
      *
@@ -47,16 +75,41 @@ public class Rx<T> implements Flow.Publisher<T> {
         return new Rx<>(new RunWithItem<>(pub, items), pub).flatMapIterable(Function.identity());
     }
 
-    public static <I> Rx<I> one(I item, ExecutorService threadPool) {
-        SubmissionPublisher<I> pub = new SubmissionPublisher<>(threadPool, Flow.defaultBufferSize());
-        return new Rx<>(new RunWithItem<>(pub, item), pub);
+    /**
+     * Create a new reactive flow that will, when subscribed, publish the given items and then close
+     * the flow, i.e. call {@link Flow.Subscriber#onComplete()}.
+     *
+     * @param items      the items to publish
+     * @param threadPool the executor to use for async delivery
+     * @param <I>        the published item type
+     * @return a new Rx composition
+     */
+    public static <I> Rx<I> each(Iterable<I> items, ExecutorService threadPool) {
+        return each(items, threadPool, Flow.defaultBufferSize());
     }
 
-    public static <I> Rx<I> each(Iterable<I> items, ExecutorService threadPool) {
-        SubmissionPublisher<Iterable<I>> pub = new SubmissionPublisher<>(threadPool, Flow.defaultBufferSize());
+    /**
+     * Create a new reactive flow that will, when subscribed, publish the given items and then close
+     * the flow, i.e. call {@link Flow.Subscriber#onComplete()}.
+     *
+     * @param items         the items to publish
+     * @param threadPool    the executor to use for async delivery
+     * @param maxBufferSize the maximum capacity for subscriber's buffers
+     * @param <I>           the published item type
+     * @return a new Rx composition
+     */
+    public static <I> Rx<I> each(Iterable<I> items, ExecutorService threadPool, int maxBufferSize) {
+        SubmissionPublisher<Iterable<I>> pub = new SubmissionPublisher<>(threadPool, maxBufferSize);
         return new Rx<>(new RunWithItem<>(pub, items), pub).flatMapIterable(Function.identity());
     }
 
+    /**
+     * Create a new reactive flow composition starting from the given publisher.
+     *
+     * @param publisher the publisher to start the composition with
+     * @param <I>       the published item type
+     * @return a new Rx composition
+     */
     @SuppressWarnings("unchecked")
     public static <I> Rx<I> from(Flow.Publisher<I> publisher) {
         if (publisher instanceof Rx<?> rx) {
@@ -67,11 +120,25 @@ public class Rx<T> implements Flow.Publisher<T> {
         }
     }
 
+    /**
+     * Create a new, empty, reactive flow composition. When subscribed, the {@link Flow.Subscriber#onComplete()}
+     * will be called immediately.
+     *
+     * @param <I> the published item type
+     * @return a new Rx composition
+     */
     public static <I> Rx<I> empty() {
         SubmissionPublisher<I> pub = new SubmissionPublisher<>();
         return new Rx<>(new Empty<>(pub), pub);
     }
 
+    /**
+     * Create a new reactive flow that will signal an error when subscribed.
+     *
+     * @param error the error to signal {@link Flow.Subscriber#onError(Throwable)} with
+     * @param <I>   the published item type
+     * @return a new Rx composition
+     */
     public static <I> Rx<I> error(Throwable error) {
         SubmissionPublisher<I> pub = new SubmissionPublisher<>();
         return new Rx<>(() -> pub.closeExceptionally(error), pub);

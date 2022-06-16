@@ -37,4 +37,11 @@ public interface RequestBody {
      * @return a publisher of a single null element indicating the successful read of all body data
      */
     <T> Flow.Publisher<T> ignored();
+
+    /**
+     * Get the {@link Flow.Publisher} of request body data converted to byte arrays.
+     *
+     * @return a publisher of N byte arrays
+     */
+    Flow.Publisher<byte[]> asByteChunks();
 }

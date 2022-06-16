@@ -22,6 +22,8 @@ public class StreamingRequestBody implements RequestBody {
             (a, b) -> {
             },
             (a, b) -> a);
+    private static final Runnable DO_NOTHING = () -> {
+    };
 
     private final ByteBufAllocator alloc;
     private final Flow.Publisher<HttpContent> source;
@@ -33,11 +35,9 @@ public class StreamingRequestBody implements RequestBody {
 
     @Override
     public Rx<HttpContent> flow() {
-        // this is needed because without the initial subscriber to SubmissionPublisher, we lose data
-        return Rx.from(source).onError((error, sub, downstream) -> {
-            error.printStackTrace();
-            downstream.onError(error);
-        });
+        // TODO: find a better way to not lose data
+        // this DO_NOTHING is needed because without the initial subscriber to SubmissionPublisher, we lose data
+        return Rx.from(source).runOnComplete(DO_NOTHING);
     }
 
     @Override
@@ -69,5 +69,16 @@ public class StreamingRequestBody implements RequestBody {
                 .map(ReferenceCounted::release)
                 .collect(IGNORING_COLLECTOR)
                 .map(c -> null);
+    }
+
+    @Override
+    public Flow.Publisher<byte[]> asByteChunks() {
+        return flow()
+                .map(content -> {
+                    byte[] bytes = new byte[content.content().readableBytes()];
+                    content.content().readBytes(bytes);
+                    content.release();
+                    return bytes;
+                });
     }
 }
