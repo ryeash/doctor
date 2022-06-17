@@ -12,8 +12,10 @@
         <module>doctor-core</module>
         <module>doctor-processor</module>
         <module>doctor-runtime</module>
+        <module>doctor-reactive</module>
         <module>doctor-jersey</module>
-        <module>doctor-reactor-http</module>
+        <module>doctor-http-server</module>
+        <module>doctor-restful-http</module>
         <module>doctor-jpa</module>
         <module>doctor-test</module>
         <module>test-app</module>
@@ -21,12 +23,12 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>18</maven.compiler.source>
+        <maven.compiler.target>18</maven.compiler.target>
         <slf4j.version>1.7.36</slf4j.version>
         <maven.deploy.skip>true</maven.deploy.skip>
-        <netty.version>4.1.74.Final</netty.version>
-        <jackson.version>2.13.1</jackson.version>
+        <netty.version>4.1.77.Final</netty.version>
+        <jackson.version>2.13.3</jackson.version>
     </properties>
 
     <dependencyManagement>
@@ -54,12 +56,12 @@
             <dependency>
                 <groupId>org.testng</groupId>
                 <artifactId>testng</artifactId>
-                <version>7.4.0</version>
+                <version>7.5</version>
             </dependency>
             <dependency>
                 <groupId>io.rest-assured</groupId>
                 <artifactId>rest-assured</artifactId>
-                <version>4.5.0</version>
+                <version>4.5.1</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>

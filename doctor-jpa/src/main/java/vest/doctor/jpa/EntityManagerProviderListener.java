@@ -1,7 +1,20 @@
 package vest.doctor.jpa;
 
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.PersistenceProperty;
+import jakarta.persistence.SynchronizationType;
 import vest.doctor.AdHocProvider;
+import vest.doctor.DestroyMethod;
+import vest.doctor.Factory;
+import vest.doctor.InjectionException;
+import vest.doctor.Prototype;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
 import vest.doctor.processing.AnnotationProcessorContext;
@@ -9,71 +22,113 @@ import vest.doctor.processing.CodeProcessingException;
 import vest.doctor.processing.ProviderDefinition;
 import vest.doctor.processing.ProviderDefinitionListener;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
-import javax.persistence.PersistenceContext;
-import javax.persistence.PersistenceProperty;
-import javax.persistence.SynchronizationType;
+import java.lang.annotation.Annotation;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 
 public class EntityManagerProviderListener implements ProviderDefinitionListener {
 
-    private final Set<String> processedPersistenceUnits = new HashSet<>();
+    public static final String DOCTOR_JPA_EMF_INJECT_SCOPE = "doctor.jpa.entitymanagerfactory.inject.scope";
+    public static final String DOCTOR_JPA_EM_INJECT_SCOPE = "doctor.jpa.entitymanager.inject.scope";
+    public static final String DOCTOR_JPA_EM_USE_SYNC_TYPE = "doctor.jpa.entitymanager.useSynchronizationType";
 
+    private final Set<String> processedPersistenceUnits = new HashSet<>();
 
     @Override
     public void process(AnnotationProcessorContext context, ProviderDefinition providerDefinition) {
         PersistenceContext[] persistenceContexts = providerDefinition.annotationSource().getAnnotationsByType(PersistenceContext.class);
         if (persistenceContexts != null && persistenceContexts.length > 0) {
-            MethodBuilder stage2;
+            String packageName = context.generatedPackageName(providerDefinition.providedType());
+            String jpaFactoryClass = packageName + ".JPAFactory_" + context.nextId();
 
-            stage2 = context.appLoaderStage2()
+            ClassBuilder jpaFactory = new ClassBuilder()
+                    .setClassName(jpaFactoryClass)
                     .addImportClass(EntityManager.class)
                     .addImportClass(EntityManagerFactory.class)
+                    .addImportClass(InjectionException.class)
                     .addImportClass(Persistence.class)
                     .addImportClass(SynchronizationType.class)
                     .addImportClass(ProviderRegistry.class)
                     .addImportClass(AdHocProvider.class)
                     .addImportClass(Map.class)
+                    .addImportClass(Properties.class)
                     .addImportClass(LinkedHashMap.class)
+                    .addImportClass(Factory.class)
+                    .addImportClass(Named.class)
+                    .addImportClass(DestroyMethod.class)
+                    .addImportClass(Singleton.class)
                     .addImportClass("org.slf4j.Logger")
-                    .addImportClass("org.slf4j.LoggerFactory");
+                    .addImportClass("org.slf4j.LoggerFactory")
+                    .addClassAnnotation("@Singleton");
 
             for (PersistenceContext persistenceContext : persistenceContexts) {
-                String pcName = Objects.requireNonNull(persistenceContext.name(), "@PersistenceContext annotations must have a name defined that matches the persistence unit name in the xml");
+                String unitName = Objects.requireNonNull(persistenceContext.unitName(), "@PersistenceContext annotations must have a unit name defined that matches the persistence unit name in the xml");
+                String qualifierName = Optional.of(persistenceContext.name())
+                        .filter(s -> !s.isEmpty())
+                        .orElse(unitName);
 
-                if (processedPersistenceUnits.contains(pcName)) {
-                    throw new CodeProcessingException("multiple @PersistenceContext annotations with the same name: " + pcName);
+                if (!processedPersistenceUnits.add(unitName)) {
+                    throw new CodeProcessingException("multiple @PersistenceContext annotations with the same unit name: " + unitName);
                 }
-                processedPersistenceUnits.add(pcName);
 
-                String properties = "properties" + context.nextId();
-                String emf = "entityManagerFactory" + context.nextId();
-                String em = "entityManager" + context.nextId();
-                stage2.line("Map<String, String> ", properties, " = new LinkedHashMap<>();");
+                String nameQualifierAnnotation = "@Named(" + ProcessorUtils.escapeAndQuoteStringForCode(qualifierName) + ")";
+                MethodBuilder propertiesFactory = jpaFactory.newMethod("public Map<String, String> jpaProperties(ProviderRegistry providerRegistry)");
+                propertiesFactory.addAnnotation(Factory.class);
+                propertiesFactory.addAnnotation(Singleton.class);
+                propertiesFactory.addAnnotation(nameQualifierAnnotation);
+                propertiesFactory.line("Map<String, String> properties = new LinkedHashMap<>();");
                 for (PersistenceProperty property : persistenceContext.properties()) {
-                    stage2.line(properties, ".put({{providerRegistry}}.resolvePlaceholders(\"", property.name(), "\"), {{providerRegistry}}.resolvePlaceholders(\"", property.value(), "\"));");
+                    propertiesFactory.line("properties.put({{providerRegistry}}.resolvePlaceholders(\"", property.name(), "\"), {{providerRegistry}}.resolvePlaceholders(\"", property.value(), "\"));");
                 }
-                stage2.line("EntityManagerFactory ", emf, " = Persistence.createEntityManagerFactory({{providerRegistry}}.resolvePlaceholders(\"", pcName, "\"), ", properties, ");");
-                stage2.line("{{providerRegistry}}.register(new AdHocProvider<>(EntityManagerFactory.class, ", emf, ",", ProcessorUtils.escapeAndQuoteStringForCode(pcName), ",", emf, "::close));");
+                propertiesFactory.line("return properties;");
 
-                stage2.line("EntityManager ", em, " = null;");
-                stage2.line("try{");
-                stage2.line(em, " = ", emf, ".createEntityManager(SynchronizationType.", persistenceContext.synchronization(), ", ", properties, ");");
-                stage2.line("} catch (", IllegalStateException.class.getSimpleName(), " e) {");
-                stage2.line("log.warn(\"could not create entity manager with explicit synchronization type, falling back; error message: {}\", e.getMessage());");
-                stage2.line("log.debug(\"full error stack\", e);");
-                stage2.line(em, " = ", emf, ".createEntityManager(", properties, ");");
-                stage2.line("}");
-                stage2.line("{{providerRegistry}}.register(new AdHocProvider<>(EntityManager.class, ", em, ",", ProcessorUtils.escapeAndQuoteStringForCode(pcName), ",", em, "::close));");
-                context.addSatisfiedDependency(EntityManagerFactory.class, '"' + pcName + '"');
-                context.addSatisfiedDependency(EntityManager.class, '"' + pcName + '"');
+                MethodBuilder entityManagerFactory = jpaFactory.newMethod("public EntityManagerFactory entityManagerFactory_", context.nextId(), "(ProviderRegistry providerRegistry,", nameQualifierAnnotation, " Map<String, String> properties)");
+                entityManagerFactory.addAnnotation(Factory.class);
+                entityManagerFactory.addAnnotation(scope(persistenceContext, DOCTOR_JPA_EMF_INJECT_SCOPE, Singleton.class));
+                entityManagerFactory.addAnnotation(nameQualifierAnnotation);
+                entityManagerFactory.addAnnotation("@DestroyMethod(\"close\")");
+                entityManagerFactory.line("return Persistence.createEntityManagerFactory({{providerRegistry}}.resolvePlaceholders(\"", unitName, "\"), properties);");
+
+                MethodBuilder entityManager = jpaFactory.newMethod("public EntityManager entityManager_", context.nextId(), "(", nameQualifierAnnotation, " EntityManagerFactory emf, ", nameQualifierAnnotation, " Map<String, String> properties)");
+                entityManager.addAnnotation(Factory.class);
+                entityManager.addAnnotation(scope(persistenceContext, DOCTOR_JPA_EM_INJECT_SCOPE, Prototype.class));
+                entityManager.addAnnotation(nameQualifierAnnotation);
+                entityManager.addAnnotation("@DestroyMethod(\"close\")");
+
+                if (getUseSync(persistenceContext)) {
+                    entityManager.line("try{");
+                    entityManager.line("return emf.createEntityManager(SynchronizationType.", persistenceContext.synchronization(), ", properties);");
+                    entityManager.line("} catch (", IllegalStateException.class.getSimpleName(), " e) {");
+                    entityManager.line("throw new InjectionException(\"could not create entity manager with explicit synchronization type, try disabling @PersistenceProperty " + DOCTOR_JPA_EM_USE_SYNC_TYPE + "\", e);");
+                    entityManager.line("}");
+                } else {
+                    entityManager.line("return emf.createEntityManager(properties);");
+                }
+            }
+            jpaFactory.writeClass(context.filer());
+        }
+    }
+
+    private static String scope(PersistenceContext pc, String propertyName, Class<? extends Annotation> defaultScope) {
+        for (PersistenceProperty property : pc.properties()) {
+            if (property.name().equals(propertyName)) {
+                return "@" + property.value();
             }
         }
+        return "@" + defaultScope.getCanonicalName();
+    }
+
+    private static boolean getUseSync(PersistenceContext pc) {
+        for (PersistenceProperty property : pc.properties()) {
+            if (property.name().equals(DOCTOR_JPA_EM_USE_SYNC_TYPE)) {
+                return Boolean.parseBoolean(property.value());
+            }
+        }
+        return false;
     }
 }

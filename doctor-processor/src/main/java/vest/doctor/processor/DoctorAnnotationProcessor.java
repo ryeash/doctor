@@ -139,7 +139,7 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
             compileTimeDependencyCheck();
             infoMessage("doctor processing took " + (System.currentTimeMillis() - start) + "ms");
         }
-        return annotationsToProcess.containsAll(annotations);
+        return new HashSet<>(annotationsToProcess).containsAll(annotations);
     }
 
     private void processElement(Element annotatedElement) {

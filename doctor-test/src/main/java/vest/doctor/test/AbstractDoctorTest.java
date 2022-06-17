@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Listeners;
 import vest.doctor.InjectionException;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.conf.ConfigurationFacade;
@@ -37,6 +38,7 @@ import java.util.stream.Stream;
  * a doctor instance using the {@link TestConfiguration} annotation. The annotation is required
  * and the test will fail to start with an {@link IllegalStateException} if missing.
  */
+@Listeners(TestOrderRandomizer.class)
 public abstract class AbstractDoctorTest extends Assert {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
@@ -139,7 +141,7 @@ public abstract class AbstractDoctorTest extends Assert {
     }
 
     private static String qualifier(AnnotatedElement annotatedElement) {
-        return getAnnotationWithExtension(annotatedElement, Qualifier.class)
+        return qualifierOpt(annotatedElement)
                 .map(a -> {
                     if (a instanceof Named named) {
                         return named.value();
@@ -151,13 +153,13 @@ public abstract class AbstractDoctorTest extends Assert {
                 .orElse(null);
     }
 
-    private static Optional<Annotation> getAnnotationWithExtension(AnnotatedElement annotatedElement, Class<? extends Annotation> parentAnnotation) {
+    private static Optional<Annotation> qualifierOpt(AnnotatedElement annotatedElement) {
         for (Annotation annotation : annotatedElement.getAnnotations()) {
-            if (annotation.annotationType() == parentAnnotation) {
+            if (annotation.annotationType() == Qualifier.class) {
                 return Optional.of(annotation);
             }
             for (Annotation extendsAnnotations : annotation.annotationType().getAnnotations()) {
-                if (extendsAnnotations.annotationType() == parentAnnotation) {
+                if (extendsAnnotations.annotationType() == Qualifier.class) {
                     return Optional.of(annotation);
                 }
             }

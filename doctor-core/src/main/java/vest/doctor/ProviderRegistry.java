@@ -9,7 +9,8 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * The primary means of interacting with the generated provider instances at runtime in application code.
+ * The primary means of (programmatically) interacting with the generated provider
+ * instances at runtime in application code.
  */
 public interface ProviderRegistry {
 
@@ -162,6 +163,7 @@ public interface ProviderRegistry {
 
     /**
      * Determine if the given type can be satisfied by a registered provider.
+     * The same as calling <code>hasProvider(type, null)</code>
      *
      * @param type the type to check
      * @return true if a provider exists that can satisfy the given type (and a null qualifier)

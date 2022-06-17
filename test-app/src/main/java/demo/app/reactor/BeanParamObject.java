@@ -1,13 +1,13 @@
 package demo.app.reactor;
 
 import jakarta.inject.Inject;
-import vest.doctor.reactor.http.Param.Path;
+import vest.doctor.restful.http.Param.Path;
 
 import java.util.Optional;
 
-import static vest.doctor.reactor.http.Param.Cookie;
-import static vest.doctor.reactor.http.Param.Header;
-import static vest.doctor.reactor.http.Param.Query;
+import static vest.doctor.restful.http.Param.Cookie;
+import static vest.doctor.restful.http.Param.Header;
+import static vest.doctor.restful.http.Param.Query;
 
 public class BeanParamObject {
 

@@ -1,41 +1,31 @@
 package demo.app.reactor;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
-import jakarta.inject.Inject;
-import jakarta.inject.Named;
 import jakarta.inject.Singleton;
-import reactor.core.scheduler.Scheduler;
-import vest.doctor.reactor.http.WebsocketSession;
-import vest.doctor.reactor.http.impl.AbstractWebsocket;
+import vest.doctor.http.server.AbstractWebsocket;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @Singleton
 public class GrumpyWebsocket extends AbstractWebsocket {
 
-    @Inject
-    protected GrumpyWebsocket(@Named("websocketScheduler") Scheduler scheduler) {
-        super(scheduler);
-    }
-
     @Override
-    public List<String> path() {
+    public List<String> paths() {
         return List.of("/grumpy");
     }
 
     @Override
-    protected void onTextMessage(WebsocketSession session, TextWebSocketFrame frame) {
+    protected void onTextMessage(ChannelHandlerContext ctx, TextWebSocketFrame frame) {
         String text = frame.text();
-        scheduler.schedule(() -> {
-            session.sendText("go away " + text);
-            session.sendClose(1000, "all done");
-        }, 500, TimeUnit.MILLISECONDS);
+        sendText(ctx, "go away " + text).whenComplete((v, error) -> {
+            close(ctx, 1000, "all done");
+        });
     }
 
     @Override
-    protected void onBinaryMessage(WebsocketSession session, BinaryWebSocketFrame frame) {
+    protected void onBinaryMessage(ChannelHandlerContext ctx, BinaryWebSocketFrame frame) {
         throw new UnsupportedOperationException();
     }
 }

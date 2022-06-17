@@ -12,7 +12,7 @@ public class Granite implements Mineral, AutoCloseable {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         System.out.println("GRANITE CLOSING NOW");
     }
 }

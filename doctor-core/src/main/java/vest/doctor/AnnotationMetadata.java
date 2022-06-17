@@ -9,7 +9,7 @@ import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
 /**
- * A container for the {@link AnnotationData} marked on a provider source.
+ * A container for the {@link AnnotationData} marked on a source element.
  */
 public interface AnnotationMetadata extends Iterable<AnnotationData> {
 
