@@ -33,6 +33,7 @@ import static org.hamcrest.Matchers.is;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
+@Test(invocationCount = 3)
 public class JerseyTest {
 
     private Doctor doctor;
@@ -54,7 +55,6 @@ public class JerseyTest {
                 .accept(MediaType.APPLICATION_JSON);
     }
 
-    @Test
     public void basic() {
         req().get("/jaxrs/get")
                 .then()
@@ -64,7 +64,6 @@ public class JerseyTest {
                 .header("TIME", containsString("us"));
     }
 
-    @Test
     public void halt() {
         req().queryParam("halt", "true")
                 .get("/jaxrs/get")
@@ -72,7 +71,6 @@ public class JerseyTest {
                 .statusCode(503);
     }
 
-    @Test(invocationCount = 5)
     public void pojo() {
         User user = new User();
         user.setName("user");
@@ -85,7 +83,6 @@ public class JerseyTest {
                 .body("description", is("desc"));
     }
 
-    @Test
     public void async() {
         req().get("/jaxrs/async")
                 .then()
@@ -93,7 +90,6 @@ public class JerseyTest {
                 .body(is("async"));
     }
 
-    @Test
     public void context() {
         req().get("/jaxrs/context")
                 .then()
@@ -101,7 +97,6 @@ public class JerseyTest {
                 .body(is("ok"));
     }
 
-    @Test
     public void params() {
         req().queryParam("queryParam", "query")
                 .header("X-Header", "header")
@@ -112,10 +107,9 @@ public class JerseyTest {
                 .body(is("path query header cookie"));
     }
 
-    @Test(invocationCount = 2)
     public void throughput() {
         long start = System.nanoTime();
-        IntStream.range(0, 1000)
+        IntStream.range(0, 100)
                 .parallel()
                 .forEach(i -> {
                     byte[] bytes = randomBytes();
@@ -137,7 +131,6 @@ public class JerseyTest {
         return b;
     }
 
-    @Test
     public void ws() throws Exception {
         String destUri = "ws://localhost:9998/grumpy";
         WebSocketClient client = new WebSocketClient();

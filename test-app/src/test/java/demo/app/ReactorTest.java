@@ -35,6 +35,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.is;
 
+@Test(invocationCount = 5)
 public class ReactorTest extends AbstractTestAppTest {
 
     private RequestSpecification req() {
@@ -42,7 +43,6 @@ public class ReactorTest extends AbstractTestAppTest {
         return RestAssured.given();
     }
 
-    @Test
     public void helloWorld() {
         req().get("/root/hello")
                 .then()
@@ -50,7 +50,6 @@ public class ReactorTest extends AbstractTestAppTest {
                 .body(is("Hello World!"));
     }
 
-    @Test
     public void helloWorldHead() {
         req().head("/root/hello")
                 .then()
@@ -58,7 +57,6 @@ public class ReactorTest extends AbstractTestAppTest {
                 .body(is(emptyString()));
     }
 
-    @Test
     public void directHandler() {
         req().get("/hello")
                 .then()
@@ -66,7 +64,6 @@ public class ReactorTest extends AbstractTestAppTest {
                 .body(is("Hello World!"));
     }
 
-    @Test
     public void paramTypes() {
         req().header("X-Param", "headerValue")
                 .cookie("cook", "monster")
@@ -78,7 +75,6 @@ public class ReactorTest extends AbstractTestAppTest {
                 .header("X-After", is("true"));
     }
 
-    @Test
     public void requiredEndpointAnnotations() {
         req().post("/root")
                 .then()
@@ -86,7 +82,6 @@ public class ReactorTest extends AbstractTestAppTest {
                 .body(is("noPath"));
     }
 
-    @Test
     public void multiMethod() {
         for (String uri : List.of("multimethod", "multimethod2")) {
             req().get("/root/" + uri)
@@ -101,7 +96,6 @@ public class ReactorTest extends AbstractTestAppTest {
         }
     }
 
-    @Test
     public void json() throws JsonProcessingException {
         Person p = new Person();
         p.setName("Herman Hermits");
@@ -125,7 +119,6 @@ public class ReactorTest extends AbstractTestAppTest {
                 .body("address", is(p.getAddress()));
     }
 
-    @Test
     public void echo() {
         byte[] sent = randomBytes();
         byte[] returned = req()
@@ -139,7 +132,6 @@ public class ReactorTest extends AbstractTestAppTest {
         MatcherAssert.assertThat(sent, is(returned));
     }
 
-    @Test
     public void halt() {
         req().queryParam("halt", true)
                 .get("/root/hello")
@@ -148,7 +140,6 @@ public class ReactorTest extends AbstractTestAppTest {
                 .body(is("halted"));
     }
 
-    @Test
     public void responseObject() {
         req().delete("/root/responseobject")
                 .then()
@@ -163,7 +154,6 @@ public class ReactorTest extends AbstractTestAppTest {
                 .body(is("responseObjectPub"));
     }
 
-    @Test
     public void futureResponse() {
         req().get("/root/future")
                 .then()
@@ -171,14 +161,12 @@ public class ReactorTest extends AbstractTestAppTest {
                 .body(is("future"));
     }
 
-    @Test
     public void notFound() {
         req().get("/root/nothingtosehere")
                 .then()
                 .statusCode(404);
     }
 
-    @Test
     public void locale() {
         req()
                 .header("Accept-Language", "en-US,en;q=0.9")
@@ -188,7 +176,6 @@ public class ReactorTest extends AbstractTestAppTest {
                 .body(containsString("en"));
     }
 
-    @Test
     public void form() {
         req()
                 .multiPart("file", new File("./netty-test.props"), "text/html")
@@ -198,7 +185,6 @@ public class ReactorTest extends AbstractTestAppTest {
                 .body(containsString("doctor.reactor {"));
     }
 
-    @Test
     public void splat() {
         req().get("/root/splat/this/is/the/full/path")
                 .then()
@@ -206,7 +192,6 @@ public class ReactorTest extends AbstractTestAppTest {
                 .body(is("/root/splat/this/is/the/full/path"));
     }
 
-    @Test
     public void errors() {
         req().options("/root/syncError")
                 .then()
@@ -219,7 +204,6 @@ public class ReactorTest extends AbstractTestAppTest {
                 .body(containsString("error"));
     }
 
-    @Test
     public void tooLarge() {
         byte[] b = new byte[4096];
         ThreadLocalRandom.current().nextBytes(b);
@@ -229,7 +213,6 @@ public class ReactorTest extends AbstractTestAppTest {
                 .statusCode(413);
     }
 
-    @Test(invocationCount = 2)
     public void throughput() {
         long start = System.nanoTime();
         ExecutorService background = Executors.newWorkStealingPool(Runtime.getRuntime().availableProcessors() * 2);
@@ -260,7 +243,6 @@ public class ReactorTest extends AbstractTestAppTest {
         return b;
     }
 
-    @Test
     public void ws() throws Exception {
         String destUri = "ws://localhost:60222/grumpy";
         WebSocketClient client = new WebSocketClient();
