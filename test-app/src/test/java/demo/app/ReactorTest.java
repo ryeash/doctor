@@ -14,7 +14,7 @@ import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.hamcrest.MatcherAssert;
 import org.testng.annotations.Test;
-import vest.doctor.reactor.http.jackson.JacksonInterchange;
+import vest.doctor.restful.http.jackson.JacksonInterchange;
 
 import java.io.File;
 import java.net.URI;

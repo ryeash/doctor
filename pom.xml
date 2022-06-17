@@ -15,7 +15,7 @@
         <module>doctor-reactive</module>
         <module>doctor-jersey</module>
         <module>doctor-http-server</module>
-        <module>doctor-reactor-http</module>
+        <module>doctor-restful-http</module>
         <module>doctor-jpa</module>
         <module>doctor-test</module>
         <module>test-app</module>

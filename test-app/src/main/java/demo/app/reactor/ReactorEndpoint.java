@@ -12,16 +12,16 @@ import vest.doctor.http.server.RequestContext;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
 import vest.doctor.reactive.Rx;
-import vest.doctor.reactor.http.Endpoint;
-import vest.doctor.reactor.http.Param.Attribute;
-import vest.doctor.reactor.http.Param.Bean;
-import vest.doctor.reactor.http.Param.Body;
-import vest.doctor.reactor.http.Param.Context;
-import vest.doctor.reactor.http.Param.Cookie;
-import vest.doctor.reactor.http.Param.Header;
-import vest.doctor.reactor.http.Param.Path;
-import vest.doctor.reactor.http.Param.Provided;
-import vest.doctor.reactor.http.Param.Query;
+import vest.doctor.restful.http.Endpoint;
+import vest.doctor.restful.http.Param.Attribute;
+import vest.doctor.restful.http.Param.Bean;
+import vest.doctor.restful.http.Param.Body;
+import vest.doctor.restful.http.Param.Context;
+import vest.doctor.restful.http.Param.Cookie;
+import vest.doctor.restful.http.Param.Header;
+import vest.doctor.restful.http.Param.Path;
+import vest.doctor.restful.http.Param.Provided;
+import vest.doctor.restful.http.Param.Query;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -31,11 +31,11 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
-import static vest.doctor.reactor.http.HttpMethod.DELETE;
-import static vest.doctor.reactor.http.HttpMethod.GET;
-import static vest.doctor.reactor.http.HttpMethod.OPTIONS;
-import static vest.doctor.reactor.http.HttpMethod.POST;
-import static vest.doctor.reactor.http.HttpMethod.PUT;
+import static vest.doctor.restful.http.HttpMethod.DELETE;
+import static vest.doctor.restful.http.HttpMethod.GET;
+import static vest.doctor.restful.http.HttpMethod.OPTIONS;
+import static vest.doctor.restful.http.HttpMethod.POST;
+import static vest.doctor.restful.http.HttpMethod.PUT;
 
 @Singleton
 @Eager
