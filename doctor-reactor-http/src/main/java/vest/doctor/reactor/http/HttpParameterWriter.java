@@ -15,6 +15,7 @@ public interface HttpParameterWriter extends CustomizationPoint {
 
     /**
      * Create the code to pull the value for a parameter from the request context.
+     * The generated code must be suitable for putting inline into a method call, i.e. no semicolon.
      *
      * @param context          the processing context
      * @param handlerBuilder   the class builder for the endpoint handler container

@@ -35,7 +35,7 @@ public final class WebsocketRouter {
     }
 
     public void handleWebsocketUpgrade(ChannelHandlerContext ctx, HttpRequest request, String upgradeHeader) {
-        String errorMsg = "";
+        String errorMsg;
         if (HttpHeaderValues.WEBSOCKET.contentEqualsIgnoreCase(upgradeHeader)) {
             QueryStringDecoder qsd = new QueryStringDecoder(request.uri());
             for (Map.Entry<PathSpec, Supplier<Websocket>> entry : websockets.entrySet()) {

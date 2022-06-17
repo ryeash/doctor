@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
  */
 public final class Interval {
 
-    private static final Pattern INTERVAL_REGEX = Pattern.compile("^([0-9]+)\\s*([a-zA-Z]+)?");
+    private static final Pattern INTERVAL_REGEX = Pattern.compile("^(\\d+)\\s*([a-zA-Z]+)?");
 
     private final long magnitude;
     private final TimeUnit unit;

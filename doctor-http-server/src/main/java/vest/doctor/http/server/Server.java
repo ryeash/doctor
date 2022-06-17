@@ -170,9 +170,7 @@ public class Server extends SimpleChannelInboundHandler<HttpObject> implements A
         SubmissionPublisher<HttpContent> publisher = ctx.channel().attr(CONTEXT_BODY).get();
         if (size.addAndGet(content.content().readableBytes()) > config.getMaxContentLength()) {
             publisher.closeExceptionally(new HttpException(HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE, ""));
-            return;
-        }
-        if (!publisher.isClosed()) {
+        } else if (!publisher.isClosed()) {
             HttpContent retained = content.retain();
             publisher.submit(retained);
             if (content instanceof LastHttpContent) {

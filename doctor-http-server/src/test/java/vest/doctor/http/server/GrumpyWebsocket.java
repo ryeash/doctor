@@ -3,7 +3,6 @@ package vest.doctor.http.server;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
-import vest.doctor.http.server.impl.AbstractWebsocket;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;

@@ -57,7 +57,7 @@ import java.util.stream.Stream;
 public final class Cron {
 
     private static final Pattern INTEGER_REGEX = Pattern.compile("\\d+");
-    private static final Pattern RANGE_REGEX = Pattern.compile("([a-zA-Z0-9]+)-([a-zA-Z0-9]+)");
+    private static final Pattern RANGE_REGEX = Pattern.compile("([a-zA-Z\\d]+)-([a-zA-Z\\d]+)");
 
     public enum CronType {
         SECONDS(0, 59, null) {

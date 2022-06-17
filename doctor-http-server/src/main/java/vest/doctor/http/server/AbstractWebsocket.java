@@ -1,4 +1,4 @@
-package vest.doctor.http.server.impl;
+package vest.doctor.http.server;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
@@ -16,7 +16,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory;
 import io.netty.util.AttributeKey;
-import vest.doctor.http.server.Websocket;
+import vest.doctor.http.server.impl.CompletableFutureListener;
 
 import java.io.InputStream;
 import java.util.Map;

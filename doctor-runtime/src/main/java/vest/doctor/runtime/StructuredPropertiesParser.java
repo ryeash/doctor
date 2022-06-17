@@ -112,8 +112,6 @@ public class StructuredPropertiesParser {
                         case '\'', '"', TT_WORD -> word(previous.get(), previous.get().field, sval, line);
                         default -> throw new IllegalStateException("unhandled parse state near line " + line + " unknown token type " + ttype);
                     };
-//                    System.out.println(tokenizer.ttype + " " + (char) tokenizer.ttype + " " + tokenizer);
-//                    System.out.println(token);
                     Type.validate(previous.get(), token);
                     previous.set(token);
                     return token;

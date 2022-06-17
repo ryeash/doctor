@@ -5,6 +5,7 @@ import vest.doctor.http.server.Request;
 import vest.doctor.http.server.RequestContext;
 import vest.doctor.http.server.Response;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -63,7 +64,7 @@ public class RequestContextImpl implements RequestContext {
 
     @Override
     public Set<String> attributeNames() {
-        return null;
+        return Collections.unmodifiableSet(attributes.keySet());
     }
 
     @Override

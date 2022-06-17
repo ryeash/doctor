@@ -1,5 +1,9 @@
 package vest.doctor.reactor.http;
 
+import vest.doctor.http.server.Request;
+import vest.doctor.http.server.RequestContext;
+import vest.doctor.http.server.Response;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -16,7 +20,7 @@ public @interface Param {
 
     /**
      * HTTP endpoint parameter annotation.
-     * Parameter value will be pulled from {@link HttpRequest#pathParam(String)}.
+     * Parameter value will be pulled from {@link RequestContext#pathParam(String)}.
      */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
@@ -31,7 +35,7 @@ public @interface Param {
     }
 
     /**
-     * Parameter value will be pulled from {@link HttpRequest#queryParam(String)}.
+     * Parameter value will be pulled from {@link Request#queryParam(String)}.
      */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
@@ -45,7 +49,7 @@ public @interface Param {
     }
 
     /**
-     * Parameter value will be pulled from {@link HttpRequest#header(CharSequence)}.
+     * Parameter value will be pulled from {@link Request#header(CharSequence)}.
      */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
@@ -59,7 +63,7 @@ public @interface Param {
     }
 
     /**
-     * Parameter value will be pulled from {@link HttpRequest#cookie(String)}.
+     * Parameter value will be pulled from {@link Request#cookie(String)}.
      */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
@@ -123,8 +127,8 @@ public @interface Param {
      * Parameter value will be one of the supported context values. One of:
      * <ul>
      *     <li>{@link RequestContext}</li>
-     *     <li>{@link HttpRequest}</li>
-     *     <li>{@link HttpResponse}</li>
+     *     <li>{@link Request}</li>
+     *     <li>{@link Response}</li>
      *     <li>{@link java.net.URI}</li>
      * </ul>
      */

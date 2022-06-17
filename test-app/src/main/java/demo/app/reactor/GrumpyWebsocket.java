@@ -4,7 +4,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import jakarta.inject.Singleton;
-import vest.doctor.http.server.impl.AbstractWebsocket;
+import vest.doctor.http.server.AbstractWebsocket;
 
 import java.util.List;
 
