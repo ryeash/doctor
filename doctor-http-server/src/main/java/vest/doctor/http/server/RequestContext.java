@@ -1,7 +1,9 @@
 package vest.doctor.http.server;
 
 import io.netty.channel.ChannelHandlerContext;
+import vest.doctor.http.server.impl.Router;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
@@ -62,4 +64,15 @@ public interface RequestContext {
      * Get the names of all attributes attached to this context.
      */
     Set<String> attributeNames();
+
+    /**
+     * If this request is flowing through the {@link Router} get the path parameter for the given name.
+     *
+     * @param name the path parameter name
+     * @return the value of the path parameter, or null if not found
+     */
+    default String pathParam(String name) {
+        Map<String, String> pathParams = attribute(Router.PATH_PARAMS);
+        return pathParams != null ? pathParams.get(name) : null;
+    }
 }

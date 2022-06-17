@@ -1,8 +1,10 @@
 package vest.doctor.reactor.http;
 
-import org.reactivestreams.Publisher;
 import vest.doctor.Prioritized;
 import vest.doctor.TypeInfo;
+import vest.doctor.http.server.RequestContext;
+
+import java.util.concurrent.Flow;
 
 /**
  * Deserializes request bodies into specific object types.
@@ -16,5 +18,5 @@ public interface BodyReader extends Prioritized {
      * @param typeInfo       information about the target type for the deserialized data
      * @return the asynchronously deserialized request body
      */
-    <T> Publisher<T> read(RequestContext requestContext, TypeInfo typeInfo);
+    <T> Flow.Publisher<T> read(RequestContext requestContext, TypeInfo typeInfo);
 }

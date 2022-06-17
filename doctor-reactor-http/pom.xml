@@ -15,18 +15,6 @@
         <maven.deploy.skip>false</maven.deploy.skip>
     </properties>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>io.projectreactor</groupId>
-                <artifactId>reactor-bom</artifactId>
-                <version>2020.0.19</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
     <dependencies>
         <dependency>
             <artifactId>doctor-core</artifactId>
@@ -34,28 +22,18 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <artifactId>doctor-processor</artifactId>
-            <groupId>${project.groupId}</groupId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <artifactId>doctor-runtime</artifactId>
             <groupId>${project.groupId}</groupId>
             <version>${project.version}</version>
         </dependency>
-
+        <dependency>
+            <artifactId>doctor-http-server</artifactId>
+            <groupId>${project.groupId}</groupId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.projectreactor.netty</groupId>
-            <artifactId>reactor-netty-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.projectreactor.netty</groupId>
-            <artifactId>reactor-netty-http</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -66,6 +44,13 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
+        </dependency>
+
+        <dependency>
+            <artifactId>doctor-processor</artifactId>
+            <groupId>${project.groupId}</groupId>
+            <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

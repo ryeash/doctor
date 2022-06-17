@@ -174,6 +174,17 @@ public class Rx<T> implements Flow.Publisher<T> {
     }
 
     /**
+     * Add an asynchronous mapping stage to the processing flow.
+     *
+     * @param action the asynchronous mapping action
+     * @param <R>    the new published item type
+     * @return the next step in the processing composition
+     */
+    public <R> Rx<R> mapAsync(BiConsumer<T, Consumer<R>> action) {
+        return onNext(new AsyncMapper<>(action));
+    }
+
+    /**
      * Add a mapping stage to the processing flow that maps to a {@link CompletionStage}.
      * For normal completion of the future, the item will be published normally to downstream
      * subscribers, when the future completes exceptionally, the {@link Flow.Subscriber#onError(Throwable)}
@@ -466,6 +477,14 @@ public class Rx<T> implements Flow.Publisher<T> {
         @Override
         public void accept(T t, Flow.Subscription subscription, Flow.Subscriber<? super R> subscriber) {
             subscriber.onNext(mapper.apply(t));
+        }
+    }
+
+    record AsyncMapper<T, R>(
+            BiConsumer<T, Consumer<R>> mapper) implements TriConsumer<T, Flow.Subscription, Flow.Subscriber<? super R>> {
+        @Override
+        public void accept(T t, Flow.Subscription subscription, Flow.Subscriber<? super R> subscriber) {
+            mapper.accept(t, subscriber::onNext);
         }
     }
 

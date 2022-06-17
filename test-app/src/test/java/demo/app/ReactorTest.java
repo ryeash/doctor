@@ -18,11 +18,13 @@ import vest.doctor.reactor.http.jackson.JacksonInterchange;
 
 import java.io.File;
 import java.net.URI;
-import java.time.Duration;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -227,33 +229,28 @@ public class ReactorTest extends AbstractTestAppTest {
                 .statusCode(413);
     }
 
-    @Test
-    public void classLevelRunAs() {
-        req().get("/isolated/classLevelRunAs")
-                .prettyPeek()
-                .then()
-                .statusCode(200)
-                .body(containsString("websocketScheduler"));
-    }
-
     @Test(invocationCount = 2)
     public void throughput() {
         long start = System.nanoTime();
-        IntStream.range(0, 1000)
-                .parallel()
-                .forEach(i -> {
-                    byte[] sent = randomBytes();
-                    byte[] returned = req()
-                            .body(sent)
-                            .post("/root/throughput")
-                            .then()
-                            .statusCode(200)
-                            .extract()
-                            .body()
-                            .asByteArray();
-                    MatcherAssert.assertThat(sent, is(returned));
-                });
-        log.info("{}ms", Duration.ofNanos(System.nanoTime() - start).toMillis());
+        ExecutorService background = Executors.newWorkStealingPool(Runtime.getRuntime().availableProcessors() * 2);
+        CompletableFuture.supplyAsync(() -> {
+            IntStream.range(0, 100)
+                    .parallel()
+                    .forEach(i -> {
+                        byte[] sent = randomBytes();
+                        byte[] returned = req()
+                                .body(sent)
+                                .post("/root/throughput")
+                                .then()
+                                .statusCode(200)
+                                .extract()
+                                .body()
+                                .asByteArray();
+                        MatcherAssert.assertThat(sent, is(returned));
+                    });
+            return null;
+        }, background).join();
+        System.out.println(TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + "ms");
     }
 
     private static byte[] randomBytes() {

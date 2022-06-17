@@ -22,6 +22,13 @@ public final class HttpServerBuilder {
     private final WebsocketRouter websocketRouter = new WebsocketRouter();
 
     /**
+     * @return Get the {@link HttpServerConfiguration}.
+     */
+    public HttpServerConfiguration getConfig() {
+        return config;
+    }
+
+    /**
      * @see HttpServerConfiguration#setTcpManagementThreads(int)
      */
     public HttpServerBuilder setTcpManagementThreads(int tcpManagementThreads) {
@@ -173,6 +180,14 @@ public final class HttpServerBuilder {
      */
     public HttpServerBuilder setDebugRequestRouting(boolean debugRequestRouting) {
         config.setDebugRequestRouting(debugRequestRouting);
+        return this;
+    }
+
+    /**
+     * @see HttpServerConfiguration#setRouterPrefix(String)
+     */
+    public HttpServerBuilder setRouterPrefix(String routerPrefix) {
+        config.setRouterPrefix(routerPrefix);
         return this;
     }
 

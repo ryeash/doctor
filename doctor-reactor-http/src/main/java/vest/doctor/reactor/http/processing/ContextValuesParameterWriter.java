@@ -1,12 +1,12 @@
 package vest.doctor.reactor.http.processing;
 
 import vest.doctor.codegen.ClassBuilder;
+import vest.doctor.http.server.Request;
+import vest.doctor.http.server.RequestContext;
+import vest.doctor.http.server.Response;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.reactor.http.HttpParameterWriter;
-import vest.doctor.reactor.http.HttpRequest;
-import vest.doctor.reactor.http.HttpResponse;
 import vest.doctor.reactor.http.Param;
-import vest.doctor.reactor.http.RequestContext;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.VariableElement;
@@ -18,9 +18,9 @@ public class ContextValuesParameterWriter implements HttpParameterWriter {
         if (annotationSource.getAnnotation(Param.Context.class) != null) {
             if (parameter.asType().toString().equals(RequestContext.class.getCanonicalName())) {
                 return contextRef;
-            } else if (parameter.asType().toString().equals(HttpRequest.class.getCanonicalName())) {
+            } else if (parameter.asType().toString().equals(Request.class.getCanonicalName())) {
                 return contextRef + ".request()";
-            } else if (parameter.asType().toString().equals(HttpResponse.class.getCanonicalName())) {
+            } else if (parameter.asType().toString().equals(Response.class.getCanonicalName())) {
                 return contextRef + ".response()";
             } else if (parameter.asType().toString().equals(URI.class.getCanonicalName())) {
                 return contextRef + ".request().uri()";

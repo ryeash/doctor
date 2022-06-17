@@ -2,7 +2,7 @@ package vest.doctor.reactor.http.jackson;
 
 import com.fasterxml.jackson.databind.JavaType;
 import vest.doctor.Prioritized;
-import vest.doctor.reactor.http.RequestContext;
+import vest.doctor.http.server.RequestContext;
 
 /**
  * A factory that can create new {@link AsyncParser AsyncParsers} for specific requested types.

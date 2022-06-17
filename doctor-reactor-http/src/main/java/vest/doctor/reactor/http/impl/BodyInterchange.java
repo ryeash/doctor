@@ -1,15 +1,16 @@
 package vest.doctor.reactor.http.impl;
 
-import org.reactivestreams.Publisher;
-import reactor.core.publisher.Mono;
 import vest.doctor.TypeInfo;
+import vest.doctor.http.server.RequestContext;
+import vest.doctor.http.server.Response;
+import vest.doctor.reactive.Rx;
 import vest.doctor.reactor.http.BodyReader;
 import vest.doctor.reactor.http.BodyWriter;
-import vest.doctor.reactor.http.HttpResponse;
-import vest.doctor.reactor.http.RequestContext;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Flow;
+import java.util.function.Function;
 
 public final class BodyInterchange implements BodyReader, BodyWriter {
     private final List<BodyReader> readers;
@@ -21,26 +22,26 @@ public final class BodyInterchange implements BodyReader, BodyWriter {
     }
 
     @Override
-    public <T> Publisher<T> read(RequestContext requestContext, TypeInfo typeInfo) {
+    public <T> Flow.Publisher<T> read(RequestContext requestContext, TypeInfo typeInfo) {
         for (BodyReader reader : readers) {
-            Publisher<T> read = reader.read(requestContext, typeInfo);
+            Flow.Publisher<T> read = reader.read(requestContext, typeInfo);
             if (read != null) {
                 return read;
             }
         }
-        throw new UnsupportedOperationException("unable to read http to type: " + typeInfo);
+        throw new UnsupportedOperationException("unable to read http body to type: " + typeInfo);
     }
 
     @Override
-    public Publisher<HttpResponse> write(RequestContext requestContext, TypeInfo responseTypeInfo, Object responseData) {
+    public Flow.Publisher<Response> write(RequestContext requestContext, TypeInfo responseTypeInfo, Object responseData) {
         if (responseData instanceof CompletableFuture<?> future) {
             TypeInfo futureType = responseTypeInfo.getParameterTypes().get(0);
-            return Mono.fromFuture(future)
-                    .flux()
-                    .switchMap(object -> write(requestContext, futureType, object));
+            return Rx.one(future)
+                    .mapFuture(Function.identity())
+                    .mapPublisher(object -> write(requestContext, futureType, object));
         } else {
             for (BodyWriter writer : writers) {
-                Publisher<HttpResponse> response = writer.write(requestContext, responseTypeInfo, responseData);
+                Flow.Publisher<Response> response = writer.write(requestContext, responseTypeInfo, responseData);
                 if (response != null) {
                     return response;
                 }

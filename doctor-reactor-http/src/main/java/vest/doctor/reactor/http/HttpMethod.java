@@ -24,7 +24,7 @@ public @interface HttpMethod {
      */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
-    @Target({ElementType.METHOD})
+    @Target({ElementType.METHOD, ElementType.TYPE})
     @HttpMethod("DELETE")
     @interface DELETE {
     }
@@ -34,7 +34,7 @@ public @interface HttpMethod {
      */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
-    @Target({ElementType.METHOD})
+    @Target({ElementType.METHOD, ElementType.TYPE})
     @HttpMethod("GET")
     @interface GET {
     }
@@ -44,7 +44,7 @@ public @interface HttpMethod {
      */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
-    @Target({ElementType.METHOD})
+    @Target({ElementType.METHOD, ElementType.TYPE})
     @HttpMethod("OPTIONS")
     @interface OPTIONS {
     }
@@ -54,7 +54,7 @@ public @interface HttpMethod {
      */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
-    @Target({ElementType.METHOD})
+    @Target({ElementType.METHOD, ElementType.TYPE})
     @HttpMethod("POST")
     @interface POST {
     }
@@ -64,7 +64,7 @@ public @interface HttpMethod {
      */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
-    @Target({ElementType.METHOD})
+    @Target({ElementType.METHOD, ElementType.TYPE})
     @HttpMethod("PUT")
     @interface PUT {
     }

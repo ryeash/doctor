@@ -4,11 +4,10 @@ import jakarta.inject.Inject;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
+import vest.doctor.http.server.Request;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
 import vest.doctor.reactor.http.HttpParameterWriter;
-import vest.doctor.reactor.http.HttpRequest;
-import vest.doctor.reactor.http.HttpResponse;
 import vest.doctor.reactor.http.Param;
 
 import javax.lang.model.element.Element;
@@ -24,7 +23,7 @@ import java.util.stream.Collectors;
 
 public class BeanParamStringWriter implements HttpParameterWriter {
 
-    private static final List<Class<?>> SUPPORTED_CLASSES = List.of(HttpRequest.class, HttpResponse.class, URI.class);
+    private static final List<Class<?>> SUPPORTED_CLASSES = List.of(Request.class, Request.class, URI.class);
     private static final List<String> SETTER_PREFIXES = List.of("set", "is", "has");
 
     @Override

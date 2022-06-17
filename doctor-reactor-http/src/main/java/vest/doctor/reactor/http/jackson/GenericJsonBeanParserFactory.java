@@ -1,9 +1,8 @@
 package vest.doctor.reactor.http.jackson;
 
 import com.fasterxml.jackson.databind.JavaType;
-import reactor.core.publisher.SynchronousSink;
 import vest.doctor.Prioritized;
-import vest.doctor.reactor.http.RequestContext;
+import vest.doctor.http.server.RequestContext;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -12,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 public class GenericJsonBeanParserFactory implements AsyncParserFactory {
     @Override
@@ -29,7 +29,7 @@ public class GenericJsonBeanParserFactory implements AsyncParserFactory {
         }
 
         @Override
-        public void accept(ParseToken json, SynchronousSink<T> sink) {
+        public void accept(ParseToken json, Consumer<T> sink) {
             switch (json.token()) {
                 case START_OBJECT:
                     Map<String, Object> nextObject = new LinkedHashMap<>();
@@ -49,7 +49,7 @@ public class GenericJsonBeanParserFactory implements AsyncParserFactory {
                 case END_ARRAY:
                     Object obj = stack.pop();
                     if (stack.isEmpty()) {
-                        sink.next(complete(json, obj));
+                        sink.accept(complete(json, obj));
                     }
                     break;
                 case FIELD_NAME:

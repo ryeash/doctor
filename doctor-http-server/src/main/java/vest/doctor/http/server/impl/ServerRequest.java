@@ -63,6 +63,11 @@ public class ServerRequest implements Request {
     }
 
     @Override
+    public String header(CharSequence headerName) {
+        return request.headers().get(headerName);
+    }
+
+    @Override
     public Cookie cookie(String name) {
         return cookies().get(name);
     }

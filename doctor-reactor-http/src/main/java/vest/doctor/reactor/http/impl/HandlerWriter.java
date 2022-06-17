@@ -1,30 +1,33 @@
 package vest.doctor.reactor.http.impl;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.cookie.Cookie;
-import jakarta.inject.Inject;
 import jakarta.inject.Provider;
-import jakarta.inject.Singleton;
-import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
 import vest.doctor.AnnotationMetadata;
-import vest.doctor.ExplicitProvidedTypes;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.TypeInfo;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.GenericInfo;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
+import vest.doctor.http.server.Handler;
+import vest.doctor.http.server.Request;
+import vest.doctor.http.server.RequestContext;
+import vest.doctor.http.server.Response;
+import vest.doctor.http.server.impl.HttpException;
+import vest.doctor.http.server.impl.Router;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
 import vest.doctor.processing.ProviderDefinition;
 import vest.doctor.processing.ProviderDefinitionListener;
+import vest.doctor.reactive.Rx;
 import vest.doctor.reactor.http.Endpoint;
-import vest.doctor.reactor.http.Handler;
 import vest.doctor.reactor.http.HttpMethod;
 import vest.doctor.reactor.http.HttpParameterWriter;
 import vest.doctor.reactor.http.Param;
-import vest.doctor.reactor.http.RequestContext;
-import vest.doctor.reactor.http.RunOn;
+import vest.doctor.reactor.http.RouteOrchestration;
+import vest.doctor.runtime.AnnotationDataImpl;
+import vest.doctor.runtime.AnnotationMetadataImpl;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -40,11 +43,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Flow;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class HandlerWriter implements ProviderDefinitionListener {
     public static final String BODY_REF_NAME = "body";
+    public static final String REQUEST_CONTEXT_REF = "requestContext";
     private final Set<ExecutableElement> processedMethods = new HashSet<>();
 
     @Override
@@ -52,11 +57,46 @@ public class HandlerWriter implements ProviderDefinitionListener {
         if (providerDefinition.annotationSource().getAnnotation(Endpoint.class) == null) {
             return;
         }
+        String className = providerDefinition.providedType() + "_Routing" + context.nextId();
+        ClassBuilder routes = new ClassBuilder()
+                .setClassName(className)
+                .addImportClass(Map.class)
+                .addImportClass(List.class)
+                .addImportClass(Optional.class)
+                .addImportClass(AnnotationMetadata.class)
+                .addImportClass(AnnotationMetadataImpl.class)
+                .addImportClass(AnnotationDataImpl.class)
+                .addImportClass(Cookie.class)
+                .addImportClass(TypeInfo.class)
+                .addImportClass(ProviderRegistry.class)
+                .addImportClass(Provider.class)
+                .addImportClass(providerDefinition.providedType())
+                .addImportClass(Router.class)
+                .addImportClass(BodyInterchange.class)
+                .addImportClass(HttpException.class)
+                .addImportClass(HttpResponseStatus.class)
+                .addImportClass(RequestContext.class)
+                .addImportClass(Response.class)
+                .addImportClass(Request.class)
+                .addImportClass(Handler.class)
+                .addImportClass(Rx.class)
+                .addImportClass(Flow.class)
+                .addImportClass(Flow.Publisher.class)
+                .addImplementsInterface(RouteOrchestration.class)
+                .addField("private ProviderRegistry providerRegistry")
+                .addField("private Provider<" + providerDefinition.providedType() + "> provider")
+                .addField("private BodyInterchange bodyInterchange");
+
+        MethodBuilder addRoutes = routes.newMethod("@Override public void addRoutes(ProviderRegistry providerRegistry, Router router)");
+        addRoutes.line("this.providerRegistry = providerRegistry;");
+        addRoutes.line("this.provider = ", ProcessorUtils.getProviderCode(providerDefinition), ";");
+        addRoutes.line("this.bodyInterchange = providerRegistry.getInstance(BodyInterchange.class);");
 
         String[] roots = Optional.ofNullable(providerDefinition.annotationSource().getAnnotation(Endpoint.class))
                 .map(Endpoint::value)
                 .orElse(new String[]{"/"});
 
+        AtomicBoolean hasEndpointMethods = new AtomicBoolean(false);
         ProcessorUtils.allMethods(context, providerDefinition.providedType())
                 .stream()
                 .filter(m -> m.getModifiers().contains(Modifier.PUBLIC))
@@ -67,11 +107,26 @@ public class HandlerWriter implements ProviderDefinitionListener {
                         String[] paths = Optional.ofNullable(method.getAnnotation(Endpoint.class))
                                 .map(Endpoint::value)
                                 .orElse(new String[]{});
-                        addRoute(context, providerDefinition, httpMethods, paths(roots, paths), method);
+                        String methodName = "handle" + method.getSimpleName() + "__" + context.nextId();
+                        MethodBuilder handler = routes.newMethod("public Flow.Publisher<Response> " + methodName + "(RequestContext " + REQUEST_CONTEXT_REF + ")");
+                        buildRouteMethod(context, routes, handler, method);
+                        for (String httpMethod : httpMethods) {
+                            for (String path : paths(roots, paths)) {
+                                hasEndpointMethods.set(true);
+                                addRoutes.line("router.route(",
+                                        ProcessorUtils.escapeAndQuoteStringForCode(httpMethod), ',',
+                                        ProcessorUtils.escapeAndQuoteStringForCode(path), ',',
+                                        "this::" + methodName, ");");
+                            }
+                        }
                     } else if (method.getAnnotation(Endpoint.class) != null) {
                         throw new CodeProcessingException("http method is required for endpoints, e.g. @GET", method);
                     }
                 });
+        if (hasEndpointMethods.get()) {
+            routes.writeClass(context.filer());
+            context.addServiceImplementation(RouteOrchestration.class, routes.getFullyQualifiedClassName());
+        }
     }
 
     private static List<String> paths(String[] roots, String[] paths) {
@@ -108,65 +163,24 @@ public class HandlerWriter implements ProviderDefinitionListener {
         return new String(a, 0, n);
     }
 
-    private void addRoute(AnnotationProcessorContext context,
-                          ProviderDefinition providerDefinition,
-                          List<String> httpMethods,
-                          List<String> paths,
-                          ExecutableElement method) {
+    private void buildRouteMethod(AnnotationProcessorContext context,
+                                  ClassBuilder classBuilder,
+                                  MethodBuilder handler,
+                                  ExecutableElement method) {
         checkMethodParams(context, method);
-        boolean isVoid = method.getReturnType().getKind() == TypeKind.VOID;
+        if (method.getReturnType().getKind() == TypeKind.VOID) {
+            throw new CodeProcessingException("the return type for endpoint methods may not be void", method);
+        }
 
-        String packageName = context.generatedPackageName(method.getEnclosingElement());
-        providerDefinition.providedType();
-
-        String className = "WiredHandler_" + context.nextId();
-        String qualifiedClassName = packageName + "." + className;
-        ClassBuilder cb = new ClassBuilder()
-                .setClassName(qualifiedClassName)
-                .addImportClass(ProviderRegistry.class)
-                .addImportClass(RequestContext.class)
-                .addImportClass(Publisher.class)
-                .addImportClass(AnnotationMetadata.class)
-                .addImportClass(Map.class)
-                .addImportClass("vest.doctor.runtime.AnnotationMetadataImpl")
-                .addImportClass("vest.doctor.runtime.AnnotationDataImpl")
-                .addImportClass(Flux.class)
-                .addImportClass(List.class)
-                .addImportClass(Optional.class)
-                .addImportClass(Cookie.class)
-                .addImportClass(TypeInfo.class)
-                .addImportClass(providerDefinition.providedType())
-                .addImportClass(Provider.class)
-                .addImportClass(Inject.class)
-                .addImportClass(Singleton.class)
-                .addImportClass(ExplicitProvidedTypes.class)
-                .addImportClass(Handler.class)
-                .addClassAnnotation("@Singleton")
-                .addClassAnnotation("@ExplicitProvidedTypes({Handler.class})")
-                .setExtendsClass(AbstractWiredHandler.class)
-                .addField("private static final List<String> methods = List.of(", httpMethods.stream().map(ProcessorUtils::escapeAndQuoteStringForCode).collect(Collectors.joining(",")) + ")")
-                .addField("private static final List<String> paths = List.of(", paths.stream().map(ProcessorUtils::escapeAndQuoteStringForCode).collect(Collectors.joining(",")) + ")")
-                .addField("private final Provider<", providerDefinition.providedType(), "> provider");
-
-        String executorName = getExecutorName(method);
-        cb.addMethod("@Inject public " + className + "(ProviderRegistry providerRegistry)", mb -> {
-            mb.line("super(providerRegistry,", ProcessorUtils.escapeAndQuoteStringForCode(executorName), ");");
-            mb.line("this.provider = ", ProcessorUtils.getProviderCode(providerDefinition), ";");
-        });
-
-        cb.addMethod("@Override public List<String> method()", mb -> mb.line("return methods;"));
-        cb.addMethod("@Override public List<String> path()", mb -> mb.line("return paths;"));
-        cb.addMethod("@Override public String toString()", mb -> {
-            String summary = method.getEnclosingElement().asType() + "#" + method.getSimpleName() + method.getParameters().stream().map(VariableElement::asType).map(String::valueOf).collect(Collectors.joining(", ", "(", ")"));
-            mb.line("return \"", ProcessorUtils.escapeStringForCode(summary), "\";");
-        });
+        handler.line("try{");
 
         if (method.getReturnType().toString().equalsIgnoreCase(Object.class.getCanonicalName())) {
             throw new CodeProcessingException("endpoint methods must declare specific return types (not Object)", method);
         }
 
-        cb.addField("private static final TypeInfo responseType = ", new GenericInfo(method, method.getReturnType()).newTypeInfo(context));
-        cb.addMethod("@Override public TypeInfo responseType()", mb -> mb.line("return responseType;"));
+        GenericInfo returnTypeInfo = new GenericInfo(method, method.getReturnType());
+        String returnTypeInfoRef = "typeInfo_" + method.getSimpleName() + context.nextId();
+        classBuilder.addField("private static final TypeInfo " + returnTypeInfoRef + " = ", returnTypeInfo.newTypeInfo(context));
 
         boolean bodyIsPublisher = false;
         VariableElement bodyElement = bodyParameter(method);
@@ -174,35 +188,38 @@ public class HandlerWriter implements ProviderDefinitionListener {
         String bodyType;
         if (bodyParam != null) {
             GenericInfo genericInfo = new GenericInfo(bodyParam);
-            bodyIsPublisher = ProcessorUtils.isCompatibleWith(context, genericInfo.type(), Publisher.class);
+            bodyIsPublisher = ProcessorUtils.isCompatibleWith(context, genericInfo.type(), Flow.Publisher.class);
             bodyType = "bodyType_" + method.getSimpleName() + context.nextId();
-            cb.addField("private static final TypeInfo ", bodyType, "=", new GenericInfo(bodyElement).newTypeInfo(context));
+            classBuilder.addField("private static final TypeInfo ", bodyType, "=", new GenericInfo(bodyElement).newTypeInfo(context));
         } else {
             bodyType = "null";
         }
-
-
-        MethodBuilder handler = cb.newMethod("@Override protected Object handle(RequestContext requestContext) throws Exception");
+        String parameters = method.getParameters().stream()
+                .map(p -> parameterWriting(context, classBuilder, p, p))
+                .collect(Collectors.joining(",\n", "(", ")"));
+        String callMethod = "provider.get()." + method.getSimpleName() + parameters;
 
         if (bodyIsPublisher) {
             handler.line(bodyParam, " ", BODY_REF_NAME, "=bodyInterchange.read(requestContext,", bodyType, ");");
+            String resultRef = "result";
+            handler.line(method.getReturnType().toString(), " result = ", callMethod, ';');
+            handler.line("return bodyInterchange.write(", REQUEST_CONTEXT_REF, ", " + returnTypeInfoRef + ", " + resultRef + ");");
         } else {
             String bodyTypeString = bodyParam != null ? bodyParam.toString() : "Object";
-            handler.line(bodyTypeString, " ", BODY_REF_NAME, "=Flux.<", bodyTypeString, ">from(bodyInterchange.read(requestContext, ", bodyType, ")).blockLast();");
+            handler.line("return Rx.<", bodyTypeString, ">from(bodyInterchange.read(", REQUEST_CONTEXT_REF, ", ", bodyType, "))");
+            handler.line(".onNext((" + BODY_REF_NAME + ", subscription, subscriber) -> {");
+            handler.line("try{");
+            handler.line("subscriber.onNext(" + callMethod + ");");
+            handler.line("}catch(Throwable t){");
+            handler.line("subscriber.onError(t);");
+            handler.line("}");
+            handler.line("})");
+            handler.line(".mapPublisher(result -> bodyInterchange.write(requestContext, " + returnTypeInfoRef + ", result));");
         }
-        String parameters = method.getParameters().stream()
-                .map(p -> parameterWriting(context, cb, p, p, "requestContext"))
-                .collect(Collectors.joining(",\n", "(", ")"));
-        String callMethod = "provider.get()." + method.getSimpleName() + parameters + ";";
 
-        if (isVoid) {
-            handler.line(callMethod);
-            handler.line("return null;");
-        } else {
-            handler.line(method.getReturnType().toString(), " result = ", callMethod);
-            handler.line("return result;");
-        }
-        cb.writeClass(context.filer());
+        handler.line("}catch(Throwable t){");
+        handler.line("return Rx.error(t);");
+        handler.line("}");
     }
 
     private void checkMethodParams(AnnotationProcessorContext context, ExecutableElement method) {
@@ -221,9 +238,9 @@ public class HandlerWriter implements ProviderDefinitionListener {
         }
     }
 
-    private String parameterWriting(AnnotationProcessorContext context, ClassBuilder handlerBuilder, VariableElement parameter, Element annotationSource, String contextRef) {
+    private String parameterWriting(AnnotationProcessorContext context, ClassBuilder handlerBuilder, VariableElement parameter, Element annotationSource) {
         for (HttpParameterWriter customization : context.customizations(HttpParameterWriter.class)) {
-            String code = customization.writeParameter(context, handlerBuilder, parameter, annotationSource, contextRef);
+            String code = customization.writeParameter(context, handlerBuilder, parameter, annotationSource, REQUEST_CONTEXT_REF);
             if (code != null) {
                 return code;
             }
@@ -237,15 +254,6 @@ public class HandlerWriter implements ProviderDefinitionListener {
                 .filter(m -> m.getAnnotation(Param.Body.class) != null)
                 .findFirst()
                 .orElse(null);
-    }
-
-    private static String getExecutorName(ExecutableElement method) {
-        return Stream.of(method, method.getEnclosingElement())
-                .map(e -> e.getAnnotation(RunOn.class))
-                .filter(Objects::nonNull)
-                .map(RunOn::value)
-                .findFirst()
-                .orElse(RunOn.DEFAULT_SCHEDULER);
     }
 
     private static List<String> getMethods(ExecutableElement method) {

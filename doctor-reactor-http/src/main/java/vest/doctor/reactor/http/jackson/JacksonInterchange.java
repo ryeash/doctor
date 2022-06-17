@@ -11,22 +11,23 @@ import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
-import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.TypeInfo;
+import vest.doctor.http.server.RequestContext;
+import vest.doctor.http.server.Response;
+import vest.doctor.http.server.ResponseBody;
+import vest.doctor.reactive.Rx;
 import vest.doctor.reactor.http.BodyReader;
 import vest.doctor.reactor.http.BodyWriter;
-import vest.doctor.reactor.http.HttpResponse;
-import vest.doctor.reactor.http.RequestContext;
-import vest.doctor.reactor.http.ResponseBody;
 
 import java.io.UncheckedIOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Flow;
 
 public class JacksonInterchange implements BodyReader, BodyWriter {
 
@@ -45,45 +46,51 @@ public class JacksonInterchange implements BodyReader, BodyWriter {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> Publisher<T> read(RequestContext requestContext, TypeInfo typeInfo) {
+    public <T> Flow.Publisher<T> read(RequestContext requestContext, TypeInfo typeInfo) {
         String contentType = requestContext.request().header(HttpHeaderNames.CONTENT_TYPE);
         if (contentType.contains(HttpHeaderValues.APPLICATION_JSON)) {
-            if (typeInfo.matches(Publisher.class, Object.class)) {
-                return (Publisher<T>) internalRead(requestContext, typeInfo.getParameterTypes().get(0));
+            if (typeInfo.matches(Flow.Publisher.class, Object.class)) {
+                return (Flow.Publisher<T>) internalRead(requestContext, typeInfo.getParameterTypes().get(0));
             } else {
-                return (Publisher<T>) internalRead(requestContext, typeInfo);
+                return (Flow.Publisher<T>) internalRead(requestContext, typeInfo);
             }
         } else {
             return null;
         }
     }
 
-    private Flux<?> internalRead(RequestContext ctx, TypeInfo typeInfo) {
+    private Flow.Publisher<?> internalRead(RequestContext ctx, TypeInfo typeInfo) {
         JavaType javaType = jacksonType(objectMapper, typeInfo);
         for (AsyncParserFactory parserFactory : parserFactories) {
             AsyncParser<?> parser = parserFactory.build(ctx, javaType);
             if (parser != null) {
-                return ctx.request()
-                        .body()
-                        .asByteBuffer()
+                return Rx.from(ctx.request().body().flow())
+                        .<HttpContent>onNext((content, subscription, subscriber) -> {
+                            try {
+                                subscriber.onNext(content);
+                            } finally {
+                                content.release();
+                            }
+                        })
+                        .map(content -> content.content().nioBuffer())
                         .flatMapIterable(new AsyncTokenizer(objectMapper))
-                        .handle(parser);
+                        .mapAsync(parser);
             }
         }
         throw new UnsupportedOperationException("no async parser can handle this type: " + typeInfo);
     }
 
     @Override
-    public Publisher<HttpResponse> write(RequestContext ctx, TypeInfo responseTypeInfo, Object response) {
+    public Flow.Publisher<Response> write(RequestContext ctx, TypeInfo responseTypeInfo, Object response) {
         String accept = ctx.request().header(HttpHeaderNames.ACCEPT);
         if (accept.contains(HttpHeaderValues.APPLICATION_JSON)) {
-            HttpResponse res = ctx.response();
+            Response res = ctx.response();
             if (!res.headers().contains(HttpHeaderNames.CONTENT_TYPE)) {
                 res.headers().set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON + ";charset=utf-8");
             }
-            Flux<?> flux = responseTypeInfo.matches(Publisher.class, Object.class)
-                    ? Flux.from((Publisher<?>) response)
-                    : Flux.just(response);
+            Rx<?> flux = responseTypeInfo.matches(Flow.Publisher.class, Object.class)
+                    ? Rx.from((Flow.Publisher<?>) response)
+                    : Rx.one(response);
             return flux.map(this::writeJsonBytes)
                     .map(ResponseBody::of)
                     .map(ctx.response()::body);

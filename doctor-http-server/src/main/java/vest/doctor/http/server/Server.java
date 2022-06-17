@@ -70,18 +70,6 @@ public class Server extends SimpleChannelInboundHandler<HttpObject> implements A
         ServerBootstrap bootstrap = new ServerBootstrap();
         this.bossGroup = new NioEventLoopGroup(config.getTcpManagementThreads(), new CustomThreadFactory(false, config.getTcpThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()));
         this.workerGroup = new NioEventLoopGroup(config.getWorkerThreads(), new CustomThreadFactory(true, config.getWorkerThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()));
-//        this.workerGroup = Executors.newFixedThreadPool(config.getWorkerThreads(), new CustomThreadFactory(true, config.getWorkerThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()));
-//        this.workerGroup = new ForkJoinPool(
-//                config.getWorkerThreads(),
-//                new CustomThreadFactory(true, config.getWorkerThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()),
-//                LoggingUncaughtExceptionHandler.INSTANCE,
-//                true,
-//                config.getWorkerThreads(),
-//                config.getWorkerThreads(),
-//                1,
-//                null,
-//                60,
-//                TimeUnit.SECONDS);
         bootstrap.group(bossGroup);
         bootstrap.channelFactory(NioServerSocketChannel::new)
                 .option(ChannelOption.SO_BACKLOG, config.getSocketBacklog())
@@ -156,7 +144,6 @@ public class Server extends SimpleChannelInboundHandler<HttpObject> implements A
             ctx.writeAndFlush(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE));
         }
 
-//      SubmissionPublisher<HttpContent> publisher = new SubmissionPublisher<>();
         SubmissionPublisher<HttpContent> publisher = new SubmissionPublisher<>(workerGroup, Flow.defaultBufferSize());
         StreamingRequestBody body = new StreamingRequestBody(ctx, publisher);
         ctx.channel().attr(CONTEXT_BODY).set(publisher);
@@ -180,10 +167,11 @@ public class Server extends SimpleChannelInboundHandler<HttpObject> implements A
 
     private void handleContent(ChannelHandlerContext ctx, HttpContent content) {
         AtomicInteger size = ctx.channel().attr(BODY_SIZE).get();
-        if (size.addAndGet(content.content().readableBytes()) > config.getMaxContentLength()) {
-            throw new HttpException(HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE, "");
-        }
         SubmissionPublisher<HttpContent> publisher = ctx.channel().attr(CONTEXT_BODY).get();
+        if (size.addAndGet(content.content().readableBytes()) > config.getMaxContentLength()) {
+            publisher.closeExceptionally(new HttpException(HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE, ""));
+            return;
+        }
         if (!publisher.isClosed()) {
             HttpContent retained = content.retain();
             publisher.submit(retained);

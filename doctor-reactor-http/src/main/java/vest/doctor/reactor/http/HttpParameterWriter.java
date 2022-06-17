@@ -1,6 +1,7 @@
 package vest.doctor.reactor.http;
 
 import vest.doctor.codegen.ClassBuilder;
+import vest.doctor.http.server.RequestContext;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CustomizationPoint;
 

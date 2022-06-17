@@ -1,32 +1,24 @@
 package demo.app.reactor;
 
 import jakarta.inject.Singleton;
-import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
-import reactor.netty.http.server.HttpServerRequest;
-import reactor.netty.http.server.HttpServerResponse;
-import vest.doctor.reactor.http.Handler;
+import vest.doctor.http.server.Handler;
+import vest.doctor.http.server.RequestContext;
+import vest.doctor.http.server.Response;
+import vest.doctor.http.server.ResponseBody;
+import vest.doctor.reactive.Rx;
+import vest.doctor.reactor.http.Endpoint;
+import vest.doctor.reactor.http.HttpMethod.GET;
 
-import java.util.List;
+import java.util.concurrent.Flow;
 
 @Singleton
+@Endpoint("/hello")
+@GET
 public class TCDirectHandler implements Handler {
     @Override
-    public List<String> method() {
-        return List.of("GET");
-    }
-
-    @Override
-    public List<String> path() {
-        return List.of("/hello");
-    }
-
-    @Override
-    public Publisher<Void> apply(HttpServerRequest httpServerRequest, HttpServerResponse httpServerResponse) {
-        return Flux.just(httpServerResponse)
-                .subscribeOn(Schedulers.boundedElastic())
-                .switchMap(r -> r.sendString(Mono.just("Hello World!")));
+    public Flow.Publisher<Response> handle(RequestContext context) {
+        return Rx.from(context.request().body().ignored())
+                .map(context::response)
+                .map(r -> r.body(ResponseBody.of("Hello World!")));
     }
 }

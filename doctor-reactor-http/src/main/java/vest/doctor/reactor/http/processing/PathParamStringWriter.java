@@ -15,6 +15,6 @@ public class PathParamStringWriter extends AbstractBasicStringTypeWriter<Param.P
     @Override
     protected String getParam(AnnotationProcessorContext context, ClassBuilder handlerBuilder, VariableElement parameter, Element annotationSource, String contextRef) {
         String name = getParamName(annotationSource, parameter, Param.Path.class, Param.Path::value);
-        return contextRef + ".request().pathParam(\"" + name + "\")";
+        return contextRef + ".pathParam(\"" + name + "\")";
     }
 }

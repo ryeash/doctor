@@ -65,4 +65,16 @@ public class RequestContextImpl implements RequestContext {
     public Set<String> attributeNames() {
         return null;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(request.method()).append(' ').append(request.uri()).append('\n');
+        for (Map.Entry<String, String> header : request.headers()) {
+            sb.append(header.getKey()).append(": ").append(header.getValue()).append("\n");
+        }
+        sb.append('\n');
+        sb.append(request.body());
+        return sb.toString();
+    }
 }

@@ -41,6 +41,14 @@ public interface Request {
     HttpHeaders headers();
 
     /**
+     * Get a header value
+     *
+     * @param headerName the name of the header
+     * @return the value of the header, or null if not preset
+     */
+    String header(CharSequence headerName);
+
+    /**
      * Get a {@link Cookie}.
      *
      * @param name the name of the cooke

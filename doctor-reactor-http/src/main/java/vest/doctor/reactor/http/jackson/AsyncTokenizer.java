@@ -14,6 +14,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
 
+/**
+ * Internal. Tokenizer for parsing data chunks into parsed tokens.
+ */
 public class AsyncTokenizer implements Function<ByteBuffer, List<ParseToken>> {
     private static final Logger log = LoggerFactory.getLogger(AsyncTokenizer.class);
     private final ObjectMapper objectMapper;
