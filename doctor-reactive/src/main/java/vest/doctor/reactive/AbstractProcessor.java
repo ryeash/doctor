@@ -9,10 +9,10 @@ import java.util.concurrent.Flow;
  * is called and storing a reference to the {@link Flow.Subscriber} when
  * {@link Flow.Publisher#subscribe(Flow.Subscriber)} is called. The stored objects are retrievable via
  * {@link #subscription()} and {@link #subscriber()} respectively.
- * <p>
+ * <p><br/>
  * All methods of {@link Flow.Publisher} are implemented as simple pass-throughs, i.e. any signal
  * received is immediately passed to the subscriber unaltered.
- * <p>
+ * <p><br/>
  * This implementation only support one subscriber and will throw an {@link IllegalStateException} should
  * the {@link #subscribe(Flow.Subscriber)} method be called more than once.
  *

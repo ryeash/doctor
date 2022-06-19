@@ -72,14 +72,6 @@ public class FloTest extends Assert {
         assertTrue(list.containsAll(join));
 
         join = Rx.each(list)
-                .parallel(BACKGROUND, BACKGROUND)
-                .collect(Collectors.toList())
-                .subscribe()
-                .join();
-        assertTrue(join.containsAll(list));
-        assertTrue(list.containsAll(join));
-
-        join = Rx.each(list)
                 .parallel()
                 .collect(Collectors.toList())
                 .subscribe()
@@ -136,14 +128,15 @@ public class FloTest extends Assert {
     }
 
     public void trickle() {
-        SubmissionPublisher<String> publisher = new SubmissionPublisher<>();
+        SubmissionPublisher<String> publisher = new SubmissionPublisher<>(BACKGROUND, Flow.defaultBufferSize());
         CompletableFuture<List<String>> future = Rx.from(publisher)
+                .onSubscribe(sub -> sub.request(1))
                 .<String>onNext((item, subscription, subscriber) -> {
                     subscriber.onNext(item.toUpperCase());
                     subscription.request(1);
                 })
                 .collect(Collectors.toList())
-                .subscribe(1L);
+                .subscribe(0L);
         BACKGROUND.submit(() -> {
             list.forEach(publisher::submit);
             publisher.close();
@@ -275,5 +268,21 @@ public class FloTest extends Assert {
                 .collect(Collectors.toList())
                 .subscribe();
         assertThrows(future::join);
+    }
+
+    public void toStream() {
+        List<String> collect = Rx.each(list)
+                .map(String::toUpperCase)
+                .subscribeStream()
+                .collect(Collectors.toList());
+        assertEquals(collect, capitalized);
+
+        collect = Rx.each(list)
+                .map(String::toUpperCase)
+                .subscribeStream()
+                .parallel()
+                .collect(Collectors.toList());
+        collect.sort(String.CASE_INSENSITIVE_ORDER);
+        assertEquals(collect, capitalized);
     }
 }

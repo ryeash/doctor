@@ -11,16 +11,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public final class ParallelProcessor<I> extends AbstractProcessor<I, I> {
 
-    private final ExecutorService subscribeOn;
-    private final ExecutorService manageOn;
+    private final ExecutorService executor;
     private final AtomicBoolean completed = new AtomicBoolean(false);
     private final AtomicInteger inFlight = new AtomicInteger(0);
     private final int bufferSize;
     private final Queue<I> queue;
 
-    public ParallelProcessor(ExecutorService subscribeOn, ExecutorService manageOn, int bufferSize) {
-        this.subscribeOn = subscribeOn;
-        this.manageOn = manageOn;
+    public ParallelProcessor(ExecutorService executor, int bufferSize) {
+        this.executor = executor;
         this.bufferSize = bufferSize;
         this.queue = bufferSize <= 0 ? new ConcurrentLinkedQueue<>() : new ArrayBlockingQueue<>(bufferSize);
     }
@@ -37,13 +35,13 @@ public final class ParallelProcessor<I> extends AbstractProcessor<I, I> {
 
     @Override
     public void onError(Throwable throwable) {
-        manageOn.submit(() -> super.onError(throwable));
+        executor.submit(() -> super.onError(throwable));
     }
 
     @Override
     public void onComplete() {
         completed.set(true);
-        manageOn.submit(this::queueLoop);
+        executor.submit(this::queueLoop);
     }
 
     @Override
@@ -54,7 +52,7 @@ public final class ParallelProcessor<I> extends AbstractProcessor<I, I> {
             inFlight.decrementAndGet();
             throw new BufferOverflowException();
         }
-        subscribeOn.submit(this::queueLoop);
+        executor.submit(this::queueLoop);
     }
 
     private void queueLoop() {
@@ -69,7 +67,7 @@ public final class ParallelProcessor<I> extends AbstractProcessor<I, I> {
             }
         }
         if (inFlight.get() == 0 && completed.compareAndSet(true, false)) {
-            manageOn.submit(super::onComplete);
+            executor.submit(super::onComplete);
         }
     }
 }

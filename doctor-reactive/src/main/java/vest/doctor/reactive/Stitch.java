@@ -5,12 +5,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-public class Stitch<I, O> extends AbstractProcessor<I, O> {
-    private final Function<I, Flow.Publisher<O>> function;
+public final class Stitch<I, O> extends AbstractProcessor<I, O> {
+    private final Function<? super I, ? extends Flow.Publisher<O>> function;
     private final AtomicBoolean completed = new AtomicBoolean(false);
     private final AtomicInteger inFlight = new AtomicInteger(0);
 
-    public Stitch(Function<I, Flow.Publisher<O>> function) {
+    public Stitch(Function<? super I, ? extends Flow.Publisher<O>> function) {
         this.function = function;
     }
 

@@ -31,9 +31,9 @@ public final class SignalProcessors {
 
     public static final class OnNextProcessor<I, O> extends AbstractProcessor<I, O> {
 
-        private final TriConsumer<I, Flow.Subscription, Flow.Subscriber<? super O>> action;
+        private final TriConsumer<? super I, Flow.Subscription, Flow.Subscriber<? super O>> action;
 
-        public OnNextProcessor(TriConsumer<I, Flow.Subscription, Flow.Subscriber<? super O>> action) {
+        public OnNextProcessor(TriConsumer<? super I, Flow.Subscription, Flow.Subscriber<? super O>> action) {
             this.action = action;
         }
 
