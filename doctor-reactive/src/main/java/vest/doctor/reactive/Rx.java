@@ -181,7 +181,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @param <R>    the new published item type
      * @return the next step in the processing composition
      */
-    public <R> Rx<R> mapAsync(BiConsumer<? super T, Consumer<? super R>> action) {
+    public <R> Rx<R> mapAsync(BiConsumer<? super T, Consumer<R>> action) {
         return onNext(new AsyncMapper<>(action));
     }
 
@@ -478,7 +478,7 @@ public class Rx<T> implements Flow.Publisher<T> {
     }
 
     record AsyncMapper<T, R>(
-            BiConsumer<? super T, Consumer<? super R>> mapper) implements TriConsumer<T, Flow.Subscription, Flow.Subscriber<? super R>> {
+            BiConsumer<? super T, Consumer<R>> mapper) implements TriConsumer<T, Flow.Subscription, Flow.Subscriber<? super R>> {
         @Override
         public void accept(T t, Flow.Subscription subscription, Flow.Subscriber<? super R> subscriber) {
             mapper.accept(t, subscriber::onNext);
