@@ -120,7 +120,7 @@ public class FloTest extends Assert {
 
     public void mapIterable() {
         String join = Rx.one(String.join(" ", list))
-                .flatMapIterable(s -> Arrays.asList(s.toString().split(" ")))
+                .flatMapIterable(s -> Arrays.asList(s.split(" ")))
                 .collect(Collectors.joining(" "))
                 .subscribe()
                 .join();
@@ -284,5 +284,15 @@ public class FloTest extends Assert {
                 .collect(Collectors.toList());
         collect.sort(String.CASE_INSENSITIVE_ORDER);
         assertEquals(collect, capitalized);
+
+        assertThrows(() -> Rx.error(new RuntimeException("error"))
+                .subscribeStream()
+                .forEach(item -> {
+                }));
+        assertThrows(() -> Rx.error(new RuntimeException("error"))
+                .subscribeStream()
+                .parallel()
+                .forEach(item -> {
+                }));
     }
 }

@@ -8,19 +8,17 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-public class StreamSubscriber<T> implements Flow.Subscriber<T> {
+public final class StreamSubscriber<T> implements Flow.Subscriber<T> {
 
     private static final Object COMPLETE = new Object();
     private final BlockingQueue<Object> queue = new LinkedBlockingQueue<>();
 
     private final long initialRequest;
-    private final int offerAttempts;
     private final int offerTimeout;
     private final TimeUnit offerTimeoutUnit;
 
-    public StreamSubscriber(long initialRequest, int offerAttempts, int offerTimeout, TimeUnit offerTimeoutUnit) {
+    public StreamSubscriber(long initialRequest, int offerTimeout, TimeUnit offerTimeoutUnit) {
         this.initialRequest = initialRequest;
-        this.offerAttempts = offerAttempts;
         this.offerTimeout = offerTimeout;
         this.offerTimeoutUnit = offerTimeoutUnit;
     }
@@ -38,36 +36,31 @@ public class StreamSubscriber<T> implements Flow.Subscriber<T> {
         if (item instanceof Throwable) {
             throw new IllegalArgumentException("throwable type are not supported");
         }
-        synchronized (queue) {
-            boolean success = queue.offer(item);
-            if (!success) {
-                throw new BufferOverflowException();
-            }
-        }
+        offer(item, "item");
     }
 
     @Override
     public void onError(Throwable throwable) {
-        queue.clear();
-        offerLoop(throwable, "error");
+        offer(throwable, "error");
     }
 
     @Override
     public void onComplete() {
-        offerLoop(COMPLETE, "complete");
+        offer(COMPLETE, "complete");
     }
 
-    private void offerLoop(Object item, String type) {
-        for (int i = 0; i < offerAttempts; i++) {
-            try {
-                if (queue.offer(item, offerTimeout, offerTimeoutUnit)) {
-                    return;
-                }
-            } catch (InterruptedException e) {
-                throw new RuntimeException("failed to signal " + type, e);
+    private void offer(Object item, String type) {
+        try {
+            boolean success;
+            synchronized (queue) {
+                success = queue.offer(item, offerTimeout, offerTimeoutUnit);
             }
+            if (!success) {
+                throw new BufferOverflowException();
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException("failed to signal " + type, e);
         }
-        throw new RuntimeException("failed to signal " + type + " after " + offerAttempts + " attempts");
     }
 
     @SuppressWarnings("unchecked")
@@ -75,23 +68,29 @@ public class StreamSubscriber<T> implements Flow.Subscriber<T> {
         return Stream.generate(this::nextItem)
                 .takeWhile(item -> item != COMPLETE)
                 .filter(Objects::nonNull)
+                .peek(item -> {
+                    if (item instanceof RuntimeException re) {
+                        throw re;
+                    } else if (item instanceof Throwable t) {
+                        throw new RuntimeException(t);
+                    }
+                })
                 .map(item -> (T) item);
     }
 
     private Object nextItem() {
-        // TODO: this seems wasteful and blocking
         synchronized (queue) {
             if (queue.peek() == COMPLETE) {
                 return COMPLETE;
             }
+            if (queue.peek() instanceof Throwable t) {
+                if (t instanceof RuntimeException re) {
+                    throw re;
+                } else {
+                    throw new RuntimeException(t);
+                }
+            }
         }
-        Object value = queue.poll();
-        if (value instanceof RuntimeException re) {
-            throw re;
-        } else if (value instanceof Throwable t) {
-            throw new RuntimeException(t);
-        } else {
-            return value;
-        }
+        return queue.poll();
     }
 }
