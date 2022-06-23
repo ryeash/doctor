@@ -47,7 +47,7 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-public class HandlerWriter implements ProviderDefinitionListener {
+public class OrchestrationWriter implements ProviderDefinitionListener {
     public static final String BODY_REF_NAME = "body";
     public static final String REQUEST_CONTEXT_REF = "requestContext";
     private final Set<ExecutableElement> processedMethods = new HashSet<>();
@@ -79,6 +79,7 @@ public class HandlerWriter implements ProviderDefinitionListener {
                 .addImportClass(Response.class)
                 .addImportClass(Request.class)
                 .addImportClass(Handler.class)
+                .addImportClass(NamedHandler.class)
                 .addImportClass(Rx.class)
                 .addImportClass(Flow.class)
                 .addImportClass(Flow.Publisher.class)
@@ -107,6 +108,7 @@ public class HandlerWriter implements ProviderDefinitionListener {
                         String[] paths = Optional.ofNullable(method.getAnnotation(Endpoint.class))
                                 .map(Endpoint::value)
                                 .orElse(new String[]{});
+                        String handlerName = method.getEnclosingElement().getSimpleName() + "#" + method.getSimpleName();
                         String methodName = "handle" + method.getSimpleName() + "__" + context.nextId();
                         MethodBuilder handler = routes.newMethod("public Flow.Publisher<Response> " + methodName + "(RequestContext " + REQUEST_CONTEXT_REF + ")");
                         buildRouteMethod(context, routes, handler, method);
@@ -116,7 +118,7 @@ public class HandlerWriter implements ProviderDefinitionListener {
                                 addRoutes.line("router.route(",
                                         ProcessorUtils.escapeAndQuoteStringForCode(httpMethod), ',',
                                         ProcessorUtils.escapeAndQuoteStringForCode(path), ',',
-                                        "this::" + methodName, ");");
+                                        "new NamedHandler(this::" + methodName, "," + ProcessorUtils.escapeAndQuoteStringForCode(handlerName) + "));");
                             }
                         }
                     } else if (method.getAnnotation(Endpoint.class) != null) {
@@ -249,6 +251,7 @@ public class HandlerWriter implements ProviderDefinitionListener {
     }
 
     private static VariableElement bodyParameter(ExecutableElement method) {
+        List<VariableElement> bodyParameterElements;
         return method.getParameters()
                 .stream()
                 .filter(m -> m.getAnnotation(Param.Body.class) != null)

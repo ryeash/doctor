@@ -4,6 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -16,8 +20,11 @@ import org.hamcrest.MatcherAssert;
 import org.testng.annotations.Test;
 import vest.doctor.restful.http.jackson.JacksonInterchange;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -236,6 +243,26 @@ public class ReactorTest extends AbstractTestAppTest {
         System.out.println(TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + "ms");
     }
 
+    public void customMethod() throws IOException {
+        try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
+            HttpEntityEnclosingRequestBase request = new HttpEntityEnclosingRequestBase() {
+                @Override
+                public String getMethod() {
+                    return "KILL";
+                }
+            };
+            request.setURI(URI.create("http://localhost:60222/root/kill"));
+            try (CloseableHttpResponse response = client.execute(request)) {
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                response.getEntity().writeTo(out);
+                out.flush();
+                String responseString = out.toString(StandardCharsets.UTF_8);
+                assertEquals(response.getStatusLine().getStatusCode(), 200);
+                assertEquals(responseString, "kill");
+            }
+        }
+    }
+
     private static byte[] randomBytes() {
         int size = ThreadLocalRandom.current().nextInt(128, 1024);
         byte[] b = new byte[size];
@@ -300,6 +327,20 @@ public class ReactorTest extends AbstractTestAppTest {
         @OnWebSocketError
         public void onError(Throwable t) {
             t.printStackTrace();
+        }
+    }
+
+    class GenericHttpRequest extends HttpEntityEnclosingRequestBase {
+
+        private final String method;
+
+        GenericHttpRequest(String method) {
+            this.method = method.intern();
+        }
+
+        @Override
+        public String getMethod() {
+            return method;
         }
     }
 }

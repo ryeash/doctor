@@ -20,6 +20,7 @@ public final class HttpServerChannelInitializer extends ChannelInitializer<Socke
     public static final String HTTP_CONTENT_COMPRESSOR = "httpContentCompressor";
     public static final String CHUNKED_WRITE_HANDLER = "chunkedWriteHandler";
     public static final String SERVER_HANDLER = "serverHandler";
+    public static final String WEBSOCKET_HANDLER = "websocketHandler";
 
     private final ChannelHandler server;
     private final HttpServerConfiguration config;

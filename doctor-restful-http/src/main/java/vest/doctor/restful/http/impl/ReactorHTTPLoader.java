@@ -53,6 +53,8 @@ public class ReactorHTTPLoader implements ApplicationLoader {
                 .map(s -> s.split(","))
                 .stream()
                 .flatMap(Arrays::stream)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
                 .map(s -> s.split(":"))
                 .map(hp -> new InetSocketAddress(hp[0].trim(), Integer.parseInt(hp[1].trim())))
                 .peek(builder::addBindAddress)
@@ -180,6 +182,6 @@ public class ReactorHTTPLoader implements ApplicationLoader {
 
     @Override
     public int priority() {
-        return 10000;
+        return 100000;
     }
 }

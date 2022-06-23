@@ -1,4 +1,4 @@
-package demo.app.reactor;
+package demo.app.service;
 
 import demo.app.Person;
 import io.netty.buffer.ByteBuf;
@@ -156,5 +156,11 @@ public class ReactorEndpoint {
     @Endpoint("/syncError")
     public ByteBuf syncError() throws IOException {
         throw new IOException("error");
+    }
+
+    @KILL
+    @Endpoint("/kill")
+    public String customMethod() {
+        return "kill";
     }
 }

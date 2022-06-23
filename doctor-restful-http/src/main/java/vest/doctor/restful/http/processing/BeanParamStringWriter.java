@@ -4,7 +4,6 @@ import jakarta.inject.Inject;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
-import vest.doctor.http.server.Request;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
 import vest.doctor.restful.http.HttpParameterWriter;
@@ -16,14 +15,12 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
-import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class BeanParamStringWriter implements HttpParameterWriter {
 
-    private static final List<Class<?>> SUPPORTED_CLASSES = List.of(Request.class, Request.class, URI.class);
     private static final List<String> SETTER_PREFIXES = List.of("set", "is", "has");
 
     @Override
@@ -41,7 +38,7 @@ public class BeanParamStringWriter implements HttpParameterWriter {
         MethodBuilder bean = epHandler.newMethod("public static ", typeWithoutParams, " " + methodName + "(RequestContext ", contextRef, ")");
 
         TypeElement beanType = context.toTypeElement(typeMirror);
-        ExecutableElement constructor = injectableConstructor(beanType);
+        ExecutableElement constructor = injectableConstructor(context, beanType);
 
         String diamond = Optional.of(beanType.getTypeParameters())
                 .filter(l -> !l.isEmpty())
@@ -56,14 +53,14 @@ public class BeanParamStringWriter implements HttpParameterWriter {
         bean.line(ProcessorUtils.typeWithoutParameters(typeMirror), " bean = new ", ProcessorUtils.typeWithoutParameters(typeMirror), diamond, constructorParams, ";");
 
         for (VariableElement field : ElementFilter.fieldsIn(beanType.getEnclosedElements())) {
-            if (supportedParam(field)) {
+            if (supportedParam(context, field)) {
                 ExecutableElement setter = findCorrespondingSetter(context, field, beanType);
                 VariableElement setterParameter = setter.getParameters().get(0);
                 bean.line("bean.", setter.getSimpleName(), "(", parameterWriting(context, epHandler, setterParameter, field, contextRef), ");");
             }
         }
         for (ExecutableElement method : ElementFilter.methodsIn(beanType.getEnclosedElements())) {
-            if (supportedParam(method)) {
+            if (supportedParam(context, method)) {
                 if (method.getParameters().size() != 1) {
                     throw new CodeProcessingException("setters in BeanParam objects must have one and only one parameter", method);
                 }
@@ -76,6 +73,9 @@ public class BeanParamStringWriter implements HttpParameterWriter {
     }
 
     private String parameterWriting(AnnotationProcessorContext context, ClassBuilder handlerBuilder, VariableElement parameter, Element annotationSource, String contextRef) {
+        if (annotationSource.getAnnotation(Param.Body.class) != null) {
+            throw new CodeProcessingException("body parameters are not allowed in bean parameters");
+        }
         for (HttpParameterWriter customization : context.customizations(HttpParameterWriter.class)) {
             String code = customization.writeParameter(context, handlerBuilder, parameter, annotationSource, contextRef);
             if (code != null) {
@@ -85,7 +85,7 @@ public class BeanParamStringWriter implements HttpParameterWriter {
         throw new CodeProcessingException("unable to wire HTTP parameter", parameter);
     }
 
-    private static ExecutableElement injectableConstructor(TypeElement typeElement) {
+    private static ExecutableElement injectableConstructor(AnnotationProcessorContext context, TypeElement typeElement) {
         ExecutableElement constructor = null;
         for (ExecutableElement c : ElementFilter.constructorsIn(typeElement.getEnclosedElements())) {
             if (c.getAnnotation(Inject.class) != null) {
@@ -99,27 +99,17 @@ public class BeanParamStringWriter implements HttpParameterWriter {
         if (constructor == null) {
             throw new CodeProcessingException("failed to find injectable constructor for the BeanParam", typeElement);
         }
+        for (VariableElement parameter : constructor.getParameters()) {
+            int count = ProcessorUtils.getAnnotationsExtends(context, parameter, Param.class).size();
+            if (count != 1) {
+                throw new CodeProcessingException("bean constructor parameters must have exactly one request parameter annotation", parameter);
+            }
+        }
         return constructor;
     }
 
-    private static boolean supportedParam(Element e) {
-        if (e.getAnnotation(Param.Path.class) != null
-                || e.getAnnotation(Param.Query.class) != null
-                || e.getAnnotation(Param.Header.class) != null
-                || e.getAnnotation(Param.Cookie.class) != null
-                || e.getAnnotation(Param.Attribute.class) != null
-                || e.getAnnotation(Param.Body.class) != null
-                || e.getAnnotation(Param.Provided.class) != null
-                || e.getAnnotation(Param.Bean.class) != null
-        ) {
-            return true;
-        }
-        for (Class<?> supportedClass : SUPPORTED_CLASSES) {
-            if (e.asType().toString().equals(supportedClass.getCanonicalName())) {
-                return true;
-            }
-        }
-        return false;
+    private static boolean supportedParam(AnnotationProcessorContext context, Element e) {
+        return !ProcessorUtils.getAnnotationsExtends(context, e, Param.class).isEmpty();
     }
 
     private static ExecutableElement findCorrespondingSetter(AnnotationProcessorContext context, VariableElement field, TypeElement beanType) {

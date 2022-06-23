@@ -1,6 +1,9 @@
-package demo.app.reactor;
+package demo.app.service;
 
 import jakarta.inject.Inject;
+import vest.doctor.http.server.Request;
+import vest.doctor.http.server.Response;
+import vest.doctor.restful.http.Param.Context;
 import vest.doctor.restful.http.Param.Path;
 
 import java.util.Optional;
@@ -11,7 +14,9 @@ import static vest.doctor.restful.http.Param.Query;
 
 public class BeanParamObject {
 
-    private String path;
+    private final Request request;
+    private final Response response;
+    private final String path;
     @Query
     private Integer size;
     @Header("X-Param")
@@ -20,16 +25,24 @@ public class BeanParamObject {
     private Optional<String> cook;
 
     @Inject
-    public BeanParamObject(@Path String path) {
+    public BeanParamObject(@Context Request request,
+                           @Context Response response,
+                           @Path String path) {
+        this.request = request;
+        this.response = response;
         this.path = path;
+    }
+
+    public Request getRequest() {
+        return request;
+    }
+
+    public Response getResponse() {
+        return response;
     }
 
     public String getPath() {
         return path;
-    }
-
-    public void setPath(String path) {
-        this.path = path;
     }
 
     public Integer getSize() {

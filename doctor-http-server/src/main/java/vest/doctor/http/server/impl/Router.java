@@ -73,10 +73,9 @@ public final class Router implements Handler {
      */
     public static final String MATCH_ALL_PATH_SPEC = "/*";
 
-    private static final Handler NOT_FOUND = ctx -> Rx.from(ctx.request().body()
-                    .ignored())
-            .map(r -> ctx.response().status(HttpResponseStatus.NOT_FOUND)
-                    .body(ResponseBody.empty()));
+    private static final Handler NOT_FOUND = ctx -> Rx.from(ctx.request().body().ignored())
+            .map(ctx::response)
+            .observe(response -> response.status(HttpResponseStatus.NOT_FOUND).body(ResponseBody.empty()));
 
     /**
      * The ANY method. This method can be used to create a route that responds to any HTTP method.
@@ -96,13 +95,6 @@ public final class Router implements Handler {
      */
     public Router(HttpServerConfiguration conf) {
         this.conf = conf;
-    }
-
-    /**
-     * Get the {@link HttpServerConfiguration} that was used to configure the {@link vest.doctor.http.server.Server}.
-     */
-    public HttpServerConfiguration configuration() {
-        return conf;
     }
 
     /**
@@ -174,12 +166,7 @@ public final class Router implements Handler {
             Request request = requestContext.request();
             addTraceMessage(requestContext, "request " + request.method() + " " + request.path());
         }
-        if (filters.isEmpty()) {
-            requestContext.attribute(FILTER_ITERATOR, Collections.emptyIterator());
-        } else {
-            Iterator<FilterAndPath> iterator = filters.iterator();
-            requestContext.attribute(FILTER_ITERATOR, iterator);
-        }
+        requestContext.attribute(FILTER_ITERATOR, filters.isEmpty() ? Collections.emptyIterator() : filters.iterator());
         return doNextFilter(requestContext);
     }
 

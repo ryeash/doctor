@@ -101,7 +101,6 @@ public class Server extends SimpleChannelInboundHandler<HttpObject> implements A
         }
         doQuietly(bossGroup::shutdownGracefully);
         if (workerGroup != null) {
-//            doQuietly(workerGroup::shutdownNow);
             doQuietly(workerGroup::shutdownGracefully);
         }
     }

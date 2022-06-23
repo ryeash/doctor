@@ -25,7 +25,7 @@ public class ReactorHTTPProcessorConfiguration implements ProcessorConfiguration
 
     @Override
     public List<CustomizationPoint> customizationPoints() {
-        return List.of(new HandlerWriter(),
+        return List.of(new OrchestrationWriter(),
                 new HttpStringConverter(),
 
                 new ContextValuesParameterWriter(),

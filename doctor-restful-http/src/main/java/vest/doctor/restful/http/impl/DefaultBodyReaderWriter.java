@@ -42,12 +42,14 @@ public class DefaultBodyReaderWriter implements BodyReader, BodyWriter {
             return unwrap(requestContext)
                     .map(ReferenceCounted::release)
                     .map(b -> null);
+        } else if (flowableType.matches(HttpContent.class)) {
+            return requestContext.request().body().flow();
         } else if (flowableType.matches(ByteBuf.class)) {
             return unwrap(requestContext);
         } else if (flowableType.matches(byte[].class)) {
             return requestContext.request().body().asByteChunks();
         } else if (flowableType.matches(ByteBuffer.class)) {
-            return unwrap(requestContext);
+            return Rx.from(unwrap(requestContext)).map(ByteBuf::nioBuffer);
         } else if (flowableType.matches(String.class)) {
             return unwrap(requestContext)
                     .map(buf -> {
@@ -117,7 +119,7 @@ public class DefaultBodyReaderWriter implements BodyReader, BodyWriter {
                     return null;
                 }
             } else {
-                throw new UnsupportedOperationException("please correctly mark the return types for endpoint methods: " + requestContext);
+                throw new UnsupportedOperationException("please correctly mark the return types for endpoint methods: " + responseTypeInfo);
             }
         } else if (responseData instanceof Response httpResponse) {
             return Rx.one(httpResponse);
