@@ -29,6 +29,17 @@ public interface RequestContext {
      */
     ExecutorService pool();
 
+    /**
+     * A "mapping" function that ignores the input and just returns the response object from this
+     * request. Useful when doing things like:
+     * <pre>
+     * ctx -> Rx.from(ctx.request().body().ignored())
+     *          .map(ctx::response)
+     *          .observe(response -> response.status(HttpResponseStatus.NOT_FOUND).body(ResponseBody.empty()));
+     * </pre>
+     * @param ignored ignored always
+     * @return the {@link Response}
+     */
     @SuppressWarnings("unused")
     default Response response(Object ignored) {
         return response();

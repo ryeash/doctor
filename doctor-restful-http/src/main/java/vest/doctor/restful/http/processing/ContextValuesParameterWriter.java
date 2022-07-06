@@ -1,5 +1,6 @@
 package vest.doctor.restful.http.processing;
 
+import io.netty.handler.codec.http.HttpMethod;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.RequestContext;
@@ -25,6 +26,8 @@ public class ContextValuesParameterWriter implements HttpParameterWriter {
                 return contextRef + ".response()";
             } else if (parameter.asType().toString().equals(URI.class.getCanonicalName())) {
                 return contextRef + ".request().uri()";
+            } else if (parameter.asType().toString().equals(HttpMethod.class.getCanonicalName())) {
+                return contextRef + ".request().method()";
             } else {
                 throw new CodeProcessingException("not a supported context parameter type", parameter);
             }

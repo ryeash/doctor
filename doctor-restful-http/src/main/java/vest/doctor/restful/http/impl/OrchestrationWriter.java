@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
 public class OrchestrationWriter implements ProviderDefinitionListener {
     public static final String BODY_REF_NAME = "body";
     public static final String REQUEST_CONTEXT_REF = "requestContext";
+    private static final String[] EMPTY_ARR = new String[0];
     private final Set<ExecutableElement> processedMethods = new HashSet<>();
 
     @Override
@@ -57,7 +58,7 @@ public class OrchestrationWriter implements ProviderDefinitionListener {
         if (providerDefinition.annotationSource().getAnnotation(Endpoint.class) == null) {
             return;
         }
-        String className = providerDefinition.providedType() + "_Routing" + context.nextId();
+        String className = providerDefinition.providedType() + "$Routing" + context.nextId();
         ClassBuilder routes = new ClassBuilder()
                 .setClassName(className)
                 .addImportClass(Map.class)
@@ -107,9 +108,9 @@ public class OrchestrationWriter implements ProviderDefinitionListener {
                     if (!httpMethods.isEmpty()) {
                         String[] paths = Optional.ofNullable(method.getAnnotation(Endpoint.class))
                                 .map(Endpoint::value)
-                                .orElse(new String[]{});
+                                .orElse(EMPTY_ARR);
                         String handlerName = method.getEnclosingElement().getSimpleName() + "#" + method.getSimpleName();
-                        String methodName = "handle" + method.getSimpleName() + "__" + context.nextId();
+                        String methodName = "handle" + method.getSimpleName() + "_" + context.nextId();
                         MethodBuilder handler = routes.newMethod("public Flow.Publisher<Response> " + methodName + "(RequestContext " + REQUEST_CONTEXT_REF + ")");
                         buildRouteMethod(context, routes, handler, method);
                         for (String httpMethod : httpMethods) {
@@ -251,7 +252,6 @@ public class OrchestrationWriter implements ProviderDefinitionListener {
     }
 
     private static VariableElement bodyParameter(ExecutableElement method) {
-        List<VariableElement> bodyParameterElements;
         return method.getParameters()
                 .stream()
                 .filter(m -> m.getAnnotation(Param.Body.class) != null)

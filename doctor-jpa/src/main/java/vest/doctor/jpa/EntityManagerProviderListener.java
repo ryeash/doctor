@@ -44,7 +44,7 @@ public class EntityManagerProviderListener implements ProviderDefinitionListener
         PersistenceContext[] persistenceContexts = providerDefinition.annotationSource().getAnnotationsByType(PersistenceContext.class);
         if (persistenceContexts != null && persistenceContexts.length > 0) {
             String packageName = context.generatedPackageName(providerDefinition.providedType());
-            String jpaFactoryClass = packageName + ".JPAFactory_" + context.nextId();
+            String jpaFactoryClass = packageName + ".JPAFactory$" + context.nextId();
 
             ClassBuilder jpaFactory = new ClassBuilder()
                     .setClassName(jpaFactoryClass)

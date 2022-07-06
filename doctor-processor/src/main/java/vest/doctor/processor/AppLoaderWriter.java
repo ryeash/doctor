@@ -24,7 +24,7 @@ public class AppLoaderWriter {
 
     public AppLoaderWriter(AnnotationProcessorContext context) {
         this.context = context;
-        String className = context.generatedPackage() + ".AppLoaderImpl_" + context.nextId();
+        String className = context.generatedPackage() + ".AppLoaderImpl$" + context.nextId();
         this.appLoader = new ClassBuilder()
                 .setClassName(className)
                 .addImplementsInterface(ApplicationLoader.class)

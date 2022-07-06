@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -263,6 +264,28 @@ public class ReactorTest extends AbstractTestAppTest {
         }
     }
 
+    public void anyMethod() throws IOException {
+        try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
+            for (String method : Arrays.asList("GET", "POST", "TOAST", "MONSTER")) {
+                HttpEntityEnclosingRequestBase request = new HttpEntityEnclosingRequestBase() {
+                    @Override
+                    public String getMethod() {
+                        return method;
+                    }
+                };
+                request.setURI(URI.create("http://localhost:60222/root/anymethod"));
+                try (CloseableHttpResponse response = client.execute(request)) {
+                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+                    response.getEntity().writeTo(out);
+                    out.flush();
+                    String responseString = out.toString(StandardCharsets.UTF_8);
+                    assertEquals(response.getStatusLine().getStatusCode(), 200);
+                    assertEquals(responseString, method);
+                }
+            }
+        }
+    }
+
     private static byte[] randomBytes() {
         int size = ThreadLocalRandom.current().nextInt(128, 1024);
         byte[] b = new byte[size];
@@ -327,20 +350,6 @@ public class ReactorTest extends AbstractTestAppTest {
         @OnWebSocketError
         public void onError(Throwable t) {
             t.printStackTrace();
-        }
-    }
-
-    class GenericHttpRequest extends HttpEntityEnclosingRequestBase {
-
-        private final String method;
-
-        GenericHttpRequest(String method) {
-            this.method = method.intern();
-        }
-
-        @Override
-        public String getMethod() {
-            return method;
         }
     }
 }

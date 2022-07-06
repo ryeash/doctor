@@ -78,7 +78,7 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
 
         String packageName = context.generatedPackageName(providerDefinition.providedType());
 
-        String delegateClassName = providerDefinition.providedType().getSimpleName() + "__aop" + context.nextId();
+        String delegateClassName = providerDefinition.providedType().getSimpleName() + "$aop" + context.nextId();
         String delegateQualifiedClassName = packageName + "." + delegateClassName;
         ClassBuilder classBuilder = new ClassBuilder()
                 .setClassName(delegateQualifiedClassName)
