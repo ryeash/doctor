@@ -335,7 +335,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @return the next step in the composed processing flow
      */
     public Rx<T> parallel(ExecutorService executor, int bufferSize) {
-        return chain(new ParallelProcessor<>(executor, bufferSize));
+        return chain(new ParallelProcessor<>(executor, bufferSize, 1, TimeUnit.SECONDS));
     }
 
     /**

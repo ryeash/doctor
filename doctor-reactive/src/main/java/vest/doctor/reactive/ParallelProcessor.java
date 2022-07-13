@@ -1,11 +1,12 @@
 package vest.doctor.reactive;
 
 import java.nio.BufferOverflowException;
-import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -15,12 +16,16 @@ public final class ParallelProcessor<I> extends AbstractProcessor<I, I> {
     private final AtomicBoolean completed = new AtomicBoolean(false);
     private final AtomicInteger inFlight = new AtomicInteger(0);
     private final int bufferSize;
-    private final Queue<I> queue;
+    private final BlockingQueue<I> queue;
+    private final long offerTimeout;
+    private final TimeUnit offerTimeoutUnit;
 
-    public ParallelProcessor(ExecutorService executor, int bufferSize) {
+    public ParallelProcessor(ExecutorService executor, int bufferSize, long offerTimeout, TimeUnit offerTimeoutUnit) {
         this.executor = executor;
         this.bufferSize = bufferSize;
-        this.queue = bufferSize <= 0 ? new ConcurrentLinkedQueue<>() : new ArrayBlockingQueue<>(bufferSize);
+        this.queue = bufferSize <= 0 ? new LinkedBlockingQueue<>() : new ArrayBlockingQueue<>(bufferSize);
+        this.offerTimeout = offerTimeout;
+        this.offerTimeoutUnit = offerTimeoutUnit;
     }
 
     @Override
@@ -47,7 +52,12 @@ public final class ParallelProcessor<I> extends AbstractProcessor<I, I> {
     @Override
     public void onNext(I item) {
         inFlight.incrementAndGet();
-        boolean added = queue.offer(item);
+        boolean added;
+        try {
+            added = queue.offer(item, offerTimeout, offerTimeoutUnit);
+        } catch (InterruptedException e) {
+            added = false;
+        }
         if (!added) {
             inFlight.decrementAndGet();
             throw new BufferOverflowException();

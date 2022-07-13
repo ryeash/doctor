@@ -4,7 +4,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 
 /**
- * An abstract {@link Flow.Processor} that handles basic stateful tracking for a process flow:
+ * An abstract {@link Flow.Processor} that handles basic stateful tracking for a process flow stage:
  * storing a reference to the {@link Flow.Subscription} when {@link Flow.Subscriber#onSubscribe(Flow.Subscription)}
  * is called and storing a reference to the {@link Flow.Subscriber} when
  * {@link Flow.Publisher#subscribe(Flow.Subscriber)} is called. The stored objects are retrievable via

@@ -23,6 +23,9 @@ public final class VoidSubscriber<T> implements Flow.Subscriber<T> {
         return (Flow.Subscriber<I>) INSTANCE;
     }
 
+    private VoidSubscriber() {
+    }
+
     @Override
     public void onSubscribe(Flow.Subscription subscription) {
     }

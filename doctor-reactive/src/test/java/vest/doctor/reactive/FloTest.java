@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Test(invocationCount = 5)
 public class FloTest extends Assert {
@@ -23,6 +24,7 @@ public class FloTest extends Assert {
     final ExecutorService BACKGROUND = Executors.newCachedThreadPool();
     final List<String> list = List.of("a", "b", "c", "d", "e", "f");
     final List<String> capitalized = list.stream().map(String::toUpperCase).collect(Collectors.toList());
+    final List<Integer> longList = IntStream.range(0, 3019).boxed().toList();
 
     public void collect() {
         String result = Rx.one("alpha")
@@ -63,7 +65,7 @@ public class FloTest extends Assert {
 
     public void parallel() {
         List<String> join = Rx.each(list)
-                .parallel(BACKGROUND)
+                .parallel(BACKGROUND, -1)
                 .observe(s -> System.out.println(Thread.currentThread().getName() + " " + s))
                 .collect(Collectors.toList())
                 .subscribe()
@@ -78,6 +80,13 @@ public class FloTest extends Assert {
                 .join();
         assertTrue(join.containsAll(list));
         assertTrue(list.containsAll(join));
+
+        double avg = Rx.each(longList)
+                .parallel()
+                .collect(Collectors.averagingInt(i -> i))
+                .subscribe()
+                .join();
+        assertEquals(avg, 1509.0D);
     }
 
     public void filter() {
