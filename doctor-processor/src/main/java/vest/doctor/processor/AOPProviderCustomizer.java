@@ -113,7 +113,6 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
         }
         classBuilder.addField("private final ", typeElement.getSimpleName(), " delegate");
 
-        //TODO: support non-zero-arity constructors???
         MethodBuilder constructor = classBuilder.newMethod("public ", delegateClassName, "(", typeElement.getSimpleName(), " delegate, ", ProviderRegistry.class.getSimpleName(), " beanProvider)");
         constructor.line("super();");
         constructor.line("this.delegate = delegate;");

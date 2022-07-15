@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A runtime wrapper around a static annotation attached to a provided type.
+ * Runtime metadata for an annotation.
  * All values on the annotations are referenced via the string name of their method.
  */
 public interface AnnotationData extends Iterable<Map.Entry<String, Object>> {

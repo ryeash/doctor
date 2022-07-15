@@ -37,6 +37,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
         ClassBuilder impl = new ClassBuilder()
                 .setClassName(context.generatedPackageName(type) + "." + implClass)
                 .addImportClass(ConfigurationFacade.class)
+                .setExtendsClass("vest.doctor.runtime.PropertiesTrait")
                 .addImplementsInterface(type.toString());
 
         this.propertyPrefix = Optional.ofNullable(type.getAnnotation(Properties.class))
@@ -44,9 +45,8 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
                 .orElse("");
 
         impl.addImportClass(ProviderRegistry.class);
-        impl.addField("private final ", ProviderRegistry.class.getSimpleName(), " {{providerRegistry}}");
         MethodBuilder constructor = impl.newMethod("public ", implClass, "(", ProviderRegistry.class, " {{providerRegistry}})");
-        constructor.line("this.{{providerRegistry}} = {{providerRegistry}};");
+        constructor.line("super({{providerRegistry}});");
 
         for (ExecutableElement method : ProcessorUtils.allMethods(context, providedType())) {
             if (method.getAnnotation(Property.class) != null) {
@@ -57,7 +57,8 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
                 TypeMirror returnType = method.getReturnType();
                 String propertyName = propertyPrefix + method.getAnnotation(Property.class).value();
                 String code = PropertyCodeGen.getPropertyCode(context, method, propertyName, returnType, PROVIDER_REGISTRY);
-                mb.line("return " + code + ";");
+                String cacheKey = method.getSimpleName() + "$" + returnType + "$" + propertyName;
+                mb.line("return cached(" + ProcessorUtils.escapeAndQuoteStringForCode(cacheKey) + ", () ->" + code + ");");
             } else if (!method.isDefault() && !method.getModifiers().contains(Modifier.STATIC)) {
                 throw new CodeProcessingException("all non-default methods defined in a @Properties interface must have a @Property annotation", method);
             }
