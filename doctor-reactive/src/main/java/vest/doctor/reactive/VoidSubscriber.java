@@ -3,9 +3,9 @@ package vest.doctor.reactive;
 import java.util.concurrent.Flow;
 
 /**
- * An implementation of a subscriber that does not for every signal received.
+ * An implementation of a subscriber that does nothing for every signal received.
  * Used by the {@link AbstractProcessor} to ensure that a null subscriber is never
- * given to implementations.
+ * given to an implementations.
  *
  * @param <T> the subscribed item type
  */
@@ -21,6 +21,9 @@ public final class VoidSubscriber<T> implements Flow.Subscriber<T> {
     @SuppressWarnings("unchecked")
     public static <I> Flow.Subscriber<I> instance() {
         return (Flow.Subscriber<I>) INSTANCE;
+    }
+
+    private VoidSubscriber() {
     }
 
     @Override

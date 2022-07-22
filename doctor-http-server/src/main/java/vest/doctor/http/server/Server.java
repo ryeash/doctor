@@ -101,7 +101,6 @@ public class Server extends SimpleChannelInboundHandler<HttpObject> implements A
         }
         doQuietly(bossGroup::shutdownGracefully);
         if (workerGroup != null) {
-//            doQuietly(workerGroup::shutdownNow);
             doQuietly(workerGroup::shutdownGracefully);
         }
     }
@@ -151,7 +150,7 @@ public class Server extends SimpleChannelInboundHandler<HttpObject> implements A
 
         ServerRequest req = new ServerRequest(request, body);
         Response response = new ServerResponse(req);
-        final RequestContext requestContext = new RequestContextImpl(req, response, ctx);
+        RequestContext requestContext = new RequestContextImpl(req, response, ctx);
         Flow.Publisher<Response> handle;
         try {
             handle = handler.handle(requestContext);

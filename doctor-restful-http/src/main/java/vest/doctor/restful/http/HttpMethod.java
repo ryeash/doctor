@@ -1,5 +1,7 @@
 package vest.doctor.restful.http;
 
+import vest.doctor.http.server.impl.Router;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -67,5 +69,15 @@ public @interface HttpMethod {
     @Target({ElementType.METHOD, ElementType.TYPE})
     @HttpMethod("PUT")
     @interface PUT {
+    }
+
+    /**
+     * Marks an endpoint method to indicate the handler responds to HTTP PUT requests.
+     */
+    @Documented
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.METHOD, ElementType.TYPE})
+    @HttpMethod(Router.ANY_METHOD_NAME)
+    @interface ANY {
     }
 }

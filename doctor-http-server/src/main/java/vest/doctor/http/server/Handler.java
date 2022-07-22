@@ -1,6 +1,8 @@
 package vest.doctor.http.server;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import vest.doctor.http.server.impl.HttpException;
 import vest.doctor.reactive.Rx;
 
 import java.util.concurrent.Flow;
@@ -23,22 +25,23 @@ public interface Handler {
 
     /**
      * Create a request Handler with a synchronous function. The request body will be buffered
-     * into a single {@link ByteBuf}.
+     * into a single {@link ByteBuf} and automatically released after the function is called.
      *
      * @param function the handler function that returns a {@link Response}
      * @return a new handler
      */
     static Handler sync(BiFunction<RequestContext, ByteBuf, Response> function) {
-        return requestContext ->
-                Rx.from(requestContext.request().body().asBuffer())
-                        .map(body -> {
-                            try {
-                                return function.apply(requestContext, body);
-                            } catch (Exception e) {
-                                throw new RuntimeException(e);
-                            }finally {
-                                body.release();
-                            }
-                        });
+        return requestContext -> Rx.from(requestContext.request().body().asBuffer())
+                .map(body -> {
+                    try {
+                        return function.apply(requestContext, body);
+                    } catch (RuntimeException e) {
+                        throw e;
+                    } catch (Throwable e) {
+                        throw new HttpException(HttpResponseStatus.INTERNAL_SERVER_ERROR, e);
+                    } finally {
+                        body.release();
+                    }
+                });
     }
 }

@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
  * <code>/api/v2/data/{id}</code>, <code>/api/v2/data/{id:[^/]+?}</code>.
  * <p>
  * Paths are matched first against the path override attribute from request.attribute({@link Router#PATH_OVERRIDE}),
- * if it exists, otherwise they are matched against {@link Request#path()} which is the full path requested
+ * if it exists, otherwise they are matched against {@link Request#path()} which is the full, encoded path requested
  * in the HTTP request.
  * <p>
  * Path specifications can use the wildcard '*' to indicate that any path structure is accepted, e.g.
@@ -52,13 +52,13 @@ public final class Router implements Handler {
 
     /**
      * The name of the path override attribute. Can be used to override the request path
-     * in e.g. a filter via <code>request.attribute(Router.PATH_OVERRIDE, request.path().toLowerCase());</code>.
+     * in e.g. a filter via <code>context.attribute(Router.PATH_OVERRIDE, request.path().toLowerCase());</code>.
      */
     public static final String PATH_OVERRIDE = "doctor.netty.router.pathOverride";
 
     /**
      * The name of the method override attribute. Can be used to override the request method
-     * in e.g. a filter via <code>request.attribute(Router.METHOD_OVERRIDE, "GET");</code>.
+     * in e.g. a filter via <code>context.attribute(Router.METHOD_OVERRIDE, "GET");</code>.
      */
     public static final String METHOD_OVERRIDE = "doctor.netty.router.methodOverride";
 
@@ -73,15 +73,15 @@ public final class Router implements Handler {
      */
     public static final String MATCH_ALL_PATH_SPEC = "/*";
 
-    private static final Handler NOT_FOUND = ctx -> Rx.from(ctx.request().body()
-                    .ignored())
-            .map(r -> ctx.response().status(HttpResponseStatus.NOT_FOUND)
-                    .body(ResponseBody.empty()));
+    private static final Handler NOT_FOUND = ctx -> Rx.from(ctx.request().body().ignored())
+            .map(ctx::response)
+            .observe(response -> response.status(HttpResponseStatus.NOT_FOUND).body(ResponseBody.empty()));
 
     /**
      * The ANY method. This method can be used to create a route that responds to any HTTP method.
      */
-    public static final HttpMethod ANY = HttpMethod.valueOf("__ANY__");
+    public static final String ANY_METHOD_NAME = "__ANY__";
+    public static final HttpMethod ANY = HttpMethod.valueOf(ANY_METHOD_NAME);
 
     private static final String DEBUG_ROUTING_ATTRIBUTE = "doctor.netty.router.debugInfo";
     private static final String DEBUG_START_ATTRIBUTE = "doctor.netty.router.debugStart";
@@ -96,13 +96,6 @@ public final class Router implements Handler {
      */
     public Router(HttpServerConfiguration conf) {
         this.conf = conf;
-    }
-
-    /**
-     * Get the {@link HttpServerConfiguration} that was used to configure the {@link vest.doctor.http.server.Server}.
-     */
-    public HttpServerConfiguration configuration() {
-        return conf;
     }
 
     /**
@@ -174,12 +167,7 @@ public final class Router implements Handler {
             Request request = requestContext.request();
             addTraceMessage(requestContext, "request " + request.method() + " " + request.path());
         }
-        if (filters.isEmpty()) {
-            requestContext.attribute(FILTER_ITERATOR, Collections.emptyIterator());
-        } else {
-            Iterator<FilterAndPath> iterator = filters.iterator();
-            requestContext.attribute(FILTER_ITERATOR, iterator);
-        }
+        requestContext.attribute(FILTER_ITERATOR, filters.isEmpty() ? Collections.emptyIterator() : filters.iterator());
         return doNextFilter(requestContext);
     }
 

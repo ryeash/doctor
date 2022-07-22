@@ -37,8 +37,9 @@ class MultiPartDataImpl implements MultiPartData {
         return valid;
     }
 
+    @Override
     public Flow.Publisher<Part> parts() {
-        if (valid) {
+        if (valid()) {
             return Rx.from(body.flow())
                     .<Part>onNext((content, subscription, subscriber) -> nextData(content, subscriber::onNext))
                     .onNext((part, subscription, subscriber) -> {

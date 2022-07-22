@@ -42,8 +42,10 @@ public final class WebsocketRouter {
                 Map<String, String> pathParams = entry.getKey().matchAndCollect(qsd.rawPath());
                 if (pathParams != null) {
                     Websocket ws = entry.getValue().get();
-                    // add the websocket handler to the end of the processing pipeline
-                    ctx.pipeline().replace(HttpServerChannelInitializer.SERVER_HANDLER, "websocketHandler", new WebsocketHandler(ws));
+                    ctx.pipeline().replace(
+                            HttpServerChannelInitializer.SERVER_HANDLER,
+                            HttpServerChannelInitializer.WEBSOCKET_HANDLER,
+                            new WebsocketHandler(ws));
                     ws.handshake(ctx, request, qsd.rawPath(), pathParams);
                     return;
                 }

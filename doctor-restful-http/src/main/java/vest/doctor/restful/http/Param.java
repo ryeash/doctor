@@ -130,6 +130,7 @@ public @interface Param {
      *     <li>{@link Request}</li>
      *     <li>{@link Response}</li>
      *     <li>{@link java.net.URI}</li>
+     *     <li>{@link io.netty.handler.codec.http.HttpMethod}</li>
      * </ul>
      */
     @Documented

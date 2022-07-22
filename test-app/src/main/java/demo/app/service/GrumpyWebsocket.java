@@ -1,4 +1,4 @@
-package demo.app.reactor;
+package demo.app.service;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;

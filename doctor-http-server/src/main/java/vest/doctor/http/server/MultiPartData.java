@@ -26,11 +26,12 @@ public interface MultiPartData {
 
         /**
          * The type of the part, one of: FileUpload, Attribute, or InternalAttribute.
+         * Will be empty when <code>last() == true</code>.
          */
         String type();
 
         /**
-         * The name of the part.
+         * The name of the part. Will be empty when <code>last() == true</code>.
          */
         String name();
 

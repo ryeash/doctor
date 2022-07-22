@@ -1,28 +1,31 @@
 package vest.doctor.reactive;
 
 import java.nio.BufferOverflowException;
-import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public final class ParallelProcessor<I> extends AbstractProcessor<I, I> {
 
-    private final ExecutorService subscribeOn;
-    private final ExecutorService manageOn;
+    private final ExecutorService executor;
     private final AtomicBoolean completed = new AtomicBoolean(false);
     private final AtomicInteger inFlight = new AtomicInteger(0);
     private final int bufferSize;
-    private final Queue<I> queue;
+    private final BlockingQueue<I> queue;
+    private final long offerTimeout;
+    private final TimeUnit offerTimeoutUnit;
 
-    public ParallelProcessor(ExecutorService subscribeOn, ExecutorService manageOn, int bufferSize) {
-        this.subscribeOn = subscribeOn;
-        this.manageOn = manageOn;
+    public ParallelProcessor(ExecutorService executor, int bufferSize, long offerTimeout, TimeUnit offerTimeoutUnit) {
+        this.executor = executor;
         this.bufferSize = bufferSize;
-        this.queue = bufferSize <= 0 ? new ConcurrentLinkedQueue<>() : new ArrayBlockingQueue<>(bufferSize);
+        this.queue = bufferSize <= 0 ? new LinkedBlockingQueue<>() : new ArrayBlockingQueue<>(bufferSize);
+        this.offerTimeout = offerTimeout;
+        this.offerTimeoutUnit = offerTimeoutUnit;
     }
 
     @Override
@@ -37,24 +40,29 @@ public final class ParallelProcessor<I> extends AbstractProcessor<I, I> {
 
     @Override
     public void onError(Throwable throwable) {
-        manageOn.submit(() -> super.onError(throwable));
+        executor.submit(() -> super.onError(throwable));
     }
 
     @Override
     public void onComplete() {
         completed.set(true);
-        manageOn.submit(this::queueLoop);
+        executor.submit(this::queueLoop);
     }
 
     @Override
     public void onNext(I item) {
         inFlight.incrementAndGet();
-        boolean added = queue.offer(item);
+        boolean added;
+        try {
+            added = queue.offer(item, offerTimeout, offerTimeoutUnit);
+        } catch (InterruptedException e) {
+            added = false;
+        }
         if (!added) {
             inFlight.decrementAndGet();
             throw new BufferOverflowException();
         }
-        subscribeOn.submit(this::queueLoop);
+        executor.submit(this::queueLoop);
     }
 
     private void queueLoop() {
@@ -69,7 +77,7 @@ public final class ParallelProcessor<I> extends AbstractProcessor<I, I> {
             }
         }
         if (inFlight.get() == 0 && completed.compareAndSet(true, false)) {
-            manageOn.submit(super::onComplete);
+            executor.submit(super::onComplete);
         }
     }
 }

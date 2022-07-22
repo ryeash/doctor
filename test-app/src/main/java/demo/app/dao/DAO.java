@@ -12,7 +12,8 @@ import vest.doctor.Eager;
 
 @Singleton
 @Eager
-@PersistenceContext(unitName = "default",
+@PersistenceContext(
+        unitName = "default",
         properties = {
                 @PersistenceProperty(name = "jakarta.persistence.jdbc.url", value = "${db.url:_missingurl_}"),
                 @PersistenceProperty(name = "hibernate.hbm2ddl.auto", value = "create")

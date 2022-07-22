@@ -22,14 +22,14 @@ public interface DoctorProvider<T> extends Provider<T>, AutoCloseable {
     String qualifier();
 
     /**
-     * The scope of the provider, or null is there isn't one.
+     * The scope of the provider.
      */
     Class<? extends Annotation> scope();
 
     /**
      * All provided types. This is a list of all interfaces and super classes that the provided
      * type can satisfy as injection targets. This list will always include the class returned
-     * by {@link #type()}This will not include {@link Object}.
+     * by {@link #type()}. This will not include {@link Object}.
      */
     List<Class<?>> allProvidedTypes();
 
@@ -49,6 +49,7 @@ public interface DoctorProvider<T> extends Provider<T>, AutoCloseable {
 
     /**
      * Check all dependencies are met by the current state of the given {@link ProviderRegistry}.
+     * Called automatically by the doctor runtime during initialization.
      */
     void validateDependencies(ProviderRegistry providerRegistry);
 

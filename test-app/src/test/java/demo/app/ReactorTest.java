@@ -4,7 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
@@ -16,8 +21,12 @@ import org.hamcrest.MatcherAssert;
 import org.testng.annotations.Test;
 import vest.doctor.restful.http.jackson.JacksonInterchange;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -25,7 +34,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -236,6 +244,48 @@ public class ReactorTest extends AbstractTestAppTest {
         System.out.println(TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + "ms");
     }
 
+    public void customMethod() throws IOException {
+        try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
+            HttpEntityEnclosingRequestBase request = new HttpEntityEnclosingRequestBase() {
+                @Override
+                public String getMethod() {
+                    return "KILL";
+                }
+            };
+            request.setURI(URI.create("http://localhost:60222/root/kill"));
+            try (CloseableHttpResponse response = client.execute(request)) {
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                response.getEntity().writeTo(out);
+                out.flush();
+                String responseString = out.toString(StandardCharsets.UTF_8);
+                assertEquals(response.getStatusLine().getStatusCode(), 200);
+                assertEquals(responseString, "kill");
+            }
+        }
+    }
+
+    public void anyMethod() throws IOException {
+        try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
+            for (String method : Arrays.asList("GET", "POST", "TOAST", "MONSTER")) {
+                HttpEntityEnclosingRequestBase request = new HttpEntityEnclosingRequestBase() {
+                    @Override
+                    public String getMethod() {
+                        return method;
+                    }
+                };
+                request.setURI(URI.create("http://localhost:60222/root/anymethod"));
+                try (CloseableHttpResponse response = client.execute(request)) {
+                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+                    response.getEntity().writeTo(out);
+                    out.flush();
+                    String responseString = out.toString(StandardCharsets.UTF_8);
+                    assertEquals(response.getStatusLine().getStatusCode(), 200);
+                    assertEquals(responseString, method);
+                }
+            }
+        }
+    }
+
     private static byte[] randomBytes() {
         int size = ThreadLocalRandom.current().nextInt(128, 1024);
         byte[] b = new byte[size];
@@ -287,8 +337,19 @@ public class ReactorTest extends AbstractTestAppTest {
         public void onConnect(Session session) throws InterruptedException, ExecutionException, TimeoutException {
             connectLatch.countDown();
             this.session = session;
-            Future<Void> fut = session.getRemote().sendStringByFuture("I'm a test");
-            fut.get(2, TimeUnit.SECONDS);
+            CompletableFuture<Void> future = new CompletableFuture<>();
+            session.getRemote().sendString("I'm a test", new WriteCallback() {
+                @Override
+                public void writeFailed(Throwable x) {
+                    future.completeExceptionally(x);
+                }
+
+                @Override
+                public void writeSuccess() {
+                    future.complete(null);
+                }
+            });
+            future.get(2, TimeUnit.SECONDS);
         }
 
         @OnWebSocketMessage

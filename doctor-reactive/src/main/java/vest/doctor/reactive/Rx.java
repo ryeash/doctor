@@ -6,6 +6,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.SubmissionPublisher;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -169,7 +170,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @param <R>    the new published item type
      * @return the next step in the processing composition
      */
-    public <R> Rx<R> map(Function<T, R> mapper) {
+    public <R> Rx<R> map(Function<? super T, ? extends R> mapper) {
         return onNext(new Mapper<>(mapper));
     }
 
@@ -180,7 +181,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @param <R>    the new published item type
      * @return the next step in the processing composition
      */
-    public <R> Rx<R> mapAsync(BiConsumer<T, Consumer<R>> action) {
+    public <R> Rx<R> mapAsync(BiConsumer<? super T, Consumer<R>> action) {
         return onNext(new AsyncMapper<>(action));
     }
 
@@ -194,7 +195,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @param <R>    the new published item type
      * @return the next step in the processing composition
      */
-    public <R> Rx<R> mapFuture(Function<T, ? extends CompletionStage<R>> mapper) {
+    public <R> Rx<R> mapFuture(Function<? super T, ? extends CompletionStage<R>> mapper) {
         return map(mapper).onNext((future, subscription, subscriber) ->
                 future.whenComplete((value, error) -> {
                     if (error != null) {
@@ -214,21 +215,26 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @param <R>      the new published item type
      * @return the next step in the processing composition
      */
-    public <R> Rx<R> flatMapIterable(Function<T, ? extends Iterable<R>> function) {
+    public <R> Rx<R> flatMapIterable(Function<? super T, ? extends Iterable<R>> function) {
         return map(function).onNext((iterable, subscription, subscriber) -> iterable.forEach(subscriber::onNext));
     }
 
     /**
      * Add a flat-mapping stage to the processing flow that maps to a {@link Stream}. The
      * items from the stream will be published to the downstream subscriber with individual calls
-     * to {@link Flow.Subscriber#onNext(Object)}.
+     * to {@link Flow.Subscriber#onNext(Object)}. Streams created by the mapping function will
+     * be closed automatically using {@link Stream#close()}.
      *
      * @param function the mapping function
      * @param <R>      the new published item type
      * @return the next step in the processing composition
      */
-    public <R> Rx<R> flatMapStream(Function<T, Stream<R>> function) {
-        return map(function).onNext((stream, subscription, subscriber) -> stream.forEach(subscriber::onNext));
+    public <R> Rx<R> flatMapStream(Function<? super T, ? extends Stream<R>> function) {
+        return map(function).onNext((stream, subscription, subscriber) -> {
+            try (stream) {
+                stream.forEach(subscriber::onNext);
+            }
+        });
     }
 
     /**
@@ -240,7 +246,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @param <R>      the new published item type
      * @return the next step in the processing composition
      */
-    public <R> Rx<R> mapPublisher(Function<T, Flow.Publisher<R>> function) {
+    public <R> Rx<R> mapPublisher(Function<? super T, ? extends Flow.Publisher<R>> function) {
         return chain(new Stitch<>(function));
     }
 
@@ -251,7 +257,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @param filter the filter
      * @return the next step in the processing composition
      */
-    public Rx<T> filter(Predicate<T> filter) {
+    public Rx<T> filter(Predicate<? super T> filter) {
         return onNext(new Filter<>(filter, false));
     }
 
@@ -262,7 +268,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @param filter the filter
      * @return the next step in the processing composition
      */
-    public Rx<T> takeWhile(Predicate<T> filter) {
+    public Rx<T> takeWhile(Predicate<? super T> filter) {
         return onNext(new Filter<>(filter, true));
     }
 
@@ -274,7 +280,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @param mapper the recovery mapper
      * @return the next step in the processing composition
      */
-    public Rx<T> recover(Function<Throwable, T> mapper) {
+    public Rx<T> recover(Function<? super Throwable, ? extends T> mapper) {
         return onError(new Mapper<>(mapper));
     }
 
@@ -306,52 +312,35 @@ public class Rx<T> implements Flow.Publisher<T> {
      * Parallelize the processing flow.
      *
      * @return the next step in the composed processing flow
-     * @see #parallel(ExecutorService, ExecutorService, int)
+     * @see #parallel(ExecutorService, int)
      */
     public Rx<T> parallel() {
-        return parallel(ForkJoinPool.commonPool(), CallerRunsExecutorService.instance(), Flow.defaultBufferSize());
+        return parallel(ForkJoinPool.commonPool(), Flow.defaultBufferSize());
     }
 
     /**
-     * Parallelize the processing flow using the given executor service for item processing
-     * and {@link CallerRunsExecutorService} for management. Uses {@link Flow#defaultBufferSize()}
-     * for the buffer size.
+     * Parallelize the processing flow using the given executor service for signal processing.
+     * Uses {@link Flow#defaultBufferSize()} for the buffer size.
      *
      * @param subscribeOn the executor service to use for item processing
      * @return the next step in the composed processing flow
-     * @see #parallel(ExecutorService, ExecutorService, int)
+     * @see #parallel(ExecutorService, int)
      */
     public Rx<T> parallel(ExecutorService subscribeOn) {
-        return parallel(subscribeOn, CallerRunsExecutorService.instance(), Flow.defaultBufferSize());
-    }
-
-    /**
-     * Parallelize the processing flow using the given executor service for item processing
-     * and {@link CallerRunsExecutorService} for management. Uses {@link Flow#defaultBufferSize()}
-     * for the buffer size.
-     *
-     * @param subscribeOn the executor service to use for item processing
-     * @param manageOn    the executor service to use for management signals
-     * @return the next step in the composed processing flow
-     */
-    public Rx<T> parallel(ExecutorService subscribeOn, ExecutorService manageOn) {
-        return parallel(subscribeOn, manageOn, Flow.defaultBufferSize());
+        return parallel(subscribeOn, Flow.defaultBufferSize());
     }
 
     /**
      * Add a parallelization stage to this processing flow. All signal processing will be submitted
-     * to the given executor services. The {@link CallerRunsExecutorService} can be used
-     * if the processing should be done by the caller.
+     * to the given executor service.
      *
-     * @param subscribeOn the thread pool that will process {@link Flow.Subscriber#onNext(Object) item} signals
-     * @param manageOn    the thread pool that will process {@link Flow.Subscriber#onError(Throwable) error}
-     *                    and {@link Flow.Subscriber#onComplete() completion} signals
-     * @param bufferSize  the number of items that can be buffered before an exception is thrown;
-     *                    when 0 or negative, the buffer is unbounded
+     * @param executor   the executor that will process the signals
+     * @param bufferSize the number of items that can be buffered before an exception is thrown;
+     *                   when 0 or negative, the buffer is unbounded
      * @return the next step in the composed processing flow
      */
-    public Rx<T> parallel(ExecutorService subscribeOn, ExecutorService manageOn, int bufferSize) {
-        return chain(new ParallelProcessor<>(subscribeOn, manageOn, bufferSize));
+    public Rx<T> parallel(ExecutorService executor, int bufferSize) {
+        return chain(new ParallelProcessor<>(executor, bufferSize, 1, TimeUnit.SECONDS));
     }
 
     /**
@@ -371,7 +360,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @param <R>    the new published item type
      * @return the next step in the processing composition
      */
-    public <R> Rx<R> onNext(TriConsumer<T, Flow.Subscription, Flow.Subscriber<? super R>> action) {
+    public <R> Rx<R> onNext(TriConsumer<? super T, Flow.Subscription, Flow.Subscriber<? super R>> action) {
         return chain(new SignalProcessors.OnNextProcessor<>(action));
     }
 
@@ -414,7 +403,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @return the next step in the processing composition
      */
     @SuppressWarnings("unchecked")
-    public <R> Rx<R> chain(Flow.Processor<T, R> processor) {
+    public <R> Rx<R> chain(Flow.Processor<? super T, ? extends R> processor) {
         current.subscribe(processor);
         current = (Flow.Publisher<T>) processor;
         return (Rx<R>) this;
@@ -422,6 +411,7 @@ public class Rx<T> implements Flow.Publisher<T> {
 
     /**
      * Subscribe to this processing flow, triggering any on-subscribe hooks to run.
+     * Identical to calling <code>.subscribe(Long.MAX_VALUE)</code>.
      *
      * @return a future indicating the completion of the processing flow, the future will complete
      * when either of the {@link Flow.Subscriber#onComplete()} or {@link Flow.Subscriber#onError(Throwable)}
@@ -435,7 +425,10 @@ public class Rx<T> implements Flow.Publisher<T> {
     /**
      * Subscribe to this processing flow, triggering any on-subscribe hooks to run.
      *
-     * @param initialRequest the initial requested items, via {@link Flow.Subscription#request(long)}
+     * @param initialRequest the initial requested items, via {@link Flow.Subscription#request(long)};
+     *                       if less than 1, no items will be requested, potentially stalling execution
+     *                       of processing unless an intermediary stage makes an initial request
+     *                       (e.g. {@link #onSubscribe(Consumer)}
      * @return a future indicating the completion of the processing flow, the future will complete
      * when either of the {@link Flow.Subscriber#onComplete()} or {@link Flow.Subscriber#onError(Throwable)}
      * signals are sent.
@@ -449,6 +442,36 @@ public class Rx<T> implements Flow.Publisher<T> {
             onSubscribe.run();
         }
         return future;
+    }
+
+    /**
+     * Subscribe to this processing flow and connect its output to a blocking {@link Stream}.
+     *
+     * @return a stream of all items emitted from the reactive processing flow
+     */
+    public Stream<T> subscribeStream() {
+        return subscribeStream(Long.MAX_VALUE, 1, TimeUnit.MINUTES);
+    }
+
+    /**
+     * Subscribe to this processing flow and connect its output to a blocking {@link Stream}.
+     *
+     * @param initialRequest   the initial requested items, via {@link Flow.Subscription#request(long)};
+     *                         if less than 1, no items will be requested, potentially stalling execution
+     *                         of processing unless an intermediary stage makes an initial request
+     *                         (e.g. {@link #onSubscribe(Consumer)}
+     * @param offerTimeout     the timeout to use when handing off signals between the reactive processing flow
+     *                         and the stream
+     * @param offerTimeoutUnit the timeout unit
+     * @return a stream of all items emitted from the reactive processing flow
+     */
+    public Stream<T> subscribeStream(long initialRequest, int offerTimeout, TimeUnit offerTimeoutUnit) {
+        StreamSubscriber<T> streamSubscriber = new StreamSubscriber<>(initialRequest, offerTimeout, offerTimeoutUnit);
+        current.subscribe(streamSubscriber);
+        if (onSubscribe != null) {
+            onSubscribe.run();
+        }
+        return streamSubscriber.toStream();
     }
 
     @Override
@@ -473,7 +496,7 @@ public class Rx<T> implements Flow.Publisher<T> {
     }
 
     record Mapper<T, R>(
-            Function<T, R> mapper) implements TriConsumer<T, Flow.Subscription, Flow.Subscriber<? super R>> {
+            Function<? super T, ? extends R> mapper) implements TriConsumer<T, Flow.Subscription, Flow.Subscriber<? super R>> {
         @Override
         public void accept(T t, Flow.Subscription subscription, Flow.Subscriber<? super R> subscriber) {
             subscriber.onNext(mapper.apply(t));
@@ -481,7 +504,7 @@ public class Rx<T> implements Flow.Publisher<T> {
     }
 
     record AsyncMapper<T, R>(
-            BiConsumer<T, Consumer<R>> mapper) implements TriConsumer<T, Flow.Subscription, Flow.Subscriber<? super R>> {
+            BiConsumer<? super T, Consumer<R>> mapper) implements TriConsumer<T, Flow.Subscription, Flow.Subscriber<? super R>> {
         @Override
         public void accept(T t, Flow.Subscription subscription, Flow.Subscriber<? super R> subscriber) {
             mapper.accept(t, subscriber::onNext);
@@ -497,7 +520,7 @@ public class Rx<T> implements Flow.Publisher<T> {
         }
     }
 
-    record Filter<T>(Predicate<T> filter,
+    record Filter<T>(Predicate<? super T> filter,
                      boolean stopOnFalse) implements TriConsumer<T, Flow.Subscription, Flow.Subscriber<? super T>> {
         @Override
         public void accept(T item, Flow.Subscription subscription, Flow.Subscriber<? super T> subscriber) {

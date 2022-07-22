@@ -22,7 +22,8 @@ public class HttpStringConverter implements StringConversionGenerator {
             return "str -> java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME.parse(str, java.time.LocalDateTime::from)";
         } else if (ProcessorUtils.isCompatibleWith(context, targetType, Instant.class)) {
             return "str -> java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME.parse(str, java.time.Instant::from)";
+        } else {
+            return null;
         }
-        return null;
     }
 }

@@ -78,7 +78,7 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
 
         String packageName = context.generatedPackageName(providerDefinition.providedType());
 
-        String delegateClassName = providerDefinition.providedType().getSimpleName() + "__aop" + context.nextId();
+        String delegateClassName = providerDefinition.providedType().getSimpleName() + "$aop" + context.nextId();
         String delegateQualifiedClassName = packageName + "." + delegateClassName;
         ClassBuilder classBuilder = new ClassBuilder()
                 .setClassName(delegateQualifiedClassName)
@@ -113,7 +113,6 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
         }
         classBuilder.addField("private final ", typeElement.getSimpleName(), " delegate");
 
-        //TODO: support non-zero-arity constructors???
         MethodBuilder constructor = classBuilder.newMethod("public ", delegateClassName, "(", typeElement.getSimpleName(), " delegate, ", ProviderRegistry.class.getSimpleName(), " beanProvider)");
         constructor.line("super();");
         constructor.line("this.delegate = delegate;");

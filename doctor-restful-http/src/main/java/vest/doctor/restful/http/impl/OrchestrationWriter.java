@@ -47,9 +47,10 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-public class HandlerWriter implements ProviderDefinitionListener {
+public class OrchestrationWriter implements ProviderDefinitionListener {
     public static final String BODY_REF_NAME = "body";
     public static final String REQUEST_CONTEXT_REF = "requestContext";
+    private static final String[] EMPTY_ARR = new String[0];
     private final Set<ExecutableElement> processedMethods = new HashSet<>();
 
     @Override
@@ -57,7 +58,7 @@ public class HandlerWriter implements ProviderDefinitionListener {
         if (providerDefinition.annotationSource().getAnnotation(Endpoint.class) == null) {
             return;
         }
-        String className = providerDefinition.providedType() + "_Routing" + context.nextId();
+        String className = providerDefinition.providedType() + "$Routing" + context.nextId();
         ClassBuilder routes = new ClassBuilder()
                 .setClassName(className)
                 .addImportClass(Map.class)
@@ -79,6 +80,7 @@ public class HandlerWriter implements ProviderDefinitionListener {
                 .addImportClass(Response.class)
                 .addImportClass(Request.class)
                 .addImportClass(Handler.class)
+                .addImportClass(NamedHandler.class)
                 .addImportClass(Rx.class)
                 .addImportClass(Flow.class)
                 .addImportClass(Flow.Publisher.class)
@@ -106,8 +108,9 @@ public class HandlerWriter implements ProviderDefinitionListener {
                     if (!httpMethods.isEmpty()) {
                         String[] paths = Optional.ofNullable(method.getAnnotation(Endpoint.class))
                                 .map(Endpoint::value)
-                                .orElse(new String[]{});
-                        String methodName = "handle" + method.getSimpleName() + "__" + context.nextId();
+                                .orElse(EMPTY_ARR);
+                        String handlerName = method.getEnclosingElement().getSimpleName() + "#" + method.getSimpleName();
+                        String methodName = "handle" + method.getSimpleName() + "_" + context.nextId();
                         MethodBuilder handler = routes.newMethod("public Flow.Publisher<Response> " + methodName + "(RequestContext " + REQUEST_CONTEXT_REF + ")");
                         buildRouteMethod(context, routes, handler, method);
                         for (String httpMethod : httpMethods) {
@@ -116,7 +119,7 @@ public class HandlerWriter implements ProviderDefinitionListener {
                                 addRoutes.line("router.route(",
                                         ProcessorUtils.escapeAndQuoteStringForCode(httpMethod), ',',
                                         ProcessorUtils.escapeAndQuoteStringForCode(path), ',',
-                                        "this::" + methodName, ");");
+                                        "new NamedHandler(this::" + methodName, "," + ProcessorUtils.escapeAndQuoteStringForCode(handlerName) + "));");
                             }
                         }
                     } else if (method.getAnnotation(Endpoint.class) != null) {

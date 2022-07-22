@@ -19,7 +19,9 @@ public final class TerminalSubscriber<I> implements Flow.Subscriber<I> {
     @Override
     public void onSubscribe(Flow.Subscription subscription) {
         this.subscription = subscription;
-        subscription.request(initialRequest);
+        if (initialRequest > 0) {
+            subscription.request(initialRequest);
+        }
     }
 
     @Override

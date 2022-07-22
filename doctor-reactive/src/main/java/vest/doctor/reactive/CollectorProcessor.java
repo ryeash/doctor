@@ -1,5 +1,6 @@
 package vest.doctor.reactive;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collector;
 
@@ -11,7 +12,7 @@ public final class CollectorProcessor<I, A, O> extends AbstractProcessor<I, O> {
     private final AtomicBoolean collecting = new AtomicBoolean(true);
 
     public CollectorProcessor(Collector<? super I, A, ? extends O> collector) {
-        this.collector = collector;
+        this.collector = Objects.requireNonNull(collector);
         this.container = collector.supplier().get();
         this.concurrent = collector.characteristics().contains(Collector.Characteristics.CONCURRENT);
     }

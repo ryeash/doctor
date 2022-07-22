@@ -1,4 +1,4 @@
-package demo.app.reactor;
+package demo.app.service;
 
 import jakarta.inject.Singleton;
 import vest.doctor.http.server.Filter;

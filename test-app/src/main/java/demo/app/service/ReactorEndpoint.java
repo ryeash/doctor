@@ -1,4 +1,4 @@
-package demo.app.reactor;
+package demo.app.service;
 
 import demo.app.Person;
 import io.netty.buffer.ByteBuf;
@@ -13,6 +13,7 @@ import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
 import vest.doctor.reactive.Rx;
 import vest.doctor.restful.http.Endpoint;
+import vest.doctor.restful.http.HttpMethod.ANY;
 import vest.doctor.restful.http.Param.Attribute;
 import vest.doctor.restful.http.Param.Bean;
 import vest.doctor.restful.http.Param.Body;
@@ -157,4 +158,17 @@ public class ReactorEndpoint {
     public ByteBuf syncError() throws IOException {
         throw new IOException("error");
     }
+
+    @KILL
+    @Endpoint("/kill")
+    public String customMethod() {
+        return "kill";
+    }
+
+    @ANY
+    @Endpoint("/anymethod")
+    public String anyMethod(@Context io.netty.handler.codec.http.HttpMethod method) {
+        return method.toString();
+    }
+
 }
