@@ -47,7 +47,7 @@ public final class Transaction implements AutoCloseable {
      * @return the {@link CompletableFuture} that will relay the result of executing the action
      */
     public CompletableFuture<Void> execute(Consumer<JDBCConnection> action) {
-        return execute(new Utils.ConsumerFunction<>(action));
+        return execute(new JDBCUtils.ConsumerFunction<>(action));
     }
 
     /**
@@ -81,7 +81,7 @@ public final class Transaction implements AutoCloseable {
             jdbc.inTransaction(jdbcConnection -> {
                 for (DeferredAction action : actions) {
                     try {
-                        action.result = Utils.allowedFunctionReturn(action.function.apply(jdbcConnection));
+                        action.result = JDBCUtils.allowedFunctionReturn(action.function.apply(jdbcConnection));
                     } catch (Throwable t) {
                         action.future.completeExceptionally(t);
                         throw t;

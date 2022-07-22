@@ -338,7 +338,7 @@ public final class Row {
      * @return a curried {@link Function} to retrieve a row value
      */
     public static <R> Function<Row, R> curry(String name, BiFunction<Row, String, R> function) {
-        return new Utils.Curry<>(name, function);
+        return new JDBCUtils.Curry<>(name, function);
     }
 
     private int toCol(String columnName) {

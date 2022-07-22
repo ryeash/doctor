@@ -248,8 +248,8 @@ public final class JDBCConnection implements AutoCloseable {
         closeables.stream()
                 .map(Reference::get)
                 .filter(Objects::nonNull)
-                .forEach(Utils::closeQuietly);
+                .forEach(JDBCUtils::closeQuietly);
         closeables.clear();
-        Utils.closeQuietly(connection);
+        JDBCUtils.closeQuietly(connection);
     }
 }

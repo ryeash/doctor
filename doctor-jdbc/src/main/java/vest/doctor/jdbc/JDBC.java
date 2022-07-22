@@ -75,7 +75,7 @@ public final class JDBC {
      */
     public <R> R withConnection(Function<JDBCConnection, R> function) {
         try (JDBCConnection c = connection().reusable()) {
-            return Utils.allowedFunctionReturn(function.apply(c));
+            return JDBCUtils.allowedFunctionReturn(function.apply(c));
         }
     }
 
@@ -87,7 +87,7 @@ public final class JDBC {
      * @see #inTransaction(Function)
      */
     public void inTransaction(Consumer<JDBCConnection> action) {
-        inTransaction(new Utils.ConsumerFunction<>(action));
+        inTransaction(new JDBCUtils.ConsumerFunction<>(action));
     }
 
     /**
@@ -106,14 +106,14 @@ public final class JDBC {
     public <R> R inTransaction(Function<JDBCConnection, R> function) {
         JDBCConnection connection = connection().reusable();
         try {
-            R value = Utils.allowedFunctionReturn(function.apply(connection));
+            R value = JDBCUtils.allowedFunctionReturn(function.apply(connection));
             connection.commit();
             return value;
         } catch (Throwable t) {
-            Utils.closeQuietly(connection::rollback);
+            JDBCUtils.closeQuietly(connection::rollback);
             throw new DatabaseException(t);
         } finally {
-            Utils.closeQuietly(connection);
+            JDBCUtils.closeQuietly(connection);
         }
     }
 

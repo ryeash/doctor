@@ -222,14 +222,19 @@ public class Rx<T> implements Flow.Publisher<T> {
     /**
      * Add a flat-mapping stage to the processing flow that maps to a {@link Stream}. The
      * items from the stream will be published to the downstream subscriber with individual calls
-     * to {@link Flow.Subscriber#onNext(Object)}.
+     * to {@link Flow.Subscriber#onNext(Object)}. Streams created by the mapping function will
+     * be closed automatically using {@link Stream#close()}.
      *
      * @param function the mapping function
      * @param <R>      the new published item type
      * @return the next step in the processing composition
      */
     public <R> Rx<R> flatMapStream(Function<? super T, ? extends Stream<R>> function) {
-        return map(function).onNext((stream, subscription, subscriber) -> stream.forEach(subscriber::onNext));
+        return map(function).onNext((stream, subscription, subscriber) -> {
+            try (stream) {
+                stream.forEach(subscriber::onNext);
+            }
+        });
     }
 
     /**
@@ -438,7 +443,6 @@ public class Rx<T> implements Flow.Publisher<T> {
         }
         return future;
     }
-
 
     /**
      * Subscribe to this processing flow and connect its output to a blocking {@link Stream}.

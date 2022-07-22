@@ -294,7 +294,7 @@ public final class JDBCStatement<S extends Statement> implements AutoCloseable {
             }
             if (hasResultSet) {
                 ResultSet resultSet = statement.getResultSet();
-                return Utils.stream(resultSet, closeOnExecute);
+                return JDBCUtils.stream(resultSet, closeOnExecute);
             } else {
                 try {
                     int updated = statement.getUpdateCount();
@@ -311,10 +311,10 @@ public final class JDBCStatement<S extends Statement> implements AutoCloseable {
 
     @Override
     public void close() {
-        Utils.closeQuietly(statement, connection);
+        JDBCUtils.closeQuietly(statement, connection);
     }
 
     private void closeAfterExecute() {
-        Utils.closeQuietly(closeOnExecute);
+        JDBCUtils.closeQuietly(closeOnExecute);
     }
 }

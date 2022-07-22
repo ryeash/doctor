@@ -17,11 +17,11 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-final class Utils {
+final class JDBCUtils {
 
     private static final int ROW_STREAM_CHARACTERISTICS = Spliterator.ORDERED | Spliterator.IMMUTABLE | Spliterator.NONNULL;
 
-    private Utils() {
+    private JDBCUtils() {
     }
 
     static Stream<Row> stream(ResultSet resultSet, List<AutoCloseable> closeables) {
@@ -43,14 +43,19 @@ final class Utils {
         }
     }
 
+    private static final List<Class<?>> DISALLOWED_RETURN_TYPES = List.of(
+            JDBCStatement.class,
+            JDBCConnection.class,
+            Connection.class,
+            Statement.class,
+            ResultSet.class,
+            Row.class);
+
     static <T> T allowedFunctionReturn(T o) {
-        if (o instanceof JDBCStatement
-                || o instanceof JDBCConnection
-                || o instanceof Connection
-                || o instanceof Statement
-                || o instanceof ResultSet
-                || o instanceof Row) {
-            throw new IllegalArgumentException("not allowed to return objects of type " + o.getClass().getSimpleName());
+        for (Class<?> disallowedReturnType : DISALLOWED_RETURN_TYPES) {
+            if (disallowedReturnType.isInstance(o)) {
+                throw new IllegalArgumentException(o.getClass().getCanonicalName() + " may not be be returned from jdbc functions; these types are disallowed: " + DISALLOWED_RETURN_TYPES);
+            }
         }
         return o;
     }
