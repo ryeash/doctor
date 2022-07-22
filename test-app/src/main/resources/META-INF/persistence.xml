@@ -7,7 +7,7 @@
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
         <properties>
             <property name="jakarta.persistence.jdbc.driver" value="org.hsqldb.jdbc.JDBCDriver"/>
-            <!-- Commented properties moved to the @PersistenceContext annotation -->
+            <!-- Commented properties moved to the factory method -->
             <!-- <property name="jakarta.persistence.jdbc.url" value=""/>-->
             <property name="jakarta.persistence.jdbc.user" value="SA"/>
             <property name="jakarta.persistence.jdbc.password" value=""/>

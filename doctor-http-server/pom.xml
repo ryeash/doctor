@@ -22,11 +22,6 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <artifactId>doctor-reactive</artifactId>
-            <groupId>${project.groupId}</groupId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-codec-http</artifactId>
             <version>${netty.version}</version>

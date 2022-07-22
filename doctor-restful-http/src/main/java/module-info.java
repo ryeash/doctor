@@ -6,7 +6,6 @@ module doctor.restful.http {
     requires static java.compiler;
     requires doctor.core;
     requires doctor.runtime;
-    requires doctor.reactive;
     requires jakarta.inject;
 
     requires io.netty.common;

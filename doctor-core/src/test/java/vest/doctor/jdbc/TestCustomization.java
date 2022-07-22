@@ -6,7 +6,7 @@ import java.sql.Statement;
 
 public class TestCustomization implements JDBCInterceptor {
     @Override
-    public Statement intercept(Statement statement) throws SQLException {
+    public <T extends Statement> T intercept(T statement) throws SQLException {
         statement.setQueryTimeout(15);
         if (statement instanceof PreparedStatement p) {
             p.setPoolable(true);

@@ -35,7 +35,7 @@ public final class JDBC {
     }
 
     /**
-     * Allocate a new {@link java.sql.Connection} and return the {@link JDBCConnection} wrapper.
+     * Allocate a new {@link Connection} and return the {@link JDBCConnection} wrapper.
      * The {@link JDBCConnection} will be in one-shot mode by default, i.e. the connection will
      * be closed automatically after first statement execution.
      *

@@ -12,12 +12,9 @@
         <module>doctor-core</module>
         <module>doctor-processor</module>
         <module>doctor-runtime</module>
-        <module>doctor-reactive</module>
         <module>doctor-jersey</module>
         <module>doctor-http-server</module>
         <module>doctor-restful-http</module>
-        <module>doctor-jpa</module>
-        <module>doctor-jdbc</module>
         <module>doctor-test</module>
         <module>test-app</module>
     </modules>

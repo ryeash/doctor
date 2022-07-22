@@ -7,7 +7,6 @@ module doctor.http.server {
     requires io.netty.common;
     requires org.slf4j;
 
-    requires doctor.reactive;
     requires doctor.core;
 
     exports vest.doctor.http.server;

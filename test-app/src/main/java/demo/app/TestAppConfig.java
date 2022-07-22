@@ -1,13 +1,19 @@
 package demo.app;
 
+import demo.app.dao.DBProps;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
 import org.testng.Assert;
 import vest.doctor.Cached;
+import vest.doctor.DestroyMethod;
 import vest.doctor.Factory;
 import vest.doctor.Modules;
 import vest.doctor.Primary;
 import vest.doctor.Prototype;
+import vest.doctor.ProviderRegistry;
 import vest.doctor.SkipInjection;
 import vest.doctor.ThreadLocal;
 import vest.doctor.aop.Aspects;
@@ -15,6 +21,8 @@ import vest.doctor.aop.Aspects;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Singleton
 @Named("duck")
@@ -159,5 +167,24 @@ public class TestAppConfig {
         @Override
         public void close() {
         }
+    }
+
+    @Factory
+    @Singleton
+    @Named("default")
+    @DestroyMethod("close")
+    public EntityManagerFactory defaultEntityManagerFactory(ProviderRegistry providerRegistry, DBProps dbProps) {
+        Map<String, String> properties = new LinkedHashMap<>();
+        properties.put("jakarta.persistence.jdbc.url", dbProps.url());
+        properties.put("hibernate.hbm2ddl.auto", "create");
+        return Persistence.createEntityManagerFactory(providerRegistry.resolvePlaceholders("default"), properties);
+    }
+
+    @Factory
+    @Prototype
+    @Named("default")
+    @DestroyMethod("close")
+    public EntityManager defaultEntityManager(@Named("default") EntityManagerFactory emf) {
+        return emf.createEntityManager();
     }
 }

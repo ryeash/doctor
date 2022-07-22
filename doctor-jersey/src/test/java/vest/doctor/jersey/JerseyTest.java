@@ -117,7 +117,6 @@ public class JerseyTest {
                     ValidatableResponse validatableResponse = req()
                             .body(bytes)
                             .post("/jaxrs")
-//                            .prettyPeek()
                             .then()
                             .statusCode(200);
                     assertEquals(validatableResponse.extract().body().asByteArray(), bytes);
