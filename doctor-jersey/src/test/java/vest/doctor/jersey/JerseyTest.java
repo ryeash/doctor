@@ -5,6 +5,7 @@ import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 import jakarta.ws.rs.core.MediaType;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
@@ -20,9 +21,9 @@ import vest.doctor.runtime.Doctor;
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -175,8 +176,19 @@ public class JerseyTest {
         public void onConnect(Session session) throws InterruptedException, ExecutionException, TimeoutException {
             connectLatch.countDown();
             this.session = session;
-            Future<Void> fut = session.getRemote().sendStringByFuture("I'm a test");
-            fut.get(2, TimeUnit.SECONDS);
+            CompletableFuture<Void> future = new CompletableFuture<>();
+            session.getRemote().sendString("I'm a test", new WriteCallback() {
+                @Override
+                public void writeFailed(Throwable x) {
+                    future.completeExceptionally(x);
+                }
+
+                @Override
+                public void writeSuccess() {
+                    future.complete(null);
+                }
+            });
+            future.get(2, TimeUnit.SECONDS);
         }
 
         @OnWebSocketMessage
