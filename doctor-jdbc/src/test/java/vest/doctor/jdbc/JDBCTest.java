@@ -49,7 +49,7 @@ public class JDBCTest extends Assert {
 
         jdbc.inTransaction(c -> {
             c.setAutoCommit(false);
-            JDBCStatement<PreparedStatement> insertUser = c.preparedQuery("insert into users values (?, ?, ?)");
+            JDBCStatement<PreparedStatement> insertUser = c.prepare("insert into users values (?, ?, ?)");
             for (int i = 0; i < 50; i++) {
                 insertUser.bindAll(List.of(i, i + "", "password")).addBatch();
             }
@@ -58,7 +58,7 @@ public class JDBCTest extends Assert {
 
         try (Transaction tx = jdbc.transaction()) {
             tx.execute(c -> {
-                JDBCStatement<PreparedStatement> insertProperty = c.preparedQuery("insert into properties values (?, ?, ?)");
+                JDBCStatement<PreparedStatement> insertProperty = c.prepare("insert into properties values (?, ?, ?)");
                 for (int i = 0; i < 50; i++) {
                     insertProperty.bindAll(List.of(i, "defer", ThreadLocalRandom.current().nextBoolean() + ""))
                             .addBatch()
@@ -122,7 +122,7 @@ public class JDBCTest extends Assert {
         Transaction transaction = jdbc.transaction();
         CompletableFuture<Void> passFail = transaction.execute(c -> {
             int id = ThreadLocalRandom.current().nextInt(1000, 100000);
-            c.preparedQuery("insert into users values (?, ?, ?)")
+            c.prepare("insert into users values (?, ?, ?)")
                     .bindAll(List.of(id, "name" + id, "gusr"))
                     .execute();
         });
@@ -147,7 +147,7 @@ public class JDBCTest extends Assert {
         Transaction transaction = jdbc.transaction();
         CompletableFuture<Void> passFail = transaction.execute(c -> {
             int id = 1;
-            c.preparedQuery("insert into users values (?, ?, ?)")
+            c.prepare("insert into users values (?, ?, ?)")
                     .bindAll(List.of(id, "name" + id, "gusr"))
                     .execute();
         });

@@ -60,7 +60,7 @@ public final class JDBCConnection implements AutoCloseable {
      * @return the row stream
      */
     public Stream<Row> select(String sql) {
-        return query(sql).execute();
+        return statement(sql).execute();
     }
 
     /**
@@ -71,7 +71,7 @@ public final class JDBCConnection implements AutoCloseable {
      * @return the row stream
      */
     public Stream<Row> select(String sql, List<Object> parameters) {
-        return preparedQuery(sql).bindAll(parameters).execute();
+        return prepare(sql).bindAll(parameters).execute();
     }
 
     /**
@@ -102,7 +102,7 @@ public final class JDBCConnection implements AutoCloseable {
      * @return the number of rows changed
      */
     public long update(String sql) {
-        return query(sql)
+        return statement(sql)
                 .execute()
                 .mapToLong(Row::updateCount)
                 .findFirst()
@@ -117,7 +117,7 @@ public final class JDBCConnection implements AutoCloseable {
      * @return the number of rows changed
      */
     public long update(String sql, List<Object> parameters) {
-        return preparedQuery(sql)
+        return prepare(sql)
                 .bindAll(parameters)
                 .execute()
                 .mapToLong(Row::updateCount)
@@ -131,7 +131,7 @@ public final class JDBCConnection implements AutoCloseable {
      * @param sql the sql that will be executed when calling {@link JDBCStatement#execute()}
      * @return a new {@link JDBCStatement} object
      */
-    public JDBCStatement<Statement> query(String sql) {
+    public JDBCStatement<Statement> statement(String sql) {
         try {
             Statement statement = connection.createStatement();
             for (JDBCInterceptor interceptor : interceptors) {
@@ -151,7 +151,7 @@ public final class JDBCConnection implements AutoCloseable {
      * @param sql the sql that will be executed when calling {@link JDBCStatement#execute()}
      * @return a new {@link JDBCStatement} object
      */
-    public JDBCStatement<PreparedStatement> preparedQuery(String sql) {
+    public JDBCStatement<PreparedStatement> prepare(String sql) {
         try {
             PreparedStatement statement = connection.prepareStatement(sql);
             for (JDBCInterceptor interceptor : interceptors) {
@@ -172,7 +172,7 @@ public final class JDBCConnection implements AutoCloseable {
      * @see JDBCStatement#execute()
      */
     public long executeAndSink(String sql) {
-        return query(sql).execute().count();
+        return statement(sql).execute().count();
     }
 
     /**
@@ -183,7 +183,7 @@ public final class JDBCConnection implements AutoCloseable {
      * @return the count
      */
     public long count(String sql, String countColumn) {
-        return query(sql)
+        return statement(sql)
                 .execute()
                 .map(Row.curry(countColumn, Row::getNumber))
                 .filter(Objects::nonNull)

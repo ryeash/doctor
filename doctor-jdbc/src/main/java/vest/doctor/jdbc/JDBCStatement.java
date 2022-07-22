@@ -13,16 +13,16 @@ import java.util.stream.Stream;
 /**
  * Wrapper around a {@link Statement} to add a fluent API.
  *
- * @param <Q> the statement type
+ * @param <S> the statement type
  */
-public final class JDBCStatement<Q extends Statement> implements AutoCloseable {
+public final class JDBCStatement<S extends Statement> implements AutoCloseable {
 
     private final Connection connection;
-    private final Q statement;
+    private final S statement;
     private final String sql;
     private final List<AutoCloseable> closeOnExecute;
 
-    JDBCStatement(Connection connection, Q statement, String sql, List<AutoCloseable> closeables) {
+    JDBCStatement(Connection connection, S statement, String sql, List<AutoCloseable> closeables) {
         this.connection = Objects.requireNonNull(connection);
         this.statement = Objects.requireNonNull(statement);
         this.sql = Objects.requireNonNull(sql);
@@ -41,14 +41,14 @@ public final class JDBCStatement<Q extends Statement> implements AutoCloseable {
      *
      * @return the statement object that this class wraps
      */
-    public Q unwrap() {
+    public S unwrap() {
         return statement;
     }
 
     /**
      * @see Statement#setFetchSize(int)
      */
-    public JDBCStatement<Q> setFetchSize(int fetchSize) {
+    public JDBCStatement<S> setFetchSize(int fetchSize) {
         try {
             this.statement.setFetchSize(fetchSize);
             return this;
@@ -60,7 +60,7 @@ public final class JDBCStatement<Q extends Statement> implements AutoCloseable {
     /**
      * @see Statement#setFetchDirection(int)
      */
-    public JDBCStatement<Q> setFetchDirection(int fetchDirection) {
+    public JDBCStatement<S> setFetchDirection(int fetchDirection) {
         try {
             this.statement.setFetchDirection(fetchDirection);
             return this;
@@ -72,7 +72,7 @@ public final class JDBCStatement<Q extends Statement> implements AutoCloseable {
     /**
      * @see Statement#setCursorName(String)
      */
-    public JDBCStatement<Q> setCursorName(String name) {
+    public JDBCStatement<S> setCursorName(String name) {
         try {
             this.statement.setCursorName(name);
             return this;
@@ -84,7 +84,7 @@ public final class JDBCStatement<Q extends Statement> implements AutoCloseable {
     /**
      * @see Statement#setEscapeProcessing(boolean)
      */
-    public JDBCStatement<Q> setEscapeProcessing(boolean enabled) {
+    public JDBCStatement<S> setEscapeProcessing(boolean enabled) {
         try {
             this.statement.setEscapeProcessing(enabled);
             return this;
@@ -96,7 +96,7 @@ public final class JDBCStatement<Q extends Statement> implements AutoCloseable {
     /**
      * @see Statement#setMaxRows(int)
      */
-    public JDBCStatement<Q> setMaxRows(int max) {
+    public JDBCStatement<S> setMaxRows(int max) {
         try {
             this.statement.setMaxRows(max);
             return this;
@@ -108,7 +108,7 @@ public final class JDBCStatement<Q extends Statement> implements AutoCloseable {
     /**
      * @see Statement#setLargeMaxRows(long)
      */
-    public JDBCStatement<Q> setLargeMaxRows(long max) {
+    public JDBCStatement<S> setLargeMaxRows(long max) {
         try {
             this.statement.setLargeMaxRows(max);
             return this;
@@ -120,7 +120,7 @@ public final class JDBCStatement<Q extends Statement> implements AutoCloseable {
     /**
      * @see Statement#setMaxFieldSize(int)
      */
-    public JDBCStatement<Q> setMaxFieldSize(int max) {
+    public JDBCStatement<S> setMaxFieldSize(int max) {
         try {
             this.statement.setMaxFieldSize(max);
             return this;
@@ -132,7 +132,7 @@ public final class JDBCStatement<Q extends Statement> implements AutoCloseable {
     /**
      * @see Statement#setPoolable(boolean)
      */
-    public JDBCStatement<Q> setPoolable(boolean poolable) {
+    public JDBCStatement<S> setPoolable(boolean poolable) {
         try {
             this.statement.setPoolable(poolable);
             return this;
@@ -144,7 +144,7 @@ public final class JDBCStatement<Q extends Statement> implements AutoCloseable {
     /**
      * @see Statement#setQueryTimeout(int)
      */
-    public JDBCStatement<Q> setQueryTimeout(int seconds) {
+    public JDBCStatement<S> setQueryTimeout(int seconds) {
         try {
             this.statement.setQueryTimeout(seconds);
             return this;
@@ -156,7 +156,7 @@ public final class JDBCStatement<Q extends Statement> implements AutoCloseable {
     /**
      * @see Statement#addBatch(String)
      */
-    public JDBCStatement<Q> addBatch(String sql) {
+    public JDBCStatement<S> addBatch(String sql) {
         try {
             statement.addBatch(sql);
             return this;
@@ -186,7 +186,7 @@ public final class JDBCStatement<Q extends Statement> implements AutoCloseable {
      * @return this object
      * @see PreparedStatement#setObject(int, Object)
      */
-    public JDBCStatement<Q> bind(int i, Object value) {
+    public JDBCStatement<S> bind(int i, Object value) {
         if (statement instanceof PreparedStatement prepared) {
             try {
                 prepared.setObject(i, value);
@@ -209,11 +209,11 @@ public final class JDBCStatement<Q extends Statement> implements AutoCloseable {
      * @see #bind(int, Object, int)
      * @see JDBCType#getVendorTypeNumber()
      */
-    public JDBCStatement<Q> bind(int i, Object value, JDBCType type) {
+    public JDBCStatement<S> bind(int i, Object value, JDBCType type) {
         return bind(i, value, type.getVendorTypeNumber());
     }
 
-    public JDBCStatement<Q> bind(int i, Object value, int type) {
+    public JDBCStatement<S> bind(int i, Object value, int type) {
         if (statement instanceof PreparedStatement prepared) {
             try {
                 prepared.setObject(i, value, type);
@@ -232,7 +232,7 @@ public final class JDBCStatement<Q extends Statement> implements AutoCloseable {
      * @param allArgs the values to set
      * @return this object
      */
-    public JDBCStatement<Q> bindAll(List<Object> allArgs) {
+    public JDBCStatement<S> bindAll(List<Object> allArgs) {
         int i = 1;
         for (Object arg : allArgs) {
             bind(i++, arg);
@@ -246,7 +246,7 @@ public final class JDBCStatement<Q extends Statement> implements AutoCloseable {
      * @return this object
      * @see PreparedStatement#clearParameters()
      */
-    public JDBCStatement<Q> clearParameters() {
+    public JDBCStatement<S> clearParameters() {
         try {
             if (statement.isClosed()) {
                 return this;
@@ -266,7 +266,7 @@ public final class JDBCStatement<Q extends Statement> implements AutoCloseable {
      * @return this object
      * @see PreparedStatement#addBatch()
      */
-    public JDBCStatement<Q> addBatch() {
+    public JDBCStatement<S> addBatch() {
         if (statement instanceof PreparedStatement prepared) {
             try {
                 prepared.addBatch();
