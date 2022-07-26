@@ -83,7 +83,7 @@ public record MapConfigurationSource(Map<String, Object> map) implements Configu
         if (path.indexOf('.') < 0) {
             return map.get(path);
         }
-        List<String> segments = Utils.split(path, ConfigurationFacade.NESTING_DELIMITER);
+        List<String> segments = RuntimeUtils.split(path, ConfigurationFacade.NESTING_DELIMITER);
         Map<String, Object> temp = map;
         for (int i = 0; i < segments.size() - 1; i++) {
             Object o = temp.get(segments.get(i));

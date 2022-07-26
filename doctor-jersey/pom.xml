@@ -44,7 +44,7 @@
             <artifactId>jul-to-slf4j</artifactId>
         </dependency>
         <dependency>
-            <artifactId>doctor-runtime</artifactId>
+            <artifactId>doctor-core</artifactId>
             <groupId>${project.groupId}</groupId>
             <version>${project.version}</version>
         </dependency>

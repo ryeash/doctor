@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * The entrypoint for applications to access generated {@link jakarta.inject.Provider}s.
+ * The entrypoint for applications to access generated {@link Provider}s.
  * Initializes (and serves as) the {@link ProviderRegistry} for an application.
  */
 public class Doctor implements ProviderRegistry, AutoCloseable {
@@ -108,24 +108,28 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
      * injectable via the {@link Args} class.
      * <p>
      * Supported arguments/flags:<br>
-     * -m, --modules : a comma delimited list of modules to enable<br>
-     * -p, --properties : a comma delimited list of properties files to load (in precedence order)
+     * <ul>
+     *     <li>-m, --modules : a comma delimited list of modules to enable</li>
+     *     <li>-p, --properties : a comma delimited list of properties files to load (in precedence order);
+     *     the locations 'env' and 'system' can be used to add {@link EnvironmentVariablesConfigurationSource}
+     *     and {@link SystemPropertiesConfigurationSource} sources respectively, the default is "env,system"</li>
+     * </ul>
      */
     public static void main(String[] args) {
         Args a = new Args(args);
         String modules = a.option("modules", 'm');
-        String properties = a.option("properties", 'p', "");
+        String properties = a.option("properties", 'p', "env,system");
 
-        ConfigurationFacade facade = new CompositeConfigurationFacade()
-                .addSource(new EnvironmentVariablesConfigurationSource())
-                .addSource(new SystemPropertiesConfigurationSource());
-
-        Utils.split(properties.trim(), ',')
+        ConfigurationFacade facade = RuntimeUtils.split(properties.trim(), ',')
                 .stream()
-                .map(FileLocation::new)
-                .map(StructuredConfigurationSource::new)
-                .forEach(facade::addSource);
-        new Doctor(facade, Utils.split(modules, ','), new ArgsLoader(a));
+                .map(propertyLocation ->
+                        switch (propertyLocation) {
+                            case "env" -> new EnvironmentVariablesConfigurationSource();
+                            case "system" -> new SystemPropertiesConfigurationSource();
+                            default -> new StructuredConfigurationSource(new FileLocation(propertyLocation));
+                        })
+                .reduce(new CompositeConfigurationFacade(), ConfigurationFacade::addSource, (l, r) -> r);
+        new Doctor(facade, RuntimeUtils.split(modules, ','), new ArgsLoader(a));
     }
 
     private final List<String> activeModules;

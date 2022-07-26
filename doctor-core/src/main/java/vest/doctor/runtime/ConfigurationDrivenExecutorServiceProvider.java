@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  * executors.[name].minThreads - the minimum number of threads in the pool; not valid for forkjoin type
  * executors.[name].maxThreads - the maximum number of threads in the pool; not valid for cached type
  * executors.[name].keepAliveSeconds - the number of seconds to keep idle threads in the pool alive before allowing them to be destroyed; not valid for forkjoin type
- * executors.[name].uncaughtExceptionHandler - the qualifier for a provided {@link java.lang.Thread.UncaughtExceptionHandler} to use in the thread pool
+ * executors.[name].uncaughtExceptionHandler - the qualifier for a provided {@link Thread.UncaughtExceptionHandler} to use in the thread pool
  * executors.[name].daemonize - sets whether threads created by the executor will be daemons; {@link Thread#setDaemon(boolean)}
  * executors.[name].nameFormat - format of the thread names; e.g. "background-%d"
  * executors.[name].rejectedExecutionHandler - either the qualifier for a provided {@link RejectedExecutionHandler} or the name of one of the built in handlers: discard, discardOldest, callerRuns, abort

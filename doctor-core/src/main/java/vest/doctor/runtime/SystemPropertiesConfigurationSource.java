@@ -6,13 +6,12 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Configuration source that gets properties from {@link System#getenv(String)}.
+ * Configuration source that gets properties from {@link System#getProperty(String)}.
  */
-public class EnvironmentVariablesConfigurationSource implements ConfigurationSource {
-
+public class SystemPropertiesConfigurationSource implements ConfigurationSource {
     @Override
     public String get(String propertyName) {
-        return System.getenv(propertyName);
+        return System.getProperty(propertyName);
     }
 
     @Override
@@ -21,7 +20,7 @@ public class EnvironmentVariablesConfigurationSource implements ConfigurationSou
         if (s == null) {
             return null;
         } else {
-            return Utils.split(s, ',');
+            return RuntimeUtils.split(s, ',');
         }
     }
 
@@ -37,11 +36,10 @@ public class EnvironmentVariablesConfigurationSource implements ConfigurationSou
 
     @Override
     public Collection<String> propertyNames() {
-        return System.getenv().keySet();
+        return System.getProperties().stringPropertyNames();
     }
 
     @Override
     public void reload() {
-
     }
 }

@@ -3,9 +3,9 @@ package vest.doctor.runtime;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class Utils {
+public final class RuntimeUtils {
 
-    private Utils() {
+    private RuntimeUtils() {
     }
 
     public static List<String> split(String str, char delimiter) {

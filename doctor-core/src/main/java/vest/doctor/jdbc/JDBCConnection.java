@@ -96,6 +96,27 @@ public final class JDBCConnection implements AutoCloseable {
     }
 
     /**
+     * Execute an SQL DELETE statement and return the number of rows changed.
+     *
+     * @param sql the deleting sql statement
+     * @return the number of changed rows
+     */
+    public long delete(String sql) {
+        return update(sql);
+    }
+
+    /**
+     * Execute an SQL DELETE prepared statement and return the number of rows changed.
+     *
+     * @param sql        the deleting sql statement
+     * @param parameters the binding parameters
+     * @return the number of rows changed
+     */
+    public long delete(String sql, List<Object> parameters) {
+        return update(sql, parameters);
+    }
+
+    /**
      * Execute an SQL UPDATE statement and return the number of rows changed.
      *
      * @param sql the updating sql statement

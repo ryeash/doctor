@@ -111,6 +111,9 @@ public class JDBCTest extends Assert {
                 .findFirst()
                 .orElse(null);
         assertEquals(cats, "none");
+
+        assertEquals(jdbc.connection().delete("delete from properties where user_id = 0"), 4);
+        assertEquals(jdbc.connection().delete("delete from users where id = 0"), 1);
     }
 
     public void count() {
