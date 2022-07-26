@@ -14,7 +14,6 @@
         <module>doctor-runtime</module>
         <module>doctor-jersey</module>
         <module>doctor-http-server</module>
-        <module>doctor-restful-http</module>
         <module>doctor-test</module>
         <module>test-app</module>
     </modules>

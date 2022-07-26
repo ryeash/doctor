@@ -3,14 +3,14 @@ package demo.app.service;
 import jakarta.inject.Inject;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
-import vest.doctor.restful.http.Param.Context;
-import vest.doctor.restful.http.Param.Path;
+import vest.doctor.http.server.rest.Param.Context;
 
 import java.util.Optional;
 
-import static vest.doctor.restful.http.Param.Cookie;
-import static vest.doctor.restful.http.Param.Header;
-import static vest.doctor.restful.http.Param.Query;
+import static vest.doctor.http.server.rest.Param.Cookie;
+import static vest.doctor.http.server.rest.Param.Header;
+import static vest.doctor.http.server.rest.Param.Path;
+import static vest.doctor.http.server.rest.Param.Query;
 
 public class BeanParamObject {
 

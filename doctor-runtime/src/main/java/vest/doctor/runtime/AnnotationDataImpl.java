@@ -6,6 +6,7 @@ import java.lang.annotation.Annotation;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public record AnnotationDataImpl(Class<? extends Annotation> type,
                                  Map<String, Object> values) implements AnnotationData {
@@ -134,7 +135,16 @@ public record AnnotationDataImpl(Class<? extends Annotation> type,
 
     @Override
     public String toString() {
-        return "@" + type.getName() + values;
+        StringBuilder sb = new StringBuilder();
+        sb.append("@").append(type.getCanonicalName());
+
+        String valuesString = values.entrySet()
+                .stream()
+                .map(e -> e.getKey() + "=" + e.getValue())
+                .sorted()
+                .collect(Collectors.joining(", ", "(", ")"));
+        sb.append(valuesString);
+        return sb.toString();
     }
 
     @SuppressWarnings("unchecked")

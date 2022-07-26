@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 
 /**
  * Wrapper around {@link Connection} objects. This class operates in one of
- * two modes: in one-shot mode (the default) the connection will be closed after first execution and consumption of the
+ * two modes: in one-shot mode, the connection will be closed after first execution and consumption of the
  * result stream, in reusable mode the connection will remain open, and it's the users' responsibility to close the
  * object.
  */

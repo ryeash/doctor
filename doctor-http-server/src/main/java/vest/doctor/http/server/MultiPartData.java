@@ -25,8 +25,8 @@ public interface MultiPartData {
     interface Part {
 
         /**
-         * The type of the part, one of: FileUpload, Attribute, or InternalAttribute.
-         * Will be empty when <code>last() == true</code>.
+         * The type of the part, one of: FileUpload, Attribute, InternalAttribute, or empty if this is the final
+         * part.
          */
         String type();
 

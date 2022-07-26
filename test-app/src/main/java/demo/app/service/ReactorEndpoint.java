@@ -1,6 +1,5 @@
 package demo.app.service;
 
-import demo.app.Person;
 import io.netty.buffer.ByteBuf;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
@@ -11,18 +10,24 @@ import vest.doctor.http.server.Request;
 import vest.doctor.http.server.RequestContext;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
+import vest.doctor.http.server.rest.Endpoint;
+import vest.doctor.http.server.rest.HttpMethod;
+import vest.doctor.http.server.rest.HttpMethod.ANY;
+import vest.doctor.http.server.rest.HttpMethod.DELETE;
+import vest.doctor.http.server.rest.HttpMethod.GET;
+import vest.doctor.http.server.rest.HttpMethod.OPTIONS;
+import vest.doctor.http.server.rest.HttpMethod.POST;
+import vest.doctor.http.server.rest.HttpMethod.PUT;
+import vest.doctor.http.server.rest.Param.Attribute;
+import vest.doctor.http.server.rest.Param.Bean;
+import vest.doctor.http.server.rest.Param.Body;
+import vest.doctor.http.server.rest.Param.Context;
+import vest.doctor.http.server.rest.Param.Cookie;
+import vest.doctor.http.server.rest.Param.Header;
+import vest.doctor.http.server.rest.Param.Path;
+import vest.doctor.http.server.rest.Param.Provided;
+import vest.doctor.http.server.rest.Param.Query;
 import vest.doctor.reactive.Rx;
-import vest.doctor.restful.http.Endpoint;
-import vest.doctor.restful.http.HttpMethod.ANY;
-import vest.doctor.restful.http.Param.Attribute;
-import vest.doctor.restful.http.Param.Bean;
-import vest.doctor.restful.http.Param.Body;
-import vest.doctor.restful.http.Param.Context;
-import vest.doctor.restful.http.Param.Cookie;
-import vest.doctor.restful.http.Param.Header;
-import vest.doctor.restful.http.Param.Path;
-import vest.doctor.restful.http.Param.Provided;
-import vest.doctor.restful.http.Param.Query;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -31,12 +36,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
-
-import static vest.doctor.restful.http.HttpMethod.DELETE;
-import static vest.doctor.restful.http.HttpMethod.GET;
-import static vest.doctor.restful.http.HttpMethod.OPTIONS;
-import static vest.doctor.restful.http.HttpMethod.POST;
-import static vest.doctor.restful.http.HttpMethod.PUT;
 
 @Singleton
 @Eager
@@ -49,7 +48,7 @@ public class ReactorEndpoint {
         return "Hello World!";
     }
 
-    @POST
+    @HttpMethod.POST
     @Endpoint("/throughput")
     public byte[] throughput(@Body byte[] body) {
         return body;
@@ -85,18 +84,6 @@ public class ReactorEndpoint {
     @Endpoint({"/multimethod", "/multimethod2"})
     public String multiMethodAndPath(@Context Request request) {
         return request.method().toString();
-    }
-
-    @POST
-    @Endpoint("/json")
-    public Person json(@Body Person person) {
-        return person;
-    }
-
-    @POST
-    @Endpoint("/jsonpub")
-    public Flow.Publisher<Person> json(@Body Flow.Publisher<Person> person) {
-        return person;
     }
 
     @PUT
