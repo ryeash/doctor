@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * The entrypoint for applications to access generated {@link Provider}s.
+ * The entrypoint for applications to access generated {@link Provider providers}.
  * Initializes (and serves as) the {@link ProviderRegistry} for an application.
  */
 public class Doctor implements ProviderRegistry, AutoCloseable {
