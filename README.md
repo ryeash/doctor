@@ -1,6 +1,6 @@
 # doctor
 
-Compile time dependency injection processor for JDK 17.
+Compile time dependency injection processor for JDK 18.
 
 ## Getting Started
 
