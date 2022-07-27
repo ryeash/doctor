@@ -323,7 +323,7 @@ public final class Row {
      * Take a row value {@link BiFunction} and curry the last argument to it to produce a
      * single argument function that retrieves the value of a column.
      * <p><br>
-     * Example:
+     * Example to map a row string value:
      * <pre>
      * connection.query("select name from user where id = 1")
      *           .execute()

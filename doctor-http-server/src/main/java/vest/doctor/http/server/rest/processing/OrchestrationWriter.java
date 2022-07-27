@@ -28,6 +28,8 @@ import vest.doctor.processing.CodeProcessingException;
 import vest.doctor.processing.ProviderDefinition;
 import vest.doctor.processing.ProviderDefinitionListener;
 import vest.doctor.reactive.Rx;
+import vest.doctor.runtime.AnnotationDataImpl;
+import vest.doctor.runtime.AnnotationMetadataImpl;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -65,8 +67,8 @@ public class OrchestrationWriter implements ProviderDefinitionListener {
                 .addImportClass(List.class)
                 .addImportClass(Optional.class)
                 .addImportClass(AnnotationMetadata.class)
-                .addImportClass("vest.doctor.runtime.AnnotationMetadataImpl")
-                .addImportClass("vest.doctor.runtime.AnnotationDataImpl")
+                .addImportClass(AnnotationMetadataImpl.class)
+                .addImportClass(AnnotationDataImpl.class)
                 .addImportClass(Cookie.class)
                 .addImportClass(TypeInfo.class)
                 .addImportClass(ProviderRegistry.class)

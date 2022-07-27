@@ -136,6 +136,7 @@ public final class JDBCConnection implements AutoCloseable {
      * @param sql        the updating sql statement
      * @param parameters the binding parameter
      * @return the number of rows changed
+     * @see JDBCStatement#bindAll(List)
      */
     public long update(String sql, List<Object> parameters) {
         return prepare(sql)
@@ -151,6 +152,7 @@ public final class JDBCConnection implements AutoCloseable {
      *
      * @param sql the sql that will be executed when calling {@link JDBCStatement#execute()}
      * @return a new {@link JDBCStatement} object
+     * @see Statement
      */
     public JDBCStatement<Statement> statement(String sql) {
         try {
@@ -171,6 +173,7 @@ public final class JDBCConnection implements AutoCloseable {
      *
      * @param sql the sql that will be executed when calling {@link JDBCStatement#execute()}
      * @return a new {@link JDBCStatement} object
+     * @see PreparedStatement
      */
     public JDBCStatement<PreparedStatement> prepare(String sql) {
         try {

@@ -60,11 +60,11 @@ final class JDBCUtils {
         return o;
     }
 
-    public static void closeQuietly(AutoCloseable... closeables) {
+    static void closeQuietly(AutoCloseable... closeables) {
         closeQuietly(List.of(closeables));
     }
 
-    public static void closeQuietly(List<AutoCloseable> closeables) {
+    static void closeQuietly(List<AutoCloseable> closeables) {
         for (AutoCloseable closeable : closeables) {
             try {
                 closeable.close();

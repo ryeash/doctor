@@ -57,7 +57,7 @@ public class JDBCTest extends Assert {
         });
 
         try (Transaction tx = jdbc.transaction()) {
-            tx.execute(c -> {
+            tx.accept(c -> {
                 JDBCStatement<PreparedStatement> insertProperty = c.prepare("insert into properties values (?, ?, ?)");
                 for (int i = 0; i < 50; i++) {
                     insertProperty.bindAll(List.of(i, "defer", ThreadLocalRandom.current().nextBoolean() + ""))
@@ -94,10 +94,10 @@ public class JDBCTest extends Assert {
     @Test(invocationCount = 1)
     public void insertMechanisms() {
         try (Transaction tx = jdbc.transaction()) {
-            tx.execute(c -> {
+            tx.accept(c -> {
                 c.insert("insert into properties values (?, ?, ?)", List.of(0, "bats", "numerous"));
             });
-            tx.execute(c -> {
+            tx.accept(c -> {
                 c.insert("insert into properties values (0, 'cats', 'none')");
             });
         }
@@ -123,17 +123,16 @@ public class JDBCTest extends Assert {
 
     public void transactionCallback() {
         Transaction transaction = jdbc.transaction();
-        CompletableFuture<Void> passFail = transaction.execute(c -> {
+        CompletableFuture<Void> passFail = transaction.accept(c -> {
             int id = ThreadLocalRandom.current().nextInt(1000, 100000);
             c.prepare("insert into users values (?, ?, ?)")
                     .bindAll(List.of(id, "name" + id, "gusr"))
                     .execute();
         });
-        CompletableFuture<List<String>> listFuture = transaction.execute(c -> {
-            return c.select("select name from users where id > 999")
-                    .map(row -> row.getString("name"))
-                    .collect(Collectors.toList());
-        });
+        CompletableFuture<List<String>> listFuture = transaction.apply(c ->
+                c.select("select name from users where id > 999")
+                        .map(row -> row.getString("name"))
+                        .collect(Collectors.toList()));
         transaction.close();
         assertTrue(passFail.isDone());
         passFail.join();
@@ -148,7 +147,7 @@ public class JDBCTest extends Assert {
 
     public void transactionErrorCallback() {
         Transaction transaction = jdbc.transaction();
-        CompletableFuture<Void> passFail = transaction.execute(c -> {
+        CompletableFuture<Void> passFail = transaction.accept(c -> {
             int id = 1;
             c.prepare("insert into users values (?, ?, ?)")
                     .bindAll(List.of(id, "name" + id, "gusr"))
@@ -194,7 +193,7 @@ public class JDBCTest extends Assert {
 
     public void invalidTransactionReturnType() {
         try (Transaction tx = jdbc.transaction()) {
-            tx.execute(c -> {
+            tx.apply(c -> {
                 return c.select("select name from users limit 1")
                         .map(row -> row.getString("name"))
                         .collect(Collectors.toList());
@@ -202,13 +201,13 @@ public class JDBCTest extends Assert {
                 assertNull(name);
                 assertNotNull(error);
             });
-            tx.execute(c -> c)
+            tx.apply(c -> c)
                     .whenComplete((connect, error) -> {
                         assertNull(connect);
                         assertNotNull(error);
                         assertTrue(error instanceof IllegalArgumentException);
                     });
-            tx.execute(c -> {
+            tx.apply(c -> {
                 return c.select("select name from users limit 1")
                         .map(row -> row.getString("name"))
                         .collect(Collectors.toList());

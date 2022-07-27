@@ -8,8 +8,8 @@ import java.util.function.Function;
 
 /**
  * A database transaction that uses a lazily allocated connection. Actions are buffered with
- * calls to {@link #execute(Consumer) exectue methods} and when {@link #commit()} is called a connection is allocated
- * and the actions are executed using it. The actions are executed in the order they were buffered using
+ * calls to {@link #accept(Consumer)} and {@link #apply(Function)}. When {@link #commit()} is called a connection is
+ * allocated and the actions are executed using it. The actions are executed in the order they were buffered using
  * {@link JDBC#inTransaction(Consumer)}, so all commit/rollback guarantees of that method
  * hold true when this transaction commits.
  * <p><br/>
@@ -41,23 +41,23 @@ public final class Transaction implements AutoCloseable {
     }
 
     /**
-     * Buffer an action to take on the transaction connection.
+     * Buffer a consumer action to take on the transaction connection.
      *
      * @param action the action to buffer
      * @return the {@link CompletableFuture} that will relay the result of executing the action
      */
-    public CompletableFuture<Void> execute(Consumer<JDBCConnection> action) {
-        return execute(new JDBCUtils.ConsumerFunction<>(action));
+    public CompletableFuture<Void> accept(Consumer<JDBCConnection> action) {
+        return apply(new JDBCUtils.ConsumerFunction<>(action));
     }
 
     /**
-     * Buffer an action to take on the transaction connection.
+     * Buffer a function to apply to the transaction connection.
      *
      * @param function the action to buffer
      * @param <R>      the result type from the mapping function
      * @return the {@link CompletableFuture} that will relay the result of executing the function
      */
-    public <R> CompletableFuture<R> execute(Function<? super JDBCConnection, ? extends R> function) {
+    public <R> CompletableFuture<R> apply(Function<? super JDBCConnection, ? extends R> function) {
         checkUsability();
         CompletableFuture<R> future = new CompletableFuture<>();
         synchronized (actions) {

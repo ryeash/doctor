@@ -10,6 +10,8 @@ import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
 import vest.doctor.processing.NewInstanceCustomizer;
 import vest.doctor.processing.ProviderDefinition;
+import vest.doctor.runtime.CronTaskWrapper;
+import vest.doctor.runtime.ScheduledTaskWrapper;
 import vest.doctor.scheduled.Cron;
 import vest.doctor.scheduled.Interval;
 import vest.doctor.scheduled.Scheduled;
@@ -127,7 +129,7 @@ public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
                 .bind("InjectionException", InjectionException.class.getCanonicalName())
                 .bind("method", ProcessorUtils.debugString(scheduledMethod))
 
-                .addImportClass("vest.doctor.runtime.ScheduledTaskWrapper")
+                .addImportClass(ScheduledTaskWrapper.class)
                 .line("ScheduledTaskWrapper.run({{providerRegistry}}, {{instance}}, {{executionLimit}}L, new {{Interval}}({{providerRegistry}}.resolvePlaceholders(", ProcessorUtils.escapeAndQuoteStringForCode(scheduled.interval()), ")), ses, {{fixedRate}}, (provRegistry, val) -> {")
                 .line("try {")
                 .line(context.executableCall(providerDefinition, scheduledMethod, "val", "provRegistry") + ";")
@@ -147,7 +149,7 @@ public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
                 .bind("InjectionException", InjectionException.class.getCanonicalName())
                 .bind("method", ProcessorUtils.debugString(scheduledMethod))
 
-                .addImportClass("vest.doctor.runtime.CronTaskWrapper")
+                .addImportClass(CronTaskWrapper.class)
                 .line("CronTaskWrapper.run({{providerRegistry}}, {{instance}}, {{cron}}, {{executionLimit}}L, ses, (provRegistry, val) -> {")
                 .line("try {")
                 .line(context.executableCall(providerDefinition, scheduledMethod, instanceRef, providerRegistryRef) + ";")
