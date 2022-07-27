@@ -25,6 +25,8 @@ import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
 import vest.doctor.processing.ProviderCustomizationPoint;
 import vest.doctor.processing.ProviderDefinition;
+import vest.doctor.runtime.AnnotationDataImpl;
+import vest.doctor.runtime.AnnotationMetadataImpl;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -92,8 +94,8 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
                 .addImportClass(List.class)
                 .addImportClass(AnnotationData.class)
                 .addImportClass(AnnotationMetadata.class)
-                .addImportClass("vest.doctor.runtime.AnnotationDataImpl")
-                .addImportClass("vest.doctor.runtime.AnnotationMetadataImpl")
+                .addImportClass(AnnotationDataImpl.class)
+                .addImportClass(AnnotationMetadataImpl.class)
                 .addImportClass(Arrays.class)
                 .addImportClass(Collections.class)
                 .addImportClass(Map.class)

@@ -5,9 +5,9 @@ import vest.doctor.http.server.Handler;
 import vest.doctor.http.server.RequestContext;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
+import vest.doctor.http.server.rest.Endpoint;
+import vest.doctor.http.server.rest.HttpMethod.GET;
 import vest.doctor.reactive.Rx;
-import vest.doctor.restful.http.Endpoint;
-import vest.doctor.restful.http.HttpMethod.GET;
 
 import java.util.concurrent.Flow;
 

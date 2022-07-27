@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Base test for testing applications based on {@link Doctor}. Automatically configures
+ * Base test for testing {@link Doctor} applications . Automatically configures
  * a doctor instance using the {@link TestConfiguration} annotation. The annotation is required
  * and the test will fail to start with an {@link IllegalStateException} if missing.
  */
@@ -48,7 +48,7 @@ public abstract class AbstractDoctorTest extends Assert {
     public final void setupDoctor() {
         TestConfiguration testConfiguration = getClass().getAnnotation(TestConfiguration.class);
         if (testConfiguration == null) {
-            throw new IllegalStateException("test classes must have a TestConfiguration annotation");
+            throw new IllegalStateException("test classes must have a @TestConfiguration annotation");
         }
         this.doctor = DoctorInstanceManager.singleton().getOrCreate(testConfiguration);
         try {

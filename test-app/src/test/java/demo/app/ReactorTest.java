@@ -1,8 +1,6 @@
 package demo.app;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
@@ -19,7 +17,6 @@ import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.hamcrest.MatcherAssert;
 import org.testng.annotations.Test;
-import vest.doctor.restful.http.jackson.JacksonInterchange;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -104,28 +101,28 @@ public class ReactorTest extends AbstractTestAppTest {
         }
     }
 
-    public void json() throws JsonProcessingException {
-        Person p = new Person();
-        p.setName("Herman Hermits");
-        p.setAddress("Hermitage");
-        req().body(JacksonInterchange.defaultConfig().writeValueAsBytes(p))
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .post("/root/json")
-                .then()
-                .statusCode(200)
-                .body("name", is(p.getName()))
-                .body("address", is(p.getAddress()));
-
-        req().body(JacksonInterchange.defaultConfig().writeValueAsBytes(p))
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .post("/root/jsonpub")
-                .then()
-                .statusCode(200)
-                .body("name", is(p.getName()))
-                .body("address", is(p.getAddress()));
-    }
+//    public void json() throws JsonProcessingException {
+//        Person p = new Person();
+//        p.setName("Herman Hermits");
+//        p.setAddress("Hermitage");
+//        req().body(JacksonInterchange.defaultConfig().writeValueAsBytes(p))
+//                .contentType(ContentType.JSON)
+//                .accept(ContentType.JSON)
+//                .post("/root/json")
+//                .then()
+//                .statusCode(200)
+//                .body("name", is(p.getName()))
+//                .body("address", is(p.getAddress()));
+//
+//        req().body(JacksonInterchange.defaultConfig().writeValueAsBytes(p))
+//                .contentType(ContentType.JSON)
+//                .accept(ContentType.JSON)
+//                .post("/root/jsonpub")
+//                .then()
+//                .statusCode(200)
+//                .body("name", is(p.getName()))
+//                .body("address", is(p.getAddress()));
+//    }
 
     public void echo() {
         byte[] sent = randomBytes();

@@ -19,17 +19,12 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <artifactId>doctor-runtime</artifactId>
+            <artifactId>doctor-core</artifactId>
             <groupId>${project.groupId}</groupId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <artifactId>doctor-reactor-http</artifactId>
-            <groupId>${project.groupId}</groupId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <artifactId>doctor-jpa</artifactId>
+            <artifactId>doctor-http-server</artifactId>
             <groupId>${project.groupId}</groupId>
             <version>${project.version}</version>
         </dependency>

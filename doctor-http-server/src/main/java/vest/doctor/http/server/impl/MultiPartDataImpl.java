@@ -70,7 +70,7 @@ class MultiPartDataImpl implements MultiPartData {
                     }
                     case FileUpload -> {
                         FileUpload fileUpload = (FileUpload) next;
-                        emitter.accept(new PartImpl(type, name, fileUpload.content().retainedDuplicate(), false));
+                        emitter.accept(new PartImpl(type, name, fileUpload.content().retain(), false));
                     }
                 }
             }

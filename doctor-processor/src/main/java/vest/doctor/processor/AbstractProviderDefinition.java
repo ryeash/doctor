@@ -18,6 +18,8 @@ import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
 import vest.doctor.processing.ProviderDefinition;
 import vest.doctor.processing.ProviderDependency;
+import vest.doctor.runtime.AnnotationDataImpl;
+import vest.doctor.runtime.AnnotationMetadataImpl;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -189,8 +191,8 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                     .addImportClass(List.class)
                     .addImportClass(AnnotationData.class)
                     .addImportClass(AnnotationMetadata.class)
-                    .addImportClass("vest.doctor.runtime.AnnotationDataImpl")
-                    .addImportClass("vest.doctor.runtime.AnnotationMetadataImpl");
+                    .addImportClass(AnnotationDataImpl.class)
+                    .addImportClass(AnnotationMetadataImpl.class);
             classBuilder.addField("private static final AnnotationMetadata annotationMetadata = ", ProcessorUtils.writeNewAnnotationMetadata(context, annotationSource));
             classBuilder.addMethod("@Override public AnnotationMetadata annotationMetadata()",
                     mb -> mb.line("return annotationMetadata;"));

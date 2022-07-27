@@ -1,10 +1,10 @@
 # doctor
 
-Compile time dependency injection processor for JDK 17.
+Compile time dependency injection processor for JDK 18.
 
 ## Getting Started
 
-Include the `doctor-processor` and `doctor-runtime` libraries in your build as well as any other plugins that you will
+Include the `doctor-processor` and `doctor-core` libraries in your build as well as any other plugins that you will
 use. Then create a main method that loads the doctor with the desired configuration.
 
 ```java
@@ -19,7 +19,7 @@ Pseudo-support
 for [jakarta.inject](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/package-summary.html). During
 compile, [@Scope](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/scope) annotations (and others) are
 analyzed, and the boilerplate code to generate instances for the types is written and wired into an infrastructure that
-relies on `ServiceProvider` to load/initialize the application.
+relies on `java.util.ServiceLoader` to load/initialize the application.
 
 To say it in another way, it analyzes the source code to generate implementations of
 [Provider](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/provider) and the providers are wired
@@ -31,11 +31,11 @@ There are two ways to define providers: annotated classes, and factory methods.
 
 ##### Class level
 
-The following will tell the processor to create a provider for the JdbcDao:
+Any scope annotation attached to a class declaration will tell the processor to create a provider for the class, e.g.:
 
 ```java
 
-@Singleton
+@Singleton // <-- the provider scope
 public class JdbcDao {
     // etc...
 }
@@ -43,7 +43,7 @@ public class JdbcDao {
 
 ##### [@Factory](doctor-core/src/main/java/vest/doctor/Factory.java)
 
-This method in this class does a similar thing (though having both in your project will cause a compilation error, so
+This factory method in this class does a similar thing (though having both in your project will cause a compilation error, so
 just pick one):
 
 ```java
@@ -88,7 +88,7 @@ public class BookDao {
 >   return ...
 > }
 > ```
-> The resulting provider will satisfy both BookDao and PurchaseDao dependencies. The main
+> The resulting provider will satisfy both BookDao and PurchaseDao dependencies. The primary
 > type for the resulting provider will be the first listed type (in this case BookDao), with any additional
 > types (PurchaseDao) being treated as satisfied super types. This means for the purposes of verifying
 > duplicate providers only the first bound will be considered.
@@ -105,7 +105,7 @@ These are the built-in scopes supported:
 - [@Cached](doctor-core/src/main/java/vest/doctor/Cached.java): an instance is created and shared for a configurable
   length of time
 - [@Reloadable](doctor-core/src/main/java/vest/doctor/Reloadable.java): an instance is created and cached until a 
-  [ReloadProviders](doctor-core/src/main/java/vest/doctor/event/ReloadProviders.java) event is produced, at which point
+  [ReloadProviders](doctor-core/src/main/java/vest/doctor/event/ReloadProviders.java) event is published, at which point
   the cached instance will be cleared and a new instance will be created the next time an instance is requested (lazily)
 
 ### Qualifiers
@@ -138,6 +138,7 @@ would cause a compilation error because type and qualifier define the uniqueness
 Both of these coffee makers can be injected into a target using their qualifiers:
 
 ```java
+@Cached("1 day")
 public class MorningRoutine {
   @Inject
   public void wakeup(@Named("his") CoffeeMaker his, @Named("hers") CoffeeMaker hers) {
@@ -202,7 +203,7 @@ While `@Eager` can be used on any scope, it makes the most sense for singletons.
 ### [@Primary](doctor-core/src/main/java/vest/doctor/Primary.java)
 
 A qualified provider definition can be marked with @Primary to register the provider with both it's marked qualifier and
-the `null` qualifier; effectively making the provider the default provider for the type.
+the `null` qualifier; making the provider available with and without its qualifier.
 
 ```java
 @Singleton
@@ -271,7 +272,7 @@ will _not_ prevent the provided object from being garbage collected.
 
 Messages can be published and consumed via the EventBus.
 
-Basics of event produce and consume:
+Basics of event publish and consume:
 
 ```java
 // This class implements EventConsumer and will receive String events.
@@ -316,8 +317,8 @@ public class AsyncDemo {
 
 ### Properties and Configuration
 
-Configuration is orchestrated via the
-[ConfigurationFacade](doctor-core/src/main/java/vest/doctor/ConfigurationFacade.java) class.
+Configuration properties are retrieved via the
+[ConfigurationFacade](doctor-core/src/main/java/vest/doctor/ConfigurationFacade.java).
 
 #### [@Property]((doctor-core/src/main/java/vest/doctor/Property.java))
 
@@ -346,8 +347,9 @@ public class PropertiesDemo {
 }
 ```
 
-Additionally, using [@Properties](doctor-core/src/main/java/vest/doctor/Properties.java), a properties class can be auto
-generated to provide a concrete class encapsulating the properties for an application.
+Additionally, using [@Properties](doctor-core/src/main/java/vest/doctor/Properties.java), a properties interface 
+can be defined and then auto generated at compile time to provide a concrete class encapsulating the properties 
+for an application.
 
 ```java
 
@@ -374,15 +376,15 @@ Properties are defined as strings and require conversion to specific types when 
 conversions are supported:
 
 * primitives and their associated java.lang wrappers
-* any type that has a public constructor with a single string argument and does not throw an exception (like BigInteger)
-* and type that has a public static method that takes a single string argument and does not throw an exception (like
+* any type that has a public constructor with a single string argument and does not throw an exception (e.g. BigInteger)
+* any type that has a public static method that takes a single string argument and does not throw an exception (like
   URI::create)
 
 If these built in conversions do not satisfy your requirements, the string conversion system can be extended by creating
-implementations
-of [StringConversionGenerator](doctor-core/src/main/java/vest/doctor/processing/StringConversionGenerator.java)
-and wiring them in
-via [ProcessorConfiguration](doctor-core/src/main/java/vest/doctor/processing/ProcessorConfiguration.java).
+implementations of
+[StringConversionGenerator](doctor-core/src/main/java/vest/doctor/processing/StringConversionGenerator.java)
+and wiring them in via
+[ProcessorConfiguration](doctor-core/src/main/java/vest/doctor/processing/ProcessorConfiguration.java).
 
 # Aspect Oriented Programming (AOP)
 

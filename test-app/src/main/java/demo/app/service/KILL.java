@@ -1,6 +1,6 @@
 package demo.app.service;
 
-import vest.doctor.restful.http.HttpMethod;
+import vest.doctor.http.server.rest.HttpMethod;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
