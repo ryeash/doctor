@@ -2,8 +2,8 @@ package vest.doctor.test;
 
 import vest.doctor.InjectionException;
 import vest.doctor.conf.ConfigurationFacade;
+import vest.doctor.conf.StructuredConfigurationSource;
 import vest.doctor.runtime.Doctor;
-import vest.doctor.runtime.StructuredConfigurationSource;
 
 import java.lang.reflect.Constructor;
 import java.util.Map;

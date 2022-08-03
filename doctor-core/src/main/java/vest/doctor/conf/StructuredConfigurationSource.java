@@ -1,6 +1,6 @@
-package vest.doctor.runtime;
+package vest.doctor.conf;
 
-import vest.doctor.conf.ConfigurationSource;
+import vest.doctor.runtime.FileLocation;
 
 import java.util.Collection;
 import java.util.List;

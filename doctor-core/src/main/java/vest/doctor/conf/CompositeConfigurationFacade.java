@@ -1,7 +1,6 @@
-package vest.doctor.runtime;
+package vest.doctor.conf;
 
-import vest.doctor.conf.ConfigurationFacade;
-import vest.doctor.conf.ConfigurationSource;
+import vest.doctor.runtime.FileLocation;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -10,6 +9,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -91,16 +91,7 @@ public class CompositeConfigurationFacade implements ConfigurationFacade {
 
     @Override
     public <T> List<T> getList(String propertyName, List<T> defaultValue, Function<String, T> converter) {
-        for (ConfigurationSource source : sources) {
-            List<String> list = source.getList(propertyName);
-            if (list != null) {
-                return list.stream()
-                        .map(this::resolvePlaceholders)
-                        .map(converter)
-                        .toList();
-            }
-        }
-        return defaultValue;
+        return getCol(propertyName, defaultValue, converter, ArrayList::new);
     }
 
     @Override
@@ -115,13 +106,17 @@ public class CompositeConfigurationFacade implements ConfigurationFacade {
 
     @Override
     public <T> Set<T> getSet(String propertyName, Set<T> defaultValue, Function<String, T> converter) {
+        return getCol(propertyName, defaultValue, converter, LinkedHashSet::new);
+    }
+
+    private <C extends Collection<T>, T> C getCol(String propertyName, C defaultValue, Function<String, T> converter, Supplier<C> supplier) {
         for (ConfigurationSource source : sources) {
             List<String> list = source.getList(propertyName);
             if (list != null) {
                 return list.stream()
                         .map(this::resolvePlaceholders)
                         .map(converter)
-                        .collect(Collectors.toCollection(LinkedHashSet::new));
+                        .collect(Collectors.toCollection(supplier));
             }
         }
         return defaultValue;

@@ -1,4 +1,6 @@
-package vest.doctor.runtime;
+package vest.doctor.conf;
+
+import vest.doctor.runtime.FileLocation;
 
 import java.io.IOException;
 import java.io.InputStreamReader;

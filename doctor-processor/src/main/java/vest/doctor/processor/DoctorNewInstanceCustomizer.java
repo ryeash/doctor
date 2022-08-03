@@ -10,11 +10,11 @@ import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
 import vest.doctor.processing.NewInstanceCustomizer;
 import vest.doctor.processing.ProviderDefinition;
-import vest.doctor.runtime.CronTaskWrapper;
-import vest.doctor.runtime.ScheduledTaskWrapper;
 import vest.doctor.scheduled.Cron;
+import vest.doctor.scheduled.CronTaskWrapper;
 import vest.doctor.scheduled.Interval;
 import vest.doctor.scheduled.Scheduled;
+import vest.doctor.scheduled.ScheduledTaskWrapper;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;

@@ -1,9 +1,8 @@
-package vest.doctor.runtime;
+package vest.doctor.scheduled;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vest.doctor.ProviderRegistry;
-import vest.doctor.scheduled.Cron;
 
 import java.lang.ref.WeakReference;
 import java.util.concurrent.ScheduledExecutorService;

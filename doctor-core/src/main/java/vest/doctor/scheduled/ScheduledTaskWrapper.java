@@ -1,7 +1,6 @@
-package vest.doctor.runtime;
+package vest.doctor.scheduled;
 
 import vest.doctor.ProviderRegistry;
-import vest.doctor.scheduled.Interval;
 
 import java.lang.ref.WeakReference;
 import java.util.concurrent.ScheduledExecutorService;

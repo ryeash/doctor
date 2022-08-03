@@ -1,6 +1,7 @@
 package vest.doctor.test;
 
 import vest.doctor.conf.ConfigurationFacade;
+import vest.doctor.conf.StructuredConfigurationSource;
 import vest.doctor.runtime.Doctor;
 
 import java.lang.annotation.Documented;
@@ -40,7 +41,7 @@ public @interface TestConfiguration {
     /**
      * Adds additional property files to the configuration facade
      * (built from {@link #configurationBuilder()}). The property files will be loaded
-     * as {@link vest.doctor.runtime.StructuredConfigurationSource StructuredConfigurationSources}.
+     * as {@link StructuredConfigurationSource StructuredConfigurationSources}.
      */
     String[] propertyFiles() default {};
 }

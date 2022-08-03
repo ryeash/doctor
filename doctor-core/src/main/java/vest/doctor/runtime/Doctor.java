@@ -8,7 +8,11 @@ import vest.doctor.ApplicationLoader;
 import vest.doctor.DoctorProvider;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.conf.CompositeConfigurationFacade;
 import vest.doctor.conf.ConfigurationFacade;
+import vest.doctor.conf.EnvironmentVariablesConfigurationSource;
+import vest.doctor.conf.StructuredConfigurationSource;
+import vest.doctor.conf.SystemPropertiesConfigurationSource;
 import vest.doctor.event.ApplicationShutdown;
 import vest.doctor.event.ApplicationStarted;
 import vest.doctor.event.EventBus;
@@ -120,15 +124,14 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         String modules = a.option("modules", 'm');
         String properties = a.option("properties", 'p', "env,system");
 
-        ConfigurationFacade facade = RuntimeUtils.split(properties.trim(), ',')
-                .stream()
-                .map(propertyLocation ->
-                        switch (propertyLocation) {
-                            case "env" -> new EnvironmentVariablesConfigurationSource();
-                            case "system" -> new SystemPropertiesConfigurationSource();
-                            default -> new StructuredConfigurationSource(new FileLocation(propertyLocation));
-                        })
-                .reduce(new CompositeConfigurationFacade(), ConfigurationFacade::addSource, (l, r) -> r);
+        ConfigurationFacade facade = new CompositeConfigurationFacade();
+        for (String propLocation : RuntimeUtils.split(properties.trim(), ',')) {
+            facade.addSource(switch (propLocation) {
+                case "env" -> new EnvironmentVariablesConfigurationSource();
+                case "system" -> new SystemPropertiesConfigurationSource();
+                default -> new StructuredConfigurationSource(new FileLocation(propLocation));
+            });
+        }
         new Doctor(facade, RuntimeUtils.split(modules, ','), new ArgsLoader(a));
     }
 
