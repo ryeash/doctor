@@ -15,8 +15,11 @@ public class FileLocationTest extends Assert {
                         "file:./src/main/resources/META-INF/persistence.xml",
                         "./src/main/resources/META-INF/persistence.xml")
                 .map(FileLocation::new)
+                .peek(fl -> assertTrue(fl.valid()))
                 .map(FileLocation::readToString)
                 .forEach(string -> assertTrue(string.contains("<persistence-unit name=\"default\">")));
+
+        assertFalse(new FileLocation("./not-a-real-file.txt").valid());
     }
 
 }
