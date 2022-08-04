@@ -5,6 +5,8 @@ module doctor.core {
     requires java.sql;
     requires org.slf4j;
 
+    uses vest.doctor.ApplicationLoader;
+
     exports vest.doctor;
     exports vest.doctor.aop;
     exports vest.doctor.codegen;

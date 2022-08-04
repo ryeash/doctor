@@ -13,7 +13,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
- * A wrapper around the {@link ResultSet} produced by executing a {@link java.sql.Statement}.
+ * A wrapper around the {@link ResultSet} produced by executing a {@link java.sql.Statement} representing
+ * a single row of data.
  */
 public final class Row {
 

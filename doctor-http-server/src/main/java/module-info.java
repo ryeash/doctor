@@ -3,6 +3,8 @@ module doctor.http.server {
     requires java.compiler;
     requires jakarta.inject;
 
+    uses vest.doctor.http.server.rest.RouteOrchestration;
+
     requires io.netty.buffer;
     requires io.netty.codec.http;
     requires io.netty.codec;
