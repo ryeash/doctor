@@ -116,7 +116,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
      *     <li>-m, --modules : a comma delimited list of modules to enable</li>
      *     <li>-p, --properties : a comma delimited list of properties files to load (in precedence order);
      *     the locations 'env' and 'system' can be used to add {@link EnvironmentVariablesConfigurationSource}
-     *     and {@link SystemPropertiesConfigurationSource} sources respectively, the default is "env,system"</li>
+     *     and {@link SystemPropertiesConfigurationSource} sources respectively; the default is "env,system"</li>
      * </ul>
      */
     public static void main(String[] args) {

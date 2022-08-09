@@ -7,9 +7,5 @@ import vest.doctor.ProviderRegistry;
  * Event published when all {@link ApplicationLoader ApplicationLoaders} have finished processing
  * and the application is done initializing.
  */
-public final class ApplicationStarted extends ProviderRegistryHolder {
-
-    public ApplicationStarted(ProviderRegistry providerRegistry) {
-        super(providerRegistry);
-    }
+public record ApplicationStarted(ProviderRegistry providerRegistry) {
 }
