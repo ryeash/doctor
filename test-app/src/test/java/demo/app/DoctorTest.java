@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -47,10 +48,9 @@ public class DoctorTest extends AbstractTestAppTest {
     }
 
     @Test
-    public void event() throws InterruptedException {
+    public void event() throws InterruptedException, ExecutionException, TimeoutException {
         TCEvent event = providerRegistry().getInstance(TCEvent.class);
-        assertTrue(event.eventListened);
-        Thread.sleep(5);
+        event.eventListened.get(100, TimeUnit.MILLISECONDS);
         assertEquals(event.messageReceived, "test");
     }
 
@@ -341,5 +341,10 @@ public class DoctorTest extends AbstractTestAppTest {
         assertEquals(second.enumValue("color"), CustomQualifier.Color.RED);
 
         assertEquals(provider.annotationMetadata().objectValue(Everything.class, "string"), "a");
+    }
+
+    @Test
+    public void activation() {
+        assertTrue(providerRegistry().getProviderOpt(TCActivation.class).isPresent());
     }
 }

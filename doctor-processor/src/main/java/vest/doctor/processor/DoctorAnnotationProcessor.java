@@ -1,13 +1,15 @@
 package vest.doctor.processor;
 
 import jakarta.inject.Inject;
+import vest.doctor.Activation;
 import vest.doctor.DoctorProvider;
-import vest.doctor.Eager;
 import vest.doctor.Primary;
 import vest.doctor.PrimaryProviderWrapper;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.codegen.AnnotationClassValueVisitor;
 import vest.doctor.codegen.ClassBuilder;
+import vest.doctor.codegen.Constants;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
 import vest.doctor.conf.ConfigurationFacade;
@@ -29,8 +31,10 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedOptions;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
@@ -297,7 +301,6 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
 
     private void writeInProvider(ProviderDefinition providerDefinition) {
         ClassBuilder appLoader = appLoaderWriter.classBuilder();
-        MethodBuilder stage3 = appLoaderWriter.stage3();
         appLoader.addImportClass(ProcessorUtils.typeWithoutParameters(providerDefinition.providedType().asType()));
 
         String creator = "new " + providerDefinition.generatedClassName() + "({{providerRegistry}})";
@@ -306,15 +309,9 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
             creator = providerCustomizationPoint.wrap(this, providerDefinition, creator, PROVIDER_REGISTRY);
         }
 
-        boolean hasModules = !providerDefinition.modules().isEmpty();
-        if (hasModules) {
-            String modules = providerDefinition.modules()
-                    .stream()
-                    .filter(Objects::nonNull)
-                    .map(m -> '"' + m + '"')
-                    .collect(Collectors.joining(", "));
-            stage3.line("if(isActive({{providerRegistry}}, List.of(", modules, "))){");
-        }
+        List<TypeElement> activationPredicates = allActivationRequirements(providerDefinition);
+        boolean hasActivationPredicates = !activationPredicates.isEmpty();
+        MethodBuilder stage = hasActivationPredicates ? appLoaderWriter.stage3() : appLoaderWriter.stage2();
 
         if (providerDefinition.scope() != null) {
             for (ScopeWriter scopeWriter : customizations(ScopeWriter.class)) {
@@ -325,21 +322,21 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
                 }
             }
         }
-        stage3.line(DoctorProvider.class, "<", providerDefinition.providedType().getSimpleName(), "> ", providerDefinition.uniqueInstanceName(), " = ", creator, ";");
-        stage3.line("{{providerRegistry}}.register(", providerDefinition.uniqueInstanceName(), ");");
+
+        stage.line(DoctorProvider.class, "<", providerDefinition.providedType().getSimpleName(), "> ", providerDefinition.uniqueInstanceName(), " = ", creator, ";");
+        if (hasActivationPredicates) {
+            String createPredicates = activationPredicates.stream().map(c -> "new " + c + "()").collect(Collectors.joining(","));
+            stage.line("if(checkActive({{providerRegistry}}, ", providerDefinition.uniqueInstanceName(), ", ", createPredicates, ")){");
+        }
+        stage.line("{{providerRegistry}}.register(", providerDefinition.uniqueInstanceName(), ");");
         if (providerDefinition.markedWith(Primary.class)) {
             if (providerDefinition.qualifier() == null) {
                 throw new IllegalArgumentException("unqualified provider can not be marked @Primary: " + providerDefinition);
             }
-            stage3.line("{{providerRegistry}}.register(new ", PrimaryProviderWrapper.class, "(", providerDefinition.uniqueInstanceName(), "));");
+            stage.line("{{providerRegistry}}.register(new ", PrimaryProviderWrapper.class, "(", providerDefinition.uniqueInstanceName(), "));");
         }
-
-        if (providerDefinition.markedWith(Eager.class)) {
-            stage3.line("eagerList.add(", providerDefinition.uniqueInstanceName(), ");");
-        }
-
-        if (hasModules) {
-            stage3.line("}");
+        if (hasActivationPredicates) {
+            stage.line("}");
         }
     }
 
@@ -383,5 +380,32 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
             fullTypeName = "";
         }
         return ignorePackages.stream().anyMatch(fullTypeName::startsWith);
+    }
+
+    private List<TypeElement> allActivationRequirements(ProviderDefinition providerDefinition) {
+        return Stream.of(providerDefinition.annotationSource().getEnclosingElement(), providerDefinition.annotationSource())
+                .filter(Objects::nonNull)
+                .flatMap(s -> s.getAnnotationMirrors().stream())
+                .flatMap(am -> {
+                    List<? extends AnnotationMirror> annotationMirrors = am.getAnnotationType().asElement().getAnnotationMirrors();
+                    return Stream.concat(Stream.of(am), annotationMirrors.stream());
+                })
+                .filter(am -> am.getAnnotationType().toString().equals(Activation.class.getCanonicalName()))
+                .flatMap(am -> am.getElementValues().entrySet().stream())
+                .filter(e -> e.getKey().getSimpleName().toString().equals(Constants.ANNOTATION_VALUE))
+                .map(Map.Entry::getValue)
+                .map(AnnotationClassValueVisitor::getValues)
+                .flatMap(Collection::stream)
+                .map(className -> {
+                    TypeElement typeElement = processingEnv.getElementUtils().getTypeElement(className);
+                    boolean validConstructor = ElementFilter.constructorsIn(typeElement.getEnclosedElements())
+                            .stream()
+                            .anyMatch(con -> con.getModifiers().contains(Modifier.PUBLIC) && con.getParameters().isEmpty());
+                    if (!validConstructor) {
+                        throw new CodeProcessingException("no valid constructor for activation predicate for " + providerDefinition, typeElement);
+                    }
+                    return typeElement;
+                })
+                .toList();
     }
 }

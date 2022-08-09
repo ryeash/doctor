@@ -25,7 +25,6 @@ public class DefaultProcessorConfiguration implements ProcessorConfiguration {
                 new DoctorProviderDefinitionProcessor(),
                 new DoctorNewInstanceCustomizer(),
 
-                new EventConsumersWriter(),
                 new PropertyParameterCustomizer(),
                 new AOPProviderCustomizer(),
                 new ProviderParameterLookupCustomizer(),

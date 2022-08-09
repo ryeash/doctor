@@ -41,7 +41,8 @@ public @interface TestConfiguration {
     /**
      * Adds additional property files to the configuration facade
      * (built from {@link #configurationBuilder()}). The property files will be loaded
-     * as {@link StructuredConfigurationSource StructuredConfigurationSources}.
+     * as {@link StructuredConfigurationSource StructuredConfigurationSources}, and their
+     * precedence will be the order they are listed (i.e. first file listed is checked first)
      */
     String[] propertyFiles() default {};
 }

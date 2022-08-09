@@ -3,11 +3,13 @@ package vest.doctor.processor;
 import jakarta.inject.Provider;
 import vest.doctor.ApplicationLoader;
 import vest.doctor.DoctorProvider;
+import vest.doctor.Eager;
 import vest.doctor.PrimaryProviderWrapper;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.processing.AnnotationProcessorContext;
+import vest.doctor.runtime.AbstractApplicationLoader;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -27,7 +29,7 @@ public class AppLoaderWriter {
         String className = context.generatedPackage() + ".AppLoaderImpl$" + context.nextId();
         this.appLoader = new ClassBuilder()
                 .setClassName(className)
-                .addImplementsInterface(ApplicationLoader.class)
+                .setExtendsClass(AbstractApplicationLoader.class)
                 .addImportClass(List.class)
                 .addImportClass(LinkedList.class)
                 .addImportClass(Objects.class)
@@ -35,12 +37,15 @@ public class AppLoaderWriter {
                 .addImportClass(Provider.class)
                 .addImportClass(DoctorProvider.class)
                 .addImportClass(PrimaryProviderWrapper.class)
+                .addImportClass(Eager.class)
                 .addImportClass("org.slf4j.Logger")
                 .addImportClass("org.slf4j.LoggerFactory")
                 .addClassAnnotation("@SuppressWarnings(\"unchecked\")")
-                .addField("private final List<", DoctorProvider.class, "<?>> eagerList = new LinkedList<>()")
                 .addField("private final static Logger log = LoggerFactory.getLogger(", className, ".class)");
-        stage5().line("eagerList.stream().filter(Objects::nonNull).forEach(", Provider.class, "::get);");
+        stage5().line("""
+                {{providerRegistry}}.allProviders()
+                .filter(p -> p.annotationMetadata().findOne(Eager.class).isPresent())
+                .forEach(Provider::get);""");
         changed = false;
     }
 

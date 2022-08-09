@@ -2,10 +2,11 @@ package vest.doctor.processor;
 
 import jakarta.inject.Inject;
 import vest.doctor.Async;
-import vest.doctor.DestroyMethod;
 import vest.doctor.InjectionException;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
+import vest.doctor.event.EventBus;
+import vest.doctor.event.EventConsumer;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
 import vest.doctor.processing.NewInstanceCustomizer;
@@ -17,7 +18,6 @@ import vest.doctor.scheduled.Scheduled;
 import vest.doctor.scheduled.ScheduledTaskWrapper;
 
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
@@ -46,16 +46,31 @@ public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
     @Override
     public void customize(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef) {
         TypeElement typeElement = providerDefinition.providedType();
+        postCreateEventBusRegister(context, providerDefinition, method, instanceRef, providerRegistryRef);
         for (ExecutableElement executableElement : ProcessorUtils.allMethods(context, typeElement)) {
-            postCreateCalls(context, providerDefinition, method, instanceRef, providerRegistryRef, executableElement);
+            postCreateInjectCalls(context, providerDefinition, method, instanceRef, providerRegistryRef, executableElement);
             postCreateSchedule(context, providerDefinition, method, instanceRef, providerRegistryRef, executableElement);
-//            postCreateShutdown(context, providerDefinition, method, instanceRef);
         }
         executorNameToInstance.clear();
         executorInitialized = false;
     }
 
-    private void postCreateCalls(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef, ExecutableElement executableElement) {
+    private void postCreateEventBusRegister(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder methodBuilder, String instanceRef, String providerRegistryRef) {
+        if (ProcessorUtils.isCompatibleWith(context, providerDefinition.providedType(), EventConsumer.class)) {
+            String type = ProcessorUtils.allMethods(context, providerDefinition.providedType())
+                    .stream()
+                    .filter(method -> method.getParameters().size() == 1 && method.getSimpleName().toString().equals("accept"))
+                    .findFirst()
+                    .map(method -> method.getParameters().get(0))
+                    .map(param -> param.asType().toString() + ".class")
+                    .orElseThrow(() -> new CodeProcessingException("couldn't determine event type for consumer: " + providerDefinition.providedType()));
+            methodBuilder.addImportClass(EventBus.class);
+            methodBuilder.line("EventBus bus = " + providerRegistryRef + ".getInstance(" + EventBus.class.getCanonicalName() + ".class, null);");
+            methodBuilder.line("bus.addConsumer(", type, ",", instanceRef, ");");
+        }
+    }
+
+    private void postCreateInjectCalls(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef, ExecutableElement executableElement) {
         if (postInstantiateCalls.stream().map(executableElement::getAnnotation).anyMatch(Objects::nonNull)) {
             String call = context.executableCall(providerDefinition, executableElement, instanceRef, providerRegistryRef);
             if (executableElement.getAnnotation(Async.class) != null) {
@@ -94,28 +109,6 @@ public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
             } else {
                 processCron(context, providerDefinition, method, instanceRef, providerRegistryRef, executableElement);
             }
-        }
-    }
-
-    private void postCreateShutdown(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef) {
-        if (providerDefinition.annotationSource().getAnnotation(DestroyMethod.class) != null) {
-            DestroyMethod destroy = providerDefinition.annotationSource().getAnnotation(DestroyMethod.class);
-            String destroyMethod = destroy.value();
-            for (TypeElement type : providerDefinition.getAllProvidedTypes()) {
-                for (ExecutableElement m : ProcessorUtils.allMethods(context, type)) {
-                    if (m.getModifiers().contains(Modifier.PUBLIC) && m.getSimpleName().toString().equals(destroyMethod) && m.getParameters().size() == 0) {
-                        String closer = "((" + type.getSimpleName() + ")" + instanceRef + ")::" + destroy.value();
-                        method.line("{{providerRegistry}}.shutdownContainer().register(", closer, ");");
-                        return;
-                    }
-                }
-            }
-            throw new CodeProcessingException("invalid destroy method `" + providerDefinition.providedType() + "." + destroy.value() + "` is not valid; destroy methods must exist, be public, and have zero arguments");
-        } else {
-            method.addImportClass(AutoCloseable.class);
-            method.line("if(", instanceRef, " instanceof ", AutoCloseable.class, "){");
-            method.line("{{providerRegistry}}.shutdownContainer().register((", AutoCloseable.class, ") ", instanceRef, ");");
-            method.line("}");
         }
     }
 
