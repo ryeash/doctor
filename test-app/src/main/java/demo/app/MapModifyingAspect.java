@@ -15,7 +15,7 @@ public class MapModifyingAspect implements Aspect {
     @SuppressWarnings("unchecked")
     public Object execute(MethodInvocation methodInvocation) {
         if (methodInvocation.arity() > 0) {
-            ArgValue<Object> arg0 = methodInvocation.getArgumentValue(0);
+            ArgValue arg0 = methodInvocation.getArgumentValue(0);
             if (arg0.type().getRawType() == Map.class) {
                 Map<String, Object> map = arg0.get();
                 Map<String, Object> replaced = new HashMap<>(map);

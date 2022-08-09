@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * A source of property values. Can be e.g. a file or an in-memory map.
+ * A source of property values. Can be e.g. a properties file or an in-memory map.
  */
 public interface ConfigurationSource {
 

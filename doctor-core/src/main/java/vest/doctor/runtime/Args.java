@@ -22,7 +22,7 @@ import java.util.stream.Stream;
  * F, g, and debug would all be flags (i.e. {@link #flag(String)} would return true)
  * e is an option (i.e. {@link #option(String)} would return "dev" for "e")
  */
-public class Args implements Iterable<String> {
+public final class Args implements Iterable<String> {
 
     public static final String FLAG = "-";
     public static final String VERBOSE_FLAG = "--";

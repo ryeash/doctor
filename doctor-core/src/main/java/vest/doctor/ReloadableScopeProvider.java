@@ -22,13 +22,17 @@ public final class ReloadableScopeProvider<T> extends DoctorProviderWrapper<T> {
 
     @Override
     public T get() {
-        return value.updateAndGet(v -> v == null ? delegate.get() : v);
+        return value.updateAndGet(this::createOrGet);
     }
 
     @Override
     public void close() throws Exception {
         clearValue(null);
         super.close();
+    }
+
+    private T createOrGet(T existing) {
+        return existing == null ? delegate.get() : existing;
     }
 
     private void clearValue(ReloadProviders reloadProviders) {

@@ -11,10 +11,10 @@ import java.util.Objects;
 public final class MethodInvocationImpl implements MethodInvocation {
 
     private final MethodMetadata methodMetadata;
-    private final List<ArgValue<?>> argumentList;
+    private final List<ArgValue> argumentList;
     private final MethodInvoker<?> methodInvoker;
 
-    public MethodInvocationImpl(MethodMetadata methodMetadata, List<ArgValue<?>> argumentList, MethodInvoker<?> methodInvoker) {
+    public MethodInvocationImpl(MethodMetadata methodMetadata, List<ArgValue> argumentList, MethodInvoker<?> methodInvoker) {
         this.methodMetadata = methodMetadata;
         this.argumentList = Collections.unmodifiableList(argumentList);
         this.methodInvoker = methodInvoker;
@@ -46,14 +46,14 @@ public final class MethodInvocationImpl implements MethodInvocation {
     }
 
     @Override
-    public List<ArgValue<?>> getArgumentValues() {
+    public List<ArgValue> getArgumentValues() {
         return argumentList;
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> ArgValue<T> getArgumentValue(int i) {
-        return (ArgValue<T>) argumentList.get(i);
+    public ArgValue getArgumentValue(int i) {
+        return argumentList.get(i);
     }
 
     @Override

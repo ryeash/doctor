@@ -20,7 +20,7 @@ public class SystemPropertiesConfigurationSource implements ConfigurationSource 
         if (s == null) {
             return null;
         } else {
-            return RuntimeUtils.split(s, ',');
+            return RuntimeUtils.split(s, ConfigurationFacade.LIST_DELIMITER);
         }
     }
 

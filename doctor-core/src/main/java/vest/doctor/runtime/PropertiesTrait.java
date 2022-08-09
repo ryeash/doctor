@@ -8,6 +8,9 @@ import vest.doctor.event.ReloadConfiguration;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.Supplier;
 
+/**
+ * Internal use.
+ */
 public abstract class PropertiesTrait {
     protected final ProviderRegistry providerRegistry;
     protected final ConcurrentSkipListMap<String, Object> propertiesCache;

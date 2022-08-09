@@ -125,14 +125,14 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         String properties = a.option("properties", 'p', "env,system");
 
         ConfigurationFacade facade = new CompositeConfigurationFacade();
-        for (String propLocation : RuntimeUtils.split(properties.trim(), ',')) {
+        for (String propLocation : RuntimeUtils.split(properties.trim(), ConfigurationFacade.LIST_DELIMITER)) {
             facade.addSource(switch (propLocation) {
                 case "env" -> new EnvironmentVariablesConfigurationSource();
                 case "system" -> new SystemPropertiesConfigurationSource();
                 default -> new StructuredConfigurationSource(new FileLocation(propLocation));
             });
         }
-        new Doctor(facade, RuntimeUtils.split(modules, ','), new ArgsLoader(a));
+        new Doctor(facade, RuntimeUtils.split(modules, ConfigurationFacade.LIST_DELIMITER), new ArgsLoader(a));
     }
 
     private final List<String> activeModules;

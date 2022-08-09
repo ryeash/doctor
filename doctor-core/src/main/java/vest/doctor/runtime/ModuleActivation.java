@@ -8,7 +8,7 @@ import java.util.function.BiPredicate;
 
 /**
  * An activation predicate that enables a provider based on the active modules and the modules
- * marked on the provider using {@link vest.doctor.Modules}.
+ * marked on the provider from {@link vest.doctor.Modules}.
  */
 public final class ModuleActivation implements BiPredicate<ProviderRegistry, DoctorProvider<?>> {
     @Override

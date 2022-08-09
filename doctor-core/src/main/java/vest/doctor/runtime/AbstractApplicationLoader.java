@@ -7,27 +7,7 @@ import vest.doctor.ProviderRegistry;
 
 import java.util.function.BiPredicate;
 
-public class AbstractApplicationLoader implements ApplicationLoader {
-
-    @Override
-    public void stage1(ProviderRegistry providerRegistry) {
-    }
-
-    @Override
-    public void stage2(ProviderRegistry providerRegistry) {
-    }
-
-    @Override
-    public void stage3(ProviderRegistry providerRegistry) {
-    }
-
-    @Override
-    public void stage4(ProviderRegistry providerRegistry) {
-    }
-
-    @Override
-    public void stage5(ProviderRegistry providerRegistry) {
-    }
+public abstract class AbstractApplicationLoader implements ApplicationLoader {
 
     @SafeVarargs
     protected static boolean checkActive(ProviderRegistry providerRegistry, DoctorProvider<?> provider, BiPredicate<ProviderRegistry, DoctorProvider<?>>... predicates) {

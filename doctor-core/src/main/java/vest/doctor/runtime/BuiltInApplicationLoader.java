@@ -11,7 +11,7 @@ import vest.doctor.event.ReloadConfiguration;
 import java.util.HashMap;
 import java.util.Map;
 
-public class BuiltInApplicationLoader implements ApplicationLoader {
+public final class BuiltInApplicationLoader implements ApplicationLoader {
 
     public static final String DEFAULT_EXECUTOR_NAME = "default";
     public static final String DEFAULT_SCHEDULED_EXECUTOR_NAME = "scheduled";

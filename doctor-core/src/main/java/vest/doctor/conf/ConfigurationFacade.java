@@ -12,6 +12,7 @@ import java.util.function.Function;
 public interface ConfigurationFacade {
 
     char NESTING_DELIMITER = '.';
+    char LIST_DELIMITER = ',';
 
     /**
      * Add a source to this facade.

@@ -4,12 +4,12 @@ import vest.doctor.TypeInfo;
 
 import java.util.Objects;
 
-public final class ArgValueImpl<T> implements ArgValue<T> {
+public final class ArgValueImpl implements ArgValue {
     private final TypeInfo type;
     private final String name;
-    private T value;
+    private Object value;
 
-    public ArgValueImpl(TypeInfo type, String name, T value) {
+    public ArgValueImpl(TypeInfo type, String name, Object value) {
         this.type = type;
         this.name = name;
         this.value = value;
@@ -32,7 +32,7 @@ public final class ArgValueImpl<T> implements ArgValue<T> {
     }
 
     @Override
-    public void set(T value) {
+    public void set(Object value) {
         this.value = value;
     }
 
@@ -44,7 +44,7 @@ public final class ArgValueImpl<T> implements ArgValue<T> {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        ArgValueImpl<?> argValue = (ArgValueImpl<?>) o;
+        ArgValueImpl argValue = (ArgValueImpl) o;
         return Objects.equals(type, argValue.type)
                 && Objects.equals(name, argValue.name)
                 && Objects.equals(value, argValue.value);

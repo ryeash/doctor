@@ -49,12 +49,12 @@ public final class AspectCoordinator {
         }
 
         @Override
-        public List<ArgValue<?>> getArgumentValues() {
+        public List<ArgValue> getArgumentValues() {
             return delegate.getArgumentValues();
         }
 
         @Override
-        public <T> ArgValue<T> getArgumentValue(int i) {
+        public ArgValue getArgumentValue(int i) {
             return delegate.getArgumentValue(i);
         }
 

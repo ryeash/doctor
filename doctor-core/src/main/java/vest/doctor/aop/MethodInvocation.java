@@ -50,7 +50,7 @@ public sealed interface MethodInvocation permits MethodInvocationImpl, AspectCoo
     /**
      * Get the list of arguments this invocation was called with.
      */
-    List<ArgValue<?>> getArgumentValues();
+    List<ArgValue> getArgumentValues();
 
     /**
      * Get the value of an argument from a specific position.
@@ -58,7 +58,7 @@ public sealed interface MethodInvocation permits MethodInvocationImpl, AspectCoo
      * @param i the position of the argument to get
      * @return the argument
      */
-    <T> ArgValue<T> getArgumentValue(int i);
+    ArgValue getArgumentValue(int i);
 
     /**
      * Invoke the method.

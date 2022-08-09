@@ -21,7 +21,7 @@ public class EnvironmentVariablesConfigurationSource implements ConfigurationSou
         if (s == null) {
             return null;
         } else {
-            return RuntimeUtils.split(s, ',');
+            return RuntimeUtils.split(s, ConfigurationFacade.LIST_DELIMITER);
         }
     }
 
@@ -42,6 +42,5 @@ public class EnvironmentVariablesConfigurationSource implements ConfigurationSou
 
     @Override
     public void reload() {
-
     }
 }
