@@ -17,6 +17,15 @@ public final class JDBC {
     /**
      * Create a new JDBC object backed by the given {@link DataSource}
      *
+     * @param dataSource the data source to use to create new connections
+     */
+    public JDBC(DataSource dataSource) {
+        this(dataSource, List.of());
+    }
+
+    /**
+     * Create a new JDBC object backed by the given {@link DataSource}
+     *
      * @param dataSource   the data source to use to create new connections
      * @param interceptors interceptors to use with this JDBC instance
      */

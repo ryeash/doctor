@@ -23,7 +23,7 @@ final class EventBusImpl implements EventBus, EventConsumer<ErrorEvent> {
 
     @Override
     public <T> void addConsumer(Class<T> eventType, EventConsumer<? super T> consumer) {
-        addConsumer(eventType, () -> consumer);
+        addConsumer(eventType, new StaticProvider<>(consumer));
     }
 
     @Override
@@ -57,5 +57,12 @@ final class EventBusImpl implements EventBus, EventConsumer<ErrorEvent> {
     }
 
     private record ConsumerHolder(Class<?> type, Provider<? extends EventConsumer<Object>> consumer) {
+    }
+
+    private record StaticProvider<T>(T val) implements Provider<T> {
+        @Override
+        public T get() {
+            return val;
+        }
     }
 }

@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * A configuration facade implementation that delegate property requests to
+ * A configuration facade implementation that delegates property requests to
  * a list of {@link ConfigurationSource configuration sources}. The first non-null
  * property value returned by a source is used as the property value.
  */

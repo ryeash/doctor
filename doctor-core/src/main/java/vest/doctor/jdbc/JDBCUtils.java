@@ -36,7 +36,7 @@ final class JDBCUtils {
             Stream<Row> rowStream = StreamSupport.stream(Spliterators.spliteratorUnknownSize(rowIterator, ROW_STREAM_CHARACTERISTICS), false)
                     .onClose(rowIterator::close);
             // this strange nesting then unwinding of the stream serves the purpose
-            // of automatically calling Stream.close on rowStream
+            // of automatically calling Stream.close on rowStream (read the fine print of flatMap)
             return Stream.of(rowStream).flatMap(Function.identity());
         } catch (Throwable t) {
             throw new DatabaseException("error streaming result rows", t);

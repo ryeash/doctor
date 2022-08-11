@@ -22,7 +22,7 @@ public record MapConfigurationSource(Map<String, Object> map) implements Configu
     }
 
     @Override
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public List<String> getList(String propertyName) {
         Object val = getInternal(propertyName);
         if (val == null) {
@@ -35,20 +35,20 @@ public record MapConfigurationSource(Map<String, Object> map) implements Configu
     }
 
     @Override
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public ConfigurationSource getSubConfiguration(String path) {
         Object val = getInternal(path);
         if (val == null) {
             return null;
-        } else if (val instanceof Map map) {
-            return new MapConfigurationSource(map);
+        } else if (val instanceof Map subMap) {
+            return new MapConfigurationSource(subMap);
         } else {
             throw new IllegalArgumentException("property is not an object: " + path + " = " + val);
         }
     }
 
     @Override
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public List<ConfigurationSource> getSubConfigurations(String path) {
         Object val = getInternal(path);
         if (val == null) {
@@ -56,8 +56,8 @@ public record MapConfigurationSource(Map<String, Object> map) implements Configu
         } else if (val instanceof List list) {
             return list.stream()
                     .map(m -> {
-                        if (m instanceof Map map) {
-                            return new MapConfigurationSource(map);
+                        if (m instanceof Map subMap) {
+                            return new MapConfigurationSource(subMap);
                         } else {
                             throw new IllegalArgumentException("property is not a list of objects: " + path + " = " + val);
                         }
@@ -77,7 +77,7 @@ public record MapConfigurationSource(Map<String, Object> map) implements Configu
     public void reload() {
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private Object getInternal(String path) {
         if (path.indexOf('.') < 0) {
             return map.get(path);
@@ -88,8 +88,8 @@ public record MapConfigurationSource(Map<String, Object> map) implements Configu
             Object o = temp.get(segments.get(i));
             if (o == null) {
                 return null;
-            } else if (o instanceof Map map) {
-                temp = (Map<String, Object>) map;
+            } else if (o instanceof Map subMap) {
+                temp = (Map<String, Object>) subMap;
             } else {
                 throw new IllegalArgumentException("invalid configuration path: " + path);
             }
