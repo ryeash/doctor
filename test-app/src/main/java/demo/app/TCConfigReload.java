@@ -19,16 +19,6 @@ public class TCConfigReload implements ConfigurationSource {
     }
 
     @Override
-    public ConfigurationSource getSubConfiguration(String path) {
-        return null;
-    }
-
-    @Override
-    public List<ConfigurationSource> getSubConfigurations(String path) {
-        return null;
-    }
-
-    @Override
     public Collection<String> propertyNames() {
         return List.of();
     }

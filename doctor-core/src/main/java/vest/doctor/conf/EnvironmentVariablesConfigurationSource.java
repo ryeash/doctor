@@ -26,16 +26,6 @@ public class EnvironmentVariablesConfigurationSource implements ConfigurationSou
     }
 
     @Override
-    public ConfigurationSource getSubConfiguration(String path) {
-        return null;
-    }
-
-    @Override
-    public List<ConfigurationSource> getSubConfigurations(String path) {
-        return null;
-    }
-
-    @Override
     public Collection<String> propertyNames() {
         return System.getenv().keySet();
     }

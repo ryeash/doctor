@@ -6,8 +6,8 @@ override {
     this: original
 }
 
-list [42, 12, 97]
-set [one, two, two, three]
+list=42, 12, 97
+set : one, two, two, three
 
 db {
     url: "jdbc:hsqldb:mem:mymemdb"
@@ -43,21 +43,3 @@ executors.fixed {
     minThreads: 2
     maxThreads: 32
 }
-
-array [a,b,c,
-d,
-e]
-
-arrayOfObjects [
-    {
-        field: value1
-    },
-    {
-        field: value2
-        array [
-            {
-                double: 2.2
-            }
-        ]
-    }
-]

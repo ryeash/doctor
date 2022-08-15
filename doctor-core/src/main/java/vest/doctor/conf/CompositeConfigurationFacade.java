@@ -3,6 +3,7 @@ package vest.doctor.conf;
 import vest.doctor.runtime.FileLocation;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -123,24 +124,6 @@ public class CompositeConfigurationFacade implements ConfigurationFacade {
     }
 
     @Override
-    public ConfigurationFacade getSubConfiguration(String path) {
-        return sources.stream()
-                .map(s -> s.getSubConfiguration(path))
-                .filter(Objects::nonNull)
-                .collect(Collectors.collectingAndThen(Collectors.toList(), CompositeConfigurationFacade::new));
-    }
-
-    @Override
-    public List<ConfigurationFacade> getSubConfigurations(String path) {
-        return sources.stream()
-                .map(s -> s.getSubConfigurations(path))
-                .filter(Objects::nonNull)
-                .map(CompositeConfigurationFacade::new)
-                .map(ConfigurationFacade.class::cast)
-                .toList();
-    }
-
-    @Override
     public String resolvePlaceholders(String value) {
         if (value == null || value.isEmpty()) {
             return null;
@@ -183,11 +166,37 @@ public class CompositeConfigurationFacade implements ConfigurationFacade {
     }
 
     @Override
+    public Collection<String> getSubGroups(String prefix) {
+        return getSubGroups(prefix, String.valueOf(ConfigurationFacade.NESTING_DELIMITER));
+    }
+
+    @Override
+    public Collection<String> getSubGroups(String prefix, String terminal) {
+        return sources.stream()
+                .map(ConfigurationSource::propertyNames)
+                .flatMap(Collection::stream)
+                .filter(name -> name.startsWith(prefix))
+                .map(name -> {
+                    int start = name.indexOf(prefix) + prefix.length();
+                    int end = name.indexOf(terminal, start + 1);
+                    return end > 0
+                            ? name.substring(start, end)
+                            : name.substring(start);
+                })
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    @Override
+    public ConfigurationFacade prefix(String prefix) {
+        return new PrefixedConfigurationFacade(prefix, this);
+    }
+
+    @Override
     public Collection<String> propertyNames() {
         return sources.stream()
                 .map(ConfigurationSource::propertyNames)
                 .flatMap(Collection::stream)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     @Override
@@ -195,6 +204,21 @@ public class CompositeConfigurationFacade implements ConfigurationFacade {
         for (ConfigurationSource source : sources) {
             source.reload();
         }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (String propertyName : propertyNames()) {
+            sb.append(propertyName).append('=');
+            if (Arrays.stream(ConfigurationFacade.REDACT_KEYS).anyMatch(propertyName.toUpperCase()::contains)) {
+                sb.append("[REDACTED]");
+            } else {
+                sb.append(get(propertyName));
+            }
+            sb.append('\n');
+        }
+        return sb.toString();
     }
 
     private static String[] splitColon(String str) {

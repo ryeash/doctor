@@ -11,8 +11,23 @@ import java.util.function.Function;
  */
 public interface ConfigurationFacade {
 
+    /**
+     * The nesting delimiter used by various methods for parsing subgroups of configuration
+     * values; e.g. properties names are assumed to use this value to namespace properties
+     * like "http.tcp.selector.threads=1".
+     */
     char NESTING_DELIMITER = '.';
+
+    /**
+     * The delimiter used to define a list of property values.
+     */
     char LIST_DELIMITER = ',';
+
+    /**
+     * A set of strings that categorizes a property name as "sensitive" and thus it's value
+     * should not be included in a debug string.
+     */
+    String[] REDACT_KEYS = new String[]{"PASS", "KEY", "SECRET", "TOKEN", "AUTH"};
 
     /**
      * Add a source to this facade.
@@ -55,7 +70,7 @@ public interface ConfigurationFacade {
      * @param propertyName the property name
      * @param defaultValue the default value if no source has the given property
      * @param converter    the mapping function to convert the property value into the desired type
-     * @return the converted property value or the default value if it does not exists in configuration
+     * @return the converted property value or the default value if it does not exist in configuration
      */
     <T> T get(String propertyName, T defaultValue, Function<String, T> converter);
 
@@ -118,22 +133,6 @@ public interface ConfigurationFacade {
     <T> Set<T> getSet(String propertyName, Set<T> defaultValue, Function<String, T> converter);
 
     /**
-     * Get a nested configuration source, i.e. a nested configuration map.
-     *
-     * @param path the path to the configuration
-     * @return the sub config object
-     */
-    ConfigurationFacade getSubConfiguration(String path);
-
-    /**
-     * Get a list of nested configuration sources, i.e. an array of nested configuration maps.
-     *
-     * @param path the path to the configuration array
-     * @return the sub config list
-     */
-    List<ConfigurationFacade> getSubConfigurations(String path);
-
-    /**
      * Resolve placeholder values in the given string. Placeholders are designated like `${property.name}` and can be
      * used in places like annotation string values to parameterize otherwise static values.
      *
@@ -143,7 +142,46 @@ public interface ConfigurationFacade {
     String resolvePlaceholders(String value);
 
     /**
-     * Get a list of all first order property names at this level.
+     * Get a collection of unique property subgroups that exist in this configuration facade.
+     * Equivalent to calling <code>getSubGroups(prefix, String.valueOf(ConfigurationFacade.NESTING_DELIMITER))</code>.
+     *
+     * @param prefix the subgroup prefix
+     * @return a collection of subgroups
+     * @see #getSubGroups(String, String)
+     */
+    Collection<String> getSubGroups(String prefix);
+
+    /**
+     * Get a collection of unique property subgroups that exist in this configuration facade.
+     * <p>
+     * For example, with properties like:
+     * <pre>
+     * executors.fixed.threadCount=1
+     * executors.background.threadCount=3
+     * executors.io.threadCount=32
+     * </pre>
+     * Calling <code>config.getSubGroups("executors.", ".")</code> will return the collection
+     * <code>["fixed", "background", "io"]</code>.
+     *
+     * @param prefix   the subgroup prefix
+     * @param terminal the terminal value for the subgroup
+     * @return a collection of subgroups
+     */
+    Collection<String> getSubGroups(String prefix, String terminal);
+
+    /**
+     * Get a view into this configuration facade that will prefix all requests to get properties
+     * with the given prefix.
+     *
+     * @param prefix the prefix to add to property requests in the returned configuration facade
+     * @return a configuration facade that uses the given prefix for property values
+     */
+    ConfigurationFacade prefix(String prefix);
+
+    /**
+     * Get a list of all property names this configuration facade knows about.
+     *
+     * @return a collection of property names
      */
     Collection<String> propertyNames();
 

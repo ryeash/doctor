@@ -25,22 +25,6 @@ public interface ConfigurationSource {
     List<String> getList(String propertyName);
 
     /**
-     * Get a nested configuration source, i.e. a nested configuration map.
-     *
-     * @param path the path to the configuration
-     * @return the sub config object or null if this source does not have a property map under the given name
-     */
-    ConfigurationSource getSubConfiguration(String path);
-
-    /**
-     * Get a list of nested configuration sources, i.e. an array of nested configuration maps.
-     *
-     * @param path the path to the configuration array
-     * @return the sub config list or null if this source does not have a property map under the given name
-     */
-    List<ConfigurationSource> getSubConfigurations(String path);
-
-    /**
      * The names of all properties at this level of the configuration source.
      *
      * @return a collection of property names

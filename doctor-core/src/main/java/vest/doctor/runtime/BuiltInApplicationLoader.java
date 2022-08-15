@@ -22,8 +22,7 @@ public final class BuiltInApplicationLoader implements ApplicationLoader {
 
         Map<String, ConfigurationDrivenExecutorServiceProvider.ThreadPoolType> executors = new HashMap<>();
         providerRegistry.configuration()
-                .getSubConfiguration("executors")
-                .propertyNames()
+                .getSubGroups("executors.")
                 .forEach(n -> executors.put(n, null));
 
         EventBus eventBus = new EventBusImpl();

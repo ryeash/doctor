@@ -59,7 +59,7 @@ public final class NettyJerseyLoader implements ApplicationLoader {
 
     public HttpServerConfiguration init(ProviderRegistry providerRegistry) {
         HttpServerConfiguration httpConfig = new HttpServerConfiguration();
-        ConfigurationFacade cf = providerRegistry.configuration().getSubConfiguration("doctor.jersey.http");
+        ConfigurationFacade cf = providerRegistry.configuration().prefix("doctor.jersey.http.");
 
         httpConfig.setTcpManagementThreads(cf.get("tcp.threads", 1, Integer::valueOf));
         httpConfig.setTcpThreadFormat(cf.get("tcp.threadFormat", "netty-jersey-tcp-%d"));

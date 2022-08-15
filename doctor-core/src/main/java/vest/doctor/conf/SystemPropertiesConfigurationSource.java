@@ -25,16 +25,6 @@ public class SystemPropertiesConfigurationSource implements ConfigurationSource 
     }
 
     @Override
-    public ConfigurationSource getSubConfiguration(String path) {
-        return null;
-    }
-
-    @Override
-    public List<ConfigurationSource> getSubConfigurations(String path) {
-        return null;
-    }
-
-    @Override
     public Collection<String> propertyNames() {
         return System.getProperties().stringPropertyNames();
     }

@@ -66,7 +66,7 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
 
     public ConfigurationDrivenExecutorServiceProvider(ProviderRegistry providerRegistry, String name, ThreadPoolType forceType) {
         this.providerRegistry = providerRegistry;
-        this.executorConfig = providerRegistry.configuration().getSubConfiguration("executors." + name);
+        this.executorConfig = providerRegistry.configuration().prefix("executors." + name + ".");
         this.name = name;
         if (forceType != null) {
             this.type = forceType;
