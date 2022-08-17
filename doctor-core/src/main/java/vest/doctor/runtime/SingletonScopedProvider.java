@@ -1,4 +1,7 @@
-package vest.doctor;
+package vest.doctor.runtime;
+
+import vest.doctor.DoctorProvider;
+import vest.doctor.DoctorProviderWrapper;
 
 /**
  * Provider wrapper that supports the {@link jakarta.inject.Singleton} scope.

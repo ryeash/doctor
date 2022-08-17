@@ -1,4 +1,8 @@
-package vest.doctor;
+package vest.doctor.runtime;
+
+import vest.doctor.DoctorProvider;
+import vest.doctor.DoctorProviderWrapper;
+import vest.doctor.WeakList;
 
 import java.util.Iterator;
 

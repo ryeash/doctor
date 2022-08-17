@@ -2,20 +2,20 @@ package vest.doctor.processor;
 
 import jakarta.inject.Singleton;
 import vest.doctor.Cached;
-import vest.doctor.CachedScopeProvider;
 import vest.doctor.DestroyMethod;
 import vest.doctor.Prototype;
-import vest.doctor.PrototypeScopeProvider;
 import vest.doctor.Reloadable;
-import vest.doctor.ReloadableScopeProvider;
-import vest.doctor.SingletonScopedProvider;
 import vest.doctor.ThreadLocal;
-import vest.doctor.ThreadLocalScopedProvider;
 import vest.doctor.codegen.Constants;
 import vest.doctor.codegen.ProcessorUtils;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.ProviderDefinition;
 import vest.doctor.processing.ScopeWriter;
+import vest.doctor.runtime.CachedScopeProvider;
+import vest.doctor.runtime.PrototypeScopeProvider;
+import vest.doctor.runtime.ReloadableScopeProvider;
+import vest.doctor.runtime.SingletonScopedProvider;
+import vest.doctor.runtime.ThreadLocalScopedProvider;
 import vest.doctor.scheduled.Interval;
 
 import javax.lang.model.element.AnnotationMirror;

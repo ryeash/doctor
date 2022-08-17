@@ -3,7 +3,6 @@ package vest.doctor.runtime;
 import vest.doctor.AdHocProvider;
 import vest.doctor.ApplicationLoader;
 import vest.doctor.ProviderRegistry;
-import vest.doctor.SingletonScopedProvider;
 import vest.doctor.conf.ConfigurationFacade;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.ReloadConfiguration;
