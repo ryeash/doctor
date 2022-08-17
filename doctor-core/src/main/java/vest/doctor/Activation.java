@@ -10,7 +10,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * Annotates a class or factory method with activation predicates. The predicates are
- * evaluated at startup time and are ANDed together to determine if the provider should be active.
+ * evaluated at startup time and are boolean and-ed together to determine if the provider should be active.
  */
 @Documented
 @Retention(RUNTIME)

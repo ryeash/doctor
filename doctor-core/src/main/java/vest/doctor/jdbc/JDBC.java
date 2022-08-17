@@ -46,7 +46,8 @@ public final class JDBC {
     /**
      * Allocate a new {@link Connection} and return the {@link JDBCConnection} wrapper.
      * The {@link JDBCConnection} will be in one-shot mode by default, i.e. the connection will
-     * be closed automatically after first statement execution.
+     * be closed automatically after first statement execution. Ensure you close the connection, either
+     * explicitly or by executing a statement, else resources will leak.
      *
      * @return a new jdbc connection wrapper
      */
