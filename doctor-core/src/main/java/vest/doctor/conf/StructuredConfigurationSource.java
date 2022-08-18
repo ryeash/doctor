@@ -39,9 +39,9 @@ import static java.io.StreamTokenizer.TT_EOL;
  * </code>
  * This will be parsed as <br>
  * <code>
- *     root.child.propertyName1 = propertyValue1<br>
- *     root.child.propertyName2 = propertyValue2<br>
- *     ...
+ * root.child.propertyName1 = propertyValue1<br>
+ * root.child.propertyName2 = propertyValue2<br>
+ * ...
  * </code>
  * <br/>
  * <br/>
@@ -94,6 +94,11 @@ public class StructuredConfigurationSource implements ConfigurationSource {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "StructuredConfigurationSource{" + propertyFile + "}";
     }
 
     private Map<String, String> parse(Reader reader) {

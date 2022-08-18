@@ -32,4 +32,9 @@ public class SystemPropertiesConfigurationSource implements ConfigurationSource 
     @Override
     public void reload() {
     }
+
+    @Override
+    public String toString() {
+        return "SystemPropertiesConfigurationSource";
+    }
 }

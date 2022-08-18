@@ -377,6 +377,28 @@ public class AppConfig {
 ```
 The provider generated from coffeeMakerFactory will be subject to both SomePredicate and AnotherPredicate.
 
+
+### [@Import](doctor-core/src/main/java/vest/doctor/Import.java)
+If you use 3rd-party library dependencies that use JSR-311 annotations on their classes and want to include
+those classes in the processing of providers, you can use the @Import annotation to make the external
+packages known to the compilation environment.
+
+Typical usage is to add the @Import to a provider factory class:
+```java
+@Singleton
+@Import({"org.company", "org.company.ext"})
+public class AppConfig {
+  @Factory
+  @Singleton
+  public Thing myThing(){
+        return new Thing();
+    }
+}
+```
+This will cause all top level (note: non-recursive) classes and interfaces from the packages `org.company`
+and `org.company.ext` to be processed for relevant annotations by the doctor-processor, making available
+any providers that it finds.
+
 ### Properties and Configuration
 
 Configuration properties are retrieved via the

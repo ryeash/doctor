@@ -7,6 +7,9 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * Supports the {@link ConfigurationFacade#prefix(String)} method.
+ */
 public class PrefixedConfigurationFacade implements ConfigurationFacade {
     private final String prefix;
     private final ConfigurationFacade delegate;

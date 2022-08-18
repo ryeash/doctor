@@ -33,4 +33,9 @@ public class EnvironmentVariablesConfigurationSource implements ConfigurationSou
     @Override
     public void reload() {
     }
+
+    @Override
+    public String toString() {
+        return "EnvironmentVariablesConfigurationSource";
+    }
 }

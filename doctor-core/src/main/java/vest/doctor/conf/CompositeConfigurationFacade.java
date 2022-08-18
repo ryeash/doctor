@@ -80,6 +80,37 @@ public class CompositeConfigurationFacade implements ConfigurationFacade {
         return defaultValue;
     }
 
+    /**
+     * Audit a property. Generates a debug string of where the property was found, where
+     * it was found but not used (due to an override), and where the property was not present.
+     *
+     * @param propertyName the property to audit
+     * @return a debug string for the property
+     */
+    public String audit(String propertyName) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Result:\n");
+        sb.append("value: [").append(get(propertyName)).append("]\n");
+        int i = 1;
+        boolean found = false;
+        for (ConfigurationSource source : sources) {
+            String s = source.get(propertyName);
+            sb.append(i++).append(". ").append(source).append(" - ");
+            if (s != null) {
+                if (!found) {
+                    found = true;
+                    sb.append("* found and used: ").append(s);
+                } else {
+                    sb.append("! found but overridden: ").append(s);
+                }
+            } else {
+                sb.append("not found");
+            }
+            sb.append('\n');
+        }
+        return sb.toString();
+    }
+
     @Override
     public List<String> getList(String propertyName) {
         return getList(propertyName, List.of(), Function.identity());

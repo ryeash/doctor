@@ -10,6 +10,7 @@ import org.testng.Assert;
 import vest.doctor.Cached;
 import vest.doctor.DestroyMethod;
 import vest.doctor.Factory;
+import vest.doctor.Import;
 import vest.doctor.Modules;
 import vest.doctor.Primary;
 import vest.doctor.Prototype;
@@ -26,6 +27,7 @@ import java.util.Map;
 
 @Singleton
 @Named("duck")
+@Import({"java.util.stream"})
 public class TestAppConfig {
 
     @Factory

@@ -3,6 +3,7 @@ package vest.doctor.processor;
 import jakarta.inject.Inject;
 import vest.doctor.Activation;
 import vest.doctor.DoctorProvider;
+import vest.doctor.Import;
 import vest.doctor.Primary;
 import vest.doctor.PrimaryProviderWrapper;
 import vest.doctor.Prioritized;
@@ -35,6 +36,7 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
@@ -44,6 +46,7 @@ import javax.tools.StandardLocation;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.annotation.Annotation;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,6 +56,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -92,6 +96,7 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
 
     private final Map<Class<?>, Collection<String>> serviceImplementations = new HashMap<>();
     private final DependencyGraph graph = new DependencyGraph();
+    private final AtomicBoolean importsScanned = new AtomicBoolean(false);
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -127,6 +132,7 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+        processImports(roundEnv);
         Stream.of(annotationsToProcess, annotations)
                 .flatMap(Collection::stream)
                 .map(roundEnv::getElementsAnnotatedWith)
@@ -146,18 +152,30 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
         return new HashSet<>(annotationsToProcess).containsAll(annotations);
     }
 
+    private void processImports(RoundEnvironment roundEnv) {
+        roundEnv.getElementsAnnotatedWith(Import.class)
+                .stream()
+                .map(e -> e.getAnnotation(Import.class))
+                .filter(Objects::nonNull)
+                .flatMap(imp -> Arrays.stream(imp.value()))
+                .map(processingEnv.getElementUtils()::getAllPackageElements)
+                .flatMap(Set::stream)
+                .map(PackageElement::getEnclosedElements)
+                .flatMap(List::stream)
+                .filter(processedElements::add)
+                .forEach(this::processElement);
+    }
+
     private void processElement(Element annotatedElement) {
         try {
             if (shouldIgnore(annotatedElement)) {
                 infoMessage("ignoring element " + annotatedElement + " due to configured ignorePackages");
                 return;
             }
-            boolean claimed = false;
             for (ProviderDefinitionProcessor providerDefinitionProcessor : customizations(ProviderDefinitionProcessor.class)) {
                 ProviderDefinition provDef = providerDefinitionProcessor.process(this, annotatedElement);
                 if (provDef != null) {
                     errorChecking(provDef);
-                    claimed = true;
                     providerDefinitions.add(provDef);
                     for (ProviderDefinitionListener providerDefinitionListener : customizations(ProviderDefinitionListener.class)) {
                         providerDefinitionListener.process(this, provDef);
@@ -169,9 +187,6 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
                     writeInProvider(provDef);
                     break;
                 }
-            }
-            if (!claimed) {
-                warnMessage("the annotated element " + ProcessorUtils.debugString(annotatedElement) + " was not claimed by a processor");
             }
         } catch (Throwable t) {
             throw new CodeProcessingException("error processing", annotatedElement, t);

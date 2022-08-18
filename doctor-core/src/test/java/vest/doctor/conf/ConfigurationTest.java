@@ -10,6 +10,8 @@ import java.util.Set;
 public class ConfigurationTest extends Assert {
 
     ConfigurationFacade conf = new CompositeConfigurationFacade()
+            .addSource(new EnvironmentVariablesConfigurationSource())
+            .addSource(new SystemPropertiesConfigurationSource())
             .addSource(new MapConfigurationSource(Map.of(
                     "string", "value",
                     "boolean", "true",
@@ -17,7 +19,8 @@ public class ConfigurationTest extends Assert {
                     "col", "1,2,3,3,3,6",
                     "executors.default.threads", "1",
                     "executors.background.threads", "2",
-                    "executors.io.threads", "3"
+                    "executors.io.threads", "3",
+                    "toOverride", "true"
             )));
 
     @Test
@@ -48,5 +51,13 @@ public class ConfigurationTest extends Assert {
     public void prefix() {
         ConfigurationFacade prefix = conf.prefix("executors.default.");
         assertEquals(prefix.get("threads"), "1");
+    }
+
+    @Test
+    public void audit() {
+        CompositeConfigurationFacade comp = (CompositeConfigurationFacade) conf;
+        System.out.println(comp.audit("toOverride"));
+        System.setProperty("toOverride", "false");
+        System.out.println(comp.audit("toOverride"));
     }
 }

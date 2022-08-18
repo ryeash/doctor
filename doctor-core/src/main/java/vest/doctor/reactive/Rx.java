@@ -392,7 +392,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @return the next step in the processing composition
      */
     public Rx<T> chain(Flow.Subscriber<? super T> subscriber) {
-        return chain(new Bridge<>(subscriber));
+        return chain(new SubscriberProcessorAdapter<>(subscriber));
     }
 
     /**
@@ -442,36 +442,6 @@ public class Rx<T> implements Flow.Publisher<T> {
             onSubscribe.run();
         }
         return future;
-    }
-
-    /**
-     * Subscribe to this processing flow and connect its output to a blocking {@link Stream}.
-     *
-     * @return a stream of all items emitted from the reactive processing flow
-     */
-    public Stream<T> subscribeStream() {
-        return subscribeStream(Long.MAX_VALUE, 1, TimeUnit.MINUTES);
-    }
-
-    /**
-     * Subscribe to this processing flow and connect its output to a blocking {@link Stream}.
-     *
-     * @param initialRequest   the initial requested items, via {@link Flow.Subscription#request(long)};
-     *                         if less than 1, no items will be requested, potentially stalling execution
-     *                         of processing unless an intermediary stage makes an initial request
-     *                         (e.g. {@link #onSubscribe(Consumer)}
-     * @param offerTimeout     the timeout to use when handing off signals between the reactive processing flow
-     *                         and the stream
-     * @param offerTimeoutUnit the timeout unit
-     * @return a stream of all items emitted from the reactive processing flow
-     */
-    public Stream<T> subscribeStream(long initialRequest, int offerTimeout, TimeUnit offerTimeoutUnit) {
-        StreamSubscriber<T> streamSubscriber = new StreamSubscriber<>(initialRequest, offerTimeout, offerTimeoutUnit);
-        current.subscribe(streamSubscriber);
-        if (onSubscribe != null) {
-            onSubscribe.run();
-        }
-        return streamSubscriber.toStream();
     }
 
     @Override

@@ -2,10 +2,10 @@ package vest.doctor.reactive;
 
 import java.util.concurrent.Flow;
 
-public final class Bridge<I> extends AbstractProcessor<I, I> {
+public final class SubscriberProcessorAdapter<I> extends AbstractProcessor<I, I> {
     private final Flow.Subscriber<? super I> subscriber;
 
-    public Bridge(Flow.Subscriber<? super I> subscriber) {
+    public SubscriberProcessorAdapter(Flow.Subscriber<? super I> subscriber) {
         this.subscriber = subscriber;
     }
 

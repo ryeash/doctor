@@ -47,7 +47,7 @@ public class FloTest extends Assert {
 
     @Test(invocationCount = 250)
     public void flatFlo() {
-        List<String> upper = Rx.each(list)
+        List<String> upper = Rx.each(list, BACKGROUND)
                 .flatMapStream(s -> s.chars().mapToObj(c -> "" + (char) c))
                 .mapPublisher(item -> Rx.one(item).map(String::toUpperCase))
                 .collect(Collectors.toList())
@@ -288,29 +288,12 @@ public class FloTest extends Assert {
         assertThrows(future::join);
     }
 
-    public void toStream() {
-        List<String> collect = Rx.each(list)
-                .map(String::toUpperCase)
-                .subscribeStream()
-                .collect(Collectors.toList());
-        assertEquals(collect, capitalized);
-
-        collect = Rx.each(list)
-                .map(String::toUpperCase)
-                .subscribeStream()
-                .parallel()
-                .collect(Collectors.toList());
-        collect.sort(String.CASE_INSENSITIVE_ORDER);
-        assertEquals(collect, capitalized);
-
-        assertThrows(() -> Rx.error(new RuntimeException("error"))
-                .subscribeStream()
-                .forEach(item -> {
-                }));
-        assertThrows(() -> Rx.error(new RuntimeException("error"))
-                .subscribeStream()
-                .parallel()
-                .forEach(item -> {
-                }));
+    public void mapAsync() {
+        List<String> join = Rx.each(list)
+                .<String>mapAsync((item, emitter) -> emitter.accept(item.toUpperCase()))
+                .collect(Collectors.toList())
+                .subscribe()
+                .join();
+        assertEquals(join, capitalized);
     }
 }
