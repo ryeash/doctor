@@ -1,8 +1,10 @@
 package vest.doctor.reactive;
 
 import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -25,6 +27,13 @@ public class FloTest extends Assert {
     final List<String> list = List.of("a", "b", "c", "d", "e", "f");
     final List<String> capitalized = list.stream().map(String::toUpperCase).collect(Collectors.toList());
     final List<Integer> longList = IntStream.range(0, 3019).boxed().toList();
+
+    @BeforeMethod(alwaysRun = true)
+    public void logging(Method method) {
+        System.out.println("------------------------------");
+        System.out.println(method.getName());
+        System.out.println("------------------------------");
+    }
 
     public void collect() {
         String result = Rx.one("alpha")

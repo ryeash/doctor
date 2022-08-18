@@ -91,6 +91,10 @@ public final class StreamSubscriber<T> implements Flow.Subscriber<T> {
                 }
             }
         }
-        return queue.poll();
+        try {
+            return queue.poll(1, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            return null;
+        }
     }
 }
