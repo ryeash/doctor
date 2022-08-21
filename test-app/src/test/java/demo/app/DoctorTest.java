@@ -1,5 +1,6 @@
 package demo.app;
 
+import app.ext.Widget;
 import demo.app.dao.DAO;
 import demo.app.dao.DBProps;
 import demo.app.dao.User;
@@ -10,6 +11,7 @@ import org.hibernate.AssertionFailure;
 import org.testng.annotations.Test;
 import vest.doctor.AnnotationData;
 import vest.doctor.DoctorProvider;
+import vest.doctor.ThreadLocal;
 import vest.doctor.conf.ConfigurationFacade;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.ReloadConfiguration;
@@ -346,5 +348,14 @@ public class DoctorTest extends AbstractTestAppTest {
     @Test
     public void activation() {
         assertTrue(providerRegistry().getProviderOpt(TCActivation.class).isPresent());
+    }
+
+    @Test
+    public void imported() {
+        Widget rotate = providerRegistry().getInstance(Widget.class);
+        assertEquals(rotate.wonk(), "rotate");
+        assertSame(providerRegistry().getProvider(Widget.class).scope(), ThreadLocal.class);
+        Widget spring = providerRegistry().getInstance(Widget.class, "spring");
+        assertEquals(spring.wonk(), "spring");
     }
 }

@@ -27,7 +27,7 @@ import java.util.Map;
 
 @Singleton
 @Named("duck")
-@Import({"java.util.stream"})
+@Import({"app.ext", "app.ext.sub"})
 public class TestAppConfig {
 
     @Factory

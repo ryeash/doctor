@@ -9,8 +9,8 @@ import java.util.function.BiPredicate;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Annotates a class or factory method with activation predicates. The predicates are
- * evaluated at startup time and are boolean and-ed together to determine if the provider should be active.
+ * Annotates a class or factory method with activation predicates. The predicates will be evaluated
+ * at runtime to determine if the resulting provider is activated, i.e. enabled for injection.
  */
 @Documented
 @Retention(RUNTIME)
@@ -18,7 +18,8 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 public @interface Activation {
 
     /**
-     * The activation predicates to use for the marked provider source.
+     * The activation predicates to use for the marked provider source. All predicates
+     * must evaluate true for the marked provider to be activated.
      *
      * @return the activation predicates
      */

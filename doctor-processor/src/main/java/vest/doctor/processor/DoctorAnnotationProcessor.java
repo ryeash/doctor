@@ -3,6 +3,7 @@ package vest.doctor.processor;
 import jakarta.inject.Inject;
 import vest.doctor.Activation;
 import vest.doctor.DoctorProvider;
+import vest.doctor.Factory;
 import vest.doctor.Import;
 import vest.doctor.Primary;
 import vest.doctor.PrimaryProviderWrapper;
@@ -162,6 +163,14 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
                 .flatMap(Set::stream)
                 .map(PackageElement::getEnclosedElements)
                 .flatMap(List::stream)
+                .flatMap(element -> {
+                    if (element instanceof TypeElement typeElement) {
+                        List<ExecutableElement> executableElements = ElementFilter.methodsIn(processingEnv.getElementUtils().getAllMembers(typeElement));
+                        return Stream.concat(Stream.of(element), executableElements.stream().filter(e -> e.getAnnotation(Factory.class) != null));
+                    } else {
+                        return Stream.of(element);
+                    }
+                })
                 .filter(processedElements::add)
                 .forEach(this::processElement);
     }
