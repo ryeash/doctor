@@ -1,9 +1,6 @@
 package vest.doctor.conf;
 
-import vest.doctor.runtime.RuntimeUtils;
-
 import java.util.Collection;
-import java.util.List;
 
 /**
  * Configuration source that gets properties from {@link System#getenv(String)}.
@@ -13,16 +10,6 @@ public class EnvironmentVariablesConfigurationSource implements ConfigurationSou
     @Override
     public String get(String propertyName) {
         return System.getenv(propertyName);
-    }
-
-    @Override
-    public List<String> getList(String propertyName) {
-        String s = get(propertyName);
-        if (s == null) {
-            return null;
-        } else {
-            return RuntimeUtils.split(s, ConfigurationFacade.LIST_DELIMITER);
-        }
     }
 
     @Override

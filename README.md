@@ -379,7 +379,7 @@ The provider generated from coffeeMakerFactory will be subject to both SomePredi
 
 
 ### [@Import](doctor-core/src/main/java/vest/doctor/Import.java)
-If you use 3rd-party library dependencies that use jakarta.inject-api annotations (or doctor-core annotations)
+If you use library dependencies that use jakarta.inject-api annotations (or doctor-core annotations)
 on their classes and want to include those classes in the processing of providers, you can use the @Import 
 annotation to make the external packages known to the compilation environment.
 

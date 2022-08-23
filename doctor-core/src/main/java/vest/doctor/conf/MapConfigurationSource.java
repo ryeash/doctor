@@ -1,13 +1,9 @@
 package vest.doctor.conf;
 
-import vest.doctor.runtime.RuntimeUtils;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 
 /**
@@ -34,13 +30,6 @@ public record MapConfigurationSource(Map<String, String> map) implements Configu
     @Override
     public String get(String propertyName) {
         return map.get(propertyName);
-    }
-
-    @Override
-    public List<String> getList(String propertyName) {
-        return Optional.ofNullable(map.get(propertyName))
-                .map(value -> RuntimeUtils.split(value, ConfigurationFacade.LIST_DELIMITER))
-                .orElse(null);
     }
 
     @Override

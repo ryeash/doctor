@@ -14,11 +14,6 @@ public class TCConfigReload implements ConfigurationSource {
     }
 
     @Override
-    public List<String> getList(String propertyName) {
-        return null;
-    }
-
-    @Override
     public Collection<String> propertyNames() {
         return List.of();
     }

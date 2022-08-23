@@ -1,6 +1,7 @@
 package vest.doctor.conf;
 
 import vest.doctor.runtime.FileLocation;
+import vest.doctor.runtime.RuntimeUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -143,9 +144,10 @@ public class CompositeConfigurationFacade implements ConfigurationFacade {
 
     private <C extends Collection<T>, T> C getCol(String propertyName, C defaultValue, Function<String, T> converter, Supplier<C> supplier) {
         for (ConfigurationSource source : sources) {
-            List<String> list = source.getList(propertyName);
+            String list = source.get(propertyName);
             if (list != null) {
-                return list.stream()
+                return RuntimeUtils.split(list, ConfigurationFacade.LIST_DELIMITER)
+                        .stream()
                         .map(this::resolvePlaceholders)
                         .map(converter)
                         .collect(Collectors.toCollection(supplier));

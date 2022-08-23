@@ -11,7 +11,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -74,11 +73,6 @@ public class StructuredConfigurationSource implements ConfigurationSource {
     @Override
     public String get(String propertyName) {
         return delegate.get(propertyName);
-    }
-
-    @Override
-    public List<String> getList(String propertyName) {
-        return delegate.getList(propertyName);
     }
 
     @Override
