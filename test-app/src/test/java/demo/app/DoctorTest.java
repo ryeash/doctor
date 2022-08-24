@@ -229,7 +229,7 @@ public class DoctorTest extends AbstractTestAppTest {
 
     @Test
     public void staticFactory() {
-        Object str = providerRegistry().getInstance(Object.class, "static");
+        String str = providerRegistry().getInstance(String.class, "static");
         assertEquals(str, "static");
     }
 

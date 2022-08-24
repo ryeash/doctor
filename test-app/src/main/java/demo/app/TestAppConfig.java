@@ -141,7 +141,7 @@ public class TestAppConfig {
     @Factory
     @Singleton
     @Named("static")
-    public static Object staticFactory() {
+    public static String staticFactory() {
         return "static";
     }
 

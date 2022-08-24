@@ -10,6 +10,8 @@ import java.util.function.Supplier;
 
 /**
  * Internal use.
+ * <p>
+ * A properties/configuration trait that provides caching and reloading of processed property values.
  */
 public abstract class PropertiesTrait {
     protected final ProviderRegistry providerRegistry;
@@ -28,7 +30,7 @@ public abstract class PropertiesTrait {
         return (T) propertiesCache.computeIfAbsent(cacheKey, (k) -> getter.get());
     }
 
-    public void clearCache(ReloadConfiguration reload) {
+    private void clearCache(ReloadConfiguration reload) {
         propertiesCache.clear();
     }
 }
