@@ -1,10 +1,8 @@
 package vest.doctor.reactive;
 
 import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -21,19 +19,12 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Test(invocationCount = 5)
-public class FloTest extends Assert {
+public class FlowTest extends Assert {
 
     final ExecutorService BACKGROUND = Executors.newCachedThreadPool();
     final List<String> list = List.of("a", "b", "c", "d", "e", "f");
     final List<String> capitalized = list.stream().map(String::toUpperCase).collect(Collectors.toList());
     final List<Integer> longList = IntStream.range(0, 3019).boxed().toList();
-
-    @BeforeMethod(alwaysRun = true)
-    public void logging(Method method) {
-        System.out.println("------------------------------");
-        System.out.println(method.getName());
-        System.out.println("------------------------------");
-    }
 
     public void collect() {
         String result = Rx.one("alpha")
@@ -65,7 +56,6 @@ public class FloTest extends Assert {
                     }
                 })
                 .recover(err -> "RECOVER")
-                .observe(System.out::println)
                 .collect(Collectors.joining(" "))
                 .subscribe()
                 .join();
@@ -75,7 +65,6 @@ public class FloTest extends Assert {
     public void parallel() {
         List<String> join = Rx.each(list)
                 .parallel(BACKGROUND, -1)
-                .observe(s -> System.out.println(Thread.currentThread().getName() + " " + s))
                 .collect(Collectors.toList())
                 .subscribe()
                 .join();
@@ -109,10 +98,8 @@ public class FloTest extends Assert {
         List<String> d = Rx.each(list)
                 .takeWhile(s -> !s.equals("d"))
                 .collect(Collectors.toList())
-                .observe(System.out::println)
                 .subscribe()
                 .join();
-        System.out.println(d);
         assertEquals(d, List.of("a", "b", "c"));
     }
 

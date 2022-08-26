@@ -143,7 +143,6 @@ public class StructuredConfigurationSource implements ConfigurationSource {
         tokenizer.ordinaryChar('}');
         tokenizer.ordinaryChar('[');
         tokenizer.ordinaryChar(']');
-//        tokenizer.ordinaryChar(',');
         tokenizer.ordinaryChar(':');
         tokenizer.ordinaryChar('=');
         return tokenizer;

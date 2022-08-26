@@ -8,6 +8,7 @@ import org.glassfish.jersey.server.ResourceConfig;
 import vest.doctor.AdHocProvider;
 import vest.doctor.ApplicationLoader;
 import vest.doctor.DoctorProvider;
+import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.conf.ConfigurationFacade;
 import vest.doctor.event.EventBus;
@@ -43,9 +44,9 @@ public final class NettyJerseyLoader implements ApplicationLoader {
                 .map(DoctorProvider::type)
                 .forEach(config::register);
 
-        providerRegistry.getProviders(ResourceConfigCustomizer.class)
+        config = providerRegistry.getProviders(ResourceConfigCustomizer.class)
                 .map(DoctorProvider::get)
-                .forEach(c -> c.customize(config));
+                .reduce(config, (rc, c) -> c.customize(rc), (a, b) -> b);
 
         DoctorJerseyContainer container = new DoctorJerseyContainer(config);
         NettyHttpServer httpServer = new NettyHttpServer(
@@ -57,7 +58,7 @@ public final class NettyJerseyLoader implements ApplicationLoader {
         providerRegistry.getInstance(EventBus.class).publish(new ServiceStarted("netty-jersey-http", httpServer));
     }
 
-    public HttpServerConfiguration init(ProviderRegistry providerRegistry) {
+    private HttpServerConfiguration init(ProviderRegistry providerRegistry) {
         HttpServerConfiguration httpConfig = new HttpServerConfiguration();
         ConfigurationFacade cf = providerRegistry.configuration().prefix("doctor.jersey.http.");
 
@@ -104,10 +105,12 @@ public final class NettyJerseyLoader implements ApplicationLoader {
                 .map(DoctorProvider::get)
                 .collect(Collectors.toList());
         pipelineCustomizers.add(new HttpAggregatorCustomizer(httpConfig.getMaxContentLength()));
+        pipelineCustomizers.sort(Prioritized.COMPARATOR);
         httpConfig.setPipelineCustomizers(pipelineCustomizers);
 
         List<ServerBootstrapCustomizer> serverBootstrapCustomizers = providerRegistry.getProviders(ServerBootstrapCustomizer.class)
                 .map(DoctorProvider::get)
+                .sorted(Prioritized.COMPARATOR)
                 .collect(Collectors.toList());
         httpConfig.setServerBootstrapCustomizers(serverBootstrapCustomizers);
         return httpConfig;

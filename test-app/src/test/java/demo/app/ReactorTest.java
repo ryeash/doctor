@@ -194,7 +194,7 @@ public class ReactorTest extends AbstractTestAppTest {
         req().get("/root/splat/this/is/the/full/path")
                 .then()
                 .statusCode(200)
-                .body(is("/root/splat/this/is/the/full/path"));
+                .body(is("/root/splat/this/is/the/full/path this/is/the/full/path"));
     }
 
     public void errors() {

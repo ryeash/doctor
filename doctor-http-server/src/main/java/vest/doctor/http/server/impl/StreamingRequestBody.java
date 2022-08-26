@@ -8,6 +8,7 @@ import io.netty.util.ReferenceCounted;
 import vest.doctor.http.server.RequestBody;
 import vest.doctor.reactive.Rx;
 
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Flow;
 import java.util.stream.Collector;
@@ -21,9 +22,7 @@ public class StreamingRequestBody implements RequestBody {
             Object::new,
             (a, b) -> {
             },
-            (a, b) -> a);
-    private static final Runnable DO_NOTHING = () -> {
-    };
+            (a, b) -> null);
 
     private final ByteBufAllocator alloc;
     private final Flow.Publisher<HttpContent> source;
@@ -36,8 +35,8 @@ public class StreamingRequestBody implements RequestBody {
     @Override
     public Rx<HttpContent> flow() {
         // TODO: find a better way to not lose data
-        // this DO_NOTHING is needed because without the initial subscriber to SubmissionPublisher, we lose data
-        return Rx.from(source).runOnComplete(DO_NOTHING);
+        // this NO_OP is needed because without the initial subscriber to SubmissionPublisher, we lose data
+        return Rx.from(source).runOnComplete(Rx.NO_OP);
     }
 
     @Override
@@ -52,10 +51,15 @@ public class StreamingRequestBody implements RequestBody {
 
     @Override
     public Flow.Publisher<String> asString() {
+        return asString(StandardCharsets.UTF_8);
+    }
+
+    @Override
+    public Flow.Publisher<String> asString(Charset charset) {
         return flow()
                 .map(c -> {
                     try {
-                        return c.content().toString(StandardCharsets.UTF_8);
+                        return c.content().toString(charset);
                     } finally {
                         c.release();
                     }
@@ -72,7 +76,7 @@ public class StreamingRequestBody implements RequestBody {
     }
 
     @Override
-    public Flow.Publisher<byte[]> asByteChunks() {
+    public Flow.Publisher<byte[]> chunked() {
         return flow()
                 .map(content -> {
                     byte[] bytes = new byte[content.content().readableBytes()];

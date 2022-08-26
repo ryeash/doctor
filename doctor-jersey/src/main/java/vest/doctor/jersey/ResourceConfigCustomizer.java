@@ -11,6 +11,7 @@ public interface ResourceConfigCustomizer {
      * Customize the {@link ResourceConfig} for jersey.
      *
      * @param config the resource configuration
+     * @return the config
      */
-    void customize(ResourceConfig config);
+    ResourceConfig customize(ResourceConfig config);
 }

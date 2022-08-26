@@ -22,6 +22,9 @@ import java.util.stream.Stream;
  */
 public class Rx<T> implements Flow.Publisher<T> {
 
+    public static final Runnable NO_OP = () -> {
+    };
+
     /**
      * Create a new reactive flow that will, when subscribed, publish the given item and then close
      * the flow, i.e. call {@link Flow.Subscriber#onComplete()}.
@@ -105,7 +108,7 @@ public class Rx<T> implements Flow.Publisher<T> {
     }
 
     /**
-     * Create a new reactive flow composition starting from the given publisher.
+     * Create a new reactive flow composition starting with the given publisher.
      *
      * @param publisher the publisher to start the composition with
      * @param <I>       the published item type
@@ -116,8 +119,7 @@ public class Rx<T> implements Flow.Publisher<T> {
         if (publisher instanceof Rx<?> rx) {
             return (Rx<I>) rx;
         } else {
-            return new Rx<>(() -> {
-            }, publisher);
+            return new Rx<>(NO_OP, publisher);
         }
     }
 
@@ -247,7 +249,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @return the next step in the processing composition
      */
     public <R> Rx<R> mapPublisher(Function<? super T, ? extends Flow.Publisher<R>> function) {
-        return chain(new Stitch<>(function));
+        return chain(new Adapters.MappedFlowStitch<>(function));
     }
 
     /**
@@ -392,7 +394,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @return the next step in the processing composition
      */
     public Rx<T> chain(Flow.Subscriber<? super T> subscriber) {
-        return chain(new SubscriberProcessorAdapter<>(subscriber));
+        return chain(new Adapters.SubscriberProcessor<>(subscriber));
     }
 
     /**

@@ -3,6 +3,7 @@ package vest.doctor.http.server;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpContent;
 
+import java.nio.charset.Charset;
 import java.util.concurrent.Flow;
 
 /**
@@ -32,6 +33,13 @@ public interface RequestBody {
     Flow.Publisher<String> asString();
 
     /**
+     * Collect the body data into a single string using the given charset.
+     *
+     * @return a publisher of the request body as a single string
+     */
+    Flow.Publisher<String> asString(Charset charset);
+
+    /**
      * Ignore the body data.
      *
      * @return a publisher of a single null element indicating the successful read of all body data
@@ -43,5 +51,5 @@ public interface RequestBody {
      *
      * @return a publisher of N byte arrays
      */
-    Flow.Publisher<byte[]> asByteChunks();
+    Flow.Publisher<byte[]> chunked();
 }
