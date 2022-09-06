@@ -5,7 +5,7 @@ import java.util.concurrent.Flow;
 /**
  * An implementation of a subscriber that does nothing for every signal received.
  * Used by the {@link AbstractProcessor} to ensure that a null subscriber is never
- * given to an implementations.
+ * given to implementations.
  *
  * @param <T> the subscribed item type
  */

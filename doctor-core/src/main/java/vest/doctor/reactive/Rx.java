@@ -253,6 +253,18 @@ public class Rx<T> implements Flow.Publisher<T> {
     }
 
     /**
+     * Add a signal processing stage to the processing flow. Signal processing combines all
+     * {@link Flow.Subscriber} method calls into a single {@link Signal} consumer action.
+     *
+     * @param action the signal processing action
+     * @param <R>    the new published item type
+     * @return the next step in the processing composition
+     */
+    public <R> Rx<R> signal(Consumer<Signal<T, ? super R>> action) {
+        return chain(new Processors.SignalProcessor<>(action));
+    }
+
+    /**
      * Add a filtering stage to the processing flow. The filter will drop items from the flow
      * that evaluate false for the predicate.
      *
@@ -352,7 +364,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @return the next step in the composed processing flow
      */
     public Rx<T> onSubscribe(Consumer<Flow.Subscription> action) {
-        return chain(new SignalProcessors.OnSubscribeProcessor<>(action));
+        return chain(new Processors.OnSubscribeProcessor<>(action));
     }
 
     /**
@@ -363,7 +375,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @return the next step in the processing composition
      */
     public <R> Rx<R> onNext(TriConsumer<? super T, Flow.Subscription, Flow.Subscriber<? super R>> action) {
-        return chain(new SignalProcessors.OnNextProcessor<>(action));
+        return chain(new Processors.OnNextProcessor<>(action));
     }
 
     /**
@@ -373,7 +385,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @return the next step in the processing composition
      */
     public Rx<T> onError(TriConsumer<Throwable, Flow.Subscription, Flow.Subscriber<? super T>> action) {
-        return chain(new SignalProcessors.OnErrorProcessor<>(action));
+        return chain(new Processors.OnErrorProcessor<>(action));
     }
 
     /**
@@ -383,7 +395,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @return the next step in the processing composition
      */
     public Rx<T> onComplete(BiConsumer<Flow.Subscription, Flow.Subscriber<? super T>> action) {
-        return chain(new SignalProcessors.OnCompleteProcessor<>(action));
+        return chain(new Processors.OnCompleteProcessor<>(action));
     }
 
     /**

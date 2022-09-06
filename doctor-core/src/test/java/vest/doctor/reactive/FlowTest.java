@@ -3,6 +3,7 @@ package vest.doctor.reactive;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -282,5 +283,25 @@ public class FlowTest extends Assert {
                 .subscribe()
                 .join();
         assertEquals(join, capitalized);
+    }
+
+    public void sig() {
+        List<String> upper = Rx.each(list)
+                .<String>signal(signal -> {
+                    if (signal.isItem()) {
+                        signal.onNext(signal.item().toUpperCase());
+                    } else if (signal.isComplete()) {
+                        signal.onNext("LAST");
+                        signal.onComplete();
+                    } else {
+                        signal.defaultAction();
+                    }
+                })
+                .collect(Collectors.toList())
+                .subscribe()
+                .join();
+        List<String> expected = new ArrayList<>(capitalized);
+        expected.add("LAST");
+        assertEquals(upper, expected);
     }
 }
