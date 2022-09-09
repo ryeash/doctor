@@ -9,6 +9,7 @@ import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletConnection;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.ServletRequest;
@@ -181,11 +182,6 @@ final class NettyHttpServletRequest implements HttpServletRequest {
 
     @Override
     public boolean isRequestedSessionIdFromURL() {
-        return false;
-    }
-
-    @Override
-    public boolean isRequestedSessionIdFromUrl() {
         return false;
     }
 
@@ -383,11 +379,6 @@ final class NettyHttpServletRequest implements HttpServletRequest {
     }
 
     @Override
-    public String getRealPath(String s) {
-        return queryStringDecoder.rawPath();
-    }
-
-    @Override
     public int getRemotePort() {
         SocketAddress socketAddress = ctx.channel().remoteAddress();
         if (socketAddress instanceof InetSocketAddress inet) {
@@ -455,5 +446,40 @@ final class NettyHttpServletRequest implements HttpServletRequest {
     @Override
     public DispatcherType getDispatcherType() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String getRequestId() {
+        return ctx.channel().id().toString();
+    }
+
+    @Override
+    public String getProtocolRequestId() {
+        return "";
+    }
+
+    @Override
+    public ServletConnection getServletConnection() {
+        return new ServletConnection() {
+            @Override
+            public String getConnectionId() {
+                return ctx.channel().id().toString();
+            }
+
+            @Override
+            public String getProtocol() {
+                return request.protocolVersion().protocolName();
+            }
+
+            @Override
+            public String getProtocolConnectionId() {
+                return "";
+            }
+
+            @Override
+            public boolean isSecure() {
+                return ctx.pipeline().names().contains(HttpServerChannelInitializer.SSL_CONTEXT);
+            }
+        };
     }
 }

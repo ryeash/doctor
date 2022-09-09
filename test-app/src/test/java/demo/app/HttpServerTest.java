@@ -41,7 +41,7 @@ import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.is;
 
 @Test(invocationCount = 5)
-public class ReactorTest extends AbstractTestAppTest {
+public class HttpServerTest extends AbstractTestAppTest {
 
     private RequestSpecification req() {
         RestAssured.baseURI = "http://localhost:60222/";

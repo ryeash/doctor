@@ -21,11 +21,27 @@ import java.util.stream.Collectors;
  */
 public class CompositeConfigurationFacade implements ConfigurationFacade {
 
+    /**
+     * The environment or system property name used by {@link #defaultConfigurationFacade()}
+     * to load a list of property files. The value must be a comma separated list of locations
+     * (classpath, file, http(s)).
+     */
     public static final String PROPERTIES = "doctor.app.properties";
 
     private static final String MACRO_OPEN = "${";
     private static final String MACRO_CLOSE = "}";
 
+    /**
+     * Create a new configuration facade using the default configuration source set. The default
+     * sources are:
+     * <ul>
+     *     <li>environment</li>
+     *     <li>system</li>
+     *     <li>properties files listed in the {@link #PROPERTIES} env/system property</li>
+     * </ul>
+     *
+     * @return a new configuration facade
+     */
     public static ConfigurationFacade defaultConfigurationFacade() {
         CompositeConfigurationFacade facade = new CompositeConfigurationFacade(new ArrayList<>());
         facade.addSource(new EnvironmentVariablesConfigurationSource());
@@ -41,12 +57,20 @@ public class CompositeConfigurationFacade implements ConfigurationFacade {
 
     private final List<ConfigurationSource> sources;
 
+    /**
+     * Initialize a new composite configuration facade with an empty configuration source list.
+     */
     public CompositeConfigurationFacade() {
         this(new ArrayList<>());
     }
 
+    /**
+     * Initialize a new composite configuration facade with the given configuration sources.
+     *
+     * @param sources the configuration sources to initialize with
+     */
     public CompositeConfigurationFacade(List<ConfigurationSource> sources) {
-        this.sources = Objects.requireNonNull(sources);
+        this.sources = new ArrayList<>(Objects.requireNonNull(sources));
     }
 
     @Override
