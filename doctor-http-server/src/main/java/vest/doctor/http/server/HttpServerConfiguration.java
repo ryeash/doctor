@@ -109,12 +109,12 @@ public class HttpServerConfiguration {
     private int minGzipSize = 812;
 
     /**
-     * The PipelineCustomizers to apply to the netty pipeline.
+     * The {@link PipelineCustomizer PipelineCustomizers} to apply to the netty pipeline.
      */
     private List<PipelineCustomizer> pipelineCustomizers;
 
     /**
-     * The ServerBoostrapCustomizers to apply to the netty http server.
+     * The {@link ServerBootstrapCustomizer ServerBoostrapCustomizers} to apply to the netty http server.
      */
     private List<ServerBootstrapCustomizer> serverBootstrapCustomizers;
 

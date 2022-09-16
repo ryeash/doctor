@@ -315,6 +315,90 @@ public class AsyncDemo {
 }
 ```
 
+
+### [@Activation](doctor-core/src/main/java/vest/doctor/Activation.java)
+
+Providers can be conditionally activated based on predicates defined in an @Activation annotation
+attached to the provider source.
+
+Example:
+First create an activation predicate:
+```java
+public class IsActivationPropertyPresent implements BiPredicate<ProviderRegistry, DoctorProvider<?>> {
+    // NOTE: activation predicates MUST have a public no-arg constructor
+    @Override
+    public boolean test(ProviderRegistry providerRegistry, DoctorProvider<?> doctorProvider) {
+        // will activate providers based on a property value
+        return providerRegistry.configuration().get("activateOptionals", false, Boolean::parseBoolean);
+    }
+}
+```
+
+Then use the @Activation annotation to attach the predicate to a provider:
+```java
+@Singleton
+@Activation(IsActivationPropertyPresent.class)
+public class OptionalThing {
+  // OptionalThing provider will only be registered when activateOptionals=true
+}
+```
+
+@Activation can be used on an annotation type to bundle multiple predicates under a single named annotation:
+```java
+@Documented
+@Retention(RUNTIME)
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Activation({DevStackPredicate.class, OnlyOnLinuxPredicate.class, OnlyWithTestDBPredicate.class})
+public @interface TestStackOnly {
+}
+```
+
+```java
+@Singleton
+@TestStackOnly
+public class OptionalThing {
+  // only available if all three predicates on TestStackOnly activation annotation evaluate true
+}
+```
+
+A note on factory providers: Activation predicates marked at the class level are inherited by
+factory providers. So in this example:
+```java
+@Singleton
+@Activation(SomePredicate.class)
+public class AppConfig {
+    @Factory
+    @Singleton
+    @Activation(AnotherPredicate.class)
+    public CoffeeMaker coffeeMakerFactory(){
+        return ...
+    }
+}
+```
+The provider generated from coffeeMakerFactory will be subject to both SomePredicate and AnotherPredicate.
+
+
+### [@Import](doctor-core/src/main/java/vest/doctor/Import.java)
+If you use library dependencies that use jakarta.inject-api annotations (or doctor-core annotations)
+on their classes and want to include those classes in the processing of providers, you can use the @Import 
+annotation to make the external packages known to the compilation environment.
+
+Typical usage is to add the @Import to a provider factory class:
+```java
+@Singleton
+@Import({"org.company", "org.company.ext"})
+public class AppConfig {
+  @Factory
+  @Singleton
+  public Thing myThing(){
+        return new Thing();
+    }
+}
+```
+This will cause all top level (note: non-recursive) classes and interfaces from the packages `org.company`
+and `org.company.ext` to be processed for relevant annotations by the doctor-processor, making available
+any providers that it finds.
+
 ### Properties and Configuration
 
 Configuration properties are retrieved via the

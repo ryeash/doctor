@@ -120,7 +120,14 @@ public class NettyHttpTest {
                         .map(ResponseBody::of)
                         .map(ctx.response()::body))
                 .post("/multipart", ctx -> Rx.from(ctx.request().multiPartBody().parts())
-                        .filter(part -> part.type().equals("FileUpload"))
+                        .filter(part -> {
+                            if (part.type().equals("FileUpload")) {
+                                return true;
+                            } else {
+                                part.data().release();
+                                return false;
+                            }
+                        })
                         .map(MultiPartData.Part::data)
                         .map(buf -> {
                             try {

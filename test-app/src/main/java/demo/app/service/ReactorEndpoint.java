@@ -11,7 +11,6 @@ import vest.doctor.http.server.RequestContext;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
 import vest.doctor.http.server.rest.Endpoint;
-import vest.doctor.http.server.rest.HttpMethod;
 import vest.doctor.http.server.rest.HttpMethod.ANY;
 import vest.doctor.http.server.rest.HttpMethod.DELETE;
 import vest.doctor.http.server.rest.HttpMethod.GET;
@@ -48,7 +47,7 @@ public class ReactorEndpoint {
         return "Hello World!";
     }
 
-    @HttpMethod.POST
+    @POST
     @Endpoint("/throughput")
     public byte[] throughput(@Body byte[] body) {
         return body;
@@ -124,14 +123,21 @@ public class ReactorEndpoint {
     @Endpoint("/multipart")
     public Flow.Publisher<String> multipart(@Body Flow.Publisher<MultiPartData.Part> form) {
         return Rx.from(form)
-                .map(data -> data.data().toString(StandardCharsets.UTF_8))
+                .map(data -> {
+                    try {
+                        return data.data().toString(StandardCharsets.UTF_8);
+                    } finally {
+                        data.data().release();
+                    }
+                })
                 .collect(Collectors.joining());
     }
 
     @GET
-    @Endpoint("/splat/**")
-    public String splat(@Context RequestContext ctx) {
-        return ctx.request().uri().toString();
+    @Endpoint("/splat/*")
+    public String splat(@Context RequestContext ctx,
+                        @Path("*") String splat) {
+        return ctx.request().uri().toString() + " " + splat;
     }
 
     @OPTIONS

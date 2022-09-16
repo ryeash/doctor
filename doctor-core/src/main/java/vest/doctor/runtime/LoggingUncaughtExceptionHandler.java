@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Used by {@link ConfigurationDrivenExecutorServiceProvider} as the default {@link Thread.UncaughtExceptionHandler}.
  */
-public class LoggingUncaughtExceptionHandler implements Thread.UncaughtExceptionHandler {
+public final class LoggingUncaughtExceptionHandler implements Thread.UncaughtExceptionHandler {
 
     public static final Thread.UncaughtExceptionHandler INSTANCE = new LoggingUncaughtExceptionHandler();
 

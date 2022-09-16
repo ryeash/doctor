@@ -45,7 +45,7 @@ public class DefaultBodyReaderWriter implements BodyReader, BodyWriter {
         } else if (flowableType.matches(ByteBuf.class)) {
             return unwrap(requestContext);
         } else if (flowableType.matches(byte[].class)) {
-            return requestContext.request().body().asByteChunks();
+            return requestContext.request().body().chunked();
         } else if (flowableType.matches(ByteBuffer.class)) {
             return Rx.from(unwrap(requestContext)).map(ByteBuf::nioBuffer);
         } else if (flowableType.matches(String.class)) {

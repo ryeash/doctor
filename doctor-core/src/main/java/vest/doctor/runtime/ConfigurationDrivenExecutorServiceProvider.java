@@ -66,12 +66,12 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
 
     public ConfigurationDrivenExecutorServiceProvider(ProviderRegistry providerRegistry, String name, ThreadPoolType forceType) {
         this.providerRegistry = providerRegistry;
-        this.executorConfig = providerRegistry.configuration().getSubConfiguration("executors." + name);
+        this.executorConfig = providerRegistry.configuration().prefix("executors." + name + ".");
         this.name = name;
         if (forceType != null) {
             this.type = forceType;
         } else {
-            this.type = executorConfig.get("type", ThreadPoolType.forkjoin, ThreadPoolType::valueOf);
+            this.type = executorConfig.get("type", ThreadPoolType.fixed, ThreadPoolType::valueOf);
         }
         this.providedTypes = switch (type) {
             case cached, fixed -> List.of(Executor.class, ExecutorService.class);
@@ -113,7 +113,7 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
         int minThreads = executorConfig.get("minThreads", DEFAULT_MIN_THREADS, Integer::valueOf);
         int maxThreads = executorConfig.get("maxThreads", DEFAULT_MAX_THREADS, Integer::valueOf);
         if (minThreads < 0) {
-            throw new IllegalArgumentException("invalid minThreads for executor " + name + ": must be greater than 0");
+            throw new IllegalArgumentException("invalid minThreads for executor " + name + ": must be greater than or equal to 0");
         }
         if (maxThreads < minThreads) {
             throw new IllegalArgumentException("invalid maxThreads for executor " + name + ": must be greater than minThreads");
@@ -180,9 +180,14 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
 
     private CustomThreadFactory getThreadFactory() {
         String uncaughtExceptionHandlerQualifier = executorConfig.get("uncaughtExceptionHandler");
-        Thread.UncaughtExceptionHandler uncaughtExceptionHandler = providerRegistry.getProviderOpt(Thread.UncaughtExceptionHandler.class, uncaughtExceptionHandlerQualifier)
-                .map(Provider::get)
-                .orElse(LoggingUncaughtExceptionHandler.INSTANCE);
+        Thread.UncaughtExceptionHandler uncaughtExceptionHandler;
+        if (uncaughtExceptionHandlerQualifier == null) {
+            uncaughtExceptionHandler = LoggingUncaughtExceptionHandler.INSTANCE;
+        } else {
+            uncaughtExceptionHandler = providerRegistry.getProviderOpt(Thread.UncaughtExceptionHandler.class, uncaughtExceptionHandlerQualifier)
+                    .map(Provider::get)
+                    .orElseThrow(() -> new IllegalStateException("missing provided uncaught exception handler for executor:" + name + ", missing UncaughtExceptionHandler named " + uncaughtExceptionHandlerQualifier));
+        }
         return new CustomThreadFactory(
                 executorConfig.get("daemonize", true, Boolean::valueOf),
                 executorConfig.get("nameFormat", name + "-%d"),

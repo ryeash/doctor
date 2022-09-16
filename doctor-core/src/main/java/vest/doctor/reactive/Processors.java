@@ -4,9 +4,9 @@ import java.util.concurrent.Flow;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public final class SignalProcessors {
+public final class Processors {
 
-    private SignalProcessors() {
+    private Processors() {
     }
 
     public static final class OnSubscribeProcessor<I, O> extends AbstractProcessor<I, O> {
@@ -95,6 +95,30 @@ public final class SignalProcessors {
         @Override
         public String toString() {
             return consumer.toString() + "->" + subscriber();
+        }
+    }
+
+    public static final class SignalProcessor<I, O> extends AbstractProcessor<I, O> {
+
+        private final Consumer<Signal<I, ? super O>> action;
+
+        public SignalProcessor(Consumer<Signal<I, ? super O>> action) {
+            this.action = action;
+        }
+
+        @Override
+        public void onNext(I item) {
+            action.accept(new Signal<>(item, null, false, subscription(), subscriber()));
+        }
+
+        @Override
+        public void onError(Throwable throwable) {
+            action.accept(new Signal<>(null, throwable, false, subscription(), subscriber()));
+        }
+
+        @Override
+        public void onComplete() {
+            action.accept(new Signal<>(null, null, true, subscription(), subscriber()));
         }
     }
 }

@@ -5,7 +5,7 @@ import vest.doctor.TypeInfo;
 /**
  * A mutable wrapper around a single method invocation argument value.
  */
-public sealed interface ArgValue<T> permits ArgValueImpl {
+public sealed interface ArgValue permits ArgValueImpl {
 
     /**
      * Get the type information for the parameter.
@@ -25,5 +25,5 @@ public sealed interface ArgValue<T> permits ArgValueImpl {
     /**
      * Set the parameter value.
      */
-    void set(T value);
+    void set(Object value);
 }

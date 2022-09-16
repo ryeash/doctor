@@ -3,6 +3,7 @@ package vest.doctor.reactive;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -19,7 +20,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Test(invocationCount = 5)
-public class FloTest extends Assert {
+public class FlowTest extends Assert {
 
     final ExecutorService BACKGROUND = Executors.newCachedThreadPool();
     final List<String> list = List.of("a", "b", "c", "d", "e", "f");
@@ -38,7 +39,7 @@ public class FloTest extends Assert {
 
     @Test(invocationCount = 250)
     public void flatFlo() {
-        List<String> upper = Rx.each(list)
+        List<String> upper = Rx.each(list, BACKGROUND)
                 .flatMapStream(s -> s.chars().mapToObj(c -> "" + (char) c))
                 .mapPublisher(item -> Rx.one(item).map(String::toUpperCase))
                 .collect(Collectors.toList())
@@ -56,7 +57,6 @@ public class FloTest extends Assert {
                     }
                 })
                 .recover(err -> "RECOVER")
-                .observe(System.out::println)
                 .collect(Collectors.joining(" "))
                 .subscribe()
                 .join();
@@ -66,7 +66,6 @@ public class FloTest extends Assert {
     public void parallel() {
         List<String> join = Rx.each(list)
                 .parallel(BACKGROUND, -1)
-                .observe(s -> System.out.println(Thread.currentThread().getName() + " " + s))
                 .collect(Collectors.toList())
                 .subscribe()
                 .join();
@@ -100,10 +99,8 @@ public class FloTest extends Assert {
         List<String> d = Rx.each(list)
                 .takeWhile(s -> !s.equals("d"))
                 .collect(Collectors.toList())
-                .observe(System.out::println)
                 .subscribe()
                 .join();
-        System.out.println(d);
         assertEquals(d, List.of("a", "b", "c"));
     }
 
@@ -279,29 +276,32 @@ public class FloTest extends Assert {
         assertThrows(future::join);
     }
 
-    public void toStream() {
-        List<String> collect = Rx.each(list)
-                .map(String::toUpperCase)
-                .subscribeStream()
-                .collect(Collectors.toList());
-        assertEquals(collect, capitalized);
+    public void mapAsync() {
+        List<String> join = Rx.each(list)
+                .<String>mapAsync((item, emitter) -> emitter.accept(item.toUpperCase()))
+                .collect(Collectors.toList())
+                .subscribe()
+                .join();
+        assertEquals(join, capitalized);
+    }
 
-        collect = Rx.each(list)
-                .map(String::toUpperCase)
-                .subscribeStream()
-                .parallel()
-                .collect(Collectors.toList());
-        collect.sort(String.CASE_INSENSITIVE_ORDER);
-        assertEquals(collect, capitalized);
-
-        assertThrows(() -> Rx.error(new RuntimeException("error"))
-                .subscribeStream()
-                .forEach(item -> {
-                }));
-        assertThrows(() -> Rx.error(new RuntimeException("error"))
-                .subscribeStream()
-                .parallel()
-                .forEach(item -> {
-                }));
+    public void sig() {
+        List<String> upper = Rx.each(list)
+                .<String>signal(signal -> {
+                    if (signal.isItem()) {
+                        signal.onNext(signal.item().toUpperCase());
+                    } else if (signal.isComplete()) {
+                        signal.onNext("LAST");
+                        signal.onComplete();
+                    } else {
+                        signal.defaultAction();
+                    }
+                })
+                .collect(Collectors.toList())
+                .subscribe()
+                .join();
+        List<String> expected = new ArrayList<>(capitalized);
+        expected.add("LAST");
+        assertEquals(upper, expected);
     }
 }

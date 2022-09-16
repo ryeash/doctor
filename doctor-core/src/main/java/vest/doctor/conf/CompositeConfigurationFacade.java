@@ -1,29 +1,47 @@
-package vest.doctor.runtime;
+package vest.doctor.conf;
 
-import vest.doctor.conf.ConfigurationFacade;
-import vest.doctor.conf.ConfigurationSource;
+import vest.doctor.runtime.FileLocation;
+import vest.doctor.runtime.RuntimeUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * A configuration facade implementation that delegate property requests to
+ * A configuration facade implementation that delegates property requests to
  * a list of {@link ConfigurationSource configuration sources}. The first non-null
  * property value returned by a source is used as the property value.
  */
 public class CompositeConfigurationFacade implements ConfigurationFacade {
 
+    /**
+     * The environment or system property name used by {@link #defaultConfigurationFacade()}
+     * to load a list of property files. The value must be a comma separated list of locations
+     * (classpath, file, http(s)).
+     */
     public static final String PROPERTIES = "doctor.app.properties";
 
     private static final String MACRO_OPEN = "${";
     private static final String MACRO_CLOSE = "}";
 
+    /**
+     * Create a new configuration facade using the default configuration source set. The default
+     * sources are:
+     * <ul>
+     *     <li>environment</li>
+     *     <li>system</li>
+     *     <li>properties files listed in the {@link #PROPERTIES} env/system property</li>
+     * </ul>
+     *
+     * @return a new configuration facade
+     */
     public static ConfigurationFacade defaultConfigurationFacade() {
         CompositeConfigurationFacade facade = new CompositeConfigurationFacade(new ArrayList<>());
         facade.addSource(new EnvironmentVariablesConfigurationSource());
@@ -39,12 +57,20 @@ public class CompositeConfigurationFacade implements ConfigurationFacade {
 
     private final List<ConfigurationSource> sources;
 
+    /**
+     * Initialize a new composite configuration facade with an empty configuration source list.
+     */
     public CompositeConfigurationFacade() {
         this(new ArrayList<>());
     }
 
+    /**
+     * Initialize a new composite configuration facade with the given configuration sources.
+     *
+     * @param sources the configuration sources to initialize with
+     */
     public CompositeConfigurationFacade(List<ConfigurationSource> sources) {
-        this.sources = Objects.requireNonNull(sources);
+        this.sources = new ArrayList<>(Objects.requireNonNull(sources));
     }
 
     @Override
@@ -79,6 +105,36 @@ public class CompositeConfigurationFacade implements ConfigurationFacade {
         return defaultValue;
     }
 
+    /**
+     * Audit a property. Generates a debug string of where the property was found, where
+     * it was found but not used (due to override), and where the property was not present.
+     *
+     * @param propertyName the property to audit
+     * @return a debug string for the property
+     */
+    public String audit(String propertyName) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(propertyName).append("=").append(get(propertyName)).append("\n");
+        int i = 1;
+        boolean found = false;
+        for (ConfigurationSource source : sources) {
+            String s = source.get(propertyName);
+            sb.append(i++).append(". ").append(source).append(" - ");
+            if (s != null) {
+                if (!found) {
+                    found = true;
+                    sb.append("* found and used: ").append(s);
+                } else {
+                    sb.append("! found but overridden: ").append(s);
+                }
+            } else {
+                sb.append("not found");
+            }
+            sb.append('\n');
+        }
+        return sb.toString();
+    }
+
     @Override
     public List<String> getList(String propertyName) {
         return getList(propertyName, List.of(), Function.identity());
@@ -91,16 +147,7 @@ public class CompositeConfigurationFacade implements ConfigurationFacade {
 
     @Override
     public <T> List<T> getList(String propertyName, List<T> defaultValue, Function<String, T> converter) {
-        for (ConfigurationSource source : sources) {
-            List<String> list = source.getList(propertyName);
-            if (list != null) {
-                return list.stream()
-                        .map(this::resolvePlaceholders)
-                        .map(converter)
-                        .toList();
-            }
-        }
-        return defaultValue;
+        return getCol(propertyName, defaultValue, converter, ArrayList::new);
     }
 
     @Override
@@ -115,34 +162,21 @@ public class CompositeConfigurationFacade implements ConfigurationFacade {
 
     @Override
     public <T> Set<T> getSet(String propertyName, Set<T> defaultValue, Function<String, T> converter) {
+        return getCol(propertyName, defaultValue, converter, LinkedHashSet::new);
+    }
+
+    private <C extends Collection<T>, T> C getCol(String propertyName, C defaultValue, Function<String, T> converter, Supplier<C> supplier) {
         for (ConfigurationSource source : sources) {
-            List<String> list = source.getList(propertyName);
+            String list = source.get(propertyName);
             if (list != null) {
-                return list.stream()
+                return RuntimeUtils.split(list, ConfigurationFacade.LIST_DELIMITER)
+                        .stream()
                         .map(this::resolvePlaceholders)
                         .map(converter)
-                        .collect(Collectors.toCollection(LinkedHashSet::new));
+                        .collect(Collectors.toCollection(supplier));
             }
         }
         return defaultValue;
-    }
-
-    @Override
-    public ConfigurationFacade getSubConfiguration(String path) {
-        return sources.stream()
-                .map(s -> s.getSubConfiguration(path))
-                .filter(Objects::nonNull)
-                .collect(Collectors.collectingAndThen(Collectors.toList(), CompositeConfigurationFacade::new));
-    }
-
-    @Override
-    public List<ConfigurationFacade> getSubConfigurations(String path) {
-        return sources.stream()
-                .map(s -> s.getSubConfigurations(path))
-                .filter(Objects::nonNull)
-                .map(CompositeConfigurationFacade::new)
-                .map(ConfigurationFacade.class::cast)
-                .toList();
     }
 
     @Override
@@ -188,11 +222,37 @@ public class CompositeConfigurationFacade implements ConfigurationFacade {
     }
 
     @Override
+    public Collection<String> getSubGroups(String prefix) {
+        return getSubGroups(prefix, String.valueOf(ConfigurationFacade.NESTING_DELIMITER));
+    }
+
+    @Override
+    public Collection<String> getSubGroups(String prefix, String terminal) {
+        return sources.stream()
+                .map(ConfigurationSource::propertyNames)
+                .flatMap(Collection::stream)
+                .filter(name -> name.startsWith(prefix))
+                .map(name -> {
+                    int start = name.indexOf(prefix) + prefix.length();
+                    int end = name.indexOf(terminal, start + 1);
+                    return end > 0
+                            ? name.substring(start, end)
+                            : name.substring(start);
+                })
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    @Override
+    public ConfigurationFacade prefix(String prefix) {
+        return new PrefixedConfigurationFacade(prefix, this);
+    }
+
+    @Override
     public Collection<String> propertyNames() {
         return sources.stream()
                 .map(ConfigurationSource::propertyNames)
                 .flatMap(Collection::stream)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     @Override
@@ -200,6 +260,21 @@ public class CompositeConfigurationFacade implements ConfigurationFacade {
         for (ConfigurationSource source : sources) {
             source.reload();
         }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (String propertyName : propertyNames()) {
+            sb.append(propertyName).append('=');
+            if (Arrays.stream(ConfigurationFacade.REDACT_KEYS).anyMatch(propertyName.toUpperCase()::contains)) {
+                sb.append("[REDACTED]");
+            } else {
+                sb.append(get(propertyName));
+            }
+            sb.append('\n');
+        }
+        return sb.toString();
     }
 
     private static String[] splitColon(String str) {

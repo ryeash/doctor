@@ -6,15 +6,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import vest.doctor.Async;
+import vest.doctor.Eager;
 import vest.doctor.event.ApplicationStarted;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.EventConsumer;
 
+import java.util.concurrent.CompletableFuture;
+
+@Eager
 @Singleton
 public class TCEvent implements EventConsumer<Object> {
 
     private static final Logger log = LoggerFactory.getLogger(TCEvent.class);
-    public boolean eventListened = false;
+    public CompletableFuture<Void> eventListened = new CompletableFuture<>();
     public String messageReceived;
 
     private final EventBus producer;
@@ -33,7 +37,7 @@ public class TCEvent implements EventConsumer<Object> {
     @Override
     public void accept(Object event) {
         if (event instanceof ApplicationStarted startup) {
-            eventListened = true;
+            eventListened.complete(null);
             Assert.assertNotNull(startup);
             Assert.assertNotNull(startup.providerRegistry());
         } else if (event instanceof String) {

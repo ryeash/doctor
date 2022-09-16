@@ -39,16 +39,18 @@ public final class JDBCConnection implements AutoCloseable {
     }
 
     /**
-     * Set the auto-commit value for the {@link Connection}.
+     * Configure the underlying connection.
      *
-     * @param autoCommit the auto-commit value
-     * @return this object
+     * @param configuration the configuration consumer
+     * @return this object for chaining
+     * @see Connection#setAutoCommit(boolean)
+     * @see Connection#setTransactionIsolation(int)
      */
-    public JDBCConnection setAutoCommit(boolean autoCommit) {
+    public JDBCConnection configure(ThrowingConsumer<Connection> configuration) {
         try {
-            connection.setAutoCommit(autoCommit);
-        } catch (SQLException e) {
-            throw new DatabaseException(e);
+            configuration.accept(connection);
+        } catch (Exception e) {
+            throw new DatabaseException("error configuring connection", e);
         }
         return this;
     }
@@ -203,7 +205,7 @@ public final class JDBCConnection implements AutoCloseable {
      * Execute a count query, returning a long representing the number of rows counted.
      *
      * @param sql         the count query
-     * @param countColumn the count column name (for use with {@link Row#get(String, Class)})
+     * @param countColumn the count column name (for use with {@link Row#getNumber(String)})
      * @return the count
      */
     public long count(String sql, String countColumn) {

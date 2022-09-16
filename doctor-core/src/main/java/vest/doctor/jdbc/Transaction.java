@@ -7,10 +7,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * A database transaction that uses a lazily allocated connection. Actions are buffered with
- * calls to {@link #accept(Consumer)} and {@link #apply(Function)}. When {@link #commit()} is called a connection is
- * allocated and the actions are executed using it. The actions are executed in the order they were buffered using
- * {@link JDBC#inTransaction(Consumer)}, so all commit/rollback guarantees of that method
+ * A database transaction that uses a lazily allocated connection to execute buffered/deferred actions.
+ * Actions are buffered with calls to {@link #accept(Consumer)} and {@link #apply(Function)}. When {@link #commit()}
+ * is called a connection is allocated and the actions are executed using it. The actions are executed in the order
+ * they were buffered using {@link JDBC#inTransaction(Consumer)}, so all commit/rollback guarantees of that method
  * hold true when this transaction commits.
  * <p><br/>
  * This transaction is only valid for one commit (or rollback), i.e. once committed, this transaction is

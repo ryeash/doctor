@@ -10,10 +10,10 @@ import org.testng.Assert;
 import vest.doctor.Cached;
 import vest.doctor.DestroyMethod;
 import vest.doctor.Factory;
+import vest.doctor.Import;
 import vest.doctor.Modules;
 import vest.doctor.Primary;
 import vest.doctor.Prototype;
-import vest.doctor.ProviderRegistry;
 import vest.doctor.SkipInjection;
 import vest.doctor.ThreadLocal;
 import vest.doctor.aop.Aspects;
@@ -26,6 +26,7 @@ import java.util.Map;
 
 @Singleton
 @Named("duck")
+@Import({"app.ext", "app.ext.sub"})
 public class TestAppConfig {
 
     @Factory
@@ -139,7 +140,7 @@ public class TestAppConfig {
     @Factory
     @Singleton
     @Named("static")
-    public static Object staticFactory() {
+    public static String staticFactory() {
         return "static";
     }
 
@@ -173,11 +174,13 @@ public class TestAppConfig {
     @Singleton
     @Named("default")
     @DestroyMethod("close")
-    public EntityManagerFactory defaultEntityManagerFactory(ProviderRegistry providerRegistry, DBProps dbProps) {
+    public EntityManagerFactory defaultEntityManagerFactory(DBProps dbProps) {
         Map<String, String> properties = new LinkedHashMap<>();
         properties.put("jakarta.persistence.jdbc.url", dbProps.url());
+        properties.put("jakarta.persistence.jdbc.user", dbProps.username());
+        properties.put("jakarta.persistence.jdbc.password", dbProps.password());
         properties.put("hibernate.hbm2ddl.auto", "create");
-        return Persistence.createEntityManagerFactory(providerRegistry.resolvePlaceholders("default"), properties);
+        return Persistence.createEntityManagerFactory("default", properties);
     }
 
     @Factory

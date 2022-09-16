@@ -1,6 +1,7 @@
 package vest.doctor.runtime;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public final class RuntimeUtils {
@@ -9,6 +10,9 @@ public final class RuntimeUtils {
     }
 
     public static List<String> split(String str, char delimiter) {
+        if (str == null || str.isEmpty()) {
+            return Collections.emptyList();
+        }
         List<String> split = new ArrayList<>();
         int i = 0;
         int next;
@@ -18,5 +22,11 @@ public final class RuntimeUtils {
         }
         split.add(str.substring(i));
         return split;
+    }
+
+    public static void close(Object o) throws Exception {
+        if (o instanceof AutoCloseable ac) {
+            ac.close();
+        }
     }
 }

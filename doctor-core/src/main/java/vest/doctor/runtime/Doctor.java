@@ -8,7 +8,12 @@ import vest.doctor.ApplicationLoader;
 import vest.doctor.DoctorProvider;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.conf.CompositeConfigurationFacade;
 import vest.doctor.conf.ConfigurationFacade;
+import vest.doctor.conf.EnvironmentVariablesConfigurationSource;
+import vest.doctor.conf.StructuredConfigurationSource;
+import vest.doctor.conf.SystemPropertiesConfigurationSource;
+import vest.doctor.conf.UnmodifiableConfigurationFacade;
 import vest.doctor.event.ApplicationShutdown;
 import vest.doctor.event.ApplicationStarted;
 import vest.doctor.event.EventBus;
@@ -109,10 +114,10 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
      * <p>
      * Supported arguments/flags:<br>
      * <ul>
-     *     <li>-m, --modules : a comma delimited list of modules to enable</li>
+     *     <li>-m, --modules : a comma delimited list of modules to enable; defaults to an empty list</li>
      *     <li>-p, --properties : a comma delimited list of properties files to load (in precedence order);
      *     the locations 'env' and 'system' can be used to add {@link EnvironmentVariablesConfigurationSource}
-     *     and {@link SystemPropertiesConfigurationSource} sources respectively, the default is "env,system"</li>
+     *     and {@link SystemPropertiesConfigurationSource} sources respectively; the default is "env,system"</li>
      * </ul>
      */
     public static void main(String[] args) {
@@ -120,16 +125,15 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         String modules = a.option("modules", 'm');
         String properties = a.option("properties", 'p', "env,system");
 
-        ConfigurationFacade facade = RuntimeUtils.split(properties.trim(), ',')
-                .stream()
-                .map(propertyLocation ->
-                        switch (propertyLocation) {
-                            case "env" -> new EnvironmentVariablesConfigurationSource();
-                            case "system" -> new SystemPropertiesConfigurationSource();
-                            default -> new StructuredConfigurationSource(new FileLocation(propertyLocation));
-                        })
-                .reduce(new CompositeConfigurationFacade(), ConfigurationFacade::addSource, (l, r) -> r);
-        new Doctor(facade, RuntimeUtils.split(modules, ','), new ArgsLoader(a));
+        ConfigurationFacade facade = new CompositeConfigurationFacade();
+        for (String propLocation : RuntimeUtils.split(properties.trim(), ConfigurationFacade.LIST_DELIMITER)) {
+            facade.addSource(switch (propLocation) {
+                case "env" -> new EnvironmentVariablesConfigurationSource();
+                case "system" -> new SystemPropertiesConfigurationSource();
+                default -> new StructuredConfigurationSource(new FileLocation(propLocation));
+            });
+        }
+        new Doctor(facade, RuntimeUtils.split(modules, ConfigurationFacade.LIST_DELIMITER), new ArgsLoader(a));
     }
 
     private final List<String> activeModules;
@@ -149,8 +153,8 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         long start = System.currentTimeMillis();
         this.providerIndex = new ProviderIndex();
         providerIndex.setProvider(new AdHocProvider<>(Doctor.class, this, null, List.of(Doctor.class, ProviderRegistry.class)));
-        this.activeModules = activeModules;
-        this.configurationFacade = configurationFacade;
+        this.activeModules = Collections.unmodifiableList(activeModules);
+        this.configurationFacade = new UnmodifiableConfigurationFacade(configurationFacade);
 
         log.debug("Active modules: {}", this.activeModules);
         log.debug("Configuration: {}", this.configurationFacade);
@@ -181,8 +185,10 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
             loader.stage5(this);
         }
 
-        if (!configurationFacade.get("doctor.skip.validation", false, Boolean::valueOf)) {
+        if (!configurationFacade.get("doctor.skipValidation", false, Boolean::valueOf)) {
             providerIndex.allProviders().forEach(np -> np.validateDependencies(this));
+        } else {
+            log.warn("provider dependency validation skipped");
         }
 
         if (configurationFacade.get("doctor.autoShutdown", true, Boolean::valueOf)) {

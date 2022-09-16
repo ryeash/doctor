@@ -14,15 +14,15 @@ import java.util.stream.Stream;
 /**
  * An immutable wrapper around the arguments passed into the main method.
  * Options (named arguments that are followed by a value)
- * and Flags (named arguments that are interpreted as boolean true/false) are supported
- * in addition to simple position arguments.
+ * and Flags (named arguments that are interpreted as boolean true if present) are supported
+ * in addition to position arguments.
  * <p>
  * Example:
  * java -jar app.jar -Fg --debug -e "dev"
  * F, g, and debug would all be flags (i.e. {@link #flag(String)} would return true)
- * e is an option (i.e {@link #option(String)} would return "dev" for "e")
+ * e is an option (i.e. {@link #option(String)} would return "dev" for "e")
  */
-public class Args implements Iterable<String> {
+public final class Args implements Iterable<String> {
 
     public static final String FLAG = "-";
     public static final String VERBOSE_FLAG = "--";

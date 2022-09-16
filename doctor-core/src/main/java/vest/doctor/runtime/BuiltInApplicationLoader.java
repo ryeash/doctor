@@ -3,7 +3,6 @@ package vest.doctor.runtime;
 import vest.doctor.AdHocProvider;
 import vest.doctor.ApplicationLoader;
 import vest.doctor.ProviderRegistry;
-import vest.doctor.SingletonScopedProvider;
 import vest.doctor.conf.ConfigurationFacade;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.ReloadConfiguration;
@@ -11,7 +10,7 @@ import vest.doctor.event.ReloadConfiguration;
 import java.util.HashMap;
 import java.util.Map;
 
-public class BuiltInApplicationLoader implements ApplicationLoader {
+public final class BuiltInApplicationLoader implements ApplicationLoader {
 
     public static final String DEFAULT_EXECUTOR_NAME = "default";
     public static final String DEFAULT_SCHEDULED_EXECUTOR_NAME = "scheduled";
@@ -22,8 +21,7 @@ public class BuiltInApplicationLoader implements ApplicationLoader {
 
         Map<String, ConfigurationDrivenExecutorServiceProvider.ThreadPoolType> executors = new HashMap<>();
         providerRegistry.configuration()
-                .getSubConfiguration("executors")
-                .propertyNames()
+                .getSubGroups("executors.")
                 .forEach(n -> executors.put(n, null));
 
         EventBus eventBus = new EventBusImpl();

@@ -6,7 +6,9 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -48,8 +50,12 @@ public class JDBCTest extends Assert {
         });
 
         jdbc.inTransaction(c -> {
-            c.setAutoCommit(false);
-            JDBCStatement<PreparedStatement> insertUser = c.prepare("insert into users values (?, ?, ?)");
+            JDBCStatement<PreparedStatement> insertUser = c
+                    .configure(conn -> {
+                        conn.setAutoCommit(false);
+                        conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+                    })
+                    .prepare("insert into users values (?, ?, ?)");
             for (int i = 0; i < 50; i++) {
                 insertUser.bindAll(List.of(i, i + "", "password")).addBatch();
             }
@@ -84,7 +90,14 @@ public class JDBCTest extends Assert {
         });
 
         List<Map<String, Object>> rows = jdbc.withConnection(c -> {
-            return c.select("select * from users limit 10")
+            return c.statement("select * from users limit 10")
+                    .configure(s -> {
+                        s.setMaxRows(10);
+                        s.setFetchDirection(ResultSet.FETCH_FORWARD);
+                        s.setFetchSize(1000);
+                        s.setQueryTimeout(2);
+                    })
+                    .execute()
                     .map(Row::toMap)
                     .toList();
         });
@@ -94,12 +107,8 @@ public class JDBCTest extends Assert {
     @Test(invocationCount = 1)
     public void insertMechanisms() {
         try (Transaction tx = jdbc.transaction()) {
-            tx.accept(c -> {
-                c.insert("insert into properties values (?, ?, ?)", List.of(0, "bats", "numerous"));
-            });
-            tx.accept(c -> {
-                c.insert("insert into properties values (0, 'cats', 'none')");
-            });
+            tx.accept(c -> c.insert("insert into properties values (?, ?, ?)", List.of(0, "bats", "numerous")));
+            tx.accept(c -> c.insert("insert into properties values (0, 'cats', 'none')"));
         }
         String bats = jdbc.connection().select("select * from properties where user_id = 0 and name = 'bats'")
                 .map(row -> row.getString("data"))
@@ -193,11 +202,9 @@ public class JDBCTest extends Assert {
 
     public void invalidTransactionReturnType() {
         try (Transaction tx = jdbc.transaction()) {
-            tx.apply(c -> {
-                return c.select("select name from users limit 1")
-                        .map(row -> row.getString("name"))
-                        .collect(Collectors.toList());
-            }).whenComplete((name, error) -> {
+            tx.apply(c -> c.select("select name from users limit 1")
+                    .map(row -> row.getString("name"))
+                    .collect(Collectors.toList())).whenComplete((name, error) -> {
                 assertNull(name);
                 assertNotNull(error);
             });
@@ -207,11 +214,9 @@ public class JDBCTest extends Assert {
                         assertNotNull(error);
                         assertTrue(error instanceof IllegalArgumentException);
                     });
-            tx.apply(c -> {
-                return c.select("select name from users limit 1")
-                        .map(row -> row.getString("name"))
-                        .collect(Collectors.toList());
-            }).whenComplete((name, error) -> {
+            tx.apply(c -> c.select("select name from users limit 1")
+                    .map(row -> row.getString("name"))
+                    .collect(Collectors.toList())).whenComplete((name, error) -> {
                 assertNull(name);
                 assertNotNull(error);
             });

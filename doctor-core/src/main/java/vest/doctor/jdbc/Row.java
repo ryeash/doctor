@@ -13,7 +13,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
- * A wrapper around the {@link ResultSet} produced by executing a {@link java.sql.Statement}.
+ * A wrapper around the {@link ResultSet} produced by executing a {@link java.sql.Statement} representing
+ * a single row of data.
  */
 public final class Row {
 
@@ -43,7 +44,7 @@ public final class Row {
     }
 
     /**
-     * For non-selecting queries (i.e. insert, update, delete), get the number of row affected by the query.
+     * For non-selecting queries (i.e. insert, update, delete), get the number of rows affected by the query.
      * For selecting queries, return -1.
      *
      * @return the number of rows affected by the query, or -1 if the query was selecting

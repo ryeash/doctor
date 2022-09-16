@@ -46,111 +46,20 @@ public final class JDBCStatement<S extends Statement> implements AutoCloseable {
     }
 
     /**
+     * Configure the underlying statement.
+     *
+     * @param configuration the configuration consumer
+     * @return this object for chaining
      * @see Statement#setFetchSize(int)
-     */
-    public JDBCStatement<S> setFetchSize(int fetchSize) {
-        try {
-            this.statement.setFetchSize(fetchSize);
-            return this;
-        } catch (SQLException e) {
-            throw new DatabaseException("error setting fetch size", e);
-        }
-    }
-
-    /**
-     * @see Statement#setFetchDirection(int)
-     */
-    public JDBCStatement<S> setFetchDirection(int fetchDirection) {
-        try {
-            this.statement.setFetchDirection(fetchDirection);
-            return this;
-        } catch (SQLException e) {
-            throw new DatabaseException("error setting fetch direction", e);
-        }
-    }
-
-    /**
-     * @see Statement#setCursorName(String)
-     */
-    public JDBCStatement<S> setCursorName(String name) {
-        try {
-            this.statement.setCursorName(name);
-            return this;
-        } catch (SQLException e) {
-            throw new DatabaseException("error setting cursor name", e);
-        }
-    }
-
-    /**
-     * @see Statement#setEscapeProcessing(boolean)
-     */
-    public JDBCStatement<S> setEscapeProcessing(boolean enabled) {
-        try {
-            this.statement.setEscapeProcessing(enabled);
-            return this;
-        } catch (SQLException e) {
-            throw new DatabaseException("error setting escape processing", e);
-        }
-    }
-
-    /**
      * @see Statement#setMaxRows(int)
      */
-    public JDBCStatement<S> setMaxRows(int max) {
+    public JDBCStatement<S> configure(ThrowingConsumer<S> configuration) {
         try {
-            this.statement.setMaxRows(max);
-            return this;
-        } catch (SQLException e) {
-            throw new DatabaseException("error setting max rows (int)", e);
+            configuration.accept(this.statement);
+        } catch (Exception e) {
+            throw new DatabaseException("error configuring statement", e);
         }
-    }
-
-    /**
-     * @see Statement#setLargeMaxRows(long)
-     */
-    public JDBCStatement<S> setLargeMaxRows(long max) {
-        try {
-            this.statement.setLargeMaxRows(max);
-            return this;
-        } catch (SQLException e) {
-            throw new DatabaseException("error setting max rows (long)", e);
-        }
-    }
-
-    /**
-     * @see Statement#setMaxFieldSize(int)
-     */
-    public JDBCStatement<S> setMaxFieldSize(int max) {
-        try {
-            this.statement.setMaxFieldSize(max);
-            return this;
-        } catch (SQLException e) {
-            throw new DatabaseException("error setting max field size", e);
-        }
-    }
-
-    /**
-     * @see Statement#setPoolable(boolean)
-     */
-    public JDBCStatement<S> setPoolable(boolean poolable) {
-        try {
-            this.statement.setPoolable(poolable);
-            return this;
-        } catch (SQLException e) {
-            throw new DatabaseException("error setting poolable", e);
-        }
-    }
-
-    /**
-     * @see Statement#setQueryTimeout(int)
-     */
-    public JDBCStatement<S> setQueryTimeout(int seconds) {
-        try {
-            this.statement.setQueryTimeout(seconds);
-            return this;
-        } catch (SQLException e) {
-            throw new DatabaseException("error setting query timeout", e);
-        }
+        return this;
     }
 
     /**

@@ -20,6 +20,7 @@ import vest.doctor.processing.ProviderDefinition;
 import vest.doctor.processing.ProviderDependency;
 import vest.doctor.runtime.AnnotationDataImpl;
 import vest.doctor.runtime.AnnotationMetadataImpl;
+import vest.doctor.runtime.RuntimeUtils;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -224,15 +225,12 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                 }
                 throw new CodeProcessingException("invalid destroy method `" + providedType() + "." + destroyAnnotation.value() + "` is not valid; destroy methods must exist, be public, and have zero arguments");
             } else {
-                destroy.addImportClass(AutoCloseable.class);
-                destroy.line("if(instance instanceof ", AutoCloseable.class, "){");
-                destroy.line("((", AutoCloseable.class, ")instance).close();");
-                destroy.line("}");
+                destroy.addImportClass(RuntimeUtils.class);
+                destroy.line("RuntimeUtils.close(instance);");
             }
         });
 
         classBuilder.addMethod("@Override public void close() throws Exception", close -> {
-
         });
 
         // must define the .get() method

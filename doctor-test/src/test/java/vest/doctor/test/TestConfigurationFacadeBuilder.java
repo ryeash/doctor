@@ -1,8 +1,8 @@
 package vest.doctor.test;
 
+import vest.doctor.conf.CompositeConfigurationFacade;
 import vest.doctor.conf.ConfigurationFacade;
-import vest.doctor.runtime.CompositeConfigurationFacade;
-import vest.doctor.runtime.SystemPropertiesConfigurationSource;
+import vest.doctor.conf.SystemPropertiesConfigurationSource;
 
 import java.util.function.Supplier;
 

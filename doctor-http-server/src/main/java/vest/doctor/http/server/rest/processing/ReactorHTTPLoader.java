@@ -43,7 +43,7 @@ public class ReactorHTTPLoader implements ApplicationLoader {
     @Override
     public void stage4(ProviderRegistry providerRegistry) {
 
-        ConfigurationFacade httpConf = providerRegistry.configuration().getSubConfiguration("doctor.reactor.http");
+        ConfigurationFacade httpConf = providerRegistry.configuration().prefix("doctor.reactor.http.");
 
         HttpServerBuilder builder = new HttpServerBuilder();
 

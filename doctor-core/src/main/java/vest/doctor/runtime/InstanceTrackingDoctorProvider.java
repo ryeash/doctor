@@ -1,4 +1,8 @@
-package vest.doctor;
+package vest.doctor.runtime;
+
+import vest.doctor.DoctorProvider;
+import vest.doctor.DoctorProviderWrapper;
+import vest.doctor.WeakList;
 
 import java.util.Iterator;
 
@@ -6,7 +10,7 @@ import java.util.Iterator;
  * Provider wrapper that tracks created instances to ensure they are destroyed when the provider
  * registry terminates.
  */
-public abstract class InstanceTrackingDoctorProvider<T> extends DoctorProviderWrapper<T> {
+abstract class InstanceTrackingDoctorProvider<T> extends DoctorProviderWrapper<T> {
 
     protected final WeakList<T> weakList = new WeakList<>(this::destroyUnchecked);
 

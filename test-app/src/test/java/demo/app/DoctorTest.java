@@ -1,5 +1,6 @@
 package demo.app;
 
+import app.ext.Widget;
 import demo.app.dao.DAO;
 import demo.app.dao.DBProps;
 import demo.app.dao.User;
@@ -10,6 +11,7 @@ import org.hibernate.AssertionFailure;
 import org.testng.annotations.Test;
 import vest.doctor.AnnotationData;
 import vest.doctor.DoctorProvider;
+import vest.doctor.ThreadLocal;
 import vest.doctor.conf.ConfigurationFacade;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.ReloadConfiguration;
@@ -24,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -47,10 +50,9 @@ public class DoctorTest extends AbstractTestAppTest {
     }
 
     @Test
-    public void event() throws InterruptedException {
+    public void event() throws InterruptedException, ExecutionException, TimeoutException {
         TCEvent event = providerRegistry().getInstance(TCEvent.class);
-        assertTrue(event.eventListened);
-        Thread.sleep(5);
+        event.eventListened.get(100, TimeUnit.MILLISECONDS);
         assertEquals(event.messageReceived, "test");
     }
 
@@ -75,7 +77,7 @@ public class DoctorTest extends AbstractTestAppTest {
         assertTrue(conf.get("boolean", Boolean::valueOf));
         assertEquals(conf.get("override.this"), "overridden");
 
-        ConfigurationFacade db = configuration().getSubConfiguration("db");
+        ConfigurationFacade db = configuration().prefix("db.");
         assertNotNull(db.get("url"));
         assertNotNull(db.get("username"));
         assertNotNull(db.get("password"));
@@ -93,6 +95,7 @@ public class DoctorTest extends AbstractTestAppTest {
         assertEquals(dbProps.username(), "unused");
         assertEquals(dbProps.password(), "nothing");
         assertEquals(dbProps.timeout(), 12);
+        assertNull(dbProps.willBeNull().orElse(null));
     }
 
     @Test
@@ -227,7 +230,7 @@ public class DoctorTest extends AbstractTestAppTest {
 
     @Test
     public void staticFactory() {
-        Object str = providerRegistry().getInstance(Object.class, "static");
+        String str = providerRegistry().getInstance(String.class, "static");
         assertEquals(str, "static");
     }
 
@@ -341,5 +344,19 @@ public class DoctorTest extends AbstractTestAppTest {
         assertEquals(second.enumValue("color"), CustomQualifier.Color.RED);
 
         assertEquals(provider.annotationMetadata().objectValue(Everything.class, "string"), "a");
+    }
+
+    @Test
+    public void activation() {
+        assertTrue(providerRegistry().getProviderOpt(TCActivation.class).isPresent());
+    }
+
+    @Test
+    public void imported() {
+        Widget rotate = providerRegistry().getInstance(Widget.class);
+        assertEquals(rotate.wonk(), "rotate");
+        assertSame(providerRegistry().getProvider(Widget.class).scope(), ThreadLocal.class);
+        Widget spring = providerRegistry().getInstance(Widget.class, "spring");
+        assertEquals(spring.wonk(), "spring");
     }
 }

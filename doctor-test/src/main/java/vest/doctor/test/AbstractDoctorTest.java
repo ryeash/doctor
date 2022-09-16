@@ -136,8 +136,11 @@ public abstract class AbstractDoctorTest extends Assert {
                 return providerRegistry.getProvider(paramType, qualifier);
             }
             throw new UnsupportedOperationException("unable to inject value for " + type);
+        } else if (type instanceof Class<?> clazz) {
+            return providerRegistry.getInstance(clazz, qualifier);
+        } else {
+            throw new UnsupportedOperationException("unable to inject value for " + type);
         }
-        return providerRegistry.getInstance((Class<?>) type, qualifier);
     }
 
     private static String qualifier(AnnotatedElement annotatedElement) {

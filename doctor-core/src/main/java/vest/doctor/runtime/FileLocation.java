@@ -1,11 +1,13 @@
 package vest.doctor.runtime;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -42,7 +44,7 @@ public record FileLocation(String location) {
                 return new FileInputStream(location);
             }
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new UncheckedIOException("error reading file data from " + location, e);
         }
     }
 
@@ -59,23 +61,45 @@ public record FileLocation(String location) {
     }
 
     /**
-     * Fully read the file to a string.
+     * Fully read the file to a string using the UTF-8 charset.
      *
      * @return a string representation of the contents of the file
      * @throws UncheckedIOException for any IO error
      */
     public String readToString() {
-        StringBuilder sb = new StringBuilder();
+        return readToString(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Fully read the file to a string using the given charset.
+     *
+     * @param charset the charset to use to decode the data
+     * @return a string representation of the contents of the file
+     * @throws UncheckedIOException for any IO error
+     */
+    public String readToString(Charset charset) {
+        return new String(readToBytes(), charset);
+    }
+
+    /**
+     * Fully read the file to a byte array.
+     *
+     * @return an array of all bytes read from the file location
+     * @throws UncheckedIOException for any IO error
+     */
+    public byte[] readToBytes() {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
         int read;
-        byte[] buf = new byte[2048];
+        byte[] buf = new byte[1024];
         try (InputStream inputStream = openStream()) {
             while ((read = inputStream.read(buf)) >= 0) {
-                sb.append(new String(buf, 0, read, StandardCharsets.UTF_8));
+                baos.write(buf, 0, read);
             }
+            baos.close();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-        return sb.toString();
+        return baos.toByteArray();
     }
 
     @Override

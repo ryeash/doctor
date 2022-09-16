@@ -1,5 +1,9 @@
-package vest.doctor;
+package vest.doctor.runtime;
 
+import vest.doctor.Cached;
+import vest.doctor.DoctorProvider;
+import vest.doctor.DoctorProviderWrapper;
+import vest.doctor.ProviderRegistry;
 import vest.doctor.event.ErrorEvent;
 import vest.doctor.event.EventBus;
 

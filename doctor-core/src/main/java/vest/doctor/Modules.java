@@ -1,5 +1,7 @@
 package vest.doctor;
 
+import vest.doctor.runtime.ModuleActivation;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -16,6 +18,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Documented
 @Retention(RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
+@Activation(ModuleActivation.class)
 public @interface Modules {
 
     /**

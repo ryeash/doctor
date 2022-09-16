@@ -17,6 +17,15 @@ public final class JDBC {
     /**
      * Create a new JDBC object backed by the given {@link DataSource}
      *
+     * @param dataSource the data source to use to create new connections
+     */
+    public JDBC(DataSource dataSource) {
+        this(dataSource, List.of());
+    }
+
+    /**
+     * Create a new JDBC object backed by the given {@link DataSource}
+     *
      * @param dataSource   the data source to use to create new connections
      * @param interceptors interceptors to use with this JDBC instance
      */
@@ -37,7 +46,8 @@ public final class JDBC {
     /**
      * Allocate a new {@link Connection} and return the {@link JDBCConnection} wrapper.
      * The {@link JDBCConnection} will be in one-shot mode by default, i.e. the connection will
-     * be closed automatically after first statement execution.
+     * be closed automatically after first statement execution. Ensure you close the connection, either
+     * explicitly or by executing a statement, else resources will leak.
      *
      * @return a new jdbc connection wrapper
      */

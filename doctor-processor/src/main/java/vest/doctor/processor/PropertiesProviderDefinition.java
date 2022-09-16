@@ -9,6 +9,7 @@ import vest.doctor.codegen.ProcessorUtils;
 import vest.doctor.conf.ConfigurationFacade;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
+import vest.doctor.runtime.PropertiesTrait;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
@@ -37,7 +38,7 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
         ClassBuilder impl = new ClassBuilder()
                 .setClassName(context.generatedPackageName(type) + "." + implClass)
                 .addImportClass(ConfigurationFacade.class)
-                .setExtendsClass("vest.doctor.runtime.PropertiesTrait")
+                .setExtendsClass(PropertiesTrait.class)
                 .addImplementsInterface(type.toString());
 
         this.propertyPrefix = Optional.ofNullable(type.getAnnotation(Properties.class))

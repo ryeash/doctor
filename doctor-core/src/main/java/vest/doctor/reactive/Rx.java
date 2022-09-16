@@ -22,6 +22,9 @@ import java.util.stream.Stream;
  */
 public class Rx<T> implements Flow.Publisher<T> {
 
+    public static final Runnable NO_OP = () -> {
+    };
+
     /**
      * Create a new reactive flow that will, when subscribed, publish the given item and then close
      * the flow, i.e. call {@link Flow.Subscriber#onComplete()}.
@@ -105,7 +108,7 @@ public class Rx<T> implements Flow.Publisher<T> {
     }
 
     /**
-     * Create a new reactive flow composition starting from the given publisher.
+     * Create a new reactive flow composition starting with the given publisher.
      *
      * @param publisher the publisher to start the composition with
      * @param <I>       the published item type
@@ -116,8 +119,7 @@ public class Rx<T> implements Flow.Publisher<T> {
         if (publisher instanceof Rx<?> rx) {
             return (Rx<I>) rx;
         } else {
-            return new Rx<>(() -> {
-            }, publisher);
+            return new Rx<>(NO_OP, publisher);
         }
     }
 
@@ -247,7 +249,19 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @return the next step in the processing composition
      */
     public <R> Rx<R> mapPublisher(Function<? super T, ? extends Flow.Publisher<R>> function) {
-        return chain(new Stitch<>(function));
+        return chain(new Adapters.MappedFlowStitch<>(function));
+    }
+
+    /**
+     * Add a signal processing stage to the processing flow. Signal processing combines all
+     * {@link Flow.Subscriber} method calls into a single {@link Signal} consumer action.
+     *
+     * @param action the signal processing action
+     * @param <R>    the new published item type
+     * @return the next step in the processing composition
+     */
+    public <R> Rx<R> signal(Consumer<Signal<T, ? super R>> action) {
+        return chain(new Processors.SignalProcessor<>(action));
     }
 
     /**
@@ -350,7 +364,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @return the next step in the composed processing flow
      */
     public Rx<T> onSubscribe(Consumer<Flow.Subscription> action) {
-        return chain(new SignalProcessors.OnSubscribeProcessor<>(action));
+        return chain(new Processors.OnSubscribeProcessor<>(action));
     }
 
     /**
@@ -361,7 +375,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @return the next step in the processing composition
      */
     public <R> Rx<R> onNext(TriConsumer<? super T, Flow.Subscription, Flow.Subscriber<? super R>> action) {
-        return chain(new SignalProcessors.OnNextProcessor<>(action));
+        return chain(new Processors.OnNextProcessor<>(action));
     }
 
     /**
@@ -371,7 +385,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @return the next step in the processing composition
      */
     public Rx<T> onError(TriConsumer<Throwable, Flow.Subscription, Flow.Subscriber<? super T>> action) {
-        return chain(new SignalProcessors.OnErrorProcessor<>(action));
+        return chain(new Processors.OnErrorProcessor<>(action));
     }
 
     /**
@@ -381,7 +395,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @return the next step in the processing composition
      */
     public Rx<T> onComplete(BiConsumer<Flow.Subscription, Flow.Subscriber<? super T>> action) {
-        return chain(new SignalProcessors.OnCompleteProcessor<>(action));
+        return chain(new Processors.OnCompleteProcessor<>(action));
     }
 
     /**
@@ -392,7 +406,7 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @return the next step in the processing composition
      */
     public Rx<T> chain(Flow.Subscriber<? super T> subscriber) {
-        return chain(new Bridge<>(subscriber));
+        return chain(new Adapters.SubscriberProcessor<>(subscriber));
     }
 
     /**
@@ -442,36 +456,6 @@ public class Rx<T> implements Flow.Publisher<T> {
             onSubscribe.run();
         }
         return future;
-    }
-
-    /**
-     * Subscribe to this processing flow and connect its output to a blocking {@link Stream}.
-     *
-     * @return a stream of all items emitted from the reactive processing flow
-     */
-    public Stream<T> subscribeStream() {
-        return subscribeStream(Long.MAX_VALUE, 1, TimeUnit.MINUTES);
-    }
-
-    /**
-     * Subscribe to this processing flow and connect its output to a blocking {@link Stream}.
-     *
-     * @param initialRequest   the initial requested items, via {@link Flow.Subscription#request(long)};
-     *                         if less than 1, no items will be requested, potentially stalling execution
-     *                         of processing unless an intermediary stage makes an initial request
-     *                         (e.g. {@link #onSubscribe(Consumer)}
-     * @param offerTimeout     the timeout to use when handing off signals between the reactive processing flow
-     *                         and the stream
-     * @param offerTimeoutUnit the timeout unit
-     * @return a stream of all items emitted from the reactive processing flow
-     */
-    public Stream<T> subscribeStream(long initialRequest, int offerTimeout, TimeUnit offerTimeoutUnit) {
-        StreamSubscriber<T> streamSubscriber = new StreamSubscriber<>(initialRequest, offerTimeout, offerTimeoutUnit);
-        current.subscribe(streamSubscriber);
-        if (onSubscribe != null) {
-            onSubscribe.run();
-        }
-        return streamSubscriber.toStream();
     }
 
     @Override

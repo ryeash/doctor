@@ -25,7 +25,7 @@ public interface Handler {
 
     /**
      * Create a request Handler with a synchronous function. The request body will be buffered
-     * into a single {@link ByteBuf} and automatically released after the function is called.
+     * into a single {@link ByteBuf} and automatically {@link ByteBuf#release() released} after the function is called.
      *
      * @param function the handler function that returns a {@link Response}
      * @return a new handler
