@@ -8,14 +8,13 @@ import vest.doctor.event.ErrorEvent;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.ReloadProviders;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 /**
  * Provider wrapper that supports the {@link Reloadable} scope.
  */
 public final class ReloadableScopeProvider<T> extends DoctorProviderWrapper<T> {
 
-    private final AtomicReference<T> value = new AtomicReference<>();
+    private volatile boolean instantiated = false;
+    private T instance;
     private final EventBus eventBus;
 
     public ReloadableScopeProvider(DoctorProvider<T> delegate, ProviderRegistry providerRegistry) {
@@ -26,7 +25,15 @@ public final class ReloadableScopeProvider<T> extends DoctorProviderWrapper<T> {
 
     @Override
     public T get() {
-        return value.updateAndGet(this::createOrGet);
+        if (!instantiated) {
+            synchronized (this) {
+                if (!instantiated) {
+                    this.instance = delegate.get();
+                    this.instantiated = true;
+                }
+            }
+        }
+        return instance;
     }
 
     @Override
@@ -35,17 +42,18 @@ public final class ReloadableScopeProvider<T> extends DoctorProviderWrapper<T> {
         super.close();
     }
 
-    private T createOrGet(T existing) {
-        return existing == null ? delegate.get() : existing;
-    }
-
     private void clearValue(ReloadProviders reloadProviders) {
-        T previous = value.getAndSet(null);
-        if (previous != null) {
-            try {
-                destroy(previous);
-            } catch (Throwable t) {
-                eventBus.publish(new ErrorEvent(t));
+        if (instantiated) {
+            synchronized (this) {
+                if (instantiated) {
+                    try {
+                        destroy(instance);
+                    } catch (Throwable t) {
+                        eventBus.publish(new ErrorEvent(t));
+                    }
+                    this.instance = null;
+                    this.instantiated = false;
+                }
             }
         }
     }

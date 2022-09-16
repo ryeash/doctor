@@ -95,6 +95,7 @@ public class DoctorTest extends AbstractTestAppTest {
         assertEquals(dbProps.username(), "unused");
         assertEquals(dbProps.password(), "nothing");
         assertEquals(dbProps.timeout(), 12);
+        assertNull(dbProps.willBeNull().orElse(null));
     }
 
     @Test

@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE})
 public @interface Import {
     /**
-     * The packages to import into the compilation environment. All top level classes and interface found in the package
+     * The packages to import into the compilation environment. All top level elements found in the package
      * will be processed; elements in sub-packages will <i>not</i> be processed.
      *
      * @return an array of packages to import into the compilation environment

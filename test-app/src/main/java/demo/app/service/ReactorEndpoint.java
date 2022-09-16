@@ -123,7 +123,13 @@ public class ReactorEndpoint {
     @Endpoint("/multipart")
     public Flow.Publisher<String> multipart(@Body Flow.Publisher<MultiPartData.Part> form) {
         return Rx.from(form)
-                .map(data -> data.data().toString(StandardCharsets.UTF_8))
+                .map(data -> {
+                    try {
+                        return data.data().toString(StandardCharsets.UTF_8);
+                    } finally {
+                        data.data().release();
+                    }
+                })
                 .collect(Collectors.joining());
     }
 

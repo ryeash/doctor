@@ -4,6 +4,8 @@ import jakarta.inject.Singleton;
 import vest.doctor.Properties;
 import vest.doctor.Property;
 
+import java.util.Optional;
+
 @Singleton
 @Properties("db.")
 public interface DBProps {
@@ -18,4 +20,7 @@ public interface DBProps {
 
     @Property("timeout")
     int timeout();
+
+    @Property("willBeNull")
+    Optional<String> willBeNull();
 }

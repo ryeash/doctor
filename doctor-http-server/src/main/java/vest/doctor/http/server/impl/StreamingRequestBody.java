@@ -2,6 +2,7 @@ package vest.doctor.http.server.impl;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.CompositeByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.util.ReferenceCounted;
@@ -11,6 +12,7 @@ import vest.doctor.reactive.Rx;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Flow;
+import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -41,11 +43,12 @@ public class StreamingRequestBody implements RequestBody {
 
     @Override
     public Flow.Publisher<ByteBuf> asBuffer() {
+        CompositeByteBuf comp = alloc.compositeBuffer();
         return flow()
-                .collect(Collector.of(alloc::compositeBuffer,
+                .collect(Collector.of(() -> comp,
                         (composite, content) -> composite.addComponent(true, content.content()),
                         (a, b) -> a.addComponent(true, b),
-                        composite -> composite,
+                        Function.identity(),
                         Collector.Characteristics.IDENTITY_FINISH));
     }
 
@@ -79,10 +82,13 @@ public class StreamingRequestBody implements RequestBody {
     public Flow.Publisher<byte[]> chunked() {
         return flow()
                 .map(content -> {
-                    byte[] bytes = new byte[content.content().readableBytes()];
-                    content.content().readBytes(bytes);
-                    content.release();
-                    return bytes;
+                    try {
+                        byte[] bytes = new byte[content.content().readableBytes()];
+                        content.content().readBytes(bytes);
+                        return bytes;
+                    } finally {
+                        content.release();
+                    }
                 });
     }
 }

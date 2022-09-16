@@ -5,6 +5,7 @@ import vest.doctor.ProviderRegistry;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.ReloadConfiguration;
 
+import java.util.Objects;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.Supplier;
 
@@ -14,6 +15,7 @@ import java.util.function.Supplier;
  * A properties/configuration trait that provides caching and reloading of processed property values.
  */
 public abstract class PropertiesTrait {
+    private static final String NO_VALUE = "<<novalue>>";
     protected final ProviderRegistry providerRegistry;
     protected final ConcurrentSkipListMap<String, Object> propertiesCache;
 
@@ -27,7 +29,12 @@ public abstract class PropertiesTrait {
 
     @SuppressWarnings("unchecked")
     protected <T> T cached(String cacheKey, Supplier<Object> getter) {
-        return (T) propertiesCache.computeIfAbsent(cacheKey, (k) -> getter.get());
+        Object v = propertiesCache.computeIfAbsent(cacheKey, (k) -> Objects.requireNonNullElse(getter.get(), NO_VALUE));
+        if (v == NO_VALUE) {
+            return null;
+        } else {
+            return (T) v;
+        }
     }
 
     private void clearCache(ReloadConfiguration reload) {
