@@ -20,7 +20,6 @@ import vest.doctor.Factory;
 import vest.doctor.InjectionException;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
-import vest.doctor.conf.ConfigurationFacade;
 import vest.doctor.scheduled.Interval;
 
 import java.io.File;
@@ -43,23 +42,23 @@ public final class GrpcFactory {
     @Factory
     @Singleton
     public GrpcServerHandle grpcServerFactory(ProviderRegistry providerRegistry,
-                                              ConfigurationFacade configurationFacade,
-                                              HealthStatusManager healthStatusManager) throws IOException {
-        ConfigurationFacade config = configurationFacade.prefix("grpc.");
-        if (config.get("port") == null) {
+                                              HealthStatusManager healthStatusManager,
+                                              GrpcConfig grpcConfig) throws IOException {
+        if (grpcConfig.port().isEmpty()) {
+            log.warn("grpc.port not set, not starting grpc server");
             return new GrpcServerHandle(null);
         }
-        int port = config.get("port", Integer::parseInt);
-        Interval handshakeTimeout = config.get("handshakeTimeout", new Interval("5s"), Interval::new);
-        Interval keepAlive = config.get("keepAlive", new Interval("2h"), Interval::new);
-        Interval keepAliveTimeout = config.get("keepAliveTimeout", new Interval("20s"), Interval::new);
-        Interval maxConnectionIdle = config.get("maxConnectionIdle", new Interval("2h"), Interval::new);
-        Interval maxConnectionAge = config.get("maxConnectionAge", new Interval("7d"), Interval::new);
-        Interval maxConnectionAgeGrace = config.get("maxConnectionAgeGrace", new Interval("15m"), Interval::new);
-        Interval permitKeepAliveTime = config.get("permitKeepAliveTime", new Interval("5m"), Interval::new);
-        Boolean permitKeepAliveWithoutCalls = config.get("permitKeepAliveWithoutCalls", false, Boolean::valueOf);
-        Integer maxInboundMessageSize = config.get("maxInboundMessageSize", 4 * 1024 * 1024, Integer::valueOf);
-        Integer maxInboundMetadataSize = config.get("maxInboundMetadataSize", 8 * 1024, Integer::valueOf);
+        int port = grpcConfig.port().get();
+        Interval handshakeTimeout = grpcConfig.handshakeTimeout().orElse(new Interval("5s"));
+        Interval keepAlive = grpcConfig.keepAlive().orElse(new Interval("2h"));
+        Interval keepAliveTimeout = grpcConfig.keepAliveTimeout().orElse(new Interval("20s"));
+        Interval maxConnectionIdle = grpcConfig.maxConnectionIdle().orElse(new Interval("2h"));
+        Interval maxConnectionAge = grpcConfig.maxConnectionAge().orElse(new Interval("7d"));
+        Interval maxConnectionAgeGrace = grpcConfig.maxConnectionAgeGrace().orElse(new Interval("15m"));
+        Interval permitKeepAliveTime = grpcConfig.permitKeepAliveTime().orElse(new Interval("5m"));
+        Boolean permitKeepAliveWithoutCalls = grpcConfig.permitKeepAliveWithoutCalls().orElse(false);
+        Integer maxInboundMessageSize = grpcConfig.maxInboundMessageSize().orElse(4 * 1024 * 1024);
+        Integer maxInboundMetadataSize = grpcConfig.maxInboundMetadataSize().orElse(8 * 1024);
 
         ServerBuilder<?> serverBuilder = ServerBuilder.forPort(port)
                 .handshakeTimeout(handshakeTimeout.getMagnitude(), handshakeTimeout.getUnit())
@@ -83,11 +82,11 @@ public final class GrpcFactory {
         providerRegistry.getInstanceOpt(HandlerRegistry.class).ifPresent(serverBuilder::fallbackHandlerRegistry);
         providerRegistry.getInstanceOpt(BinaryLog.class).ifPresent(serverBuilder::setBinaryLog);
 
-        String certificate = config.get("ssl.certificate");
-        if (certificate != null && !certificate.isEmpty()) {
-            String privateKey = config.get("ssl.privateKey");
-            serverBuilder.useTransportSecurity(new File(certificate), new File(privateKey));
-        } else if (config.get("ssl.selfSigned", false, Boolean::valueOf)) {
+        if (grpcConfig.sslCertificate().isPresent()) {
+            serverBuilder.useTransportSecurity(
+                    new File(grpcConfig.sslCertificate().get()),
+                    new File(grpcConfig.sslPrivateKey().orElseThrow(() -> new IllegalStateException("missing private key config"))));
+        } else if (grpcConfig.sslSelfSigned().orElse(false)) {
             try {
                 SelfSignedCertificate ssc = new SelfSignedCertificate();
                 serverBuilder.useTransportSecurity(ssc.certificate(), ssc.privateKey());

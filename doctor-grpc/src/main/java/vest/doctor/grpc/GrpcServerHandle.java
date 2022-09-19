@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 public final class GrpcServerHandle implements AutoCloseable {
     private final Server server;
 
-    public GrpcServerHandle(Server server) {
+    GrpcServerHandle(Server server) {
         this.server = server;
     }
 
