@@ -47,7 +47,7 @@ public final class Interval {
         Objects.requireNonNull(intervalString);
         Matcher matcher = INTERVAL_REGEX.matcher(intervalString.trim());
         if (!matcher.matches()) {
-            throw new IllegalArgumentException("malformed interval string, must be in the form <number>[<unit>]");
+            throw new IllegalArgumentException("malformed interval string, must be in the form <number>[<unit>]: " + intervalString);
         }
         this.magnitude = Long.parseLong(matcher.group(1).trim());
         this.unit = readUnit(matcher.group(2));

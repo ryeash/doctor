@@ -18,3 +18,8 @@ doctor.reactor {
         }
     }
 }
+
+grpc {
+    port: 43011
+    handshakeTimeout: 3s
+}

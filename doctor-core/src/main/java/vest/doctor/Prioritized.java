@@ -29,6 +29,21 @@ public interface Prioritized {
     Comparator<Prioritized> COMPARATOR = Comparator.comparingInt(Prioritized::priority);
 
     /**
+     * Comparator used to compare objects that may or may not be prioritized.
+     */
+    Comparator<Object> COMPARATOR_ANY = (a, b) -> {
+        if (a instanceof Prioritized aP && b instanceof Prioritized bP) {
+            return Integer.compare(aP.priority(), bP.priority());
+        } else if (a instanceof Prioritized aP) {
+            return Integer.compare(aP.priority(), DEFAULT_PRIORITY);
+        } else if (b instanceof Prioritized bP) {
+            return Integer.compare(DEFAULT_PRIORITY, bP.priority());
+        } else {
+            return 0;
+        }
+    };
+
+    /**
      * The priority for this object. By default, lower values will sort before higher values.
      *
      * @default {@link #DEFAULT_PRIORITY}
