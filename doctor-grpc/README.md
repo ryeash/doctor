@@ -40,11 +40,9 @@ Add gRPC support, e.g. maven:
             <artifactId>protobuf-maven-plugin</artifactId>
             <version>0.6.1</version>
             <configuration>
-                <protocArtifact>com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}
-                </protocArtifact>
+                <protocArtifact>com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}</protocArtifact>
                 <pluginId>grpc-java</pluginId>
-                <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}
-                </pluginArtifact>
+                <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
             </configuration>
             <executions>
                 <execution>
