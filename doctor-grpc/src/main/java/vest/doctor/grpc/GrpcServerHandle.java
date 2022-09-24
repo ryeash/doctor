@@ -3,12 +3,11 @@ package vest.doctor.grpc;
 import io.grpc.Server;
 import io.grpc.protobuf.services.HealthStatusManager;
 import vest.doctor.ProviderRegistry;
-import vest.doctor.conf.ConfigurationFacade;
 
 import java.util.concurrent.TimeUnit;
 
 /**
- * A handle to the gRPC server instance created by {@link GrpcFactory#grpcServerFactory(ProviderRegistry, ConfigurationFacade, HealthStatusManager)}.
+ * A handle to the gRPC server instance created by {@link GrpcFactory#grpcServerFactory(ProviderRegistry, HealthStatusManager, GrpcConfig) the factory}.
  * The underlying {@link Server} returned by {@link #getServer()} may be null, indicating that the server
  * was never started (due to configuration).
  */

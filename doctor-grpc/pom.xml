@@ -11,10 +11,6 @@
 
     <artifactId>doctor-grpc</artifactId>
 
-    <properties>
-        <grpc.version>1.49.0</grpc.version>
-    </properties>
-
     <dependencyManagement>
         <dependencies>
             <dependency>
