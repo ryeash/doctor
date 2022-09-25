@@ -26,7 +26,7 @@ import java.util.Map;
 
 @Singleton
 @Named("duck")
-@Import({"app.ext", "app.ext.sub"})
+@Import({"app.ext", "app.ext.sub", "vest.doctor.grpc"})
 public class TestAppConfig {
 
     @Factory
