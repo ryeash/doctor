@@ -7,6 +7,7 @@ import vest.doctor.http.server.impl.Router;
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Flow;
 
 public class HttpServerConfiguration {
 
@@ -107,6 +108,11 @@ public class HttpServerConfiguration {
      * The minimum response size to enable gzip-ing the response body.
      */
     private int minGzipSize = 812;
+
+    /**
+     * The maximum number of request body chunks to buffer.
+     */
+    private int reactiveBodyMaxBuffer = Flow.defaultBufferSize();
 
     /**
      * The {@link PipelineCustomizer PipelineCustomizers} to apply to the netty pipeline.
@@ -235,6 +241,14 @@ public class HttpServerConfiguration {
 
     public void setMinGzipSize(int minGzipSize) {
         this.minGzipSize = minGzipSize;
+    }
+
+    public int getReactiveBodyMaxBuffer() {
+        return reactiveBodyMaxBuffer;
+    }
+
+    public void setReactiveBodyMaxBuffer(int reactiveBodyMaxBuffer) {
+        this.reactiveBodyMaxBuffer = reactiveBodyMaxBuffer;
     }
 
     public List<PipelineCustomizer> getPipelineCustomizers() {

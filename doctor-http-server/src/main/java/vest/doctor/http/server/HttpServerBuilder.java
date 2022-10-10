@@ -152,6 +152,14 @@ public final class HttpServerBuilder {
     }
 
     /**
+     * @see HttpServerConfiguration#setReactiveBodyMaxBuffer(int)
+     */
+    public HttpServerBuilder setReactiveBodyMaxBuffer(int reactiveBodyMaxBuffer) {
+        config.setReactiveBodyMaxBuffer(reactiveBodyMaxBuffer);
+        return this;
+    }
+
+    /**
      * @see HttpServerConfiguration#setPipelineCustomizers(List)
      */
     public HttpServerBuilder setPipelineCustomizers(List<PipelineCustomizer> pipelineCustomizers) {

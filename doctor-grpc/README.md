@@ -107,7 +107,7 @@ Add the necessary grpc configuration so the server starts.
 grpc.port = 51011
 ```
 
-Any of the follow types that are provided will be automatically wired into the grpc system as appropriate:
+Any of the following types that are provided will be automatically wired into the grpc system as appropriate:
 * BindableService.class
 * ServerServiceDefinition.class
 * ServerInterceptor.class

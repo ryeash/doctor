@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
+import java.util.concurrent.Flow;
 import java.util.stream.Collectors;
 
 public class ReactorHTTPLoader implements ApplicationLoader {
@@ -89,7 +90,9 @@ public class ReactorHTTPLoader implements ApplicationLoader {
         builder.setInitialBufferSize(httpConf.get("initialBufferSize", 8192, Integer::valueOf));
         builder.setMaxContentLength(httpConf.get("maxContentLength", 8388608, Integer::valueOf));
         builder.setMinGzipSize(httpConf.get("minGzipSize", 812, Integer::valueOf));
+        builder.setReactiveBodyMaxBuffer(httpConf.get("reactiveBodyMaxBuffer", Flow.defaultBufferSize(), Integer::valueOf));
         builder.setRouterPrefix(httpConf.get("routePrefix", ""));
+        builder.setCaseInsensitiveMatching(httpConf.get("caseInsensitiveMatching", true, Boolean::valueOf));
 
         if (builder.getConfig().getBindAddresses() == null || builder.getConfig().getBindAddresses().isEmpty()) {
             return;

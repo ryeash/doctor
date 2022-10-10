@@ -23,11 +23,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>18</maven.compiler.source>
         <maven.compiler.target>18</maven.compiler.target>
-        <slf4j.version>2.0.1</slf4j.version>
+        <slf4j.version>2.0.3</slf4j.version>
         <maven.deploy.skip>true</maven.deploy.skip>
         <netty.version>4.1.82.Final</netty.version>
         <jackson.version>2.13.3</jackson.version>
-        <grpc.version>1.49.1</grpc.version>
+        <grpc.version>1.49.2</grpc.version>
     </properties>
 
     <dependencyManagement>
