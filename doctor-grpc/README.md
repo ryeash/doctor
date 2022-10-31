@@ -22,8 +22,8 @@ Add dependencies:
 Add gRPC support, e.g. maven:
 ```xml
 <properties>
-    <grpc.version>1.49.0</grpc.version>
-    <protoc.version>3.21.6</protoc.version>
+    <grpc.version>1.50.0</grpc.version>
+    <protoc.version>3.21.9</protoc.version>
 </properties>
 
 <build>

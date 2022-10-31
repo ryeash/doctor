@@ -12,7 +12,7 @@
     <artifactId>test-app</artifactId>
 
     <properties>
-        <protoc.version>3.21.6</protoc.version>
+        <protoc.version>3.21.9</protoc.version>
     </properties>
 
     <dependencyManagement>
