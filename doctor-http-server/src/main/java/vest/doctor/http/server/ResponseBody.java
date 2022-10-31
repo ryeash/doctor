@@ -18,7 +18,6 @@ import java.io.InputStream;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Objects;
 import java.util.concurrent.Flow;
 
 /**
@@ -132,13 +131,6 @@ public interface ResponseBody {
      * @return a new response body
      */
     static ResponseBody sendFile(File file) {
-        Objects.requireNonNull(file);
-        if (!file.exists() || file.isDirectory()) {
-            throw new IllegalArgumentException("file not found: " + file.getPath());
-        }
-        if (file.isDirectory()) {
-            throw new IllegalArgumentException("invalid file, can not send directories: " + file.getPath());
-        }
         return new SendFileResponseBody(file);
     }
 

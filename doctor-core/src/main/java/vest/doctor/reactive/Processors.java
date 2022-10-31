@@ -100,25 +100,25 @@ public final class Processors {
 
     public static final class SignalProcessor<I, O> extends AbstractProcessor<I, O> {
 
-        private final Consumer<Signal<I, ? super O>> action;
+        private final Consumer<Signal<I,? super O>> action;
 
-        public SignalProcessor(Consumer<Signal<I, ? super O>> action) {
+        public SignalProcessor(Consumer<Signal<I,? super O>> action) {
             this.action = action;
         }
 
         @Override
         public void onNext(I item) {
-            action.accept(new Signal<>(item, null, false, subscription(), subscriber()));
+            action.accept(new SignalRecord<>(item, null, false, subscription(), subscriber()));
         }
 
         @Override
         public void onError(Throwable throwable) {
-            action.accept(new Signal<>(null, throwable, false, subscription(), subscriber()));
+            action.accept(new SignalRecord<>(null, throwable, false, subscription(), subscriber()));
         }
 
         @Override
         public void onComplete() {
-            action.accept(new Signal<>(null, null, true, subscription(), subscriber()));
+            action.accept(new SignalRecord<>(null, null, true, subscription(), subscriber()));
         }
     }
 }

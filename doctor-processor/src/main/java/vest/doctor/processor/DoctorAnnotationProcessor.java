@@ -57,7 +57,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -97,7 +96,6 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
 
     private final Map<Class<?>, Collection<String>> serviceImplementations = new HashMap<>();
     private final DependencyGraph graph = new DependencyGraph();
-    private final AtomicBoolean importsScanned = new AtomicBoolean(false);
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -154,12 +152,26 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
     }
 
     private void processImports(RoundEnvironment roundEnv) {
-        roundEnv.getElementsAnnotatedWith(Import.class)
+        processImports(roundEnv.getElementsAnnotatedWith(Import.class)
                 .stream()
                 .map(e -> e.getAnnotation(Import.class))
                 .filter(Objects::nonNull)
-                .flatMap(imp -> Arrays.stream(imp.value()))
-                .map(processingEnv.getElementUtils()::getAllPackageElements)
+                .map(Import::value)
+                .flatMap(Arrays::stream));
+    }
+
+    private void processImports(TypeElement element) {
+        processImports(element.getAnnotationMirrors()
+                .stream()
+                .map(AnnotationMirror::getAnnotationType)
+                .map(at -> at.asElement().getAnnotation(Import.class))
+                .filter(Objects::nonNull)
+                .map(Import::value)
+                .flatMap(Arrays::stream));
+    }
+
+    private void processImports(Stream<String> packageImports) {
+        packageImports.map(processingEnv.getElementUtils()::getAllPackageElements)
                 .flatMap(Set::stream)
                 .map(PackageElement::getEnclosedElements)
                 .flatMap(List::stream)
@@ -194,6 +206,7 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
                         classBuilder.writeClass(filer());
                     }
                     writeInProvider(provDef);
+                    processImports(provDef.providedType());
                     break;
                 }
             }
@@ -388,7 +401,7 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
                     Stream<ProviderDependency> deps = providerDefinitions.stream().map(ProviderDefinition::asDependency);
                     Stream<ProviderDependency> add = additionalSatisfiedDependencies.stream();
                     throw new CodeProcessingException("missing provider dependency for\ntarget: " + target + "\ndependency: " + dependency + "\nknown types:\n  " +
-                            Stream.of(deps, add).flatMap(Function.identity()).map(String::valueOf).collect(Collectors.joining("\n  ")));
+                                                      Stream.of(deps, add).flatMap(Function.identity()).map(String::valueOf).collect(Collectors.joining("\n  ")));
                 }
             }
         }

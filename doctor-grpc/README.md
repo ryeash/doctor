@@ -57,11 +57,11 @@ Add gRPC support, e.g. maven:
 </build>
 ```
 
-Add import for doctor-grpc:
+Enable the gRPC feature:
 
 ```java
 @Singleton
-@Import({"vest.doctor.grpc"})
+@GrpcFeature
 public class AppConfig {
     // ...
 }

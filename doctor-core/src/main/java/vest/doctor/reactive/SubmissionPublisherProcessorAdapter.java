@@ -4,12 +4,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 import java.util.concurrent.SubmissionPublisher;
 
-public final class ParallelProcessor<I> implements Flow.Processor<I, I> {
+public final class SubmissionPublisherProcessorAdapter<I> implements Flow.Processor<I, I> {
 
     private final SubmissionPublisher<I> publisher;
 
-    public ParallelProcessor(ExecutorService executor, int bufferSize) {
-        this.publisher = new SubmissionPublisher<>(executor, bufferSize <= 0 ? Flow.defaultBufferSize() : bufferSize);
+    public SubmissionPublisherProcessorAdapter(ExecutorService executor, int bufferSize) {
+        this(new SubmissionPublisher<>(executor, bufferSize <= 0 ? Flow.defaultBufferSize() : bufferSize));
+    }
+
+    public SubmissionPublisherProcessorAdapter(SubmissionPublisher<I> publisher) {
+        this.publisher = publisher;
     }
 
     @Override

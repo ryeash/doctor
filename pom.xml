@@ -17,6 +17,7 @@
         <module>doctor-grpc</module>
         <module>test-app-ext</module>
         <module>test-app</module>
+        <module>doctor-bom</module>
     </modules>
 
     <properties>

@@ -17,6 +17,7 @@ import vest.doctor.Prototype;
 import vest.doctor.SkipInjection;
 import vest.doctor.ThreadLocal;
 import vest.doctor.aop.Aspects;
+import vest.doctor.grpc.GrpcFeature;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -25,8 +26,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Singleton
+@GrpcFeature
 @Named("duck")
-@Import({"app.ext", "app.ext.sub", "vest.doctor.grpc"})
+@Import({"app.ext", "app.ext.sub"})
 public class TestAppConfig {
 
     @Factory

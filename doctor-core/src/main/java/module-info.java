@@ -17,5 +17,4 @@ module doctor.core {
     exports vest.doctor.reactive;
     exports vest.doctor.runtime;
     exports vest.doctor.scheduled;
-
 }

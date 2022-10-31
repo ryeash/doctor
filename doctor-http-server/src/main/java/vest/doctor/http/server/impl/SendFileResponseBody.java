@@ -10,12 +10,20 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
+import java.util.Objects;
 
 public class SendFileResponseBody implements ResponseBody {
 
     private final File file;
 
     public SendFileResponseBody(File file) {
+        Objects.requireNonNull(file);
+        if (!file.exists()) {
+            throw new IllegalArgumentException("file not found: " + file.getPath());
+        }
+        if (file.isDirectory()) {
+            throw new IllegalArgumentException("invalid file, can not send directories: " + file.getPath());
+        }
         this.file = file;
     }
 
