@@ -2,6 +2,7 @@ package vest.doctor.processor;
 
 import jakarta.inject.Singleton;
 import vest.doctor.Cached;
+import vest.doctor.Configuration;
 import vest.doctor.DestroyMethod;
 import vest.doctor.Prototype;
 import vest.doctor.Reloadable;
@@ -26,7 +27,8 @@ class DoctorScopeWriter implements ScopeWriter {
     @Override
     public String wrapScope(AnnotationProcessorContext context, ProviderDefinition providerDefinition, String providerRef) {
         AnnotationMirror scope = providerDefinition.scope();
-        if (ProcessorUtils.isCompatibleWith(context, scope.getAnnotationType(), Singleton.class)) {
+        if (ProcessorUtils.isCompatibleWith(context, scope.getAnnotationType(), Singleton.class)
+            || ProcessorUtils.isCompatibleWith(context, scope.getAnnotationType(), Configuration.class)) {
             return singleton(providerRef);
         } else if (ProcessorUtils.isCompatibleWith(context, scope.getAnnotationType(), ThreadLocal.class)) {
             return threadLocal(providerRef);
@@ -69,8 +71,8 @@ class DoctorScopeWriter implements ScopeWriter {
         DestroyMethod destroyMethod = providerDefinition.annotationSource().getAnnotation(DestroyMethod.class);
         if (destroyMethod != null) {
             context.warnMessage("@" + DestroyMethod.class.getSimpleName() + " used with a @" + Reloadable.class.getSimpleName()
-                    + " provider, this will not work correctly when a reload message is sent; " +
-                    "consider using a different scope or use AutoCloseable on the provided type: " + providerDefinition);
+                                + " provider, this will not work correctly when a reload message is sent; " +
+                                "consider using a different scope or use AutoCloseable on the provided type: " + providerDefinition);
         }
         return "new " + ReloadableScopeProvider.class.getCanonicalName() + "(" + providerRef + "," + Constants.PROVIDER_REGISTRY + ")";
     }

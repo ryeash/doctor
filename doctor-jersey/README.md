@@ -4,7 +4,9 @@ A JAX-RS HTTP server provider backed by netty and jersey, and wired together usi
 
 To enable, add the [@JerseyFeature](/src/main/java/vest/doctor/jersey/JerseyFeature.java) annotation
 to any provided type (typically a bean factory class):
+
 ```java
+
 @Singleton
 @JerseyFeature
 public class AppConfig {
@@ -13,6 +15,7 @@ public class AppConfig {
 ```
 
 And ensure at least one bind address is set:
+
 ```properties
 doctor.jersey.http.bind = 0.0.0.0:9998
 ```

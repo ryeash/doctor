@@ -160,7 +160,7 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
                 .flatMap(Arrays::stream));
     }
 
-    private void processImports(TypeElement element) {
+    private void processImports(Element element) {
         processImports(element.getAnnotationMirrors()
                 .stream()
                 .map(AnnotationMirror::getAnnotationType)
@@ -206,7 +206,7 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
                         classBuilder.writeClass(filer());
                     }
                     writeInProvider(provDef);
-                    processImports(provDef.providedType());
+                    processImports(provDef.annotationSource());
                     break;
                 }
             }

@@ -38,15 +38,15 @@ public class JDBCTest extends Assert {
         jdbc.inTransaction(c -> {
             assertTrue(c.isReusable());
             c.executeAndSink("CREATE TABLE USERS (" +
-                    "ID INT NOT NULL, " +
-                    "NAME VARCHAR(256), " +
-                    "PASSWORD VARCHAR(256), " +
-                    "PRIMARY KEY(ID))");
+                             "ID INT NOT NULL, " +
+                             "NAME VARCHAR(256), " +
+                             "PASSWORD VARCHAR(256), " +
+                             "PRIMARY KEY(ID))");
             c.executeAndSink("CREATE TABLE PROPERTIES (" +
-                    "USER_ID INT NOT NULL, " +
-                    "NAME VARCHAR(256)," +
-                    "DATA VARCHAR(2048), " +
-                    "PRIMARY KEY(USER_ID, NAME))");
+                             "USER_ID INT NOT NULL, " +
+                             "NAME VARCHAR(256)," +
+                             "DATA VARCHAR(2048), " +
+                             "PRIMARY KEY(USER_ID, NAME))");
         });
 
         jdbc.inTransaction(c -> {

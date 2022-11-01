@@ -3,9 +3,12 @@ package vest.doctor.http.server.rest.processing;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
+import jakarta.inject.Singleton;
 import vest.doctor.AdHocProvider;
 import vest.doctor.AnnotationData;
-import vest.doctor.ApplicationLoader;
+import vest.doctor.DoctorProvider;
+import vest.doctor.Eager;
+import vest.doctor.Factory;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.conf.ConfigurationFacade;
@@ -37,12 +40,21 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.concurrent.Flow;
-import java.util.stream.Collectors;
 
-public class ReactorHTTPLoader implements ApplicationLoader {
+@Singleton
+public class HttpConfig {
 
-    @Override
-    public void stage4(ProviderRegistry providerRegistry) {
+    @Eager
+    @Singleton
+    @Factory
+    public ServerHolder serverFactory(ProviderRegistry providerRegistry,
+                                      List<BodyReader> readers,
+                                      List<BodyWriter> writers,
+                                      List<DoctorProvider<Filter>> filters,
+                                      List<DoctorProvider<Handler>> handlers,
+                                      List<DoctorProvider<Websocket>> websockets,
+                                      List<ExceptionHandler> exceptionHandlers,
+                                      EventBus eventBus) {
 
         ConfigurationFacade httpConf = providerRegistry.configuration().prefix("doctor.reactor.http.");
 
@@ -59,7 +71,7 @@ public class ReactorHTTPLoader implements ApplicationLoader {
                 .peek(builder::addBindAddress)
                 .count();
         if (binds == 0L) {
-            return;
+            return new ServerHolder(null);
         }
 
         builder.setTcpManagementThreads(httpConf.get("tcp.threads", 1, Integer::valueOf));
@@ -94,13 +106,7 @@ public class ReactorHTTPLoader implements ApplicationLoader {
         builder.setRouterPrefix(httpConf.get("routePrefix", ""));
         builder.setCaseInsensitiveMatching(httpConf.get("caseInsensitiveMatching", true, Boolean::valueOf));
 
-        if (builder.getConfig().getBindAddresses() == null || builder.getConfig().getBindAddresses().isEmpty()) {
-            return;
-        }
-
         DefaultBodyReaderWriter defRW = new DefaultBodyReaderWriter();
-        List<BodyReader> readers = providerRegistry.getInstances(BodyReader.class).collect(Collectors.toCollection(LinkedList::new));
-        List<BodyWriter> writers = providerRegistry.getInstances(BodyWriter.class).collect(Collectors.toCollection(LinkedList::new));
         readers.add(defRW);
         readers.sort(Prioritized.COMPARATOR);
         writers.add(defRW);
@@ -108,51 +114,44 @@ public class ReactorHTTPLoader implements ApplicationLoader {
         BodyInterchange bodyInterchange = new BodyInterchange(readers, writers);
         providerRegistry.register(AdHocProvider.createPrimary(bodyInterchange));
 
-
         CompositeExceptionHandler compositeExceptionHandler = new CompositeExceptionHandler();
-        providerRegistry.getInstances(ExceptionHandler.class)
-                .forEach(compositeExceptionHandler::addHandler);
+        exceptionHandlers.forEach(compositeExceptionHandler::addHandler);
         providerRegistry.register(AdHocProvider.createPrimary(compositeExceptionHandler));
 
-        providerRegistry.getProviders(Filter.class)
-                .forEach(provider -> {
-                    List<String> paths;
-                    try {
-                        paths = provider.annotationMetadata().stringArrayValue(Endpoint.class, "value");
-                    } catch (IllegalArgumentException e) {
-                        paths = Collections.singletonList(Router.MATCH_ALL_PATH_SPEC);
-                    }
-                    Filter filter = provider.get();
-                    for (String path : paths) {
-                        builder.filter(path, filter);
-                    }
-                });
+        filters.forEach(provider -> {
+            List<String> paths = provider.annotationMetadata().findOne(Endpoint.class)
+                    .map(endpoint -> endpoint.stringArrayValue("value"))
+                    .orElse(Collections.singletonList(Router.MATCH_ALL_PATH_SPEC));
+            Filter filter = provider.get();
+            for (String path : paths) {
+                builder.filter(path, filter);
+            }
+        });
 
-        providerRegistry.getProviders(Handler.class)
-                .forEach(provider -> {
-                    List<String> methods = new LinkedList<>();
-                    for (AnnotationData annotationMetadatum : provider.annotationMetadata()) {
-                        HttpMethod method = annotationMetadatum.type().getAnnotation(HttpMethod.class);
-                        if (method != null) {
-                            methods.add(method.value());
-                        }
-                    }
-                    if (methods.isEmpty()) {
-                        throw new IllegalArgumentException("missing http method for Handler: " + provider);
-                    }
-                    List<String> paths;
-                    try {
-                        paths = provider.annotationMetadata().stringArrayValue(Endpoint.class, "value");
-                    } catch (IllegalArgumentException e) {
-                        throw new IllegalArgumentException("missing @Endpoint for Handler: " + provider);
-                    }
-                    Handler handler = provider.get();
-                    for (String method : methods) {
-                        for (String path : paths) {
-                            builder.route(method, path, handler);
-                        }
-                    }
-                });
+        handlers.forEach(provider -> {
+            List<String> methods = new LinkedList<>();
+            for (AnnotationData annotationMetadatum : provider.annotationMetadata()) {
+                HttpMethod method = annotationMetadatum.type().getAnnotation(HttpMethod.class);
+                if (method != null) {
+                    methods.add(method.value());
+                }
+            }
+            if (methods.isEmpty()) {
+                throw new IllegalArgumentException("missing http method for Handler: " + provider);
+            }
+            List<String> paths;
+            try {
+                paths = provider.annotationMetadata().stringArrayValue(Endpoint.class, "value");
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("missing @Endpoint for Handler: " + provider);
+            }
+            Handler handler = provider.get();
+            for (String method : methods) {
+                for (String path : paths) {
+                    builder.route(method, path, handler);
+                }
+            }
+        });
 
 
         List<RouteOrchestration> orchestrations = new LinkedList<>();
@@ -164,16 +163,19 @@ public class ReactorHTTPLoader implements ApplicationLoader {
             builder.routes(router -> orchestration.addRoutes(providerRegistry, router));
         }
 
-        providerRegistry.getProviders(Websocket.class)
-                .forEach(provider -> builder.ws(provider::get));
+        websockets.forEach(provider -> builder.ws(provider::get));
 
         Server server = builder.start();
-        providerRegistry.register(new AdHocProvider<>(Server.class, server, null, server));
-        providerRegistry.getInstance(EventBus.class).publish(new ServiceStarted("reactor-http", server));
+        eventBus.publish(new ServiceStarted("reactor-http", server));
+        return new ServerHolder(server);
     }
 
-    @Override
-    public int priority() {
-        return 100000;
+    public record ServerHolder(Server server) implements AutoCloseable {
+        @Override
+        public void close() throws Exception {
+            if (server != null) {
+                server.close();
+            }
+        }
     }
 }

@@ -100,9 +100,9 @@ public final class Processors {
 
     public static final class SignalProcessor<I, O> extends AbstractProcessor<I, O> {
 
-        private final Consumer<Signal<I,? super O>> action;
+        private final Consumer<Signal<I, ? super O>> action;
 
-        public SignalProcessor(Consumer<Signal<I,? super O>> action) {
+        public SignalProcessor(Consumer<Signal<I, ? super O>> action) {
             this.action = action;
         }
 

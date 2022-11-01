@@ -259,19 +259,19 @@ public final class Router implements Handler {
     void addTraceMessage(RequestContext requestContext, String routeMethod, Route route, boolean matched) {
         if (conf.isDebugRequestRouting()) {
             addTraceMessage(requestContext, "route " +
-                    (matched ? "match" : "not-matched") + ' ' +
-                    routeMethod + ' ' +
-                    route.pathSpec() + ' ' +
-                    route.handler());
+                                            (matched ? "match" : "not-matched") + ' ' +
+                                            routeMethod + ' ' +
+                                            route.pathSpec() + ' ' +
+                                            route.handler());
         }
     }
 
     void addTraceMessage(RequestContext requestContext, FilterAndPath filter, boolean matched) {
         if (conf.isDebugRequestRouting()) {
             addTraceMessage(requestContext, "filter " +
-                    (matched ? "match" : "not-matched") + ' ' +
-                    filter.pathSpec() + ' ' +
-                    filter.filter());
+                                            (matched ? "match" : "not-matched") + ' ' +
+                                            filter.pathSpec() + ' ' +
+                                            filter.filter());
         }
     }
 

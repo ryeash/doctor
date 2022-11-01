@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
  * <p><br>
  * To use, add to a bean factory configuration class; example:
  * <pre>
- * <literal>@</literal>Singleton
+ * <literal>@</literal>Configuration
  * <literal>@</literal>GrpcFeature
  * public class AppConfig {
  *  ...

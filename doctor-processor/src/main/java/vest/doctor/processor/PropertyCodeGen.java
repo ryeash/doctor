@@ -55,7 +55,7 @@ public final class PropertyCodeGen {
             if (ProcessorUtils.isCompatibleWith(context, typeElement, Set.class)) {
                 confMethod = "getSet";
             } else if (ProcessorUtils.isCompatibleWith(context, typeElement, List.class)
-                    || ProcessorUtils.isCompatibleWith(context, typeElement, Collection.class)) {
+                       || ProcessorUtils.isCompatibleWith(context, typeElement, Collection.class)) {
                 confMethod = "getList";
             } else {
                 throw new IllegalArgumentException("can not inject collection property of type: " + typeElement + ", for property: " + propertyName);

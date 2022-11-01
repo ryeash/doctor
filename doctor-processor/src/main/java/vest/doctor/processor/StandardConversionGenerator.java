@@ -76,9 +76,9 @@ public class StandardConversionGenerator implements StringConversionGenerator {
         TypeElement typeElement = context.toTypeElement(targetType);
         for (ExecutableElement constructor : ElementFilter.constructorsIn(typeElement.getEnclosedElements())) {
             if (constructor.getParameters().size() == 1
-                    && constructor.getModifiers().contains(Modifier.PUBLIC)
-                    && ProcessorUtils.isCompatibleWith(context, context.toTypeElement(constructor.getParameters().get(0).asType()), CharSequence.class)
-                    && constructor.getThrownTypes().isEmpty()) {
+                && constructor.getModifiers().contains(Modifier.PUBLIC)
+                && ProcessorUtils.isCompatibleWith(context, context.toTypeElement(constructor.getParameters().get(0).asType()), CharSequence.class)
+                && constructor.getThrownTypes().isEmpty()) {
                 return true;
             }
         }
@@ -89,11 +89,11 @@ public class StandardConversionGenerator implements StringConversionGenerator {
         TypeElement typeElement = context.toTypeElement(targetType);
         for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements())) {
             if (method.getParameters().size() == 1
-                    && method.getModifiers().contains(Modifier.STATIC)
-                    && method.getModifiers().contains(Modifier.PUBLIC)
-                    && ProcessorUtils.isCompatibleWith(context, context.toTypeElement(method.getParameters().get(0).asType()), String.class)
-                    && Objects.equals(method.getReturnType().toString(), targetType.toString())
-                    && method.getThrownTypes().isEmpty()) {
+                && method.getModifiers().contains(Modifier.STATIC)
+                && method.getModifiers().contains(Modifier.PUBLIC)
+                && ProcessorUtils.isCompatibleWith(context, context.toTypeElement(method.getParameters().get(0).asType()), String.class)
+                && Objects.equals(method.getReturnType().toString(), targetType.toString())
+                && method.getThrownTypes().isEmpty()) {
                 return targetType + "::" + method.getSimpleName();
             }
         }

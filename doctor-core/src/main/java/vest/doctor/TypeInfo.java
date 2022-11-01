@@ -128,7 +128,7 @@ public final class TypeInfo {
         }
         TypeInfo typeInfo = (TypeInfo) o;
         return Objects.equals(rawType, typeInfo.rawType) &&
-                Objects.equals(parameterTypes, typeInfo.parameterTypes);
+               Objects.equals(parameterTypes, typeInfo.parameterTypes);
     }
 
     @Override

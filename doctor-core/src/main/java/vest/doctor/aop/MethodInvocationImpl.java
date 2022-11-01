@@ -93,7 +93,7 @@ public final class MethodInvocationImpl implements MethodInvocation {
         }
         MethodInvocationImpl that = (MethodInvocationImpl) o;
         return Objects.equals(methodMetadata, that.methodMetadata)
-                && Objects.equals(argumentList, that.argumentList);
+               && Objects.equals(argumentList, that.argumentList);
     }
 
     @Override

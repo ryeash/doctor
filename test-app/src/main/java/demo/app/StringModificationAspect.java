@@ -15,7 +15,7 @@ public class StringModificationAspect implements Aspect {
         Object result = methodInvocation.next();
 
         if (methodInvocation.getContainingInstance() instanceof TCAspects
-                && methodInvocation.getMethodName().equals("parrot")) {
+            && methodInvocation.getMethodName().equals("parrot")) {
             String value = methodInvocation.getMethodParameters()
                     .stream()
                     .map(TypeInfo::annotationMetadata)

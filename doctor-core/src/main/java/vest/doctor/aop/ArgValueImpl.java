@@ -46,8 +46,8 @@ public final class ArgValueImpl implements ArgValue {
         }
         ArgValueImpl argValue = (ArgValueImpl) o;
         return Objects.equals(type, argValue.type)
-                && Objects.equals(name, argValue.name)
-                && Objects.equals(value, argValue.value);
+               && Objects.equals(name, argValue.name)
+               && Objects.equals(value, argValue.value);
     }
 
     @Override

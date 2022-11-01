@@ -19,7 +19,7 @@ public final class ProvidedResolver implements InjectionResolver<Provided> {
     @Override
     public Object resolve(Injectee injectee, ServiceHandle<?> handle) {
         if (injectee.getParent().isAnnotationPresent(Provided.class)
-                && injectee.getRequiredType() instanceof Class<?> type) {
+            && injectee.getRequiredType() instanceof Class<?> type) {
             return DoctorCustomValueParamProvider.getProvidedValue(type, injectee.getParent(), providerRegistry).apply(null);
         }
         return null;

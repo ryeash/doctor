@@ -4,6 +4,7 @@ doctor-grpc
 Boiler-plate gRPC support.
 
 Add dependencies:
+
 ```xml
 <dependency>
     <groupId>doctor</groupId>
@@ -20,6 +21,7 @@ Add dependencies:
 ```
 
 Add gRPC support, e.g. maven:
+
 ```xml
 <properties>
     <grpc.version>1.50.0</grpc.version>
@@ -60,6 +62,7 @@ Add gRPC support, e.g. maven:
 Enable the gRPC feature:
 
 ```java
+
 @Singleton
 @GrpcFeature
 public class AppConfig {
@@ -70,6 +73,7 @@ public class AppConfig {
 Add your .proto and implement your server, ensuring it is marked with a scope:
 
 `src/main/proto/parrot.proto`
+
 ```protobuf
 syntax = "proto3";
 
@@ -103,11 +107,13 @@ public class ParrotImpl extends ParrotGrpc.ParrotImplBase {
 ```
 
 Add the necessary grpc configuration so the server starts.
+
 ```
 grpc.port = 51011
 ```
 
 Any of the following types that are provided will be automatically wired into the grpc system as appropriate:
+
 * BindableService.class
 * ServerServiceDefinition.class
 * ServerInterceptor.class

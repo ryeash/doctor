@@ -38,10 +38,10 @@ class Dependency implements ProviderDependency {
     @Override
     public String toString() {
         return "{" +
-                "type=" + type +
-                ", qualifier=" + qualifier +
-                ", required=" + required +
-                '}';
+               "type=" + type +
+               ", qualifier=" + qualifier +
+               ", required=" + required +
+               '}';
     }
 
     @Override
@@ -54,7 +54,7 @@ class Dependency implements ProviderDependency {
         }
         Dependency that = (Dependency) o;
         return Objects.equals(type.asType().toString(), that.type.asType().toString())
-                && Objects.equals(qualifier, that.qualifier);
+               && Objects.equals(qualifier, that.qualifier);
     }
 
     @Override
