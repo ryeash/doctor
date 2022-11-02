@@ -126,7 +126,41 @@ public class HandlerWriter implements ProviderDefinitionListener {
         }
 
         MethodBuilder handlerBuilder = handler.newMethod("@Override public Flow.Publisher<Response> handle(final RequestContext " + REQUEST_CONTEXT_REF + ") throws Exception");
-        buildRouteMethod(context, handler, handlerBuilder, executableElement);
+        isValidMethod(context, executableElement);
+        GenericInfo returnTypeInfo = new GenericInfo(executableElement, executableElement.getReturnType());
+        String returnTypeInfoRef = "typeInfo_" + executableElement.getSimpleName() + context.nextId();
+        handler.addField("private static final TypeInfo " + returnTypeInfoRef + " = ", returnTypeInfo.newTypeInfo(context));
+
+        boolean bodyIsPublisher = false;
+        VariableElement bodyElement = bodyParameter(executableElement);
+        TypeMirror bodyParam = bodyElement != null ? bodyElement.asType() : null;
+        String bodyType;
+        if (bodyParam != null) {
+            GenericInfo genericInfo = new GenericInfo(bodyParam);
+            bodyIsPublisher = ProcessorUtils.isCompatibleWith(context, genericInfo.type(), Flow.Publisher.class);
+            bodyType = "bodyType_" + executableElement.getSimpleName() + context.nextId();
+            handler.addField("private static final TypeInfo ", bodyType, "=", new GenericInfo(bodyElement).newTypeInfo(context));
+        } else {
+            bodyType = "null";
+        }
+        String parameters = executableElement.getParameters().stream()
+                .map(p -> parameterWriting(context, handler, p, p))
+                .collect(Collectors.joining(",\n", "(", ")"));
+        String callMethod = "provider.get()." + executableElement.getSimpleName() + parameters;
+
+        if (bodyIsPublisher) {
+            handlerBuilder.line(bodyParam, " ", BODY_REF_NAME, "=bodyInterchange.read(requestContext,", bodyType, ");");
+            handlerBuilder.line(executableElement.getReturnType().toString(), " result = ", callMethod, ';');
+            handlerBuilder.line("return bodyInterchange.write(", REQUEST_CONTEXT_REF, ", " + returnTypeInfoRef + ", result);");
+        } else {
+            String bodyTypeString = bodyParam != null ? bodyParam.toString() : "Object";
+            handlerBuilder.line("return Rx.<", bodyTypeString, ">from(bodyInterchange.read(", REQUEST_CONTEXT_REF, ", ", bodyType, "))");
+            handlerBuilder.line(".onNext((" + BODY_REF_NAME + ", subscription, subscriber) -> {");
+            handlerBuilder.line("subscriber.onNext(" + callMethod + ");");
+            handlerBuilder.line("})");
+            handlerBuilder.line(".mapPublisher(result -> bodyInterchange.write(requestContext, " + returnTypeInfoRef + ", result));");
+        }
+
         context.addServiceImplementation(GeneratedHandler.class, className);
         handler.writeClass(context.filer());
     }
@@ -165,60 +199,7 @@ public class HandlerWriter implements ProviderDefinitionListener {
         return new String(a, 0, n);
     }
 
-    private void buildRouteMethod(AnnotationProcessorContext context,
-                                  ClassBuilder classBuilder,
-                                  MethodBuilder handler,
-                                  ExecutableElement method) {
-        checkMethodParams(context, method);
-        if (method.getReturnType().getKind() == TypeKind.VOID) {
-            throw new CodeProcessingException("the return type for endpoint methods may not be void", method);
-        }
-
-        if (method.getReturnType().toString().equalsIgnoreCase(Object.class.getCanonicalName())) {
-            throw new CodeProcessingException("endpoint methods must declare specific return types (not Object)", method);
-        }
-
-        GenericInfo returnTypeInfo = new GenericInfo(method, method.getReturnType());
-        String returnTypeInfoRef = "typeInfo_" + method.getSimpleName() + context.nextId();
-        classBuilder.addField("private static final TypeInfo " + returnTypeInfoRef + " = ", returnTypeInfo.newTypeInfo(context));
-
-        boolean bodyIsPublisher = false;
-        VariableElement bodyElement = bodyParameter(method);
-        TypeMirror bodyParam = bodyElement != null ? bodyElement.asType() : null;
-        String bodyType;
-        if (bodyParam != null) {
-            GenericInfo genericInfo = new GenericInfo(bodyParam);
-            bodyIsPublisher = ProcessorUtils.isCompatibleWith(context, genericInfo.type(), Flow.Publisher.class);
-            bodyType = "bodyType_" + method.getSimpleName() + context.nextId();
-            classBuilder.addField("private static final TypeInfo ", bodyType, "=", new GenericInfo(bodyElement).newTypeInfo(context));
-        } else {
-            bodyType = "null";
-        }
-        String parameters = method.getParameters().stream()
-                .map(p -> parameterWriting(context, classBuilder, p, p))
-                .collect(Collectors.joining(",\n", "(", ")"));
-        String callMethod = "provider.get()." + method.getSimpleName() + parameters;
-
-        if (bodyIsPublisher) {
-            handler.line(bodyParam, " ", BODY_REF_NAME, "=bodyInterchange.read(requestContext,", bodyType, ");");
-            String resultRef = "result";
-            handler.line(method.getReturnType().toString(), " result = ", callMethod, ';');
-            handler.line("return bodyInterchange.write(", REQUEST_CONTEXT_REF, ", " + returnTypeInfoRef + ", " + resultRef + ");");
-        } else {
-            String bodyTypeString = bodyParam != null ? bodyParam.toString() : "Object";
-            handler.line("return Rx.<", bodyTypeString, ">from(bodyInterchange.read(", REQUEST_CONTEXT_REF, ", ", bodyType, "))");
-            handler.line(".onNext((" + BODY_REF_NAME + ", subscription, subscriber) -> {");
-            handler.line("try{");
-            handler.line("subscriber.onNext(" + callMethod + ");");
-            handler.line("}catch(Throwable t){");
-            handler.line("subscriber.onError(t);");
-            handler.line("}");
-            handler.line("})");
-            handler.line(".mapPublisher(result -> bodyInterchange.write(requestContext, " + returnTypeInfoRef + ", result));");
-        }
-    }
-
-    private void checkMethodParams(AnnotationProcessorContext context, ExecutableElement method) {
+    private void isValidMethod(AnnotationProcessorContext context, ExecutableElement method) {
         // all parameters have one and only one param annotation
         for (VariableElement parameter : method.getParameters()) {
             int count = ProcessorUtils.getAnnotationsExtends(context, parameter, Param.class).size();
@@ -231,6 +212,16 @@ public class HandlerWriter implements ProviderDefinitionListener {
         long bodyParams = method.getParameters().stream().filter(v -> v.getAnnotation(Param.Body.class) != null).count();
         if (bodyParams > 1) {
             throw new CodeProcessingException("only one parameter may be marked with @Body in an endpoint method", method);
+        }
+
+        // void not allowed
+        if (method.getReturnType().getKind() == TypeKind.VOID) {
+            throw new CodeProcessingException("the return type for endpoint methods may not be void", method);
+        }
+
+        // must be more specific that 'Object'
+        if (method.getReturnType().toString().equalsIgnoreCase(Object.class.getCanonicalName())) {
+            throw new CodeProcessingException("endpoint methods must declare specific return types (not Object)", method);
         }
     }
 

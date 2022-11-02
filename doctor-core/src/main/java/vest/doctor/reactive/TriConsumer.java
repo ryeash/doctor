@@ -17,5 +17,5 @@ public interface TriConsumer<T, U, V> {
      * @param u the second argument
      * @param v the third argument
      */
-    void accept(T t, U u, V v);
+    void accept(T t, U u, V v) throws Exception;
 }

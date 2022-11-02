@@ -8,7 +8,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.VariableElement;
 
 /**
- * A customization point that creates the code to wire request params into endpoint method.
+ * A customization point that creates the code to wire request params into endpoint method calls.
  */
 public interface HttpParameterWriter extends CustomizationPoint {
 
