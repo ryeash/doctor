@@ -143,12 +143,12 @@ public class Server extends SimpleChannelInboundHandler<HttpObject> implements A
             ctx.writeAndFlush(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE));
         }
 
-        SubmissionPublisher<HttpContent> publisher = new SubmissionPublisher<>(workerGroup, Flow.defaultBufferSize());
+        SubmissionPublisher<HttpContent> publisher = new SubmissionPublisher<>(workerGroup, config.getReactiveBodyMaxBuffer());
         StreamingRequestBody body = new StreamingRequestBody(ctx, publisher);
         ctx.channel().attr(CONTEXT_BODY).set(publisher);
         ctx.channel().attr(BODY_SIZE).set(new AtomicInteger(0));
 
-        ServerRequest req = new ServerRequest(request, body);
+        Request req = new ServerRequest(request, body);
         Response response = new ServerResponse(req);
         RequestContext requestContext = new RequestContextImpl(req, response, ctx);
         Flow.Publisher<Response> handle;

@@ -7,6 +7,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
+/**
+ * HTTP request context. Container for the {@link Request} and {@link Response} for a single request.
+ */
 public interface RequestContext {
 
     /**
@@ -33,10 +36,11 @@ public interface RequestContext {
      * A "mapping" function that ignores the input and just returns the response object from this
      * request. Useful when doing things like:
      * <pre>
-     * ctx -> Rx.from(ctx.request().body().ignored())
-     *          .map(ctx::response)
-     *          .observe(response -> response.status(HttpResponseStatus.NOT_FOUND).body(ResponseBody.empty()));
+     * Rx.from(ctx.request().body().ignored())
+     *   .map(ctx::response)
+     *   .observe(response -> response.status(HttpResponseStatus.NOT_FOUND).body(ResponseBody.empty()));
      * </pre>
+     *
      * @param ignored ignored always
      * @return the {@link Response}
      */

@@ -2,6 +2,7 @@ package vest.doctor.processor;
 
 import jakarta.inject.Singleton;
 import vest.doctor.Cached;
+import vest.doctor.Configuration;
 import vest.doctor.Factory;
 import vest.doctor.Prototype;
 import vest.doctor.Reloadable;
@@ -16,7 +17,7 @@ public class DefaultProcessorConfiguration implements ProcessorConfiguration {
 
     @Override
     public List<Class<? extends Annotation>> supportedAnnotations() {
-        return List.of(Singleton.class, ThreadLocal.class, Prototype.class, Cached.class, Factory.class, Reloadable.class);
+        return List.of(Singleton.class, Configuration.class, ThreadLocal.class, Prototype.class, Cached.class, Factory.class, Reloadable.class);
     }
 
     @Override

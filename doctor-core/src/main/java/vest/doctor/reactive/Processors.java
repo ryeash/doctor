@@ -108,17 +108,17 @@ public final class Processors {
 
         @Override
         public void onNext(I item) {
-            action.accept(new Signal<>(item, null, false, subscription(), subscriber()));
+            action.accept(new SignalRecord<>(item, null, false, subscription(), subscriber()));
         }
 
         @Override
         public void onError(Throwable throwable) {
-            action.accept(new Signal<>(null, throwable, false, subscription(), subscriber()));
+            action.accept(new SignalRecord<>(null, throwable, false, subscription(), subscriber()));
         }
 
         @Override
         public void onComplete() {
-            action.accept(new Signal<>(null, null, true, subscription(), subscriber()));
+            action.accept(new SignalRecord<>(null, null, true, subscription(), subscriber()));
         }
     }
 }

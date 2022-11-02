@@ -1,16 +1,16 @@
 package demo.app.service;
 
 import jakarta.inject.Inject;
+import vest.doctor.http.server.Param.Context;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.Response;
-import vest.doctor.http.server.rest.Param.Context;
 
 import java.util.Optional;
 
-import static vest.doctor.http.server.rest.Param.Cookie;
-import static vest.doctor.http.server.rest.Param.Header;
-import static vest.doctor.http.server.rest.Param.Path;
-import static vest.doctor.http.server.rest.Param.Query;
+import static vest.doctor.http.server.Param.Cookie;
+import static vest.doctor.http.server.Param.Header;
+import static vest.doctor.http.server.Param.Path;
+import static vest.doctor.http.server.Param.Query;
 
 public class BeanParamObject {
 

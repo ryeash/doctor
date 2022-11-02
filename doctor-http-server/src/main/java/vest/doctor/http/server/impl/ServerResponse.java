@@ -76,9 +76,9 @@ public class ServerResponse implements Response {
     @Override
     public String toString() {
         return "ServerResponse{" +
-                ", status=" + status +
-                ", headers=" + headers +
-                ", body=" + body +
-                '}';
+               ", status=" + status +
+               ", headers=" + headers +
+               ", body=" + body +
+               '}';
     }
 }

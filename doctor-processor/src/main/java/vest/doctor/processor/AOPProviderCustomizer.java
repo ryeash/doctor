@@ -171,7 +171,7 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
                             return tp.getSimpleName().toString();
                         } else {
                             return tp.getSimpleName() + " extends " +
-                                    tp.getBounds().stream().map(TypeMirror::toString).collect(Collectors.joining(" & "));
+                                   tp.getBounds().stream().map(TypeMirror::toString).collect(Collectors.joining(" & "));
                         }
                     })
                     .collect(Collectors.joining(", ", "<", ">"));
@@ -211,11 +211,11 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
         boolean hasEmptyConstructor = ElementFilter.constructorsIn(typeElement.getEnclosedElements())
                 .stream()
                 .anyMatch(c -> (c.getModifiers().contains(Modifier.PUBLIC) || c.getModifiers().contains(Modifier.PROTECTED))
-                        && c.getParameters().isEmpty());
+                               && c.getParameters().isEmpty());
         return hasEmptyConstructor
-                && modifiers.contains(Modifier.PUBLIC)
-                && !modifiers.contains(Modifier.FINAL)
-                && typeElement.getKind() == ElementKind.CLASS;
+               && modifiers.contains(Modifier.PUBLIC)
+               && !modifiers.contains(Modifier.FINAL)
+               && typeElement.getKind() == ElementKind.CLASS;
     }
 
     private static String buildAspectedMethodCall(AnnotationProcessorContext context,

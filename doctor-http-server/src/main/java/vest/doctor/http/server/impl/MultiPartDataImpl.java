@@ -17,7 +17,7 @@ import vest.doctor.reactive.Rx;
 import java.util.concurrent.Flow;
 import java.util.function.Consumer;
 
-class MultiPartDataImpl implements MultiPartData {
+final class MultiPartDataImpl implements MultiPartData {
 
     private final RequestBody body;
     private final HttpPostRequestDecoder decoder;
@@ -41,7 +41,7 @@ class MultiPartDataImpl implements MultiPartData {
     public Flow.Publisher<Part> parts() {
         if (valid()) {
             return Rx.from(body.flow())
-                    .<Part>onNext((content, subscription, subscriber) -> nextData(content, subscriber::onNext))
+                    .mapAsync(this::nextData)
                     .onNext((part, subscription, subscriber) -> {
                         subscriber.onNext(part);
                         if (part.last()) {

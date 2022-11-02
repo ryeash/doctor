@@ -44,11 +44,11 @@ final class EventBusImpl implements EventBus, EventConsumer<ErrorEvent> {
     @Override
     public String toString() {
         return "EventBus{consumers: [" +
-                consumers.stream()
-                        .sorted(Comparator.comparing(h -> h.type.getName()))
-                        .map(holder -> holder.type.getName() + ": " + holder.consumer)
-                        .collect(Collectors.joining("\n")) +
-                "]}";
+               consumers.stream()
+                       .sorted(Comparator.comparing(h -> h.type.getName()))
+                       .map(holder -> holder.type.getName() + ": " + holder.consumer)
+                       .collect(Collectors.joining("\n")) +
+               "]}";
     }
 
     @Override

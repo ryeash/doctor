@@ -17,17 +17,18 @@
         <module>doctor-grpc</module>
         <module>test-app-ext</module>
         <module>test-app</module>
+        <module>doctor-bom</module>
     </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>18</maven.compiler.source>
         <maven.compiler.target>18</maven.compiler.target>
-        <slf4j.version>2.0.1</slf4j.version>
+        <slf4j.version>2.0.3</slf4j.version>
         <maven.deploy.skip>true</maven.deploy.skip>
-        <netty.version>4.1.82.Final</netty.version>
+        <netty.version>4.1.84.Final</netty.version>
         <jackson.version>2.13.3</jackson.version>
-        <grpc.version>1.49.1</grpc.version>
+        <grpc.version>1.50.0</grpc.version>
     </properties>
 
     <dependencyManagement>
@@ -66,13 +67,11 @@
                 <groupId>io.rest-assured</groupId>
                 <artifactId>rest-assured</artifactId>
                 <version>5.2.0</version>
-                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.jetty.websocket</groupId>
                 <artifactId>websocket-jetty-client</artifactId>
                 <version>11.0.12</version>
-                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -1,12 +1,12 @@
 package demo.app.service;
 
 import jakarta.inject.Singleton;
+import vest.doctor.http.server.Endpoint;
 import vest.doctor.http.server.Handler;
+import vest.doctor.http.server.HttpMethod.GET;
 import vest.doctor.http.server.RequestContext;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
-import vest.doctor.http.server.rest.Endpoint;
-import vest.doctor.http.server.rest.HttpMethod.GET;
 import vest.doctor.reactive.Rx;
 
 import java.util.concurrent.Flow;

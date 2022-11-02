@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
@@ -17,8 +18,8 @@ import java.util.stream.Stream;
 final class ProviderIndex {
 
     private final Lock writeLock = new ReentrantLock();
-    private final Map<String, Map<String, DoctorProvider<?>>> primary = new HashMap<>(64);
-    private final Map<String, Map<String, Collection<DoctorProvider<?>>>> secondary = new HashMap<>(128);
+    private final Map<String, Map<String, DoctorProvider<?>>> primary = new ConcurrentSkipListMap<>();
+    private final Map<String, Map<String, Collection<DoctorProvider<?>>>> secondary = new ConcurrentSkipListMap<>();
 
     void setProvider(DoctorProvider<?> provider) {
         Objects.requireNonNull(provider);
@@ -27,15 +28,15 @@ final class ProviderIndex {
         try {
             // primary
             Map<String, DoctorProvider<?>> qualifierToProvider = primary.computeIfAbsent(provider.type().getName(), t -> new HashMap<>());
-            if (qualifierToProvider.containsKey(provider.qualifier())) {
+            qualifierToProvider.merge(provider.qualifier(), provider, (existing, insert) -> {
                 throw new IllegalArgumentException("there is already a provider registered under: " + provider.qualifier() + ":" + provider.type());
-            }
-            qualifierToProvider.put(provider.qualifier(), provider);
+            });
 
             // secondary
             for (Class<?> type : provider.allProvidedTypes()) {
-                Map<String, Collection<DoctorProvider<?>>> sub = secondary.computeIfAbsent(type.getName(), t -> new HashMap<>());
-                sub.computeIfAbsent(provider.qualifier(), q -> new ArrayList<>()).add(provider);
+                secondary.computeIfAbsent(type.getName(), t -> new HashMap<>())
+                        .computeIfAbsent(provider.qualifier(), q -> new ArrayList<>())
+                        .add(provider);
             }
         } finally {
             writeLock.unlock();

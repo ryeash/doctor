@@ -11,11 +11,15 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.ssl.SslContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vest.doctor.CustomThreadFactory;
+import vest.doctor.ProviderRegistry;
+import vest.doctor.jersey.JerseyHttpConfiguration;
 import vest.doctor.runtime.LoggingUncaughtExceptionHandler;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,35 +27,32 @@ public class NettyHttpServer implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(NettyHttpServer.class);
     private final EventLoopGroup bossGroup;
-    private final EventLoopGroup workerGroup;
     private final List<Channel> serverChannels;
 
-    public NettyHttpServer(HttpServerConfiguration httpConfig, ChannelHandler handler, boolean useChildGroup) {
-        this.bossGroup = new NioEventLoopGroup(httpConfig.getTcpManagementThreads(), new CustomThreadFactory(false, httpConfig.getTcpThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()));
+    public NettyHttpServer(ProviderRegistry providerRegistry,
+                           JerseyHttpConfiguration httpConfig,
+                           ChannelHandler handler,
+                           SslContext sslContext) {
+        this.bossGroup = new NioEventLoopGroup(httpConfig.tcpManagementThreads().orElse(1),
+                new CustomThreadFactory(false, httpConfig.tcpThreadFormat().orElse("netty-tcp-%d"), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()));
 
         ServerBootstrap bootstrap = new ServerBootstrap();
-        if (useChildGroup) {
-            this.workerGroup = new NioEventLoopGroup(httpConfig.getWorkerThreads(), new CustomThreadFactory(true, httpConfig.getWorkerThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()));
-            bootstrap.group(bossGroup, workerGroup);
-        } else {
-            this.workerGroup = null;
-            bootstrap.group(bossGroup);
-        }
+        bootstrap.group(bossGroup);
         bootstrap.channelFactory(NioServerSocketChannel::new)
-                .option(ChannelOption.SO_BACKLOG, httpConfig.getSocketBacklog())
+                .option(ChannelOption.SO_BACKLOG, httpConfig.socketBacklog().orElse(1024))
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .option(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator())
                 .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, WriteBufferWaterMark.DEFAULT)
-                .childHandler(new HttpServerChannelInitializer(handler, httpConfig));
+                .childHandler(new HttpServerChannelInitializer(providerRegistry, handler, httpConfig, sslContext));
 
-        if (httpConfig.getServerBootstrapCustomizers() != null) {
-            for (ServerBootstrapCustomizer customizer : httpConfig.getServerBootstrapCustomizers()) {
-                customizer.customize(bootstrap);
-            }
-        }
+        providerRegistry.getInstances(ServerBootstrapCustomizer.class)
+                .forEach(c -> c.customize(bootstrap));
 
-        this.serverChannels = httpConfig.getBindAddresses()
+        System.out.println(httpConfig.bindAddresses());
+        this.serverChannels = httpConfig.bindAddresses()
                 .stream()
+                .map(s -> s.split(":"))
+                .map(hp -> new InetSocketAddress(hp[0].trim(), Integer.parseInt(hp[1].trim())))
                 .map(bootstrap::bind)
                 .map(ChannelFuture::syncUninterruptibly)
                 .map(ChannelFuture::channel)
@@ -65,9 +66,6 @@ public class NettyHttpServer implements AutoCloseable {
             doQuietly(serverChannel::close);
         }
         doQuietly(bossGroup::shutdownGracefully);
-        if (workerGroup != null) {
-            doQuietly(workerGroup::shutdownGracefully);
-        }
     }
 
     private static void doQuietly(Runnable runnable) {

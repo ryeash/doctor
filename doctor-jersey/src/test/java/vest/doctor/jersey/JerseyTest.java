@@ -37,6 +37,10 @@ import static org.testng.Assert.assertTrue;
 @Test(invocationCount = 3)
 public class JerseyTest {
 
+    static {
+        System.setProperty("doctor.jersey.http.bind", "0.0.0.0:9998");
+    }
+
     private Doctor doctor;
 
     @BeforeClass(alwaysRun = true)

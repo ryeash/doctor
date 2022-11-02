@@ -43,7 +43,8 @@ public class JdbcDao {
 
 ##### [@Factory](doctor-core/src/main/java/vest/doctor/Factory.java)
 
-This factory method in this class does a similar thing (though having both in your project will cause a compilation error, so
+This factory method in this class does a similar thing (though having both in your project will cause a compilation
+error, so
 just pick one):
 
 ```java
@@ -104,7 +105,7 @@ These are the built-in scopes supported:
 - [@ThreadLocal](doctor-core/src/main/java/vest/doctor/ThreadLocal.java): one instance is created per thread
 - [@Cached](doctor-core/src/main/java/vest/doctor/Cached.java): an instance is created and shared for a configurable
   length of time
-- [@Reloadable](doctor-core/src/main/java/vest/doctor/Reloadable.java): an instance is created and cached until a 
+- [@Reloadable](doctor-core/src/main/java/vest/doctor/Reloadable.java): an instance is created and cached until a
   [ReloadProviders](doctor-core/src/main/java/vest/doctor/event/ReloadProviders.java) event is published, at which point
   the cached instance will be cleared and a new instance will be created the next time an instance is requested (lazily)
 
@@ -315,7 +316,6 @@ public class AsyncDemo {
 }
 ```
 
-
 ### [@Activation](doctor-core/src/main/java/vest/doctor/Activation.java)
 
 Providers can be conditionally activated based on predicates defined in an @Activation annotation
@@ -323,6 +323,7 @@ attached to the provider source.
 
 Example:
 First create an activation predicate:
+
 ```java
 public class IsActivationPropertyPresent implements BiPredicate<ProviderRegistry, DoctorProvider<?>> {
     // NOTE: activation predicates MUST have a public no-arg constructor
@@ -335,6 +336,7 @@ public class IsActivationPropertyPresent implements BiPredicate<ProviderRegistry
 ```
 
 Then use the @Activation annotation to attach the predicate to a provider:
+
 ```java
 @Singleton
 @Activation(IsActivationPropertyPresent.class)
@@ -344,6 +346,7 @@ public class OptionalThing {
 ```
 
 @Activation can be used on an annotation type to bundle multiple predicates under a single named annotation:
+
 ```java
 @Documented
 @Retention(RUNTIME)
@@ -363,6 +366,7 @@ public class OptionalThing {
 
 A note on factory providers: Activation predicates marked at the class level are inherited by
 factory providers. So in this example:
+
 ```java
 @Singleton
 @Activation(SomePredicate.class)
@@ -375,15 +379,17 @@ public class AppConfig {
     }
 }
 ```
+
 The provider generated from coffeeMakerFactory will be subject to both SomePredicate and AnotherPredicate.
 
-
 ### [@Import](doctor-core/src/main/java/vest/doctor/Import.java)
+
 If you use library dependencies that use jakarta.inject-api annotations (or doctor-core annotations)
-on their classes and want to include those classes in the processing of providers, you can use the @Import 
+on their classes and want to include those classes in the processing of providers, you can use the @Import
 annotation to make the external packages known to the compilation environment.
 
 Typical usage is to add the @Import to a provider factory class:
+
 ```java
 @Singleton
 @Import({"org.company", "org.company.ext"})
@@ -395,6 +401,7 @@ public class AppConfig {
     }
 }
 ```
+
 This will cause all top level (note: non-recursive) classes and interfaces from the packages `org.company`
 and `org.company.ext` to be processed for relevant annotations by the doctor-processor, making available
 any providers that it finds.
@@ -431,8 +438,8 @@ public class PropertiesDemo {
 }
 ```
 
-Additionally, using [@Properties](doctor-core/src/main/java/vest/doctor/Properties.java), a properties interface 
-can be defined and then auto generated at compile time to provide a concrete class encapsulating the properties 
+Additionally, using [@Properties](doctor-core/src/main/java/vest/doctor/Properties.java), a properties interface
+can be defined and then auto generated at compile time to provide a concrete class encapsulating the properties
 for an application.
 
 ```java

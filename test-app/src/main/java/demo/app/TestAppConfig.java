@@ -8,6 +8,7 @@ import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 import org.testng.Assert;
 import vest.doctor.Cached;
+import vest.doctor.Configuration;
 import vest.doctor.DestroyMethod;
 import vest.doctor.Factory;
 import vest.doctor.Import;
@@ -17,6 +18,8 @@ import vest.doctor.Prototype;
 import vest.doctor.SkipInjection;
 import vest.doctor.ThreadLocal;
 import vest.doctor.aop.Aspects;
+import vest.doctor.grpc.GrpcFeature;
+import vest.doctor.http.server.processing.HttpServerFeature;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -24,7 +27,9 @@ import java.io.OutputStream;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@Singleton
+@Configuration
+@GrpcFeature
+@HttpServerFeature
 @Named("duck")
 @Import({"app.ext", "app.ext.sub", "vest.doctor.grpc"})
 public class TestAppConfig {

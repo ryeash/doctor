@@ -6,7 +6,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.SubmissionPublisher;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -150,7 +149,7 @@ public class Rx<T> implements Flow.Publisher<T> {
     final Runnable onSubscribe;
     private Flow.Publisher<T> current;
 
-    public Rx(Runnable onSubscribe, Flow.Publisher<T> current) {
+    Rx(Runnable onSubscribe, Flow.Publisher<T> current) {
         this.onSubscribe = onSubscribe;
         this.current = current;
     }
@@ -288,8 +287,8 @@ public class Rx<T> implements Flow.Publisher<T> {
 
     /**
      * Add a recovery stage to the processing flow that can map an exception to the desired type.
-     * When an error signal is received, this stage will basically convert the signal back into
-     * an item signal.
+     * When an error signal is received, this stage will convert the signal back into
+     * an item.
      *
      * @param mapper the recovery mapper
      * @return the next step in the processing composition
@@ -349,12 +348,11 @@ public class Rx<T> implements Flow.Publisher<T> {
      * to the given executor service.
      *
      * @param executor   the executor that will process the signals
-     * @param bufferSize the number of items that can be buffered before an exception is thrown;
-     *                   when 0 or negative, the buffer is unbounded
+     * @param bufferSize the number of items that can be buffered before an exception is thrown
      * @return the next step in the composed processing flow
      */
     public Rx<T> parallel(ExecutorService executor, int bufferSize) {
-        return chain(new ParallelProcessor<>(executor, bufferSize, 1, TimeUnit.SECONDS));
+        return chain(new SubmissionPublisherProcessorAdapter<>(executor, bufferSize));
     }
 
     /**
@@ -446,7 +444,6 @@ public class Rx<T> implements Flow.Publisher<T> {
      * @return a future indicating the completion of the processing flow, the future will complete
      * when either of the {@link Flow.Subscriber#onComplete()} or {@link Flow.Subscriber#onError(Throwable)}
      * signals are sent.
-     * @see #subscribe(long)
      */
     public CompletableFuture<T> subscribe(long initialRequest) {
         CompletableFuture<T> future = new CompletableFuture<>();

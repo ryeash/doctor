@@ -115,7 +115,7 @@ public final class GenericInfo {
         }
         GenericInfo that = (GenericInfo) o;
         return Objects.equals(type, that.type) &&
-                Objects.equals(generics, that.generics);
+               Objects.equals(generics, that.generics);
     }
 
     @Override

@@ -1,9 +1,11 @@
+import vest.doctor.http.server.processing.GeneratedHandler;
+
 module doctor.http.server {
     requires doctor.core;
     requires java.compiler;
     requires jakarta.inject;
 
-    uses vest.doctor.http.server.rest.RouteOrchestration;
+    uses GeneratedHandler;
 
     requires io.netty.buffer;
     requires io.netty.codec.http;
@@ -15,6 +17,5 @@ module doctor.http.server {
 
     exports vest.doctor.http.server;
     exports vest.doctor.http.server.impl;
-    exports vest.doctor.http.server.rest;
-    exports vest.doctor.http.server.rest.processing;
+    exports vest.doctor.http.server.processing;
 }

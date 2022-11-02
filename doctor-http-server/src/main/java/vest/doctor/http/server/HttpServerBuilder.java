@@ -152,6 +152,14 @@ public final class HttpServerBuilder {
     }
 
     /**
+     * @see HttpServerConfiguration#setReactiveBodyMaxBuffer(int)
+     */
+    public HttpServerBuilder setReactiveBodyMaxBuffer(int reactiveBodyMaxBuffer) {
+        config.setReactiveBodyMaxBuffer(reactiveBodyMaxBuffer);
+        return this;
+    }
+
+    /**
      * @see HttpServerConfiguration#setPipelineCustomizers(List)
      */
     public HttpServerBuilder setPipelineCustomizers(List<PipelineCustomizer> pipelineCustomizers) {
@@ -287,6 +295,15 @@ public final class HttpServerBuilder {
     public HttpServerBuilder route(HttpMethod method, String path, Handler handler) {
         router.route(method, path, handler);
         return this;
+    }
+
+    /**
+     * Get the backing router for the http server.
+     *
+     * @return the router
+     */
+    public Router router() {
+        return router;
     }
 
     /**

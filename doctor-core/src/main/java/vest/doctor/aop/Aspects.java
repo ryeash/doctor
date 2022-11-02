@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
 /**
  * Used on a class or method to indicate which aspects to use when invoking the method(s). When a class is marked
  * with this annotation, <strong>all</strong> methods in the class will be wired with the listed aspects.
- *
+ * <p>
  * Aspects are executed in the order that they appear in this annotation. When aspects are marked at the class
  * level as well as the method level, the aspects on the class are executed first (in order) then those
  * on the method.

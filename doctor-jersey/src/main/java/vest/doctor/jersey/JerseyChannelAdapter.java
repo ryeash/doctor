@@ -18,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vest.doctor.CustomThreadFactory;
 import vest.doctor.ProviderRegistry;
-import vest.doctor.netty.HttpServerConfiguration;
 import vest.doctor.netty.Websocket;
 import vest.doctor.netty.WebsocketRouter;
 import vest.doctor.runtime.LoggingUncaughtExceptionHandler;
@@ -37,17 +36,17 @@ public final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
     public static final String RESOURCE_CONFIG = "doctor.jersey.resourceConfig";
 
     private static final Logger log = LoggerFactory.getLogger(JerseyChannelAdapter.class);
-    private final HttpServerConfiguration httpConfig;
     private final ApplicationHandler applicationHandler;
     private final ResourceConfig resourceConfig;
     private final Provider<SecurityContext> securityContextProvider;
     private final WebsocketRouter wsRouter = new WebsocketRouter();
     private final ExecutorService workerGroup;
+    private final String containerRequestScheme;
 
-    JerseyChannelAdapter(HttpServerConfiguration httpConfig,
+    JerseyChannelAdapter(JerseyHttpConfiguration httpConfig,
                          Container container,
-                         ProviderRegistry providerRegistry) {
-        this.httpConfig = httpConfig;
+                         ProviderRegistry providerRegistry,
+                         boolean secure) {
         this.applicationHandler = container.getApplicationHandler();
         this.resourceConfig = container.getConfiguration();
         this.securityContextProvider = providerRegistry.getProviderOpt(SecurityContext.class)
@@ -55,7 +54,9 @@ public final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
                 .orElse(DefaultSecurityContext.PROVIDER);
         providerRegistry.getProviders(Websocket.class)
                 .forEach(w -> wsRouter.addWebsocket(w::get));
-        this.workerGroup = Executors.newFixedThreadPool(httpConfig.getWorkerThreads(), new CustomThreadFactory(true, httpConfig.getWorkerThreadFormat(), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()));
+        this.workerGroup = Executors.newFixedThreadPool(httpConfig.workerThreads().orElse(Math.max(Runtime.getRuntime().availableProcessors() * 2, 8)),
+                new CustomThreadFactory(true, httpConfig.workerThreadFormat().orElse("netty-worker-%d"), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()));
+        this.containerRequestScheme = secure ? "https" : "http";
     }
 
     @Override
@@ -102,16 +103,15 @@ public final class JerseyChannelAdapter extends ChannelInboundHandlerAdapter {
         String hostHeader = req.headers().get(HttpHeaderNames.HOST);
         String uri = req.uri();
         URI requestUri;
-        String scheme = httpConfig.getSslContext() != null ? "https" : "http";
         if (uri.startsWith("http")) {
             requestUri = URI.create(uri);
         } else if (hostHeader != null) {
-            requestUri = URI.create(scheme + "://" + hostHeader + req.uri());
+            requestUri = URI.create(containerRequestScheme + "://" + hostHeader + req.uri());
         } else {
             InetSocketAddress socketAddress = (InetSocketAddress) ctx.channel().localAddress();
             String host = socketAddress.getHostName();
             int port = socketAddress.getPort();
-            requestUri = URI.create(scheme + "://" + host + ":" + port + req.uri());
+            requestUri = URI.create(containerRequestScheme + "://" + host + ":" + port + req.uri());
         }
         URI baseUri = URI.create(requestUri.getScheme() + "://" + requestUri.getHost() + ":" + requestUri.getPort() + "/");
         return new ContainerRequest(baseUri, requestUri, req.method().name(), securityContextProvider.get(), new MapPropertiesDelegate(), resourceConfig);

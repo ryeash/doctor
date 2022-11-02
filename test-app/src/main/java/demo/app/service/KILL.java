@@ -1,6 +1,6 @@
 package demo.app.service;
 
-import vest.doctor.http.server.rest.HttpMethod;
+import vest.doctor.http.server.HttpMethod;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

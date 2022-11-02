@@ -290,10 +290,15 @@ public final class ProcessorUtils {
 
             if (ProcessorUtils.isCompatibleWith(context, typeElement, Iterable.class)) {
                 TypeMirror typeMirror = unwrapJustOne(variableElement.asType());
+                boolean executeGet = true;
+                if (ProcessorUtils.isCompatibleWith(context, typeMirror, Provider.class)) {
+                    executeGet = false;
+                    typeMirror = unwrapJustOne(typeMirror);
+                }
                 String methodCall = getProvidersCode(typeMirror, qualifier, providerRegistryRef);
                 String preamble = methodCall
-                        + ".map(" + Provider.class.getCanonicalName() + "::get)"
-                        + ".collect(" + Collectors.class.getCanonicalName();
+                                  + (executeGet ? ".map(" + Provider.class.getCanonicalName() + "::get)" : "")
+                                  + ".collect(" + Collectors.class.getCanonicalName();
 
                 if (ProcessorUtils.isCompatibleWith(context, typeElement, Set.class)) {
                     return preamble + ".toSet())";
@@ -332,9 +337,9 @@ public final class ProcessorUtils {
         GenericInfo info = new GenericInfo(mirror);
         if (info.hasTypeParameters() && info.parameterTypes().size() == 1) {
             GenericInfo genericInfo = info.parameterTypes().get(0);
-            if (genericInfo.hasTypeParameters()) {
-                throw new CodeProcessingException("can not inject nested parameterized type: " + mirror);
-            }
+//            if (genericInfo.hasTypeParameters()) {
+//                throw new CodeProcessingException("can not inject nested parameterized type: " + mirror);
+//            }
             return genericInfo.type();
         }
         throw new CodeProcessingException("not type parameters provided for: " + mirror);

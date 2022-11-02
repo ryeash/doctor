@@ -31,7 +31,7 @@ public final class UniqueMethod {
         }
         UniqueMethod that = (UniqueMethod) o;
         return Objects.equals(methodName, that.methodName)
-                && Objects.equals(parameterTypes, that.parameterTypes);
+               && Objects.equals(parameterTypes, that.parameterTypes);
     }
 
     @Override

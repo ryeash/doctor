@@ -23,6 +23,14 @@ public final class CompositeExceptionHandler implements ExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(CompositeExceptionHandler.class);
     private final List<ExceptionHandler> handlers = new LinkedList<>();
 
+    public CompositeExceptionHandler() {
+    }
+
+    public CompositeExceptionHandler(List<ExceptionHandler> handlers) {
+        this.handlers.addAll(handlers);
+        this.handlers.sort(Prioritized.COMPARATOR);
+    }
+
     public void addHandler(ExceptionHandler exceptionHandler) {
         if (!handlers.contains(exceptionHandler)) {
             handlers.add(exceptionHandler);
