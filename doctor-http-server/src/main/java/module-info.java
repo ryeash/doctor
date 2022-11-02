@@ -1,11 +1,11 @@
-import vest.doctor.http.server.RouteOrchestration;
+import vest.doctor.http.server.processing.GeneratedHandler;
 
 module doctor.http.server {
     requires doctor.core;
     requires java.compiler;
     requires jakarta.inject;
 
-    uses RouteOrchestration;
+    uses GeneratedHandler;
 
     requires io.netty.buffer;
     requires io.netty.codec.http;

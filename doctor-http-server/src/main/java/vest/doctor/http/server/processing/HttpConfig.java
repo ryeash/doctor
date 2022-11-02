@@ -4,7 +4,6 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import jakarta.inject.Singleton;
-import vest.doctor.AdHocProvider;
 import vest.doctor.AnnotationData;
 import vest.doctor.DoctorProvider;
 import vest.doctor.Eager;
@@ -25,7 +24,6 @@ import vest.doctor.http.server.Handler;
 import vest.doctor.http.server.HttpMethod;
 import vest.doctor.http.server.HttpServerBuilder;
 import vest.doctor.http.server.PipelineCustomizer;
-import vest.doctor.http.server.RouteOrchestration;
 import vest.doctor.http.server.Server;
 import vest.doctor.http.server.ServerBootstrapCustomizer;
 import vest.doctor.http.server.Websocket;
@@ -46,18 +44,29 @@ import java.util.concurrent.Flow;
 @Singleton
 public class HttpConfig {
 
+    @Factory
+    @Singleton
+    public BodyInterchange bodyInterchangeFactory(List<BodyReader> readers,
+                                                  List<BodyWriter> writers) {
+        DefaultBodyReaderWriter defRW = new DefaultBodyReaderWriter();
+        readers.add(defRW);
+        writers.add(defRW);
+        readers.sort(Prioritized.COMPARATOR);
+        writers.sort(Prioritized.COMPARATOR);
+        return new BodyInterchange(readers, writers);
+    }
+
     @Eager
     @Singleton
     @Factory
     public ServerHolder serverFactory(ProviderRegistry providerRegistry,
-                                      List<BodyReader> readers,
-                                      List<BodyWriter> writers,
                                       List<DoctorProvider<Filter>> filters,
                                       List<DoctorProvider<Handler>> handlers,
                                       List<DoctorProvider<Websocket>> websockets,
                                       List<ExceptionHandler> exceptionHandlers,
                                       List<PipelineCustomizer> pipelineCustomizers,
                                       List<ServerBootstrapCustomizer> serverBootstrapCustomizers,
+                                      BodyInterchange bodyInterchange,
                                       EventBus eventBus) {
 
         ConfigurationFacade httpConf = providerRegistry.configuration().prefix("doctor.reactor.http.");
@@ -112,62 +121,45 @@ public class HttpConfig {
 
         builder.setPipelineCustomizers(pipelineCustomizers);
         builder.setServerBootstrapCustomizers(serverBootstrapCustomizers);
+        builder.setExceptionHandler(new CompositeExceptionHandler(exceptionHandlers));
 
-        DefaultBodyReaderWriter defRW = new DefaultBodyReaderWriter();
-        readers.add(defRW);
-        writers.add(defRW);
-        readers.sort(Prioritized.COMPARATOR);
-        writers.sort(Prioritized.COMPARATOR);
-        BodyInterchange bodyInterchange = new BodyInterchange(readers, writers);
-        providerRegistry.register(AdHocProvider.createPrimary(bodyInterchange));
-
-        CompositeExceptionHandler compositeExceptionHandler = new CompositeExceptionHandler();
-        exceptionHandlers.forEach(compositeExceptionHandler::addHandler);
-        providerRegistry.register(AdHocProvider.createPrimary(compositeExceptionHandler));
-
-        filters.forEach(provider -> {
-            List<String> paths = provider.annotationMetadata().findOne(Endpoint.class)
+        for (DoctorProvider<Filter> filter : filters) {
+            List<String> paths = filter.annotationMetadata().findOne(Endpoint.class)
                     .map(endpoint -> endpoint.stringArrayValue("value"))
                     .orElse(Collections.singletonList(Router.MATCH_ALL_PATH_SPEC));
-            Filter filter = provider.get();
+            Filter f = filter.get();
             for (String path : paths) {
-                builder.filter(path, filter);
+                builder.filter(path, f);
             }
-        });
+        }
 
-        handlers.forEach(provider -> {
+        for (DoctorProvider<Handler> handler : handlers) {
             List<String> methods = new LinkedList<>();
-            for (AnnotationData annotationMetadatum : provider.annotationMetadata()) {
-                HttpMethod method = annotationMetadatum.type().getAnnotation(HttpMethod.class);
+            for (AnnotationData annotationMetadata : handler.annotationMetadata()) {
+                HttpMethod method = annotationMetadata.type().getAnnotation(HttpMethod.class);
                 if (method != null) {
                     methods.add(method.value());
                 }
             }
             if (methods.isEmpty()) {
-                throw new IllegalArgumentException("missing http method for Handler: " + provider);
+                throw new IllegalArgumentException("missing http method for Handler: " + handler);
             }
             List<String> paths;
             try {
-                paths = provider.annotationMetadata().stringArrayValue(Endpoint.class, "value");
+                paths = handler.annotationMetadata().stringArrayValue(Endpoint.class, "value");
             } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("missing @Endpoint for Handler: " + provider);
+                throw new IllegalArgumentException("missing @Endpoint for Handler: " + handler);
             }
-            Handler handler = provider.get();
+            Handler h = handler.get();
             for (String method : methods) {
                 for (String path : paths) {
-                    builder.route(method, path, handler);
+                    builder.route(method, path, h);
                 }
             }
-        });
-
-
-        List<RouteOrchestration> orchestrations = new LinkedList<>();
-        for (RouteOrchestration routeOrchestration : ServiceLoader.load(RouteOrchestration.class)) {
-            orchestrations.add(routeOrchestration);
         }
-        orchestrations.sort(Prioritized.COMPARATOR);
-        for (RouteOrchestration orchestration : orchestrations) {
-            builder.routes(router -> orchestration.addRoutes(providerRegistry, router));
+
+        for (GeneratedHandler generatedHandler : ServiceLoader.load(GeneratedHandler.class)) {
+            generatedHandler.init(providerRegistry, builder.router(), bodyInterchange);
         }
 
         websockets.forEach(provider -> builder.ws(provider::get));

@@ -15,12 +15,10 @@ import vest.doctor.http.server.Endpoint;
 import vest.doctor.http.server.Handler;
 import vest.doctor.http.server.HttpMethod;
 import vest.doctor.http.server.HttpParameterWriter;
-import vest.doctor.http.server.NamedHandler;
 import vest.doctor.http.server.Param;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.RequestContext;
 import vest.doctor.http.server.Response;
-import vest.doctor.http.server.RouteOrchestration;
 import vest.doctor.http.server.impl.HttpException;
 import vest.doctor.http.server.impl.Router;
 import vest.doctor.processing.AnnotationProcessorContext;
@@ -46,13 +44,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Flow;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-public class OrchestrationWriter implements ProviderDefinitionListener {
+public class HandlerWriter implements ProviderDefinitionListener {
     public static final String BODY_REF_NAME = "body";
     public static final String REQUEST_CONTEXT_REF = "requestContext";
     private static final String[] EMPTY_ARR = new String[0];
+    private static final String[] ROOT = new String[]{"/"};
     private final Set<ExecutableElement> processedMethods = new HashSet<>();
 
     @Override
@@ -60,8 +58,32 @@ public class OrchestrationWriter implements ProviderDefinitionListener {
         if (providerDefinition.annotationSource().getAnnotation(Endpoint.class) == null) {
             return;
         }
-        String className = providerDefinition.providedType() + "$Routing" + context.nextId();
-        ClassBuilder routes = new ClassBuilder()
+        String[] roots = Optional.ofNullable(providerDefinition.annotationSource().getAnnotation(Endpoint.class))
+                .map(Endpoint::value)
+                .orElse(ROOT);
+
+        for (ExecutableElement m : ProcessorUtils.allMethods(context, providerDefinition.providedType())) {
+            if (m.getModifiers().contains(Modifier.PUBLIC) && processedMethods.add(m)) {
+                List<String> httpMethods = getMethods(m);
+                if (!httpMethods.isEmpty()) {
+                    String[] paths = Optional.ofNullable(m.getAnnotation(Endpoint.class))
+                            .map(Endpoint::value)
+                            .orElse(EMPTY_ARR);
+                    initWiredHandler(context, providerDefinition, m, httpMethods, paths(roots, paths));
+                } else if (m.getAnnotation(Endpoint.class) != null) {
+                    throw new CodeProcessingException("http method is required for endpoints, e.g. @GET", m);
+                }
+            }
+        }
+    }
+
+    public void initWiredHandler(AnnotationProcessorContext context,
+                                 ProviderDefinition providerDefinition,
+                                 ExecutableElement executableElement,
+                                 List<String> methods,
+                                 List<String> paths) {
+        String className = providerDefinition.providedType() + "$" + executableElement.getSimpleName() + "$Handler" + context.nextId();
+        ClassBuilder handler = new ClassBuilder()
                 .setClassName(className)
                 .addImportClass(Map.class)
                 .addImportClass(List.class)
@@ -82,56 +104,31 @@ public class OrchestrationWriter implements ProviderDefinitionListener {
                 .addImportClass(Response.class)
                 .addImportClass(Request.class)
                 .addImportClass(Handler.class)
-                .addImportClass(NamedHandler.class)
                 .addImportClass(Rx.class)
                 .addImportClass(Flow.class)
                 .addImportClass(Flow.Publisher.class)
-                .addImplementsInterface(RouteOrchestration.class)
+                .addImplementsInterface(GeneratedHandler.class)
                 .addField("private ProviderRegistry providerRegistry")
-                .addField("private Provider<" + providerDefinition.providedType() + "> provider")
-                .addField("private BodyInterchange bodyInterchange");
+                .addField("private BodyInterchange bodyInterchange")
+                .addField("private Provider<" + providerDefinition.providedType() + "> provider");
 
-        MethodBuilder addRoutes = routes.newMethod("@Override public void addRoutes(ProviderRegistry providerRegistry, Router router)");
-        addRoutes.line("this.providerRegistry = providerRegistry;");
-        addRoutes.line("this.provider = ", ProcessorUtils.getProviderCode(providerDefinition), ";");
-        addRoutes.line("this.bodyInterchange = providerRegistry.getInstance(BodyInterchange.class);");
-
-        String[] roots = Optional.ofNullable(providerDefinition.annotationSource().getAnnotation(Endpoint.class))
-                .map(Endpoint::value)
-                .orElse(new String[]{"/"});
-
-        AtomicBoolean hasEndpointMethods = new AtomicBoolean(false);
-        ProcessorUtils.allMethods(context, providerDefinition.providedType())
-                .stream()
-                .filter(m -> m.getModifiers().contains(Modifier.PUBLIC))
-                .filter(processedMethods::add)
-                .forEach(method -> {
-                    List<String> httpMethods = getMethods(method);
-                    if (!httpMethods.isEmpty()) {
-                        String[] paths = Optional.ofNullable(method.getAnnotation(Endpoint.class))
-                                .map(Endpoint::value)
-                                .orElse(EMPTY_ARR);
-                        String handlerName = method.getEnclosingElement().getSimpleName() + "#" + method.getSimpleName();
-                        String methodName = "handle" + method.getSimpleName() + "_" + context.nextId();
-                        MethodBuilder handler = routes.newMethod("public Flow.Publisher<Response> " + methodName + "(RequestContext " + REQUEST_CONTEXT_REF + ")");
-                        buildRouteMethod(context, routes, handler, method);
-                        for (String httpMethod : httpMethods) {
-                            for (String path : paths(roots, paths)) {
-                                hasEndpointMethods.set(true);
-                                addRoutes.line("router.route(",
-                                        ProcessorUtils.escapeAndQuoteStringForCode(httpMethod), ',',
-                                        ProcessorUtils.escapeAndQuoteStringForCode(path), ',',
-                                        "new NamedHandler(this::" + methodName, "," + ProcessorUtils.escapeAndQuoteStringForCode(handlerName) + "));");
-                            }
-                        }
-                    } else if (method.getAnnotation(Endpoint.class) != null) {
-                        throw new CodeProcessingException("http method is required for endpoints, e.g. @GET", method);
-                    }
-                });
-        if (hasEndpointMethods.get()) {
-            routes.writeClass(context.filer());
-            context.addServiceImplementation(RouteOrchestration.class, routes.getFullyQualifiedClassName());
+        MethodBuilder init = handler.newMethod("@Override public void init(ProviderRegistry providerRegistry, Router router, BodyInterchange bodyInterchange)");
+        init.line("this.providerRegistry = providerRegistry;");
+        init.line("this.bodyInterchange = bodyInterchange;");
+        init.line("this.provider = ", ProcessorUtils.getProviderCode(providerDefinition), ";");
+        for (String method : methods) {
+            for (String path : paths) {
+                init.line("router.route(",
+                        ProcessorUtils.escapeAndQuoteStringForCode(method), ',',
+                        ProcessorUtils.escapeAndQuoteStringForCode(path), ',',
+                        "this);");
+            }
         }
+
+        MethodBuilder handlerBuilder = handler.newMethod("@Override public Flow.Publisher<Response> handle(final RequestContext " + REQUEST_CONTEXT_REF + ") throws Exception");
+        buildRouteMethod(context, handler, handlerBuilder, executableElement);
+        context.addServiceImplementation(GeneratedHandler.class, className);
+        handler.writeClass(context.filer());
     }
 
     private static List<String> paths(String[] roots, String[] paths) {
@@ -177,8 +174,6 @@ public class OrchestrationWriter implements ProviderDefinitionListener {
             throw new CodeProcessingException("the return type for endpoint methods may not be void", method);
         }
 
-        handler.line("try{");
-
         if (method.getReturnType().toString().equalsIgnoreCase(Object.class.getCanonicalName())) {
             throw new CodeProcessingException("endpoint methods must declare specific return types (not Object)", method);
         }
@@ -221,10 +216,6 @@ public class OrchestrationWriter implements ProviderDefinitionListener {
             handler.line("})");
             handler.line(".mapPublisher(result -> bodyInterchange.write(requestContext, " + returnTypeInfoRef + ", result));");
         }
-
-        handler.line("}catch(Throwable t){");
-        handler.line("return Rx.error(t);");
-        handler.line("}");
     }
 
     private void checkMethodParams(AnnotationProcessorContext context, ExecutableElement method) {

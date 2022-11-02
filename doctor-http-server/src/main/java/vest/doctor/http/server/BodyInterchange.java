@@ -8,7 +8,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 import java.util.function.Function;
 
-public final class BodyInterchange implements BodyReader, BodyWriter {
+public final class BodyInterchange {
     private final List<BodyReader> readers;
     private final List<BodyWriter> writers;
 
@@ -17,7 +17,6 @@ public final class BodyInterchange implements BodyReader, BodyWriter {
         this.writers = writers;
     }
 
-    @Override
     public <T> Flow.Publisher<T> read(RequestContext requestContext, TypeInfo typeInfo) {
         for (BodyReader reader : readers) {
             Flow.Publisher<T> read = reader.read(requestContext, typeInfo);
@@ -28,7 +27,6 @@ public final class BodyInterchange implements BodyReader, BodyWriter {
         throw new UnsupportedOperationException("unable to read http body to type: " + typeInfo);
     }
 
-    @Override
     public Flow.Publisher<Response> write(RequestContext requestContext, TypeInfo responseTypeInfo, Object responseData) {
         if (responseData instanceof CompletableFuture<?> future) {
             TypeInfo futureType = responseTypeInfo.getParameterTypes().get(0);

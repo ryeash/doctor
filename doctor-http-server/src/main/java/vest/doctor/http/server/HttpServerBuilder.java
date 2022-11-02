@@ -298,6 +298,15 @@ public final class HttpServerBuilder {
     }
 
     /**
+     * Get the backing router for the http server.
+     *
+     * @return the router
+     */
+    public Router router() {
+        return router;
+    }
+
+    /**
      * Add a request filter to the router. The filter will be applied to every request.
      *
      * @param filter the filter that will be routed for requests matching the path specification
