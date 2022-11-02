@@ -1,4 +1,4 @@
-package vest.doctor.jersey;
+package vest.doctor.http.server.processing;
 
 import vest.doctor.Properties;
 import vest.doctor.Property;
@@ -6,8 +6,8 @@ import vest.doctor.Property;
 import java.util.List;
 import java.util.Optional;
 
-@Properties("doctor.jersey.http.")
-public interface JerseyHttpConfiguration {
+@Properties("doctor.reactor.http.")
+public interface HttpProperties {
     /**
      * The number of threads used for TCP management. Defaults to 1 and should
      * rarely need any more than that.
@@ -90,4 +90,22 @@ public interface JerseyHttpConfiguration {
      */
     @Property("minGzipSize")
     Optional<Integer> minGzipSize();
+
+    /**
+     * The max buffer size for the reactive flows handling request body chunks.
+     */
+    @Property("reactiveBodyMaxBuffer")
+    Optional<Integer> reactiveBodyMaxBuffer();
+
+    /**
+     * The path prefix to use for all routes.
+     */
+    @Property("routePrefix")
+    Optional<String> routePrefix();
+
+    /**
+     * Whether to match routes with case-insensitive regex.
+     */
+    @Property("caseInsensitiveMatching")
+    Optional<Boolean> caseInsensitiveMatching();
 }

@@ -3,10 +3,13 @@ package vest.doctor.jersey;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
+import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.Path;
 import org.glassfish.jersey.server.ResourceConfig;
+import vest.doctor.Activation;
 import vest.doctor.ApplicationLoader;
+import vest.doctor.Configuration;
 import vest.doctor.DoctorProvider;
 import vest.doctor.Eager;
 import vest.doctor.Factory;
@@ -17,24 +20,35 @@ import vest.doctor.jersey.ext.DoctorCustomValueParamProvider;
 import vest.doctor.netty.NettyHttpServer;
 
 import javax.net.ssl.SSLException;
-import java.io.File;
 import java.security.cert.CertificateException;
+import java.util.List;
+import java.util.Optional;
 
-@Singleton
+@Configuration
 public final class JerseyBeanFactory implements ApplicationLoader {
+
+    @Singleton
+    @Factory
+    @Activation(SelfSignedSSLActivation.class)
+    @Named("server")
+    public SslContext selfSignedSslFactory() throws CertificateException, SSLException {
+        SelfSignedCertificate ssc = new SelfSignedCertificate();
+        return SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey()).build();
+    }
 
     @Eager
     @Singleton
     @Factory
     public JerseyServerHolder jerseyFactory(ProviderRegistry providerRegistry,
                                             EventBus eventBus,
-                                            JerseyHttpConfiguration httpConfig) {
+                                            JerseyHttpConfiguration httpConfig,
+                                            @Named("server") Optional<SslContext> sslContext,
+                                            List<ResourceConfigCustomizer> resourceConfigCustomizers) {
         if (httpConfig.bindAddresses().isEmpty()) {
             return new JerseyServerHolder(null, null);
         }
 
         ResourceConfig config = new ResourceConfig();
-
         config.register(new DoctorCustomValueParamProvider(providerRegistry));
         config.register(new DoctorBinder(providerRegistry));
 
@@ -42,30 +56,16 @@ public final class JerseyBeanFactory implements ApplicationLoader {
                 .map(DoctorProvider::type)
                 .forEach(config::register);
 
-        SslContext sslContext = null;
-        try {
-            if (httpConfig.sslSelfSigned().orElse(false)) {
-                SelfSignedCertificate ssc = new SelfSignedCertificate();
-                sslContext = SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey()).build();
-            } else if (httpConfig.sslCertificate().isPresent()) {
-                String cert = httpConfig.sslCertificate().orElseThrow();
-                String key = httpConfig.sslPrivateKey().orElseThrow();
-                sslContext = SslContextBuilder.forServer(new File(cert), new File(key)).build();
-            }
-        } catch (CertificateException | SSLException e) {
-            throw new RuntimeException("error initializing ssl context", e);
+        for (ResourceConfigCustomizer resourceConfigCustomizer : resourceConfigCustomizers) {
+            config = resourceConfigCustomizer.customize(config);
         }
-
-        config = providerRegistry.getProviders(ResourceConfigCustomizer.class)
-                .map(DoctorProvider::get)
-                .reduce(config, (rc, c) -> c.customize(rc), (a, b) -> b);
 
         DoctorJerseyContainer container = new DoctorJerseyContainer(config);
         NettyHttpServer httpServer = new NettyHttpServer(
                 providerRegistry,
                 httpConfig,
-                new JerseyChannelAdapter(httpConfig, container, providerRegistry, sslContext != null),
-                sslContext);
+                new JerseyChannelAdapter(httpConfig, container, providerRegistry, sslContext.isPresent()),
+                sslContext.orElse(null));
         eventBus.publish(new ServiceStarted("netty-jersey-http", httpServer));
         return new JerseyServerHolder(container, httpServer);
     }

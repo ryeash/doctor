@@ -3,14 +3,16 @@ package vest.doctor.http.server.processing;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
+import jakarta.inject.Named;
 import jakarta.inject.Singleton;
+import vest.doctor.Activation;
 import vest.doctor.AnnotationData;
+import vest.doctor.Configuration;
 import vest.doctor.DoctorProvider;
 import vest.doctor.Eager;
 import vest.doctor.Factory;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
-import vest.doctor.conf.ConfigurationFacade;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.ServiceStarted;
 import vest.doctor.http.server.BodyInterchange;
@@ -30,22 +32,30 @@ import vest.doctor.http.server.Websocket;
 import vest.doctor.http.server.impl.CompositeExceptionHandler;
 import vest.doctor.http.server.impl.Router;
 
-import java.io.File;
+import javax.net.ssl.SSLException;
 import java.net.InetSocketAddress;
-import java.util.Arrays;
+import java.security.cert.CertificateException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.concurrent.Flow;
 
-@Singleton
-public class HttpConfig {
+@Configuration
+public class HttpBeanFactory {
 
-    @Factory
     @Singleton
+    @Factory
+    @Activation(SelfSignedSSLActivation.class)
+    @Named("server")
+    public SslContext selfSignedSslFactory() throws CertificateException, SSLException {
+        SelfSignedCertificate ssc = new SelfSignedCertificate();
+        return SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey()).build();
+    }
+
+    @Singleton
+    @Factory
     public BodyInterchange bodyInterchangeFactory(List<BodyReader> readers,
                                                   List<BodyWriter> writers) {
         DefaultBodyReaderWriter defRW = new DefaultBodyReaderWriter();
@@ -60,23 +70,20 @@ public class HttpConfig {
     @Singleton
     @Factory
     public ServerHolder serverFactory(ProviderRegistry providerRegistry,
+                                      HttpProperties httpConf,
                                       List<DoctorProvider<Filter>> filters,
                                       List<DoctorProvider<Handler>> handlers,
                                       List<DoctorProvider<Websocket>> websockets,
                                       List<ExceptionHandler> exceptionHandlers,
                                       List<PipelineCustomizer> pipelineCustomizers,
                                       List<ServerBootstrapCustomizer> serverBootstrapCustomizers,
+                                      @Named("server") Optional<SslContext> sslContext,
                                       BodyInterchange bodyInterchange,
                                       EventBus eventBus) {
-
-        ConfigurationFacade httpConf = providerRegistry.configuration().prefix("doctor.reactor.http.");
-
         HttpServerBuilder builder = new HttpServerBuilder();
 
-        long binds = Optional.ofNullable(httpConf.get("bind"))
-                .map(s -> s.split(","))
+        long binds = httpConf.bindAddresses()
                 .stream()
-                .flatMap(Arrays::stream)
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .map(s -> s.split(":"))
@@ -87,37 +94,24 @@ public class HttpConfig {
             return new ServerHolder(null);
         }
 
-        builder.setTcpManagementThreads(httpConf.get("tcp.threads", 1, Integer::valueOf));
-        builder.setTcpThreadFormat(httpConf.get("tcp.threadFormat", "netty-tcp-%d"));
+        builder.setTcpManagementThreads(httpConf.tcpManagementThreads().orElse(1));
+        builder.setTcpThreadFormat(httpConf.tcpThreadFormat().orElse("netty-tcp-%d"));
+        builder.setSocketBacklog(httpConf.socketBacklog().orElse(1024));
+        builder.setWorkerThreads(httpConf.workerThreads().orElse(Math.max(Runtime.getRuntime().availableProcessors() * 2, 8)));
+        builder.setWorkerThreadFormat(httpConf.workerThreadFormat().orElse("netty-worker-%d"));
 
-        try {
-            if (httpConf.get("ssl.selfSigned", false, Boolean::valueOf)) {
-                SelfSignedCertificate ssc = new SelfSignedCertificate();
-                SslContext sslContext = SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey()).build();
-                builder.setSslContext(sslContext);
-            }
+        sslContext.ifPresent(builder::setSslContext);
 
-            String keyCertChainFile = httpConf.get("ssl.keyCertChainFile");
-            if (keyCertChainFile != null && !keyCertChainFile.isEmpty()) {
-                String keyFile = Objects.requireNonNull(httpConf.get("ssl.keyFile"), "missing ssl key file configuration");
-                String keyPassword = httpConf.get("ssl.keyPassword");
-                SslContext sslContext = SslContextBuilder.forServer(new File(keyCertChainFile), new File(keyFile), keyPassword).build();
-                builder.setSslContext(sslContext);
-            }
-        } catch (Throwable t) {
-            throw new RuntimeException("error configuring ssl", t);
-        }
-
-        builder.setMaxInitialLineLength(httpConf.get("maxInitialLineLength", 8192, Integer::valueOf));
-        builder.setMaxHeaderSize(httpConf.get("maxHeaderSize", 8192, Integer::valueOf));
-        builder.setMaxChunkSize(httpConf.get("maxChunkSize", 8192, Integer::valueOf));
-        builder.setValidateHeaders(httpConf.get("validateHeaders", false, Boolean::valueOf));
-        builder.setInitialBufferSize(httpConf.get("initialBufferSize", 8192, Integer::valueOf));
-        builder.setMaxContentLength(httpConf.get("maxContentLength", 8388608, Integer::valueOf));
-        builder.setMinGzipSize(httpConf.get("minGzipSize", 812, Integer::valueOf));
-        builder.setReactiveBodyMaxBuffer(httpConf.get("reactiveBodyMaxBuffer", Flow.defaultBufferSize(), Integer::valueOf));
-        builder.setRouterPrefix(httpConf.get("routePrefix", ""));
-        builder.setCaseInsensitiveMatching(httpConf.get("caseInsensitiveMatching", true, Boolean::valueOf));
+        builder.setMaxInitialLineLength(httpConf.maxInitialLineLength().orElse(8192));
+        builder.setMaxHeaderSize(httpConf.maxHeaderSize().orElse(8192));
+        builder.setMaxChunkSize(httpConf.maxChunkSize().orElse(8192));
+        builder.setValidateHeaders(httpConf.validateHeaders().orElse(false));
+        builder.setInitialBufferSize(httpConf.initialBufferSize().orElse(8192));
+        builder.setMaxContentLength(httpConf.maxContentLength().orElse(8388608));
+        builder.setMinGzipSize(httpConf.minGzipSize().orElse(812));
+        builder.setReactiveBodyMaxBuffer(httpConf.reactiveBodyMaxBuffer().orElse(Flow.defaultBufferSize()));
+        builder.setRouterPrefix(httpConf.routePrefix().orElse(""));
+        builder.setCaseInsensitiveMatching(httpConf.caseInsensitiveMatching().orElse(true));
 
         builder.setPipelineCustomizers(pipelineCustomizers);
         builder.setServerBootstrapCustomizers(serverBootstrapCustomizers);
