@@ -1,10 +1,10 @@
-package vest.doctor.http.server.rest.processing;
+package vest.doctor.http.server.processing;
 
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.Constants;
 import vest.doctor.codegen.ProcessorUtils;
-import vest.doctor.http.server.rest.HttpParameterWriter;
-import vest.doctor.http.server.rest.Param;
+import vest.doctor.http.server.HttpParameterWriter;
+import vest.doctor.http.server.Param;
 import vest.doctor.processing.AnnotationProcessorContext;
 
 import javax.lang.model.element.Element;

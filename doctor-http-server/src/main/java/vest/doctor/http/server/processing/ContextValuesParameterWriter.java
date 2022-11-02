@@ -1,12 +1,12 @@
-package vest.doctor.http.server.rest.processing;
+package vest.doctor.http.server.processing;
 
 import io.netty.handler.codec.http.HttpMethod;
 import vest.doctor.codegen.ClassBuilder;
+import vest.doctor.http.server.HttpParameterWriter;
+import vest.doctor.http.server.Param;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.RequestContext;
 import vest.doctor.http.server.Response;
-import vest.doctor.http.server.rest.HttpParameterWriter;
-import vest.doctor.http.server.rest.Param;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
 

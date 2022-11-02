@@ -1,8 +1,4 @@
-package vest.doctor.http.server.rest;
-
-import vest.doctor.http.server.Request;
-import vest.doctor.http.server.RequestContext;
-import vest.doctor.http.server.Response;
+package vest.doctor.http.server;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

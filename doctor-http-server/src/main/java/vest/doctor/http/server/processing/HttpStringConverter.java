@@ -1,4 +1,4 @@
-package vest.doctor.http.server.rest.processing;
+package vest.doctor.http.server.processing;
 
 import vest.doctor.codegen.ProcessorUtils;
 import vest.doctor.processing.AnnotationProcessorContext;

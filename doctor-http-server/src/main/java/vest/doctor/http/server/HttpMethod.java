@@ -1,4 +1,4 @@
-package vest.doctor.http.server.rest;
+package vest.doctor.http.server;
 
 import vest.doctor.http.server.impl.Router;
 

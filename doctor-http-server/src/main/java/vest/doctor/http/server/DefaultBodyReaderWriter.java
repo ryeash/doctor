@@ -1,4 +1,4 @@
-package vest.doctor.http.server.rest;
+package vest.doctor.http.server;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
@@ -8,10 +8,6 @@ import io.netty.handler.codec.http.DefaultLastHttpContent;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.util.ReferenceCounted;
 import vest.doctor.TypeInfo;
-import vest.doctor.http.server.MultiPartData;
-import vest.doctor.http.server.RequestContext;
-import vest.doctor.http.server.Response;
-import vest.doctor.http.server.ResponseBody;
 import vest.doctor.reactive.Rx;
 
 import java.io.IOException;

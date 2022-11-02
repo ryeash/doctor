@@ -1,8 +1,4 @@
-package vest.doctor.http.server.rest;
-
-import vest.doctor.http.server.Handler;
-import vest.doctor.http.server.RequestContext;
-import vest.doctor.http.server.Response;
+package vest.doctor.http.server;
 
 import java.util.concurrent.Flow;
 

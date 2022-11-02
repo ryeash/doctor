@@ -1,4 +1,4 @@
-package vest.doctor.http.server.rest.processing;
+package vest.doctor.http.server.processing;
 
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
@@ -14,21 +14,23 @@ import vest.doctor.ProviderRegistry;
 import vest.doctor.conf.ConfigurationFacade;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.ServiceStarted;
+import vest.doctor.http.server.BodyInterchange;
+import vest.doctor.http.server.BodyReader;
+import vest.doctor.http.server.BodyWriter;
+import vest.doctor.http.server.DefaultBodyReaderWriter;
+import vest.doctor.http.server.Endpoint;
 import vest.doctor.http.server.ExceptionHandler;
 import vest.doctor.http.server.Filter;
 import vest.doctor.http.server.Handler;
+import vest.doctor.http.server.HttpMethod;
 import vest.doctor.http.server.HttpServerBuilder;
+import vest.doctor.http.server.PipelineCustomizer;
+import vest.doctor.http.server.RouteOrchestration;
 import vest.doctor.http.server.Server;
+import vest.doctor.http.server.ServerBootstrapCustomizer;
 import vest.doctor.http.server.Websocket;
 import vest.doctor.http.server.impl.CompositeExceptionHandler;
 import vest.doctor.http.server.impl.Router;
-import vest.doctor.http.server.rest.BodyInterchange;
-import vest.doctor.http.server.rest.BodyReader;
-import vest.doctor.http.server.rest.BodyWriter;
-import vest.doctor.http.server.rest.DefaultBodyReaderWriter;
-import vest.doctor.http.server.rest.Endpoint;
-import vest.doctor.http.server.rest.HttpMethod;
-import vest.doctor.http.server.rest.RouteOrchestration;
 
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -54,6 +56,8 @@ public class HttpConfig {
                                       List<DoctorProvider<Handler>> handlers,
                                       List<DoctorProvider<Websocket>> websockets,
                                       List<ExceptionHandler> exceptionHandlers,
+                                      List<PipelineCustomizer> pipelineCustomizers,
+                                      List<ServerBootstrapCustomizer> serverBootstrapCustomizers,
                                       EventBus eventBus) {
 
         ConfigurationFacade httpConf = providerRegistry.configuration().prefix("doctor.reactor.http.");
@@ -106,10 +110,13 @@ public class HttpConfig {
         builder.setRouterPrefix(httpConf.get("routePrefix", ""));
         builder.setCaseInsensitiveMatching(httpConf.get("caseInsensitiveMatching", true, Boolean::valueOf));
 
+        builder.setPipelineCustomizers(pipelineCustomizers);
+        builder.setServerBootstrapCustomizers(serverBootstrapCustomizers);
+
         DefaultBodyReaderWriter defRW = new DefaultBodyReaderWriter();
         readers.add(defRW);
-        readers.sort(Prioritized.COMPARATOR);
         writers.add(defRW);
+        readers.sort(Prioritized.COMPARATOR);
         writers.sort(Prioritized.COMPARATOR);
         BodyInterchange bodyInterchange = new BodyInterchange(readers, writers);
         providerRegistry.register(AdHocProvider.createPrimary(bodyInterchange));

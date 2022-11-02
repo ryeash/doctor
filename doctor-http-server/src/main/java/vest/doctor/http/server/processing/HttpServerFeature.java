@@ -1,4 +1,4 @@
-package vest.doctor.http.server.rest.processing;
+package vest.doctor.http.server.processing;
 
 import vest.doctor.Import;
 
@@ -22,7 +22,7 @@ import java.lang.annotation.Target;
  * </pre>
  */
 @Documented
-@Import({"vest.doctor.http.server.rest.processing"})
+@Import({"vest.doctor.http.server.processing"})
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
 public @interface HttpServerFeature {

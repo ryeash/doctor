@@ -1,9 +1,9 @@
-package vest.doctor.http.server.rest.processing;
+package vest.doctor.http.server.processing;
 
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.GenericInfo;
 import vest.doctor.codegen.ProcessorUtils;
-import vest.doctor.http.server.rest.HttpParameterWriter;
+import vest.doctor.http.server.HttpParameterWriter;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
 import vest.doctor.processing.StringConversionGenerator;

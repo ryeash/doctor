@@ -1,8 +1,6 @@
-package vest.doctor.http.server.rest;
+package vest.doctor.http.server;
 
 import vest.doctor.TypeInfo;
-import vest.doctor.http.server.RequestContext;
-import vest.doctor.http.server.Response;
 import vest.doctor.reactive.Rx;
 
 import java.util.List;

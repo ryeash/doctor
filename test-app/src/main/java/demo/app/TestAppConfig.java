@@ -19,7 +19,7 @@ import vest.doctor.SkipInjection;
 import vest.doctor.ThreadLocal;
 import vest.doctor.aop.Aspects;
 import vest.doctor.grpc.GrpcFeature;
-import vest.doctor.http.server.rest.processing.HttpServerFeature;
+import vest.doctor.http.server.processing.HttpServerFeature;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;

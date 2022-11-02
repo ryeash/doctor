@@ -1,4 +1,4 @@
-package vest.doctor.http.server.rest;
+package vest.doctor.http.server;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
