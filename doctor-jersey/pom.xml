@@ -11,10 +11,6 @@
 
     <artifactId>doctor-jersey</artifactId>
 
-    <properties>
-        <jersey.version>3.0.6</jersey.version>
-    </properties>
-
     <dependencyManagement>
         <dependencies>
             <dependency>

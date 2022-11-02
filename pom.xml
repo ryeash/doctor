@@ -26,9 +26,12 @@
         <maven.compiler.target>18</maven.compiler.target>
         <slf4j.version>2.0.3</slf4j.version>
         <maven.deploy.skip>true</maven.deploy.skip>
+        <jersey.version>3.0.8</jersey.version>
         <netty.version>4.1.84.Final</netty.version>
+        <hibernate.version>6.1.5.Final</hibernate.version>
         <jackson.version>2.13.3</jackson.version>
-        <grpc.version>1.50.0</grpc.version>
+        <grpc.version>1.50.2</grpc.version>
+        <protoc.version>3.21.9</protoc.version>
     </properties>
 
     <dependencyManagement>
@@ -56,7 +59,7 @@
             <dependency>
                 <groupId>org.hsqldb</groupId>
                 <artifactId>hsqldb</artifactId>
-                <version>2.7.0</version>
+                <version>2.7.1</version>
             </dependency>
             <dependency>
                 <groupId>org.testng</groupId>
