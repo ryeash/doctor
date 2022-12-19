@@ -107,7 +107,7 @@ public class HttpBeanFactory {
         builder.setMaxChunkSize(httpConf.maxChunkSize().orElse(8192));
         builder.setValidateHeaders(httpConf.validateHeaders().orElse(false));
         builder.setInitialBufferSize(httpConf.initialBufferSize().orElse(8192));
-        builder.setMaxContentLength(httpConf.maxContentLength().orElse(8388608));
+        builder.setMaxContentLength(httpConf.maxContentLength().orElse(4194304));
         builder.setMinGzipSize(httpConf.minGzipSize().orElse(812));
         builder.setReactiveBodyMaxBuffer(httpConf.reactiveBodyMaxBuffer().orElse(Flow.defaultBufferSize()));
         builder.setRouterPrefix(httpConf.routePrefix().orElse(""));
@@ -156,7 +156,9 @@ public class HttpBeanFactory {
             generatedHandler.init(providerRegistry, builder.router(), bodyInterchange);
         }
 
-        websockets.forEach(provider -> builder.ws(provider::get));
+        for (DoctorProvider<Websocket> provider : websockets) {
+            builder.ws(provider::get);
+        }
 
         Server server = builder.start();
         eventBus.publish(new ServiceStarted("reactor-http", server));

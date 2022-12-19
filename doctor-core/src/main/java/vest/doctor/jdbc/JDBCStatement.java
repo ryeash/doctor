@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /**
@@ -122,6 +123,15 @@ public final class JDBCStatement<S extends Statement> implements AutoCloseable {
         return bind(i, value, type.getVendorTypeNumber());
     }
 
+    /**
+     * Set the value of the designated parameter using the given object.
+     *
+     * @param i     the parameter index to set the value of
+     * @param value the value to set
+     * @param type  the target sql type indicator
+     * @return this object
+     * @see java.sql.Types
+     */
     public JDBCStatement<S> bind(int i, Object value, int type) {
         if (statement instanceof PreparedStatement prepared) {
             try {
@@ -190,8 +200,11 @@ public final class JDBCStatement<S extends Statement> implements AutoCloseable {
 
     /**
      * Execute the underlying statement and return a stream of result rows.
+     * <p><br/>
+     * Note: A terminal operation (like {@link Stream#forEach(Consumer)}) must be called on the returned stream
+     * in order to release the underlying database resources.
      *
-     * @return a stream of {@link Row}s representing the results of the query
+     * @return a stream of {@link Row rows} representing the results of the query
      */
     public Stream<Row> execute() {
         try {

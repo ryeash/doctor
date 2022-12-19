@@ -128,7 +128,7 @@ public class HandlerWriter implements ProviderDefinitionListener {
         MethodBuilder handlerBuilder = handler.newMethod("@Override public Flow.Publisher<Response> handle(final RequestContext " + REQUEST_CONTEXT_REF + ") throws Exception");
         isValidMethod(context, executableElement);
         GenericInfo returnTypeInfo = new GenericInfo(executableElement, executableElement.getReturnType());
-        String returnTypeInfoRef = "typeInfo_" + executableElement.getSimpleName() + context.nextId();
+        String returnTypeInfoRef = "returnType_" + executableElement.getSimpleName() + context.nextId();
         handler.addField("private static final TypeInfo " + returnTypeInfoRef + " = ", returnTypeInfo.newTypeInfo(context));
 
         boolean bodyIsPublisher = false;
@@ -219,7 +219,7 @@ public class HandlerWriter implements ProviderDefinitionListener {
             throw new CodeProcessingException("the return type for endpoint methods may not be void", method);
         }
 
-        // must be more specific that 'Object'
+        // must be more specific than 'Object'
         if (method.getReturnType().toString().equalsIgnoreCase(Object.class.getCanonicalName())) {
             throw new CodeProcessingException("endpoint methods must declare specific return types (not Object)", method);
         }

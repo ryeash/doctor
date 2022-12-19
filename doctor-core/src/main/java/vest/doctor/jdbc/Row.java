@@ -236,7 +236,7 @@ public final class Row {
             return b;
         } else if (o instanceof CharSequence s) {
             return Boolean.parseBoolean(s.toString());
-        } else if (o instanceof Collection c) {
+        } else if (o instanceof Collection<?> c) {
             return !c.isEmpty();
         } else if (o instanceof Number n) {
             return n.longValue() != 0;
