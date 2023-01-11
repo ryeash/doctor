@@ -4,6 +4,7 @@ import jakarta.inject.Singleton;
 import vest.doctor.Cached;
 import vest.doctor.Configuration;
 import vest.doctor.DestroyMethod;
+import vest.doctor.Prioritized;
 import vest.doctor.Prototype;
 import vest.doctor.Reloadable;
 import vest.doctor.ThreadLocal;
@@ -45,7 +46,7 @@ class DoctorScopeWriter implements ScopeWriter {
 
     @Override
     public int priority() {
-        return Integer.MAX_VALUE;
+        return Prioritized.LOWEST_PRIORITY;
     }
 
     private String singleton(String providerRef) {

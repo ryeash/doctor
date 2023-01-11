@@ -23,6 +23,6 @@ public class EnvironmentVariablesConfigurationSource implements ConfigurationSou
 
     @Override
     public String toString() {
-        return "EnvironmentVariablesConfigurationSource";
+        return getClass().getSimpleName();
     }
 }

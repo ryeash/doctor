@@ -9,7 +9,6 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -47,22 +46,15 @@ public final class PropertyCodeGen {
                     .orElseThrow(() -> new IllegalArgumentException("no parameterized type found on Optional property, trying to wire: " + propertyName));
         }
 
-        boolean isCollection;
-        String confMethod;
+        boolean isCollection = false;
+        String confMethod = "get";
 
         if (ProcessorUtils.isCompatibleWith(context, typeElement, Collection.class)) {
+            // TODO: this incomplete (NavigableSet)
             isCollection = true;
-            if (ProcessorUtils.isCompatibleWith(context, typeElement, Set.class)) {
-                confMethod = "getSet";
-            } else if (ProcessorUtils.isCompatibleWith(context, typeElement, List.class)
-                       || ProcessorUtils.isCompatibleWith(context, typeElement, Collection.class)) {
-                confMethod = "getList";
-            } else {
-                throw new IllegalArgumentException("can not inject collection property of type: " + typeElement + ", for property: " + propertyName);
-            }
-        } else {
-            confMethod = "get";
-            isCollection = false;
+            confMethod = ProcessorUtils.isCompatibleWith(context, typeElement, Set.class)
+                    ? "getSet"
+                    : "getList";
         }
 
         TypeMirror convertType = typeElement.asType();

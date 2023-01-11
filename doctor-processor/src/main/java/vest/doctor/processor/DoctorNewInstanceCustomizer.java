@@ -1,7 +1,6 @@
 package vest.doctor.processor;
 
 import jakarta.inject.Inject;
-import vest.doctor.Async;
 import vest.doctor.InjectionException;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
@@ -22,11 +21,9 @@ import javax.lang.model.element.TypeElement;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
 
 public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
 
@@ -40,7 +37,6 @@ public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
         postInstantiateCalls = Collections.unmodifiableList(temp);
     }
 
-    private final Map<String, String> executorNameToInstance = new HashMap<>();
     boolean executorInitialized = false;
 
     @Override
@@ -51,7 +47,6 @@ public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
             postCreateInjectCalls(context, providerDefinition, method, instanceRef, providerRegistryRef, executableElement);
             postCreateSchedule(context, providerDefinition, method, instanceRef, providerRegistryRef, executableElement);
         }
-        executorNameToInstance.clear();
         executorInitialized = false;
     }
 
@@ -64,30 +59,18 @@ public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
                     .map(method -> method.getParameters().get(0))
                     .map(param -> param.asType().toString() + ".class")
                     .orElseThrow(() -> new CodeProcessingException("couldn't determine event type for consumer: " + providerDefinition.providedType()));
-            methodBuilder.addImportClass(EventBus.class);
-            methodBuilder.line("EventBus bus = " + providerRegistryRef + ".getInstance(" + EventBus.class.getCanonicalName() + ".class, null);");
-            methodBuilder.line("bus.addConsumer(", type, ",", instanceRef, ");");
+            methodBuilder.addImportClass(EventBus.class)
+                    .printfLine("""
+                            EventBus bus = %s.getInstance(%s.class, null);
+                            bus.addConsumer(%s,%s);
+                            """, providerRegistryRef, EventBus.class.getCanonicalName(), type, instanceRef);
         }
     }
 
     private void postCreateInjectCalls(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef, ExecutableElement executableElement) {
         if (postInstantiateCalls.stream().map(executableElement::getAnnotation).anyMatch(Objects::nonNull)) {
             String call = context.executableCall(providerDefinition, executableElement, instanceRef, providerRegistryRef);
-            if (executableElement.getAnnotation(Async.class) != null) {
-                String executorName = executableElement.getAnnotation(Async.class).value();
-                String executorInstance = executorNameToInstance.computeIfAbsent(executorName, name -> {
-                    String n = "executor" + context.nextId();
-                    method.line(ExecutorService.class.getCanonicalName() + " ", n, " = " + providerRegistryRef + ".getInstance(" + ExecutorService.class.getCanonicalName() + ".class,", ProcessorUtils.escapeAndQuoteStringForCode(name), ");");
-                    return n;
-                });
-                method.bind("InjectionException", InjectionException.class.getCanonicalName())
-                        .line(executorInstance, ".submit(() -> {")
-                        .line(call, ";")
-                        .line("return null;")
-                        .line("});");
-            } else {
-                method.line(call + ";");
-            }
+            method.line(call + ";");
         }
     }
 
@@ -114,41 +97,48 @@ public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
 
     private void processInterval(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef, ExecutableElement scheduledMethod) {
         Scheduled scheduled = scheduledMethod.getAnnotation(Scheduled.class);
-        method.bind("instance", instanceRef)
-                .bind("executionLimit", String.valueOf(scheduled.executionLimit()))
-                .bind("Interval", Interval.class.getCanonicalName())
-                .bind("intvl", "{{providerRegistry}}.resolvePlaceholders(" + ProcessorUtils.escapeAndQuoteStringForCode(scheduled.interval()) + ")")
-                .bind("fixedRate", scheduled.type() == Scheduled.Type.FIXED_RATE)
-                .bind("InjectionException", InjectionException.class.getCanonicalName())
-                .bind("method", ProcessorUtils.debugString(scheduledMethod))
-
-                .addImportClass(ScheduledTaskWrapper.class)
-                .line("ScheduledTaskWrapper.run({{providerRegistry}}, {{instance}}, {{executionLimit}}L, new {{Interval}}({{providerRegistry}}.resolvePlaceholders(", ProcessorUtils.escapeAndQuoteStringForCode(scheduled.interval()), ")), ses, {{fixedRate}}, (provRegistry, val) -> {")
-                .line("try {")
-                .line(context.executableCall(providerDefinition, scheduledMethod, "val", "provRegistry") + ";")
-                .line("} catch(Throwable t) {")
-                .line("throw new {{InjectionException}}(\"error executing scheduled method {{method}}\", t);")
-                .line("}")
-                .line("});");
+        method.addImportClass(ScheduledTaskWrapper.class)
+                .bindLine("""
+                                ScheduledTaskWrapper.run(providerRegistry, {{instance}}, {{executionLimit}}L, new {{Interval}}(providerRegistry.resolvePlaceholders({{intvl}})), ses, {{fixedRate}}, (provRegistry, val) -> {
+                                try{
+                                    {{call}};
+                                } catch(Throwable t) {
+                                    throw new {{InjectionException}}("error executing scheduled method {{method}}", t);
+                                }
+                                });
+                                """,
+                        Map.of(
+                                "instance", instanceRef,
+                                "executionLimit", String.valueOf(scheduled.executionLimit()),
+                                "Interval", Interval.class.getCanonicalName(),
+                                "call", context.executableCall(providerDefinition, scheduledMethod, "val", providerRegistryRef),
+                                "intvl", "providerRegistry.resolvePlaceholders(" + ProcessorUtils.escapeAndQuoteStringForCode(scheduled.interval()) + ")",
+                                "fixedRate", scheduled.type() == Scheduled.Type.FIXED_RATE,
+                                "InjectionException", InjectionException.class.getCanonicalName(),
+                                "method", ProcessorUtils.debugString(scheduledMethod)
+                        ));
     }
 
     private void processCron(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef, ExecutableElement scheduledMethod) {
         Scheduled scheduled = scheduledMethod.getAnnotation(Scheduled.class);
-        method.bind("instance", instanceRef)
-                .bind("schedule", "{{providerRegistry}}.resolvePlaceholders(" + ProcessorUtils.escapeAndQuoteStringForCode(scheduled.cron()) + ")")
-                .bind("executionLimit", String.valueOf(scheduled.executionLimit()))
-                .bind("Cron", Cron.class.getCanonicalName())
-                .bind("cron", "new {{Cron}}({{schedule}})")
-                .bind("InjectionException", InjectionException.class.getCanonicalName())
-                .bind("method", ProcessorUtils.debugString(scheduledMethod))
-
-                .addImportClass(CronTaskWrapper.class)
-                .line("CronTaskWrapper.run({{providerRegistry}}, {{instance}}, {{cron}}, {{executionLimit}}L, ses, (provRegistry, val) -> {")
-                .line("try {")
-                .line(context.executableCall(providerDefinition, scheduledMethod, instanceRef, providerRegistryRef) + ";")
-                .line("} catch(Throwable t) {")
-                .line("throw new {{InjectionException}}(\"error executing scheduled method {{method}}\", t);")
-                .line("}")
-                .line("});");
+        method.addImportClass(CronTaskWrapper.class)
+                .bindLine("""
+                                CronTaskWrapper.run(providerRegistry, {{instance}}, new {{Cron}}({{schedule}}), {{executionLimit}}L, ses, (provRegistry, val) -> {
+                                try {
+                                    {{call}};
+                                } catch(Throwable t) {
+                                    throw new {{InjectionException}}("error executing scheduled method {{method}}", t);
+                                }
+                                });
+                                """,
+                        Map.of(
+                                "instance", instanceRef,
+                                "schedule", "providerRegistry.resolvePlaceholders(" + ProcessorUtils.escapeAndQuoteStringForCode(scheduled.cron()) + ")",
+                                "executionLimit", String.valueOf(scheduled.executionLimit()),
+                                "Cron", Cron.class.getCanonicalName(),
+                                "call", context.executableCall(providerDefinition, scheduledMethod, instanceRef, providerRegistryRef),
+                                "InjectionException", InjectionException.class.getCanonicalName(),
+                                "method", ProcessorUtils.debugString(scheduledMethod)
+                        ));
     }
 }

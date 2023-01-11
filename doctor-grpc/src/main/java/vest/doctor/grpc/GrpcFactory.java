@@ -15,6 +15,7 @@ import io.grpc.protobuf.services.HealthStatusManager;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import vest.doctor.Configuration;
 import vest.doctor.Eager;
 import vest.doctor.Factory;
 import vest.doctor.InjectionException;
@@ -27,7 +28,7 @@ import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.util.function.Consumer;
 
-@Singleton
+@Configuration
 public final class GrpcFactory {
 
     private static final Logger log = LoggerFactory.getLogger(GrpcFactory.class);

@@ -224,22 +224,6 @@ This will make the datasource retrievable with the qualifier or without:
 doctor.getInstance(DataSource.class) == doctor.getInstance(DataSource.class, "primary")
 ```
 
-### [@SkipInjection](doctor-core/src/main/java/vest/doctor/SkipInjection.java)
-
-There are rare occasions where it may be necessary to skip the post-instantiation injection phase for a provided
-instance (Skip calling `@Inject` marked methods and similar processing). In these cases use `@SkipInjection`.
-
-```java
-@SkipInjectin
-@Prototype
-public class NoInject {
-    @Inject
-    public void postInstantiation() {
-        // this method will not be called automatically during initialization
-    }
-}
-```
-
 ### [@Scheduled](doctor-core/src/main/java/vest/doctor/scheduled/Scheduled.java)
 
 Methods in provided objects can be scheduled for periodic execution using the `@Scheduled` annotation.
@@ -286,33 +270,17 @@ public class EventExample implements EventConsumer<String> {
   public EventExample(EventBus bus) {
     this.bus = bus;
   }
-
+  
   @Inject
-  @Async
-  public void sendMessage() {
+  public void message(@Named("background") ExecutorService exec) {
     // publish a string event when this class is instantiated 
-    bus.publish("test");
+    exec.submit(() -> bus.publish("test"));
   }
 
   @Override
   public void receive(String message) {
     System.out.println("message received: " + message);
   }
-}
-```
-
-### [@Async](doctor-core/src/main/java/vest/doctor/Async.java)
-
-The @Async annotation can be used to perform certain actions in a background thread.
-
-```java
-@Singleton
-public class AsyncDemo {
-    @Inject
-    @Async // this method will be called asynchronously when this class is instantiated
-    public void injectAsync() {
-        ...
-    }
 }
 ```
 
@@ -368,7 +336,7 @@ A note on factory providers: Activation predicates marked at the class level are
 factory providers. So in this example:
 
 ```java
-@Singleton
+@Configuration
 @Activation(SomePredicate.class)
 public class AppConfig {
     @Factory
@@ -391,7 +359,7 @@ annotation to make the external packages known to the compilation environment.
 Typical usage is to add the @Import to a provider factory class:
 
 ```java
-@Singleton
+@Configuration
 @Import({"org.company", "org.company.ext"})
 public class AppConfig {
   @Factory
@@ -447,8 +415,7 @@ for an application.
 @Singleton
 @Properties("db.") // all property names marked on methods will be prefixed with `db.`
 public interface DBProps { // must be an interface
-  @Property("url")
-    // this will use the property named `db.url`
+  @Property("url") // this will use the property named `db.url`
   String url();
 
   @Property("username")

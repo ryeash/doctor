@@ -57,6 +57,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -236,6 +237,10 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
     @Override
     public boolean isProvided(ProviderDependency dependency) {
         if (additionalSatisfiedDependencies.contains(dependency)) {
+            return true;
+        }
+        // TODO: how to properly ignore dependencies that are config based
+        if (ProcessorUtils.isCompatibleWith(this, dependency.type(), Executor.class)) {
             return true;
         }
         for (ProviderDefinition providerDefinition : providerDefinitions) {

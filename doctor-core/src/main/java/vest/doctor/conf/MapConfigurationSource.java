@@ -43,6 +43,6 @@ public record MapConfigurationSource(Map<String, String> map) implements Configu
 
     @Override
     public String toString() {
-        return "MapConfigurationSource";
+        return getClass().getSimpleName();
     }
 }

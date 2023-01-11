@@ -1,6 +1,7 @@
 package vest.doctor.processor;
 
 import jakarta.inject.Provider;
+import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.codegen.ProcessorUtils;
 import vest.doctor.processing.AnnotationProcessorContext;
@@ -58,6 +59,6 @@ public class ProviderParameterLookupCustomizer implements ParameterLookupCustomi
     @Override
     public int priority() {
         // always last
-        return Integer.MAX_VALUE;
+        return Prioritized.LOWEST_PRIORITY;
     }
 }

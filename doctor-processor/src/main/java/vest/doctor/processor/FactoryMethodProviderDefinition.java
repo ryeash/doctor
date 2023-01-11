@@ -2,7 +2,6 @@ package vest.doctor.processor;
 
 import vest.doctor.InjectionException;
 import vest.doctor.ProviderRegistry;
-import vest.doctor.SkipInjection;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.Constants;
 import vest.doctor.codegen.MethodBuilder;
@@ -56,10 +55,7 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
         for (VariableElement parameter : factoryMethod.getParameters()) {
             for (ParameterLookupCustomizer parameterLookupCustomizer : context.customizations(ParameterLookupCustomizer.class)) {
                 String checkCode = parameterLookupCustomizer.dependencyCheckCode(context, parameter, Constants.PROVIDER_REGISTRY);
-                if (checkCode == null) {
-                    continue;
-                }
-                if (!checkCode.isEmpty()) {
+                if (checkCode != null && !checkCode.isEmpty()) {
                     validate.line(checkCode);
                 }
                 break;
@@ -80,10 +76,8 @@ public class FactoryMethodProviderDefinition extends AbstractProviderDefinition 
                         .line("{{providedType}} instance = {{call}};");
             }
 
-            if (!markedWith(SkipInjection.class)) {
-                for (NewInstanceCustomizer customizer : context.customizations(NewInstanceCustomizer.class)) {
-                    customizer.customize(context, this, b, "instance", Constants.PROVIDER_REGISTRY);
-                }
+            for (NewInstanceCustomizer customizer : context.customizations(NewInstanceCustomizer.class)) {
+                customizer.customize(context, this, b, "instance", Constants.PROVIDER_REGISTRY);
             }
             b.line("return instance;");
             b.line("} catch(Throwable t) { throw new ", InjectionException.class, "(\"error instantiating provided type: ", providedType(), "\", t); }");

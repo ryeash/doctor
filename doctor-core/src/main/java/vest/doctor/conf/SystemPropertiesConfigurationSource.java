@@ -22,6 +22,6 @@ public class SystemPropertiesConfigurationSource implements ConfigurationSource 
 
     @Override
     public String toString() {
-        return "SystemPropertiesConfigurationSource";
+        return getClass().getSimpleName();
     }
 }

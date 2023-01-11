@@ -62,7 +62,7 @@ public class StructuredConfigurationSource implements ConfigurationSource {
     private MapConfigurationSource delegate;
 
     public StructuredConfigurationSource(String location) {
-        this(new FileLocation(location));
+        this(new FileLocation(Objects.requireNonNull(location, "the configuration location can not be null")));
     }
 
     public StructuredConfigurationSource(FileLocation url) {
@@ -92,7 +92,7 @@ public class StructuredConfigurationSource implements ConfigurationSource {
 
     @Override
     public String toString() {
-        return "StructuredConfigurationSource{" + propertyFile + "}";
+        return getClass().getSimpleName() + "{" + propertyFile + "}";
     }
 
     private Map<String, String> parse(Reader reader) {

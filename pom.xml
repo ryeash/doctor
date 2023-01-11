@@ -24,12 +24,12 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>19</maven.compiler.source>
         <maven.compiler.target>19</maven.compiler.target>
-        <slf4j.version>2.0.5</slf4j.version>
+        <slf4j.version>2.0.6</slf4j.version>
         <maven.deploy.skip>true</maven.deploy.skip>
         <jersey.version>3.1.0</jersey.version>
         <netty.version>4.1.86.Final</netty.version>
-        <hibernate.version>6.1.5.Final</hibernate.version>
-        <jackson.version>2.13.3</jackson.version>
+        <hibernate.version>6.1.6.Final</hibernate.version>
+        <jackson.version>2.14.1</jackson.version>
         <grpc.version>1.51.1</grpc.version>
         <protoc.version>3.21.12</protoc.version>
     </properties>
@@ -64,7 +64,7 @@
             <dependency>
                 <groupId>org.testng</groupId>
                 <artifactId>testng</artifactId>
-                <version>7.7.0</version>
+                <version>7.7.1</version>
             </dependency>
             <dependency>
                 <groupId>io.rest-assured</groupId>

@@ -1,6 +1,5 @@
 package vest.doctor.conf;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -109,16 +108,6 @@ public class PrefixedConfigurationFacade implements ConfigurationFacade {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        for (String propertyName : propertyNames()) {
-            sb.append(propertyName).append('=');
-            if (Arrays.stream(ConfigurationFacade.REDACT_KEYS).anyMatch(propertyName.toUpperCase()::contains)) {
-                sb.append("[REDACTED]");
-            } else {
-                sb.append(get(propertyName));
-            }
-            sb.append('\n');
-        }
-        return sb.toString();
+        return getClass().getSimpleName() + "{" + prefix + "}";
     }
 }

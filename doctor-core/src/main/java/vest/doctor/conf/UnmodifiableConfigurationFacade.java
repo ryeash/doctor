@@ -102,6 +102,6 @@ public class UnmodifiableConfigurationFacade implements ConfigurationFacade {
 
     @Override
     public String toString() {
-        return delegate.toString();
+        return getClass().getSimpleName() + "{" + delegate.toString() + "}";
     }
 }

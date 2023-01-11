@@ -16,7 +16,7 @@ public interface ConfigurationSource {
     String get(String propertyName);
 
     /**
-     * The names of all properties at this level of the configuration source.
+     * Get all property names in the configuration source.
      *
      * @return a collection of property names
      */

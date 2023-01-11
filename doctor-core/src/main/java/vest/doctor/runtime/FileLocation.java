@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -17,8 +16,6 @@ import java.nio.charset.StandardCharsets;
 public record FileLocation(String location) {
 
     public static final String CLASSPATH = "classpath:";
-    public static final String HTTP = "http:";
-    public static final String HTTPS = "https:";
     public static final String FILE = "file:";
 
     /**
@@ -36,8 +33,6 @@ public record FileLocation(String location) {
                     }
                 }
                 throw new IllegalArgumentException("unable to find classpath resource: " + location);
-            } else if (location.startsWith(HTTP) || location.startsWith(HTTPS)) {
-                return URI.create(location).toURL().openStream();
             } else if (location.startsWith(FILE)) {
                 return new FileInputStream(location.substring(FILE.length()));
             } else {

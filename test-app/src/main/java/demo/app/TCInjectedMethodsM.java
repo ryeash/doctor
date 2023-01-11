@@ -1,7 +1,6 @@
 package demo.app;
 
 import jakarta.inject.Inject;
-import vest.doctor.Async;
 import vest.doctor.ThreadLocal;
 
 @ThreadLocal
@@ -18,11 +17,5 @@ public class TCInjectedMethodsM {
     @Inject
     public void injectNothing() {
         injectedEmpty = !injectedEmpty;
-    }
-
-    @Inject
-    @Async
-    public void asyncThrowsException() {
-        throw new RuntimeException("expected this");
     }
 }

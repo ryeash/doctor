@@ -15,7 +15,6 @@ import vest.doctor.Import;
 import vest.doctor.Modules;
 import vest.doctor.Primary;
 import vest.doctor.Prototype;
-import vest.doctor.SkipInjection;
 import vest.doctor.ThreadLocal;
 import vest.doctor.aop.Aspects;
 import vest.doctor.grpc.GrpcFeature;
@@ -31,7 +30,7 @@ import java.util.Map;
 @GrpcFeature
 @HttpServerFeature
 @Named("duck")
-@Import({"app.ext", "app.ext.sub", "vest.doctor.grpc"})
+@Import({"app.ext", "app.ext.sub"})
 public class TestAppConfig {
 
     @Factory
@@ -73,12 +72,6 @@ public class TestAppConfig {
             public void write(int b) {
             }
         };
-    }
-
-    @Factory
-    @SkipInjection
-    public TCSkipInjection skipInjection() {
-        return new TCSkipInjection();
     }
 
     @Factory

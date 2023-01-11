@@ -17,7 +17,13 @@ public final class GrpcUtils {
 
     public static <T> CompletableFuture<T> listen(ListenableFuture<T> listenableFuture, Executor executor) {
         CompletableFuture<T> future = new CompletableFuture<>();
-        listenableFuture.addListener(() -> {
+        listenableFuture.addListener(new ListenerToFutureBridge<>(listenableFuture, future), executor);
+        return future;
+    }
+
+    record ListenerToFutureBridge<T>(ListenableFuture<T> listenableFuture, CompletableFuture<T> future) implements Runnable {
+        @Override
+        public void run() {
             try {
                 future.complete(listenableFuture.get());
             } catch (ExecutionException ee) {
@@ -29,7 +35,6 @@ public final class GrpcUtils {
             } catch (Throwable e) {
                 future.completeExceptionally(e);
             }
-        }, executor);
-        return future;
+        }
     }
 }

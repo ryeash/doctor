@@ -99,11 +99,6 @@ public class DoctorTest extends AbstractTestAppTest {
     }
 
     @Test
-    public void skipInjection() {
-        assertFalse(providerRegistry().getInstance(TCSkipInjection.class).injected);
-    }
-
-    @Test
     public void scope() throws ExecutionException, InterruptedException {
         Set<TCScope> singleton = IntStream.range(0, 100).parallel().mapToObj(i -> providerRegistry().getInstance(TCScope.class, "singleton")).collect(Collectors.toSet());
         assertEquals(singleton.size(), 1);
@@ -181,7 +176,6 @@ public class DoctorTest extends AbstractTestAppTest {
         TCInjectedMethodsC instance = providerRegistry().getInstance(TCInjectedMethodsC.class);
         assertNotNull(instance.coffeeMaker);
         assertTrue(instance.injectedEmpty);
-        assertNotEquals(instance.injectAsync, Thread.currentThread().getName());
         TCInjectedMethodsM instance1 = providerRegistry().getInstance(TCInjectedMethodsM.class);
         assertNotNull(instance1.coffeeMaker);
         assertTrue(instance1.injectedEmpty);
