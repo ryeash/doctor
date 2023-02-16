@@ -34,7 +34,8 @@ public sealed interface MethodInvocation permits MethodInvocationImpl, AspectCoo
     List<TypeInfo> getMethodParameters();
 
     /**
-     * Get the type of the returned value.
+     * Get the type of the returned value. If this is an invocation of a void method the
+     * returned type will be null.
      *
      * @return the return type
      */

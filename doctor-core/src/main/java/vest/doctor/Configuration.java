@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
 
 /**
  * Scope annotation that is an alias for {@link jakarta.inject.Singleton}.
- * Useful for identifying, more clearly, bean factory configuration classes.
+ * Useful for clearly identifying bean factory configuration classes.
  */
 @Scope
 @Documented

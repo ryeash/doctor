@@ -53,8 +53,8 @@ import static java.io.StreamTokenizer.TT_EOL;
  * '#' : comments
  * </pre>
  * Quoted strings using either ' or " can be used to escape reserved characters
- * e.g. <pre>name = "value contains { } = : and ;"</pre>
- * Quotes are necessary when interpolating values, i.e. values like: <pre>http://${referenced.property}/</pre>
+ * e.g. <pre>name = "value contains { } = and ;"</pre>
+ * Quotes are necessary when interpolating values, i.e. values like: <literal>http://${referenced.property}/</literal>
  */
 public class StructuredConfigurationSource implements ConfigurationSource {
 

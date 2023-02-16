@@ -92,6 +92,8 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
                 .addImportClass(ArgValueImpl.class)
                 .addImportClass(Map.class)
                 .addImportClass(List.class)
+                .addImportClass(Aspect.class)
+                .addImportClass(AspectCoordinator.class)
                 .addImportClass(AnnotationData.class)
                 .addImportClass(AnnotationMetadata.class)
                 .addImportClass(AnnotationDataImpl.class)
@@ -251,8 +253,6 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
 
         String aspectName = initializedAspects.computeIfAbsent(aspectClassUniqueKey, s -> {
             String an = uniqueId + "_aspect";
-            classBuilder.addImportClass(Aspect.class);
-            classBuilder.addImportClass(AspectCoordinator.class);
             classBuilder.addField("private final " + AspectCoordinator.class.getSimpleName() + " " + an);
 
             String params = aspectClasses.stream()

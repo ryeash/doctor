@@ -33,8 +33,11 @@ public class NettyHttpServer implements AutoCloseable {
                            JerseyHttpConfiguration httpConfig,
                            ChannelHandler handler,
                            SslContext sslContext) {
-        this.bossGroup = new NioEventLoopGroup(httpConfig.tcpManagementThreads().orElse(1),
-                new CustomThreadFactory(false, httpConfig.tcpThreadFormat().orElse("netty-tcp-%d"), LoggingUncaughtExceptionHandler.INSTANCE, getClass().getClassLoader()));
+        CustomThreadFactory customThreadFactory = new CustomThreadFactory(false,
+                httpConfig.tcpThreadFormat().orElse("netty-tcp-%d"),
+                LoggingUncaughtExceptionHandler.INSTANCE,
+                getClass().getClassLoader());
+        this.bossGroup = new NioEventLoopGroup(httpConfig.tcpManagementThreads().orElse(1), customThreadFactory);
 
         ServerBootstrap bootstrap = new ServerBootstrap();
         bootstrap.group(bossGroup);
@@ -48,7 +51,6 @@ public class NettyHttpServer implements AutoCloseable {
         providerRegistry.getInstances(ServerBootstrapCustomizer.class)
                 .forEach(c -> c.customize(bootstrap));
 
-        System.out.println(httpConfig.bindAddresses());
         this.serverChannels = httpConfig.bindAddresses()
                 .stream()
                 .map(s -> s.split(":"))
