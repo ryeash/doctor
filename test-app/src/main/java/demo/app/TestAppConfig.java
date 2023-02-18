@@ -1,15 +1,12 @@
 package demo.app;
 
-import demo.app.dao.DBProps;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.Persistence;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.PersistenceProperty;
 import org.testng.Assert;
 import vest.doctor.Cached;
 import vest.doctor.Configuration;
-import vest.doctor.DestroyMethod;
 import vest.doctor.Factory;
 import vest.doctor.Import;
 import vest.doctor.Modules;
@@ -23,14 +20,29 @@ import vest.doctor.http.server.processing.HttpServerFeature;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 @Configuration
 @GrpcFeature
 @HttpServerFeature
 @Named("duck")
 @Import({"app.ext", "app.ext.sub"})
+@PersistenceContext(
+        unitName = "default",
+        properties = {
+                @PersistenceProperty(name = "doctor.jpa.primary", value = "true"),
+                @PersistenceProperty(name = "jakarta.persistence.jdbc.user", value = "${db.username}"),
+                @PersistenceProperty(name = "jakarta.persistence.jdbc.password", value = "${db.password}"),
+                @PersistenceProperty(name = "jakarta.persistence.jdbc.url", value = "${db.url:_missingurl_}"),
+                @PersistenceProperty(name = "hibernate.hbm2ddl.auto", value = "create")
+        })
+@PersistenceContext(
+        unitName = "alternate",
+        properties = {
+                @PersistenceProperty(name = "doctor.jpa.entityManager.scope", value = "vest.doctor.ThreadLocal"),
+                @PersistenceProperty(name = "jakarta.persistence.jdbc.user", value = "${db.username}"),
+                @PersistenceProperty(name = "jakarta.persistence.jdbc.password", value = "${db.password}"),
+                @PersistenceProperty(name = "jakarta.persistence.jdbc.url", value = "${db.url:_missingurl_}"),
+        })
 public class TestAppConfig {
 
     @Factory
@@ -166,26 +178,5 @@ public class TestAppConfig {
         @Override
         public void close() {
         }
-    }
-
-    @Factory
-    @Singleton
-    @Named("default")
-    @DestroyMethod("close")
-    public EntityManagerFactory defaultEntityManagerFactory(DBProps dbProps) {
-        Map<String, String> properties = new LinkedHashMap<>();
-        properties.put("jakarta.persistence.jdbc.url", dbProps.url());
-        properties.put("jakarta.persistence.jdbc.user", dbProps.username());
-        properties.put("jakarta.persistence.jdbc.password", dbProps.password());
-        properties.put("hibernate.hbm2ddl.auto", "create");
-        return Persistence.createEntityManagerFactory("default", properties);
-    }
-
-    @Factory
-    @Prototype
-    @Named("default")
-    @DestroyMethod("close")
-    public EntityManager defaultEntityManager(@Named("default") EntityManagerFactory emf) {
-        return emf.createEntityManager();
     }
 }

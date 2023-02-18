@@ -65,6 +65,10 @@
             <groupId>${project.groupId}</groupId>
         </dependency>
         <dependency>
+            <artifactId>doctor-jpa</artifactId>
+            <groupId>${project.groupId}</groupId>
+        </dependency>
+        <dependency>
             <groupId>org.apache.tomcat</groupId>
             <artifactId>annotations-api</artifactId>
             <version>6.0.53</version>
@@ -80,6 +84,11 @@
             <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-hikaricp</artifactId>
             <version>${hibernate.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>com.zaxxer</groupId>

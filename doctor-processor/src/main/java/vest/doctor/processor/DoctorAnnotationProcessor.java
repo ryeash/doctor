@@ -65,7 +65,7 @@ import java.util.stream.Stream;
 
 import static vest.doctor.codegen.Constants.PROVIDER_REGISTRY;
 
-@SupportedSourceVersion(SourceVersion.RELEASE_18)
+@SupportedSourceVersion(SourceVersion.RELEASE_19)
 @SupportedOptions({DoctorAnnotationProcessor.PACKAGE_NAME_OPTION, DoctorAnnotationProcessor.IGNORE_PACKAGES})
 public class DoctorAnnotationProcessor extends AbstractProcessor implements AnnotationProcessorContext {
 

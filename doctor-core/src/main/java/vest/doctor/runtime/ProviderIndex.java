@@ -29,7 +29,7 @@ final class ProviderIndex {
             // primary
             Map<String, DoctorProvider<?>> qualifierToProvider = primary.computeIfAbsent(provider.type().getName(), t -> new HashMap<>());
             qualifierToProvider.merge(provider.qualifier(), provider, (existing, insert) -> {
-                throw new IllegalArgumentException("there is already a provider registered under: " + provider.qualifier() + ":" + provider.type());
+                throw new IllegalArgumentException("there is already a provider registered under: " + provider.qualifier() + ":" + provider.type().getCanonicalName());
             });
 
             // secondary

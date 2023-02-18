@@ -21,4 +21,12 @@ public final class ThreadLocalScopedProvider<T> extends InstanceTrackingDoctorPr
     public T get() {
         return tfInstance.get();
     }
+
+    @Override
+    public void destroy(T instance) throws Exception {
+        if (tfInstance.get() == instance) {
+            tfInstance.remove();
+        }
+        super.destroy(instance);
+    }
 }

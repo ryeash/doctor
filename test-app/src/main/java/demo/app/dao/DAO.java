@@ -5,27 +5,19 @@ import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.PersistenceProperty;
-import jakarta.persistence.SynchronizationType;
 import vest.doctor.Eager;
 
 @Singleton
 @Eager
-@PersistenceContext(
-        unitName = "default",
-        properties = {
-                @PersistenceProperty(name = "jakarta.persistence.jdbc.url", value = "${db.url:_missingurl_}"),
-                @PersistenceProperty(name = "hibernate.hbm2ddl.auto", value = "create")
-        },
-        synchronization = SynchronizationType.UNSYNCHRONIZED)
 public class DAO {
 
     private final EntityManager entityManager;
 
     @Inject
-    public DAO(@Named("default") EntityManager entityManager) {
+    public DAO(@Named("default") EntityManager entityManager,
+               @Named("alternate") EntityManager readOnly) {
         this.entityManager = entityManager;
+        readOnly.close();
     }
 
     public void store(User user) {
