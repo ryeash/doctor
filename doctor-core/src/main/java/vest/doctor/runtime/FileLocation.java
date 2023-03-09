@@ -1,13 +1,14 @@
 package vest.doctor.runtime;
 
 import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Represents a location for a file. Locations can be on the classpath, served by http(s) endpoints, or
@@ -34,9 +35,9 @@ public record FileLocation(String location) {
                 }
                 throw new IllegalArgumentException("unable to find classpath resource: " + location);
             } else if (location.startsWith(FILE)) {
-                return new FileInputStream(location.substring(FILE.length()));
+                return Files.newInputStream(Path.of(location.substring(FILE.length())));
             } else {
-                return new FileInputStream(location);
+                return Files.newInputStream(Path.of(location));
             }
         } catch (IOException e) {
             throw new UncheckedIOException("error reading file data from " + location, e);
