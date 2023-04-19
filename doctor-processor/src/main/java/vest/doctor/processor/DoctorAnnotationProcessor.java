@@ -65,13 +65,12 @@ import java.util.stream.Stream;
 
 import static vest.doctor.codegen.Constants.PROVIDER_REGISTRY;
 
-@SupportedSourceVersion(SourceVersion.RELEASE_19)
+@SupportedSourceVersion(SourceVersion.RELEASE_17)
 @SupportedOptions({DoctorAnnotationProcessor.PACKAGE_NAME_OPTION, DoctorAnnotationProcessor.IGNORE_PACKAGES})
 public class DoctorAnnotationProcessor extends AbstractProcessor implements AnnotationProcessorContext {
 
     /**
-     * Sets the package name for the generated classes. If unset, the default
-     * uses a random package structure to avoid collisions.
+     * Sets the package name for the generated classes.
      */
     public static final String PACKAGE_NAME_OPTION = "doctor.generated.packagename";
 

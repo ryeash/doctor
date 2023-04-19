@@ -21,7 +21,7 @@ public interface HttpParameterWriter extends CustomizationPoint {
      * @param parameter        the parameter to wire
      * @param annotationSource the source to get annotations from
      * @param contextRef       the name to use when referencing the {@link RequestContext} in the generated code
-     * @return the code to wire the parameter value
+     * @return the code to wire the parameter value or null indicating this writer doesn't handle the parameter
      */
     String writeParameter(AnnotationProcessorContext context, ClassBuilder handlerBuilder, VariableElement parameter, Element annotationSource, String contextRef);
 }

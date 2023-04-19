@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Negative;
 import java.math.BigDecimal;
 
 public class NegativeValidator extends NumberValidator<Negative> {
-    private NegativeValidator(BigDecimal compareTo) {
-        super(compareTo, (a, b) -> a.compareTo(BigDecimal.ZERO) < 0);
+    public NegativeValidator() {
+        super(BigDecimal.ZERO, (a, b) -> a.compareTo(b) < 0);
     }
 }

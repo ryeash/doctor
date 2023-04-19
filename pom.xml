@@ -24,15 +24,15 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>19</maven.compiler.source>
-        <maven.compiler.target>19</maven.compiler.target>
-        <slf4j.version>2.0.6</slf4j.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <slf4j.version>2.0.7</slf4j.version>
         <maven.deploy.skip>true</maven.deploy.skip>
-        <jersey.version>3.1.0</jersey.version>
-        <netty.version>4.1.86.Final</netty.version>
-        <hibernate.version>6.1.6.Final</hibernate.version>
+        <jersey.version>3.1.1</jersey.version>
+        <netty.version>4.1.91.Final</netty.version>
+        <hibernate.version>6.2.1.Final</hibernate.version>
         <jackson.version>2.14.1</jackson.version>
-        <grpc.version>1.51.1</grpc.version>
+        <grpc.version>1.54.1</grpc.version>
         <protoc.version>3.21.12</protoc.version>
     </properties>
 
@@ -76,7 +76,7 @@
             <dependency>
                 <groupId>org.eclipse.jetty.websocket</groupId>
                 <artifactId>websocket-jetty-client</artifactId>
-                <version>11.0.12</version>
+                <version>11.0.15</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

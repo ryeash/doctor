@@ -188,8 +188,7 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
         sb.append(parameters);
 
         if (!method.getThrownTypes().isEmpty()) {
-            sb.append(" throws ");
-            sb.append(method.getThrownTypes().stream().map(TypeMirror::toString).collect(Collectors.joining(", ")));
+            sb.append(method.getThrownTypes().stream().map(TypeMirror::toString).collect(Collectors.joining(", " ," throws ", "")));
         }
 
         return sb.toString();

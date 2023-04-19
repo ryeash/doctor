@@ -38,7 +38,7 @@ import static org.testng.Assert.assertTrue;
 public class JerseyTest {
 
     static {
-        System.setProperty("doctor.jersey.http.bind", "0.0.0.0:9998");
+        System.setProperty("doctor.jersey.http.bind", "0.0.0.0:19998");
     }
 
     private Doctor doctor;
@@ -50,11 +50,13 @@ public class JerseyTest {
 
     @AfterClass(alwaysRun = true)
     public void shutdown() {
-        doctor.close();
+        if (doctor != null) {
+            doctor.close();
+        }
     }
 
     private RequestSpecification req() {
-        RestAssured.baseURI = "http://localhost:9998/";
+        RestAssured.baseURI = "http://localhost:19998/";
         return RestAssured.given()
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON);
@@ -136,7 +138,7 @@ public class JerseyTest {
     }
 
     public void ws() throws Exception {
-        String destUri = "ws://localhost:9998/grumpy";
+        String destUri = "ws://localhost:19998/grumpy";
         WebSocketClient client = new WebSocketClient();
         try {
             client.start();

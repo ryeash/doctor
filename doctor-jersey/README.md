@@ -17,7 +17,7 @@ public class AppConfig {
 And ensure at least one bind address is set:
 
 ```properties
-doctor.jersey.http.bind = 0.0.0.0:9998
+doctor.jersey.http.bind = 0.0.0.0:19998
 ```
 
 ## Unsupported JAX-RS features

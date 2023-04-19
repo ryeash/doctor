@@ -1,6 +1,6 @@
 
 doctor.jersey.http {
-    bind: "localhost:9998,localhost:9999"
+    bind: "localhost:19998,localhost:19999"
     tcp {
         threads: 1
         threadFormat: netty-jersey-tcp-%d
