@@ -14,6 +14,9 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * <p>
  * For classes annotated with modules, all {@link Factory} method providers
  * will automatically be marked with the modules listed on the containing class.
+ * <p>
+ * Providers marked with modules will be active if any of their listed modules is in
+ * the module list that the Doctor instance is started with.
  */
 @Documented
 @Retention(RUNTIME)

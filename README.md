@@ -156,9 +156,77 @@ the [@Named](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/n
 qualifier packaged in java.inject. To create qualifiers see example here:
 [@Qualifier](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/qualifier).
 
-### [@Modules](doctor-core/src/main/java/vest/doctor/Modules.java)
 
-Providers can be enabled for a specific set of modules.
+### [@Activation](doctor-core/src/main/java/vest/doctor/Activation.java)
+
+Providers can be conditionally activated based on predicates defined in an @Activation annotation
+attached to the provider source.
+
+Example:
+First create an activation predicate:
+
+```java
+public class IsActivationPropertyPresent implements BiPredicate<ProviderRegistry, DoctorProvider<?>> {
+    // NOTE: activation predicates MUST have a public no-arg constructor
+    @Override
+    public boolean test(ProviderRegistry providerRegistry, DoctorProvider<?> doctorProvider) {
+        // will activate providers based on a property value
+        return providerRegistry.configuration().get("activateOptionals", false, Boolean::parseBoolean);
+    }
+}
+```
+
+Then use the @Activation annotation to attach the predicate to a provider:
+
+```java
+@Singleton
+@Activation(IsActivationPropertyPresent.class)
+public class OptionalThing {
+  // OptionalThing provider will only be registered when activateOptionals=true
+}
+```
+
+@Activation can be used on an annotation type to bundle multiple predicates under a single named annotation:
+
+```java
+@Documented
+@Retention(RUNTIME)
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Activation({DevStackPredicate.class, OnlyOnLinuxPredicate.class, OnlyWithTestDBPredicate.class})
+public @interface TestStackOnly {
+}
+```
+
+```java
+@Singleton
+@TestStackOnly
+public class OptionalThing {
+  // only available if all three predicates on TestStackOnly activation annotation evaluate true
+}
+```
+
+A note on factory providers: Activation predicates marked at the class level are inherited by
+factory providers. So in this example:
+
+```java
+@Configuration
+@Activation(SomePredicate.class)
+public class AppConfig {
+    @Factory
+    @Singleton
+    @Activation(AnotherPredicate.class)
+    public CoffeeMaker coffeeMakerFactory(){
+        return ...
+    }
+}
+```
+
+The provider generated from coffeeMakerFactory will be subject to both SomePredicate and AnotherPredicate.
+
+
+#### [@Modules](doctor-core/src/main/java/vest/doctor/Modules.java)
+
+@Modules is a built-in @Activation that enables providers based on ProviderRegistry.getActiveModules().
 
 ```java
 @Singleton
@@ -182,7 +250,7 @@ public class App {
 ```
 
 Any provider that has modules will _only_ be active if the app is started with one of the modules listed in the
-activation list. Providers without modules will _always_ be active.
+activation list. Providers without modules (or any other @Activation requirements) will _always_ be active.
 
 ### [@Eager](doctor-core/src/main/java/vest/doctor/Eager.java)
 
@@ -284,71 +352,6 @@ public class EventExample implements EventConsumer<String> {
 }
 ```
 
-### [@Activation](doctor-core/src/main/java/vest/doctor/Activation.java)
-
-Providers can be conditionally activated based on predicates defined in an @Activation annotation
-attached to the provider source.
-
-Example:
-First create an activation predicate:
-
-```java
-public class IsActivationPropertyPresent implements BiPredicate<ProviderRegistry, DoctorProvider<?>> {
-    // NOTE: activation predicates MUST have a public no-arg constructor
-    @Override
-    public boolean test(ProviderRegistry providerRegistry, DoctorProvider<?> doctorProvider) {
-        // will activate providers based on a property value
-        return providerRegistry.configuration().get("activateOptionals", false, Boolean::parseBoolean);
-    }
-}
-```
-
-Then use the @Activation annotation to attach the predicate to a provider:
-
-```java
-@Singleton
-@Activation(IsActivationPropertyPresent.class)
-public class OptionalThing {
-  // OptionalThing provider will only be registered when activateOptionals=true
-}
-```
-
-@Activation can be used on an annotation type to bundle multiple predicates under a single named annotation:
-
-```java
-@Documented
-@Retention(RUNTIME)
-@Target({ElementType.TYPE, ElementType.METHOD})
-@Activation({DevStackPredicate.class, OnlyOnLinuxPredicate.class, OnlyWithTestDBPredicate.class})
-public @interface TestStackOnly {
-}
-```
-
-```java
-@Singleton
-@TestStackOnly
-public class OptionalThing {
-  // only available if all three predicates on TestStackOnly activation annotation evaluate true
-}
-```
-
-A note on factory providers: Activation predicates marked at the class level are inherited by
-factory providers. So in this example:
-
-```java
-@Configuration
-@Activation(SomePredicate.class)
-public class AppConfig {
-    @Factory
-    @Singleton
-    @Activation(AnotherPredicate.class)
-    public CoffeeMaker coffeeMakerFactory(){
-        return ...
-    }
-}
-```
-
-The provider generated from coffeeMakerFactory will be subject to both SomePredicate and AnotherPredicate.
 
 ### [@Import](doctor-core/src/main/java/vest/doctor/Import.java)
 
