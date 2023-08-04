@@ -253,7 +253,7 @@ public class DoctorTest extends AbstractTestAppTest {
     public void annotationMetadata() {
         DoctorProvider<TCQualifierInterpolation> p = providerRegistry().getProvider(TCQualifierInterpolation.class, "name-interpolated");
         String s = p.annotationMetadata().stream()
-                .filter(m -> m.type() == Named.class)
+                .filter(m -> m.annotationType() == Named.class)
                 .map(m -> m.stringValue("value"))
                 .findFirst()
                 .orElseThrow(() -> new AssertionFailure("failure"));
@@ -283,18 +283,18 @@ public class DoctorTest extends AbstractTestAppTest {
         assertEquals(everything.classArrayValue("classArr"), List.of(Integer.class, Long.class));
 
         AnnotationData annotationVal = everything.annotationValue("annotationVal");
-        assertEquals(annotationVal.type(), CustomQualifier.class);
+        assertEquals(annotationVal.annotationType(), CustomQualifier.class);
         assertEquals(annotationVal.stringValue("name"), "nested");
         assertEquals(annotationVal.enumValue("color"), CustomQualifier.Color.RED);
 
         List<AnnotationData> annotationArr = everything.annotationArrayValue("annotationArr");
         assertEquals(annotationArr.size(), 2);
         AnnotationData first = annotationArr.get(0);
-        assertEquals(first.type(), CustomQualifier.class);
+        assertEquals(first.annotationType(), CustomQualifier.class);
         assertEquals(first.stringValue("name"), "two");
         assertEquals(first.enumValue("color"), CustomQualifier.Color.BLACK);
         AnnotationData second = annotationArr.get(1);
-        assertEquals(second.type(), CustomQualifier.class);
+        assertEquals(second.annotationType(), CustomQualifier.class);
         assertEquals(second.stringValue("name"), "three");
         assertEquals(second.enumValue("color"), CustomQualifier.Color.RED);
 
@@ -322,18 +322,18 @@ public class DoctorTest extends AbstractTestAppTest {
         assertEquals(provider.annotationMetadata().classArrayValue(Everything.class, "classArr"), List.of(Integer.class, Long.class));
 
         annotationVal = provider.annotationMetadata().annotationValue(Everything.class, "annotationVal");
-        assertEquals(annotationVal.type(), CustomQualifier.class);
+        assertEquals(annotationVal.annotationType(), CustomQualifier.class);
         assertEquals(annotationVal.stringValue("name"), "nested");
         assertEquals(annotationVal.enumValue("color"), CustomQualifier.Color.RED);
 
         annotationArr = provider.annotationMetadata().annotationArrayValue(Everything.class, "annotationArr");
         assertEquals(annotationArr.size(), 2);
         first = annotationArr.get(0);
-        assertEquals(first.type(), CustomQualifier.class);
+        assertEquals(first.annotationType(), CustomQualifier.class);
         assertEquals(first.stringValue("name"), "two");
         assertEquals(first.enumValue("color"), CustomQualifier.Color.BLACK);
         second = annotationArr.get(1);
-        assertEquals(second.type(), CustomQualifier.class);
+        assertEquals(second.annotationType(), CustomQualifier.class);
         assertEquals(second.stringValue("name"), "three");
         assertEquals(second.enumValue("color"), CustomQualifier.Color.RED);
 

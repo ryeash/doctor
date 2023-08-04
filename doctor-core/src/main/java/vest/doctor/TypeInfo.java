@@ -24,7 +24,7 @@ public final class TypeInfo {
     }
 
     /**
-     * Create a new type information object with the given raw type, annotation metdata, and parameter types.
+     * Create a new type information object with the given raw type, annotation metadata, and parameter types.
      *
      * @param rawType        the raw type
      * @param annotationData the annotation metadata
@@ -45,7 +45,7 @@ public final class TypeInfo {
     }
 
     /**
-     * Create a new type information object with the given raw type, annotation metdata, and parameter types.
+     * Create a new type information object with the given raw type, annotation metadata, and parameter types.
      *
      * @param rawType        the raw type
      * @param annotationData the annotation metadata

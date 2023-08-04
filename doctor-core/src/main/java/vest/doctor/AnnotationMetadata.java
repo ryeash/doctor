@@ -42,7 +42,7 @@ public interface AnnotationMetadata extends Iterable<AnnotationData> {
      * @return a stream of matching annotations
      */
     default Stream<AnnotationData> findAll(Class<? extends Annotation> type) {
-        return stream().filter(ad -> ad.type() == type);
+        return stream().filter(ad -> ad.annotationType() == type);
     }
 
     /**

@@ -17,6 +17,11 @@ public interface DoctorProvider<T> extends Provider<T>, AutoCloseable {
     Class<T> type();
 
     /**
+     * The {@link TypeInfo} for the primary provided type.
+     */
+    TypeInfo typeInfo();
+
+    /**
      * The qualifier, or null if there isn't one.
      */
     String qualifier();

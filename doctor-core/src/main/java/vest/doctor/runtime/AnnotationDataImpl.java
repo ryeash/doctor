@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public record AnnotationDataImpl(Class<? extends Annotation> type,
+public record AnnotationDataImpl(Class<? extends Annotation> annotationType,
                                  Map<String, Object> values) implements AnnotationData {
 
     @Override
@@ -136,7 +136,7 @@ public record AnnotationDataImpl(Class<? extends Annotation> type,
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("@").append(type.getCanonicalName());
+        sb.append("@").append(annotationType.getCanonicalName());
 
         String valuesString = values.entrySet()
                 .stream()
@@ -150,7 +150,7 @@ public record AnnotationDataImpl(Class<? extends Annotation> type,
     @SuppressWarnings("unchecked")
     private <T> T getValueWithCheck(String attributeName, Class<T> check) {
         if (!values.containsKey(attributeName)) {
-            throw new IllegalArgumentException("unknown annotation attribute \"" + attributeName + "\" for annotation type " + type);
+            throw new IllegalArgumentException("unknown annotation attribute \"" + attributeName + "\" for annotation type " + annotationType);
         }
         Object value = values.get(attributeName);
         if (check.isInstance(value)) {
@@ -163,7 +163,7 @@ public record AnnotationDataImpl(Class<? extends Annotation> type,
     @SuppressWarnings("unchecked")
     private <T> List<T> getListValueWithCheck(String attributeName, Class<T> check) {
         if (!values.containsKey(attributeName)) {
-            throw new IllegalArgumentException("unknown annotation attribute \"" + attributeName + "\" for annotation type " + type);
+            throw new IllegalArgumentException("unknown annotation attribute \"" + attributeName + "\" for annotation type " + annotationType);
         }
         Object value = values.get(attributeName);
         if (value instanceof List list) {

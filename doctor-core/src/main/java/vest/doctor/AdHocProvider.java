@@ -23,6 +23,7 @@ public final class AdHocProvider<T> implements DoctorProvider<T> {
     }
 
     private final Class<T> type;
+    private final TypeInfo typeInfo;
     private final T t;
     private final String qualifier;
     private final List<Class<?>> allProvidedTypes;
@@ -42,6 +43,7 @@ public final class AdHocProvider<T> implements DoctorProvider<T> {
 
     public AdHocProvider(Class<T> type, T t, String qualifier, List<Class<?>> allProvidedTypes, AutoCloseable close) {
         this.type = type;
+        this.typeInfo = new TypeInfo(type);
         this.t = t;
         this.qualifier = qualifier;
         this.allProvidedTypes = Collections.unmodifiableList(allProvidedTypes);
@@ -51,6 +53,11 @@ public final class AdHocProvider<T> implements DoctorProvider<T> {
     @Override
     public Class<T> type() {
         return type;
+    }
+
+    @Override
+    public TypeInfo typeInfo() {
+        return typeInfo;
     }
 
     @Override

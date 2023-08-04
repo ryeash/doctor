@@ -74,7 +74,7 @@ final class ProviderIndex {
         return allProviders()
                 .filter(p -> p.annotationMetadata()
                         .stream()
-                        .anyMatch(am -> am.type() == type));
+                        .anyMatch(am -> am.annotationType() == type));
     }
 
     Stream<DoctorProvider<?>> allProviders() {

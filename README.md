@@ -427,6 +427,9 @@ public interface DBProps { // must be an interface
   @Property("password")
   String password();
   
+  @Property("acquireTimeout")
+  int acquireTimeout();
+  
   ...
 }
 ```
@@ -437,7 +440,7 @@ Properties are defined as strings and require conversion to specific types when 
 conversions are supported:
 
 * primitives and their associated java.lang wrappers
-* any type that has a public constructor with a single string argument and does not throw an exception (e.g. BigInteger)
+* any type that has a public constructor with a single string argument and does not throw an exception (e.g. `new BigInteger("num")`)
 * any type that has a public static method that takes a single string argument and does not throw an exception (like
   URI::create)
 

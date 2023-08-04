@@ -9,9 +9,11 @@ import vest.doctor.ExplicitProvidedTypes;
 import vest.doctor.InjectionException;
 import vest.doctor.Modules;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.TypeInfo;
 import vest.doctor.codegen.AnnotationClassValueVisitor;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.Constants;
+import vest.doctor.codegen.GenericInfo;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
 import vest.doctor.processing.AnnotationProcessorContext;
@@ -153,18 +155,23 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                 .addImportClass(ProviderRegistry.class)
                 .addImportClass(Provider.class)
                 .addImportClass(List.class)
+                .addImportClass(TypeInfo.class)
                 .addImportClass(ProcessorUtils.typeWithoutParameters(providedType().asType()))
                 .addImportClass(DoctorProvider.class)
                 .addImportClass(InjectionException.class)
                 .addImplementsInterface(DoctorProvider.class.getSimpleName() + "<" + providedType().getSimpleName() + ">")
                 .addClassAnnotation("@SuppressWarnings(\"unchecked\")")
-                .addField("private final ", ProviderRegistry.class.getSimpleName(), " {{providerRegistry}}");
+                .addField("private final ", ProviderRegistry.class.getSimpleName(), " {{providerRegistry}}")
+                .addField("private final ", TypeInfo.class.getSimpleName(), " typeInfo = ", new GenericInfo(annotationSource, providedType.asType()).newTypeInfo(context));
 
         MethodBuilder constructor = classBuilder.newMethod("public ", generatedClassName().substring(generatedClassName().lastIndexOf('.') + 1), "(", ProviderRegistry.class, " {{providerRegistry}})");
         constructor.line("this.{{providerRegistry}} = {{providerRegistry}};");
 
         MethodBuilder type = classBuilder.newMethod("@Override public Class<", providedType().getSimpleName(), "> type()");
         type.line("return " + providedType().getSimpleName() + ".class;");
+
+        MethodBuilder typeInfo = classBuilder.newMethod("@Override public TypeInfo typeInfo()");
+        typeInfo.line("return typeInfo;");
 
         MethodBuilder qualifier = classBuilder.newMethod("@Override public String qualifier()");
         qualifier.line("return ", Optional.ofNullable(qualifier()).map(q -> "{{providerRegistry}}.resolvePlaceholders(" + q + ")").orElse(null) + ";");
@@ -187,17 +194,14 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
             throw new CodeProcessingException("all providers must provide at least one type: " + this);
         }
 
-        if (!annotationSource.getAnnotationMirrors().isEmpty()) {
-            classBuilder.addImportClass(Map.class)
-                    .addImportClass(List.class)
-                    .addImportClass(AnnotationData.class)
-                    .addImportClass(AnnotationMetadata.class)
-                    .addImportClass(AnnotationDataImpl.class)
-                    .addImportClass(AnnotationMetadataImpl.class);
-            classBuilder.addField("private static final AnnotationMetadata annotationMetadata = ", ProcessorUtils.writeNewAnnotationMetadata(context, annotationSource));
-            classBuilder.addMethod("@Override public AnnotationMetadata annotationMetadata()",
-                    mb -> mb.line("return annotationMetadata;"));
-        }
+        classBuilder.addImportClass(Map.class)
+                .addImportClass(List.class)
+                .addImportClass(AnnotationData.class)
+                .addImportClass(AnnotationMetadata.class)
+                .addImportClass(AnnotationDataImpl.class)
+                .addImportClass(AnnotationMetadataImpl.class);
+        classBuilder.addMethod("@Override public AnnotationMetadata annotationMetadata()",
+                mb -> mb.line("return typeInfo.annotationMetadata();"));
 
         List<String> modules = modules();
         if (!modules.isEmpty()) {

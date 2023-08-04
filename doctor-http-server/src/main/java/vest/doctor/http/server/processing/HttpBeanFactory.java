@@ -130,7 +130,7 @@ public class HttpBeanFactory {
         for (DoctorProvider<Handler> handler : handlers) {
             List<String> methods = new LinkedList<>();
             for (AnnotationData annotationMetadata : handler.annotationMetadata()) {
-                HttpMethod method = annotationMetadata.type().getAnnotation(HttpMethod.class);
+                HttpMethod method = annotationMetadata.annotationType().getAnnotation(HttpMethod.class);
                 if (method != null) {
                     methods.add(method.value());
                 }

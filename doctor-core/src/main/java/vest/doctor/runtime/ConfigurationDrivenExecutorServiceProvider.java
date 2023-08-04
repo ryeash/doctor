@@ -4,6 +4,7 @@ import jakarta.inject.Provider;
 import vest.doctor.CustomThreadFactory;
 import vest.doctor.DoctorProvider;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.TypeInfo;
 import vest.doctor.conf.ConfigurationFacade;
 
 import java.lang.annotation.Annotation;
@@ -40,6 +41,7 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
     public static final int DEFAULT_MIN_THREADS = 1;
     public static final int DEFAULT_MAX_THREADS = Math.max(8, Runtime.getRuntime().availableProcessors() * 2);
     public static final int DEFAULT_KEEP_ALIVE = 60;
+    public static final TypeInfo EXECUTOR_TYPE_INFO = new TypeInfo(ExecutorService.class);
 
     public enum ThreadPoolType {
         cached, fixed, scheduled, forkjoin
@@ -83,6 +85,11 @@ public class ConfigurationDrivenExecutorServiceProvider implements DoctorProvide
     @Override
     public Class<ExecutorService> type() {
         return ExecutorService.class;
+    }
+
+    @Override
+    public TypeInfo typeInfo() {
+        return EXECUTOR_TYPE_INFO;
     }
 
     @Override
