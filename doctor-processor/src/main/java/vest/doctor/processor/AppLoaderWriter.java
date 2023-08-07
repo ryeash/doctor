@@ -40,8 +40,7 @@ public class AppLoaderWriter {
                 .addImportClass(Eager.class)
                 .addImportClass("org.slf4j.Logger")
                 .addImportClass("org.slf4j.LoggerFactory")
-                .addClassAnnotation("@SuppressWarnings(\"unchecked\")")
-                .addField("private final static Logger log = LoggerFactory.getLogger(", className, ".class)");
+                .addClassAnnotation("@SuppressWarnings(\"unchecked\")");
         stage5().line("""
                 {{providerRegistry}}.allProviders()
                 .filter(p -> p.typeInfo().annotationMetadata().findOne(Eager.class).isPresent())

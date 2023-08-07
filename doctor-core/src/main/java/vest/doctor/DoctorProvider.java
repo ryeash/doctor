@@ -25,7 +25,7 @@ public interface DoctorProvider<T> extends Provider<T>, AutoCloseable {
     TypeInfo typeInfo();
 
     /**
-     * The qualifier, or null if there isn't one.
+     * The qualifier, or null if this provider doesn't have one.
      */
     String qualifier();
 

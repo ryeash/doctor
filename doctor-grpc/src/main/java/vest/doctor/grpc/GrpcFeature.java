@@ -9,10 +9,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Enable the gRPC processing feature. When added to a bean factory class,
+ * Enable the gRPC processing feature. When added to a configuration class,
  * gRPC server classes will be wired together to initialize and execute when configured.
  * <p><br>
- * To use, add to a bean factory configuration class; example:
+ * To use, add to a configuration class; example:
  * <pre>
  * <literal>@</literal>Configuration
  * <literal>@</literal>GrpcFeature

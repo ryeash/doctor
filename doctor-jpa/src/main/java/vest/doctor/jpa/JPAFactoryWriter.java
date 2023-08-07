@@ -59,7 +59,6 @@ public class JPAFactoryWriter implements ProviderDefinitionListener {
         if (!annotations.isEmpty()) {
             ClassBuilder cb = new ClassBuilder()
                     .setClassName(providerDefinition.providedType().getQualifiedName() + "$JPAConfig")
-                    .addImportClass(Singleton.class)
                     .addImportClass(Configuration.class)
                     .addImportClass(Eager.class)
                     .addImportClass(Named.class)
@@ -91,7 +90,7 @@ public class JPAFactoryWriter implements ProviderDefinitionListener {
             throw new CodeProcessingException("unitName must be set in PersistenceContext", providerDefinition.annotationSource());
         }
         if (!unitNames.add(persistenceContext.unitName())) {
-            throw new CodeProcessingException("duplicate unit names processed: " + persistenceContext.unitName() + " -- please check PersistenceContext annotation");
+            throw new CodeProcessingException("duplicate unit names processed: " + persistenceContext.unitName() + " -- please check PersistenceContext annotation", providerDefinition.annotationSource());
         }
 
         String qualifierName = ProcessorUtils.escapeAndQuoteStringForCode(Optional.of(persistenceContext.name())
