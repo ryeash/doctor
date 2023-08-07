@@ -40,7 +40,7 @@ class DoctorScopeWriter implements ScopeWriter {
         } else if (ProcessorUtils.isCompatibleWith(context, scope.getAnnotationType(), Reloadable.class)) {
             return reloadable(context, providerDefinition, providerRef);
         } else {
-            return null;
+            return providerRef;
         }
     }
 
