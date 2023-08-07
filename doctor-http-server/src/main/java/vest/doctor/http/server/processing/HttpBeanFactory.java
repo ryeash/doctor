@@ -118,7 +118,7 @@ public class HttpBeanFactory {
         builder.setExceptionHandler(new CompositeExceptionHandler(exceptionHandlers));
 
         for (DoctorProvider<Filter> filter : filters) {
-            List<String> paths = filter.annotationMetadata().findOne(Endpoint.class)
+            List<String> paths = filter.typeInfo().annotationMetadata().findOne(Endpoint.class)
                     .map(endpoint -> endpoint.stringArrayValue("value"))
                     .orElse(Collections.singletonList(Router.MATCH_ALL_PATH_SPEC));
             Filter f = filter.get();
@@ -129,7 +129,7 @@ public class HttpBeanFactory {
 
         for (DoctorProvider<Handler> handler : handlers) {
             List<String> methods = new LinkedList<>();
-            for (AnnotationData annotationMetadata : handler.annotationMetadata()) {
+            for (AnnotationData annotationMetadata : handler.typeInfo().annotationMetadata()) {
                 HttpMethod method = annotationMetadata.annotationType().getAnnotation(HttpMethod.class);
                 if (method != null) {
                     methods.add(method.value());
@@ -140,7 +140,7 @@ public class HttpBeanFactory {
             }
             List<String> paths;
             try {
-                paths = handler.annotationMetadata().stringArrayValue(Endpoint.class, "value");
+                paths = handler.typeInfo().annotationMetadata().stringArrayValue(Endpoint.class, "value");
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("missing @Endpoint for Handler: " + handler);
             }

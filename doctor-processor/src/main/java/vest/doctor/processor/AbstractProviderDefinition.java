@@ -156,6 +156,12 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                 .addImportClass(Provider.class)
                 .addImportClass(List.class)
                 .addImportClass(TypeInfo.class)
+                .addImportClass(Map.class)
+                .addImportClass(List.class)
+                .addImportClass(AnnotationData.class)
+                .addImportClass(AnnotationMetadata.class)
+                .addImportClass(AnnotationDataImpl.class)
+                .addImportClass(AnnotationMetadataImpl.class)
                 .addImportClass(ProcessorUtils.typeWithoutParameters(providedType().asType()))
                 .addImportClass(DoctorProvider.class)
                 .addImportClass(InjectionException.class)
@@ -166,9 +172,6 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
 
         MethodBuilder constructor = classBuilder.newMethod("public ", generatedClassName().substring(generatedClassName().lastIndexOf('.') + 1), "(", ProviderRegistry.class, " {{providerRegistry}})");
         constructor.line("this.{{providerRegistry}} = {{providerRegistry}};");
-
-        MethodBuilder type = classBuilder.newMethod("@Override public Class<", providedType().getSimpleName(), "> type()");
-        type.line("return " + providedType().getSimpleName() + ".class;");
 
         MethodBuilder typeInfo = classBuilder.newMethod("@Override public TypeInfo typeInfo()");
         typeInfo.line("return typeInfo;");
@@ -193,15 +196,6 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
         } else {
             throw new CodeProcessingException("all providers must provide at least one type: " + this);
         }
-
-        classBuilder.addImportClass(Map.class)
-                .addImportClass(List.class)
-                .addImportClass(AnnotationData.class)
-                .addImportClass(AnnotationMetadata.class)
-                .addImportClass(AnnotationDataImpl.class)
-                .addImportClass(AnnotationMetadataImpl.class);
-        classBuilder.addMethod("@Override public AnnotationMetadata annotationMetadata()",
-                mb -> mb.line("return typeInfo.annotationMetadata();"));
 
         List<String> modules = modules();
         if (!modules.isEmpty()) {

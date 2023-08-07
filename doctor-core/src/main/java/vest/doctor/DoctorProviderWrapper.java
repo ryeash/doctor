@@ -14,11 +14,6 @@ public abstract class DoctorProviderWrapper<T> implements DoctorProvider<T> {
     }
 
     @Override
-    public Class<T> type() {
-        return delegate.type();
-    }
-
-    @Override
     public TypeInfo typeInfo() {
         return delegate.typeInfo();
     }
@@ -36,11 +31,6 @@ public abstract class DoctorProviderWrapper<T> implements DoctorProvider<T> {
     @Override
     public List<Class<?>> allProvidedTypes() {
         return delegate.allProvidedTypes();
-    }
-
-    @Override
-    public AnnotationMetadata annotationMetadata() {
-        return delegate.annotationMetadata();
     }
 
     @Override

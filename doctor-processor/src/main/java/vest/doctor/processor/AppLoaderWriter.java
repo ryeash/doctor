@@ -44,7 +44,7 @@ public class AppLoaderWriter {
                 .addField("private final static Logger log = LoggerFactory.getLogger(", className, ".class)");
         stage5().line("""
                 {{providerRegistry}}.allProviders()
-                .filter(p -> p.annotationMetadata().findOne(Eager.class).isPresent())
+                .filter(p -> p.typeInfo().annotationMetadata().findOne(Eager.class).isPresent())
                 .forEach(Provider::get);""");
         changed = false;
     }

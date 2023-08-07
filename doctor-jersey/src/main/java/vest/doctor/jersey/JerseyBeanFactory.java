@@ -14,6 +14,7 @@ import vest.doctor.DoctorProvider;
 import vest.doctor.Eager;
 import vest.doctor.Factory;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.TypeInfo;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.ServiceStarted;
 import vest.doctor.jersey.ext.DoctorCustomValueParamProvider;
@@ -53,7 +54,8 @@ public final class JerseyBeanFactory implements ApplicationLoader {
         config.register(new DoctorBinder(providerRegistry));
 
         providerRegistry.getProvidersWithAnnotation(Path.class)
-                .map(DoctorProvider::type)
+                .map(DoctorProvider::typeInfo)
+                .map(TypeInfo::getRawType)
                 .forEach(config::register);
 
         for (ResourceConfigCustomizer resourceConfigCustomizer : resourceConfigCustomizers) {

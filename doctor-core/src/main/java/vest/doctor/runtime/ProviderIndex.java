@@ -23,13 +23,13 @@ final class ProviderIndex {
 
     void setProvider(DoctorProvider<?> provider) {
         Objects.requireNonNull(provider);
-        Objects.requireNonNull(provider.type());
+        Objects.requireNonNull(provider.typeInfo());
         writeLock.lock();
         try {
             // primary
-            Map<String, DoctorProvider<?>> qualifierToProvider = primary.computeIfAbsent(provider.type().getName(), t -> new HashMap<>());
+            Map<String, DoctorProvider<?>> qualifierToProvider = primary.computeIfAbsent(provider.typeInfo().getRawType().getName(), t -> new HashMap<>());
             qualifierToProvider.merge(provider.qualifier(), provider, (existing, insert) -> {
-                throw new IllegalArgumentException("there is already a provider registered under: " + provider.qualifier() + ":" + provider.type().getCanonicalName());
+                throw new IllegalArgumentException("there is already a provider registered under: " + provider.qualifier() + ":" + provider.typeInfo().getRawType().getCanonicalName());
             });
 
             // secondary
@@ -72,7 +72,7 @@ final class ProviderIndex {
 
     Stream<DoctorProvider<?>> getProvidersWithAnnotation(Class<? extends Annotation> type) {
         return allProviders()
-                .filter(p -> p.annotationMetadata()
+                .filter(p -> p.typeInfo().annotationMetadata()
                         .stream()
                         .anyMatch(am -> am.annotationType() == type));
     }

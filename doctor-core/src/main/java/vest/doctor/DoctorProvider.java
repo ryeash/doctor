@@ -14,7 +14,10 @@ public interface DoctorProvider<T> extends Provider<T>, AutoCloseable {
     /**
      * The primary provided type.
      */
-    Class<T> type();
+    @SuppressWarnings("unchecked")
+    default Class<T> type() {
+        return (Class<T>) typeInfo().getRawType();
+    }
 
     /**
      * The {@link TypeInfo} for the primary provided type.
@@ -37,13 +40,6 @@ public interface DoctorProvider<T> extends Provider<T>, AutoCloseable {
      * by {@link #type()}. This will not include {@link Object}.
      */
     List<Class<?>> allProvidedTypes();
-
-    /**
-     * Get the annotation metadata attached to the provider.
-     */
-    default AnnotationMetadata annotationMetadata() {
-        return AnnotationMetadata.EMPTY;
-    }
 
     /**
      * The modules that activate this provider.

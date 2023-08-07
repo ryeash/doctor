@@ -90,7 +90,7 @@ public final class TypeInfo {
      * Determine if this TypeInfo is compatible with the given type and parameter types.
      *
      * @param type           the raw type to test
-     * @param parameterTypes the parameter type to test
+     * @param parameterTypes the parameter types to test
      * @return true if this TypeInfo instance is type compatible with the given type/parameters
      */
     public boolean matches(Class<?> type, Class<?>... parameterTypes) {
