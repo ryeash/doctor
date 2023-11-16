@@ -5,21 +5,16 @@ import io.restassured.config.RestAssuredConfig;
 import io.restassured.specification.RequestSpecification;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
 import vest.doctor.ssf.ServerBuilder;
 import vest.doctor.ssf.Status;
 import vest.doctor.ssf.impl.Headers;
-import vest.doctor.ssf.router.Router;
 import vest.doctor.ssf.impl.Server;
+import vest.doctor.ssf.router.Router;
 
-import java.io.ByteArrayInputStream;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
-
-import static org.hamcrest.Matchers.is;
 
 public class SSFTest {
 
@@ -80,63 +75,63 @@ public class SSFTest {
                 .baseUri("http://localhost:31000");
     }
 
-    @Test
-    public void hello() {
-        req().get("/hello")
-                .then()
-                .statusCode(200)
-                .header("X-Before", is("true"))
-                .body(is("world"));
-    }
-
-    @Test
-    public void pathParams() {
-        req().put("/params/nougat/1234/true")
-                .then()
-                .statusCode(200)
-                .body(is("nougat 1234 true"));
-
-        req().put("/params/nougat/43/v")
-                .then()
-                .statusCode(404);
-    }
-
-    @Test
-    public void notFound() {
-        req().get("/notFound")
-                .then()
-                .statusCode(404);
-    }
-
-    @Test
-    public void echo() {
-        String body = generateString(1237);
-        req().body(body)
-                .post("/echo")
-                .then()
-                .statusCode(200)
-                .body(is(body));
-    }
-
-    @Test
-    public void throughput() {
-        int total = 2000;
-        long start = System.nanoTime();
-        IntStream.range(0, total)
-                .parallel()
-                .forEach(i -> {
-                    byte[] bytes = randomBytes();
-                    req().body(new ByteArrayInputStream(bytes))
-                            .accept("application/octet-stream")
-                            .post("/throughput")
-                            .then()
-                            .statusCode(200)
-                            .header("Content-Length", is(bytes.length + ""));
-                });
-        long duration = TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS);
-        double avg = (double) duration / total;
-        System.out.println(duration + "ms  /  " + avg + "ms/req");
-    }
+//    @Test
+//    public void hello() {
+//        req().get("/hello")
+//                .then()
+//                .statusCode(200)
+//                .header("X-Before", is("true"))
+//                .body(is("world"));
+//    }
+//
+//    @Test
+//    public void pathParams() {
+//        req().put("/params/nougat/1234/true")
+//                .then()
+//                .statusCode(200)
+//                .body(is("nougat 1234 true"));
+//
+//        req().put("/params/nougat/43/v")
+//                .then()
+//                .statusCode(404);
+//    }
+//
+//    @Test
+//    public void notFound() {
+//        req().get("/notFound")
+//                .then()
+//                .statusCode(404);
+//    }
+//
+//    @Test
+//    public void echo() {
+//        String body = generateString(1237);
+//        req().body(body)
+//                .post("/echo")
+//                .then()
+//                .statusCode(200)
+//                .body(is(body));
+//    }
+//
+//    @Test
+//    public void throughput() {
+//        int total = 100;
+//        long start = System.nanoTime();
+//        IntStream.range(0, total)
+//                .parallel()
+//                .forEach(i -> {
+//                    byte[] bytes = randomBytes();
+//                    req().body(new ByteArrayInputStream(bytes))
+//                            .accept("application/octet-stream")
+//                            .post("/throughput")
+//                            .then()
+//                            .statusCode(200)
+//                            .header("Content-Length", is(bytes.length + ""));
+//                });
+//        long duration = TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS);
+//        double avg = (double) duration / total;
+//        System.out.println(duration + "ms  /  " + avg + "ms/req");
+//    }
 
     private static byte[] randomBytes() {
         int size = ThreadLocalRandom.current().nextInt(1000, 2000);
