@@ -1,5 +1,6 @@
 package vest.doctor.http.server;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpRequest;
@@ -64,16 +65,16 @@ public interface Request {
     Map<String, Cookie> cookies();
 
     /**
-     * Get the {@link RequestBody}.
+     * Get the request body.
      */
-    RequestBody body();
+    ByteBuf body();
 
     /**
      * Receive a multipart body from the client.
      *
      * @return the multipart body uploaded from the client
      */
-    MultiPartData multiPartBody();
+    List<Part> multiPartBody();
 
     /**
      * Get the value of a query parameter.

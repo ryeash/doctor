@@ -10,7 +10,6 @@ import vest.doctor.processing.ProviderDependency;
 
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -28,11 +27,8 @@ public class ProviderParameterLookupCustomizer implements ParameterLookupCustomi
     public String dependencyCheckCode(AnnotationProcessorContext context, VariableElement variableElement, String providerRegistryRef) {
         TypeMirror typeMirror = variableElement.asType();
         String qualifier = ProcessorUtils.getQualifier(context, variableElement);
-        if (ProcessorUtils.isCompatibleWith(context, typeMirror, Optional.class)
-            || ProcessorUtils.isCompatibleWith(context, typeMirror, Iterable.class)
-            || ProcessorUtils.isCompatibleWith(context, typeMirror, Stream.class)
-            || ProcessorUtils.isCompatibleWith(context, typeMirror, ProviderRegistry.class)
-            || variableElement.asType().getKind() == TypeKind.ARRAY) {
+        if (ProcessorUtils.isContainerType(context, typeMirror)
+                || ProcessorUtils.isCompatibleWith(context, typeMirror, ProviderRegistry.class)) {
             return "";
         }
         if (ProcessorUtils.isCompatibleWith(context, typeMirror, Provider.class)) {
@@ -47,9 +43,9 @@ public class ProviderParameterLookupCustomizer implements ParameterLookupCustomi
         String qualifier = ProcessorUtils.getQualifier(context, variableElement);
 
         if (ProcessorUtils.isCompatibleWith(context, typeElement, Optional.class)
-            || ProcessorUtils.isCompatibleWith(context, typeElement, Provider.class)
-            || ProcessorUtils.isCompatibleWith(context, typeElement, Iterable.class)
-            || ProcessorUtils.isCompatibleWith(context, typeElement, Stream.class)) {
+                || ProcessorUtils.isCompatibleWith(context, typeElement, Provider.class)
+                || ProcessorUtils.isCompatibleWith(context, typeElement, Iterable.class)
+                || ProcessorUtils.isCompatibleWith(context, typeElement, Stream.class)) {
             TypeElement type = context.toTypeElement(unwrapJustOne(variableElement.asType()));
             return context.buildDependency(type, qualifier, false);
         }

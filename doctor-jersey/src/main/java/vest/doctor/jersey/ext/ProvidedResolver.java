@@ -1,5 +1,6 @@
 package vest.doctor.jersey.ext;
 
+import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.glassfish.hk2.api.Injectee;
 import org.glassfish.hk2.api.InjectionResolver;
@@ -12,6 +13,7 @@ public final class ProvidedResolver implements InjectionResolver<Provided> {
 
     private final ProviderRegistry providerRegistry;
 
+    @Inject
     public ProvidedResolver(ProviderRegistry providerRegistry) {
         this.providerRegistry = providerRegistry;
     }

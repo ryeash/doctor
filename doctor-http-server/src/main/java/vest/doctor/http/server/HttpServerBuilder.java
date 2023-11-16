@@ -9,7 +9,6 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 
 /**
  * Builder for {@link Server}. Combines {@link HttpServerConfiguration} and {@link Router} into
@@ -336,33 +335,19 @@ public final class HttpServerBuilder {
      * @param beforeFilter the filter action to take on the {@link Request} object
      * @return this builder
      */
-    public HttpServerBuilder before(String pathSpec, UnaryOperator<RequestContext> beforeFilter) {
-        return filter(pathSpec, Filter.before(beforeFilter));
-    }
-
-    /**
-     * Add a before filter to the router.
-     *
-     * @param pathSpec     the path specification for the filter, e.g. /api/v2/{type}/{collection}
-     * @param beforeFilter the filter action to take on the {@link Request} object
-     * @return this builder
-     */
     public HttpServerBuilder before(String pathSpec, Consumer<RequestContext> beforeFilter) {
-        return filter(pathSpec, Filter.before(r -> {
-            beforeFilter.accept(r);
-            return r;
-        }));
+        return filter(pathSpec, Filter.before(beforeFilter));
     }
 
     /**
      * Add an after filter to the router
      *
-     * @param pathSpec    the path specification for the filter, e.g. /api/v2/{type}/{collection}
-     * @param afterFilter the filter action to take on the {@link Response} object
+     * @param pathSpec the path specification for the filter, e.g. /api/v2/{type}/{collection}
+     * @param consumer the filter action to take on the {@link Response} object
      * @return this builder
      */
-    public HttpServerBuilder after(String pathSpec, UnaryOperator<Response> afterFilter) {
-        return filter(pathSpec, Filter.after(afterFilter));
+    public HttpServerBuilder after(String pathSpec, Consumer<RequestContext> consumer) {
+        return filter(pathSpec, Filter.after(consumer));
     }
 
     public HttpServerBuilder ws(Websocket websocket) {

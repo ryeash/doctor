@@ -11,7 +11,7 @@ import vest.doctor.http.server.impl.HttpServerChannelInitializer;
 public interface PipelineCustomizer extends Prioritized {
 
     /**
-     * Customize the {@link ChannelPipeline}. Built in pipeline handler names can be found in
+     * Customize the {@link ChannelPipeline}. Built-in pipeline handler names can be found in
      * {@link HttpServerChannelInitializer}, e.g.
      * {@link HttpServerChannelInitializer#SERVER_HANDLER}.
      *

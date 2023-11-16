@@ -1,6 +1,6 @@
 package vest.doctor.http.server;
 
-import java.util.concurrent.Flow;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * A handle to the next step in the filter chain.
@@ -15,5 +15,5 @@ public interface FilterChain {
      * @return the response publisher
      * @throws Exception for any error processing the filter chain
      */
-    Flow.Publisher<Response> next(RequestContext requestContext) throws Exception;
+    CompletableFuture<RequestContext> next(RequestContext requestContext) throws Exception;
 }

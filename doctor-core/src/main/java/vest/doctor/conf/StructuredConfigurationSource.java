@@ -59,7 +59,7 @@ import static java.io.StreamTokenizer.TT_EOL;
 public class StructuredConfigurationSource implements ConfigurationSource {
 
     private final FileLocation propertyFile;
-    private MapConfigurationSource delegate;
+    private ConfigurationSource delegate;
 
     public StructuredConfigurationSource(String location) {
         this(new FileLocation(Objects.requireNonNull(location, "the configuration location can not be null")));

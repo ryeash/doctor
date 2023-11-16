@@ -97,7 +97,7 @@ public final class GrpcFactory {
         }
         log.info("starting grpc server on port {}", port);
         Server build = serverBuilder.build().start();
-        healthStatusManager.setStatus("", HealthCheckResponse.ServingStatus.SERVING);
+        healthStatusManager.setStatus("grpc-" + port, HealthCheckResponse.ServingStatus.SERVING);
         return new GrpcServerHandle(build);
     }
 

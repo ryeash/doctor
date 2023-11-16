@@ -9,6 +9,8 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 /**
@@ -17,17 +19,14 @@ import java.util.stream.Stream;
  * @param <S> the statement type
  */
 public final class JDBCStatement<S extends Statement> implements AutoCloseable {
-
     private final Connection connection;
     private final S statement;
     private final String sql;
-    private final List<AutoCloseable> closeOnExecute;
 
-    JDBCStatement(Connection connection, S statement, String sql, List<AutoCloseable> closeables) {
+    JDBCStatement(Connection connection, S statement, String sql) {
         this.connection = Objects.requireNonNull(connection);
         this.statement = Objects.requireNonNull(statement);
         this.sql = Objects.requireNonNull(sql);
-        this.closeOnExecute = closeables;
     }
 
     /**
@@ -54,7 +53,7 @@ public final class JDBCStatement<S extends Statement> implements AutoCloseable {
      * @see Statement#setFetchSize(int)
      * @see Statement#setMaxRows(int)
      */
-    public JDBCStatement<S> configure(ThrowingConsumer<S> configuration) {
+    public JDBCStatement<S> configure(Consumer<S> configuration) {
         try {
             configuration.accept(this.statement);
         } catch (Exception e) {
@@ -84,7 +83,7 @@ public final class JDBCStatement<S extends Statement> implements AutoCloseable {
         } catch (SQLException e) {
             throw new DatabaseException("error executing batch request", e);
         } finally {
-            closeAfterExecute();
+            JDBC.closeQuietly(statement);
         }
     }
 
@@ -198,15 +197,19 @@ public final class JDBCStatement<S extends Statement> implements AutoCloseable {
         }
     }
 
+    public Stream<ResultSet> select() {
+        return select(RowMapper.identity());
+    }
+
     /**
      * Execute the underlying statement and return a stream of result rows.
      * <p><br/>
      * Note: A terminal operation (like {@link Stream#forEach(Consumer)}) must be called on the returned stream
      * in order to release the underlying database resources.
      *
-     * @return a stream of {@link Row rows} representing the results of the query
+     * @return a stream of {@link ResultSet} representing the rows returned by the query
      */
-    public Stream<Row> execute() {
+    public <T> Stream<T> select(RowMapper<T> rowMapper) {
         try {
             boolean hasResultSet;
             if (statement instanceof PreparedStatement preparedStatement) {
@@ -215,28 +218,48 @@ public final class JDBCStatement<S extends Statement> implements AutoCloseable {
                 hasResultSet = statement.execute(sql);
             }
             if (hasResultSet) {
-                ResultSet resultSet = statement.getResultSet();
-                return JDBCUtils.stream(resultSet, closeOnExecute);
+                // this strange nesting then unwinding of the stream serves the purpose
+                // of automatically calling Stream.close on rowStream (read the fine print of flatMap)
+                return Stream.of(Stream.iterate(statement.getResultSet(), rs -> {
+                                    try {
+                                        return rs.next();
+                                    } catch (SQLException e) {
+                                        throw new DatabaseException(e);
+                                    }
+                                }, UnaryOperator.identity())
+                                .onClose(() -> JDBC.closeQuietly(statement)))
+                        .flatMap(Function.identity())
+                        .map(rowMapper);
             } else {
-                try {
-                    int updated = statement.getUpdateCount();
-                    Row updateCount = new Row(updated);
-                    return Stream.of(updateCount);
-                } finally {
-                    closeAfterExecute();
-                }
+                throw new DatabaseException("statement execution did not produce a ResultSet");
             }
         } catch (SQLException e) {
             throw new DatabaseException("error querying database", e);
         }
     }
 
-    @Override
-    public void close() {
-        JDBCUtils.closeQuietly(statement, connection);
+    public long update() {
+        try {
+            boolean hasResultSet;
+            if (statement instanceof PreparedStatement preparedStatement) {
+                hasResultSet = preparedStatement.execute();
+            } else {
+                hasResultSet = statement.execute(sql);
+            }
+            if (hasResultSet) {
+                throw new DatabaseException("statement execution did not produce a ResultSet");
+            } else {
+                return statement.getLargeUpdateCount();
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("error querying database", e);
+        } finally {
+            JDBC.closeQuietly(statement);
+        }
     }
 
-    private void closeAfterExecute() {
-        JDBCUtils.closeQuietly(closeOnExecute);
+    @Override
+    public void close() {
+        JDBC.closeQuietly(statement, connection);
     }
 }

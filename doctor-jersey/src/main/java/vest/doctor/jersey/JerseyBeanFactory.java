@@ -22,7 +22,6 @@ import vest.doctor.netty.NettyHttpServer;
 
 import javax.net.ssl.SSLException;
 import java.security.cert.CertificateException;
-import java.util.List;
 import java.util.Optional;
 
 @Configuration
@@ -43,8 +42,7 @@ public final class JerseyBeanFactory implements ApplicationLoader {
     public JerseyServerHolder jerseyFactory(ProviderRegistry providerRegistry,
                                             EventBus eventBus,
                                             JerseyHttpConfiguration httpConfig,
-                                            @Named("server") Optional<SslContext> sslContext,
-                                            List<ResourceConfigCustomizer> resourceConfigCustomizers) {
+                                            @Named("server") Optional<SslContext> sslContext) {
         if (httpConfig.bindAddresses().isEmpty()) {
             return new JerseyServerHolder(null, null);
         }
@@ -58,9 +56,8 @@ public final class JerseyBeanFactory implements ApplicationLoader {
                 .map(TypeInfo::getRawType)
                 .forEach(config::register);
 
-        for (ResourceConfigCustomizer resourceConfigCustomizer : resourceConfigCustomizers) {
-            config = resourceConfigCustomizer.customize(config);
-        }
+        config = providerRegistry.getInstances(ResourceConfigCustomizer.class)
+                .reduce(config, (c, customizer) -> customizer.customize(c), (a,b) -> b);
 
         DoctorJerseyContainer container = new DoctorJerseyContainer(config);
         NettyHttpServer httpServer = new NettyHttpServer(
@@ -70,19 +67,5 @@ public final class JerseyBeanFactory implements ApplicationLoader {
                 sslContext.orElse(null));
         eventBus.publish(new ServiceStarted("netty-jersey-http", httpServer));
         return new JerseyServerHolder(container, httpServer);
-    }
-
-    public record JerseyServerHolder(DoctorJerseyContainer container,
-                                     NettyHttpServer httpServer) implements AutoCloseable {
-
-        @Override
-        public void close() throws Exception {
-            if (container != null) {
-                container.close();
-            }
-            if (httpServer != null) {
-                httpServer.close();
-            }
-        }
     }
 }

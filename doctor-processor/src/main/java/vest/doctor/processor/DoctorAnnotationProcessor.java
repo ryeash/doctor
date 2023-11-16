@@ -401,11 +401,14 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
         for (Map.Entry<ProviderDependency, Set<ProviderDependency>> entry : graph.getMap().entrySet()) {
             ProviderDependency target = entry.getKey();
             for (ProviderDependency dependency : entry.getValue()) {
-                if (dependency != null && dependency.required() && !isProvided(dependency)) {
+                if (dependency != null
+                        && !ProcessorUtils.isContainerType(this, dependency.type())
+                        && dependency.required()
+                        && !isProvided(dependency)) {
                     Stream<ProviderDependency> deps = providerDefinitions.stream().map(ProviderDefinition::asDependency);
                     Stream<ProviderDependency> add = additionalSatisfiedDependencies.stream();
                     throw new CodeProcessingException("missing provider dependency for\ntarget: " + target + "\ndependency: " + dependency + "\nknown types:\n  " +
-                                                      Stream.of(deps, add).flatMap(Function.identity()).map(String::valueOf).collect(Collectors.joining("\n  ")));
+                            Stream.of(deps, add).flatMap(Function.identity()).map(String::valueOf).collect(Collectors.joining("\n  ")));
                 }
             }
         }

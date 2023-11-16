@@ -124,7 +124,7 @@ public abstract class AbstractWebsocket implements Websocket {
     }
 
     /**
-     * Helper method. Read all readable bytes from the buffer into a byte array.
+     * Helper method. Copy all readable bytes from the buffer into a byte array.
      *
      * @param content the buffer to read
      * @return a byte array of the readable data from the buffer

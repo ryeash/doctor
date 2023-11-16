@@ -1,11 +1,10 @@
 package vest.doctor.http.server;
 
 import vest.doctor.Prioritized;
-import vest.doctor.reactive.Rx;
 
 import java.util.Objects;
-import java.util.concurrent.Flow;
-import java.util.function.UnaryOperator;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 /**
  * A filter is inserted into the request processing stream to alter the inbound request
@@ -21,39 +20,44 @@ public interface Filter extends Prioritized {
      * @param chain          the next step in the filter chain
      * @return the response; possibly with new chained actions attached
      */
-    Flow.Publisher<Response> filter(RequestContext requestContext, FilterChain chain) throws Exception;
+    CompletableFuture<RequestContext> filter(RequestContext requestContext, FilterChain chain) throws Exception;
 
     /**
      * Create a filter that operates on the request before it is sent to a {@link Handler}.
      *
-     * @param function the action to take on the request
+     * @param consumer the action to take on the request
      * @return a new before {@link Filter}
      */
-    static Filter before(UnaryOperator<RequestContext> function) {
-        return new Before(Objects.requireNonNull(function));
+    static Filter before(Consumer<RequestContext> consumer) {
+        return new Before(Objects.requireNonNull(consumer));
     }
 
     /**
      * Create a filter that operates on the response after it has been returned from a {@link Handler}.
      *
-     * @param function the function that will operate on (and return) the response object
+     * @param consumer the consumer that will operate on the response object
      * @return a new after {@link Filter}
      */
-    static Filter after(UnaryOperator<Response> function) {
-        return new After(Objects.requireNonNull(function));
+    static Filter after(Consumer<RequestContext> consumer) {
+        return new After(Objects.requireNonNull(consumer));
     }
 
-    record Before(UnaryOperator<RequestContext> function) implements Filter {
+    record Before(Consumer<RequestContext> consumer) implements Filter {
         @Override
-        public Flow.Publisher<Response> filter(RequestContext requestContext, FilterChain chain) throws Exception {
-            return chain.next(function.apply(requestContext));
+        public CompletableFuture<RequestContext> filter(RequestContext requestContext, FilterChain chain) throws Exception {
+            consumer.accept(requestContext);
+            return chain.next(requestContext);
         }
     }
 
-    record After(UnaryOperator<Response> function) implements Filter {
+    record After(Consumer<RequestContext> consumer) implements Filter {
         @Override
-        public Flow.Publisher<Response> filter(RequestContext requestContext, FilterChain chain) throws Exception {
-            return Rx.from(chain.next(requestContext)).map(function);
+        public CompletableFuture<RequestContext> filter(RequestContext requestContext, FilterChain chain) throws Exception {
+            return chain.next(requestContext)
+                    .thenApply(ctx -> {
+                        consumer.accept(ctx);
+                        return ctx;
+                    });
         }
     }
 }

@@ -25,7 +25,6 @@ import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.ElementFilter;
 import java.lang.annotation.Annotation;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -151,27 +150,25 @@ public final class ProcessorUtils {
         if (HIERARCHY_CACHE.containsKey(type)) {
             return HIERARCHY_CACHE.get(type);
         }
-        Set<TypeElement> allClasses = new LinkedHashSet<>();
-        List<TypeElement> allInterfaces = new LinkedList<>();
-        allClasses.add(type);
-        context.processingEnvironment()
-                .getTypeUtils()
-                .directSupertypes(type.asType())
-                .stream()
-                .map(context::toTypeElement)
-                .filter(t -> !t.toString().equals(Object.class.getCanonicalName()))
-                .forEach(allClasses::add);
-        for (TypeElement t : allClasses) {
-            for (TypeMirror intfc : t.getInterfaces()) {
-                allInterfaces.add(context.toTypeElement(intfc));
-            }
-        }
-        allClasses.addAll(allInterfaces);
-        List<TypeElement> list = new LinkedList<>(allClasses);
-        Collections.reverse(list);
-        Set<TypeElement> set = new LinkedHashSet<>(list);
+        LinkedHashSet<TypeElement> set = _hierarchy(context, type).collect(Collectors.toCollection(LinkedHashSet::new));
+        set.addFirst(type);
         HIERARCHY_CACHE.put(type, set);
         return set;
+    }
+
+    public static Stream<TypeElement> _hierarchy(AnnotationProcessorContext context, TypeElement type) {
+        if (type == null) {
+            return Stream.empty();
+        }
+        List<? extends TypeMirror> supers = context.processingEnvironment()
+                .getTypeUtils()
+                .directSupertypes(type.asType());
+        List<? extends TypeMirror> interfaces = type.getInterfaces();
+        return Stream.of(supers, interfaces)
+                .flatMap(List::stream)
+                .map(context::toTypeElement)
+                .filter(t -> !t.toString().equals(Object.class.getCanonicalName()))
+                .flatMap(te -> Stream.concat(Stream.of(te), _hierarchy(context, te)));
     }
 
     public static List<ExecutableElement> allMethods(AnnotationProcessorContext context, TypeElement type) {
@@ -184,13 +181,25 @@ public final class ProcessorUtils {
                 .collect(Collectors.toList());
     }
 
+    public static boolean isContainerType(AnnotationProcessorContext context, TypeMirror typeMirror) {
+        return typeMirror.getKind() == TypeKind.ARRAY || isContainerType(context, context.toTypeElement(typeMirror));
+    }
+
+    public static boolean isContainerType(AnnotationProcessorContext context, TypeElement typeElement) {
+        return ProcessorUtils.isCompatibleWith(context, typeElement, Optional.class)
+                || ProcessorUtils.isCompatibleWith(context, typeElement, List.class)
+                || ProcessorUtils.isCompatibleWith(context, typeElement, Iterable.class)
+                || ProcessorUtils.isCompatibleWith(context, typeElement, Stream.class)
+                || typeElement.asType().getKind() == TypeKind.ARRAY;
+    }
+
     public static boolean isCompatibleWith(AnnotationProcessorContext context, TypeMirror mirror, Class<?> checkType) {
         return isCompatibleWith(context, context.toTypeElement(mirror), checkType);
     }
 
     public static boolean isCompatibleWith(AnnotationProcessorContext context, TypeElement type, Class<?> checkType) {
         for (TypeElement typeElement : hierarchy(context, type)) {
-            if (typeElement.toString().equals(checkType.getCanonicalName())) {
+            if (Objects.equals(typeElement.toString(), checkType.getCanonicalName())) {
                 return true;
             }
         }
@@ -208,15 +217,12 @@ public final class ProcessorUtils {
         if (element == null) {
             return "null";
         }
-        if (element instanceof TypeElement) {
-            return element.toString();
-        } else if (element instanceof VariableElement) {
-            return element.asType() + " " + element.getSimpleName() + " contained in " + debugString(element.getEnclosingElement());
-        } else if (element instanceof ExecutableElement) {
-            return element + " contained in " + element.getEnclosingElement();
-        } else {
-            return element.toString();
-        }
+        return switch (element) {
+            case VariableElement ve ->
+                    ve.asType() + " " + ve.getSimpleName() + " contained in " + debugString(ve.getEnclosingElement());
+            case ExecutableElement ee -> ee + " contained in " + ee.getEnclosingElement();
+            default -> element.toString();
+        };
     }
 
     public static String getProviderCode(ProviderDefinition providerDefinition) {
@@ -229,10 +235,6 @@ public final class ProcessorUtils {
 
     public static String getProviderCode(AnnotationProcessorContext context, TypeElement injectableType) {
         return getProviderCode(injectableType.getQualifiedName().toString(), getQualifier(context, injectableType));
-    }
-
-    public static String getProviderCode(TypeElement type, String qualifier) {
-        return getProviderCode(type.asType(), qualifier);
     }
 
     public static String getProviderCode(TypeMirror type, String qualifier) {
@@ -297,8 +299,8 @@ public final class ProcessorUtils {
                 }
                 String methodCall = getProvidersCode(typeMirror, qualifier, providerRegistryRef);
                 String preamble = methodCall
-                                  + (executeGet ? ".map(" + Provider.class.getCanonicalName() + "::get)" : "")
-                                  + ".collect(" + Collectors.class.getCanonicalName();
+                        + (executeGet ? ".map(" + Provider.class.getCanonicalName() + "::get)" : "")
+                        + ".collect(" + Collectors.class.getCanonicalName();
 
                 if (ProcessorUtils.isCompatibleWith(context, typeElement, Set.class)) {
                     return preamble + ".toSet())";
@@ -337,12 +339,9 @@ public final class ProcessorUtils {
         GenericInfo info = new GenericInfo(mirror);
         if (info.hasTypeParameters() && info.parameterTypes().size() == 1) {
             GenericInfo genericInfo = info.parameterTypes().get(0);
-//            if (genericInfo.hasTypeParameters()) {
-//                throw new CodeProcessingException("can not inject nested parameterized type: " + mirror);
-//            }
             return genericInfo.type();
         }
-        throw new CodeProcessingException("not type parameters provided for: " + mirror);
+        throw new CodeProcessingException("no type parameters provided for: " + mirror);
     }
 
     public static String rawPrimitiveClass(TypeMirror mirror) {
@@ -423,35 +422,23 @@ public final class ProcessorUtils {
 
     private static String annotationValueLiteral(AnnotationProcessorContext context, AnnotationValue annotationValue) {
         Object value = annotationValue.getValue();
-        if (value instanceof String str) {
-            return escapeAndQuoteStringForCode(str);
-        } else if (value instanceof Boolean bool) {
-            return bool.toString();
-        } else if (value instanceof Byte) {
-            return "(byte)" + value;
-        } else if (value instanceof Short) {
-            return "(short)" + value;
-        } else if (value instanceof Integer) {
-            return value.toString();
-        } else if (value instanceof Long) {
-            return value + "L";
-        } else if (value instanceof Float) {
-            return value + "F";
-        } else if (value instanceof Double) {
-            return value + "D";
-        } else if (value instanceof TypeMirror type) {
-            return type + ".class";
-        } else if (value instanceof VariableElement ve) {
-            return ve.asType() + "." + ve;
-        } else if (value instanceof AnnotationMirror am) {
-            return newAnnotationDataImpl(context, am);
-        } else if (value instanceof List<?> list) {
-            return list.stream()
+        return switch (value) {
+            case String str -> escapeAndQuoteStringForCode(str);
+            case Boolean bool -> bool.toString();
+            case Byte b -> "(byte)" + b;
+            case Short s -> "(short)" + s;
+            case Integer i -> i.toString();
+            case Long l -> l + "L";
+            case Float f -> f + "F";
+            case Double d -> d + "D";
+            case TypeMirror type -> type + ".class";
+            case VariableElement ve -> ve.asType() + "." + ve;
+            case AnnotationMirror am -> newAnnotationDataImpl(context, am);
+            case List<?> list -> list.stream()
                     .map(AnnotationValue.class::cast)
                     .map(av -> annotationValueLiteral(context, av))
                     .collect(Collectors.joining(",", "List.of(", ")"));
-        } else {
-            return null;
-        }
+            case null, default -> null;
+        };
     }
 }

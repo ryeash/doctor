@@ -9,7 +9,6 @@ import io.netty.handler.codec.http.DefaultHttpContent;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.LastHttpContent;
 import vest.doctor.http.server.impl.DefaultResponseBody;
-import vest.doctor.http.server.impl.FloResponseBody;
 import vest.doctor.http.server.impl.SendFileResponseBody;
 import vest.doctor.http.server.impl.StreamingResponseBody;
 
@@ -18,7 +17,6 @@ import java.io.InputStream;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.Flow;
 
 /**
  * Defines an object that can be sent as an HTTP response body.
@@ -111,16 +109,6 @@ public interface ResponseBody {
      */
     static ResponseBody of(ReadableByteChannel readableByteChannel) {
         return new StreamingResponseBody(readableByteChannel);
-    }
-
-    /**
-     * Create a response body from an asynchronous processing flow of {@link HttpContent}.
-     *
-     * @param flo the processing flow
-     * @return a new {@link ResponseBody}
-     */
-    static ResponseBody of(Flow.Publisher<? extends HttpContent> flo) {
-        return new FloResponseBody(flo);
     }
 
     /**

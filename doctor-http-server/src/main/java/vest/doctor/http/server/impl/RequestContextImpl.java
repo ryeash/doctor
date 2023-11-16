@@ -11,7 +11,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 
-public class RequestContextImpl implements RequestContext {
+public final class RequestContextImpl implements RequestContext {
 
     private final Request request;
     private final Response response;
@@ -54,12 +54,6 @@ public class RequestContextImpl implements RequestContext {
     @SuppressWarnings("unchecked")
     public <T> T attribute(String name) {
         return (T) attributes.get(name);
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public <T> T attributeOrElse(String name, T orElse) {
-        return (T) attributes.getOrDefault(name, orElse);
     }
 
     @Override

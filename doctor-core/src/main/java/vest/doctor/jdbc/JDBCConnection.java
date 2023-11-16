@@ -4,11 +4,13 @@ import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /**
@@ -21,13 +23,11 @@ import java.util.stream.Stream;
 public final class JDBCConnection implements AutoCloseable {
 
     private final Connection connection;
-    private final boolean closeOnExecute;
     private final List<JDBCInterceptor> interceptors;
     private final List<WeakReference<AutoCloseable>> closeables = new LinkedList<>();
 
-    JDBCConnection(Connection connection, boolean closeOnExecute, List<JDBCInterceptor> interceptors) {
+    JDBCConnection(Connection connection,List<JDBCInterceptor> interceptors) {
         this.connection = connection;
-        this.closeOnExecute = closeOnExecute;
         this.interceptors = interceptors;
     }
 
@@ -46,7 +46,7 @@ public final class JDBCConnection implements AutoCloseable {
      * @see Connection#setAutoCommit(boolean)
      * @see Connection#setTransactionIsolation(int)
      */
-    public JDBCConnection configure(ThrowingConsumer<Connection> configuration) {
+    public JDBCConnection configure(Consumer<Connection> configuration) {
         try {
             configuration.accept(connection);
         } catch (Exception e) {
@@ -61,8 +61,8 @@ public final class JDBCConnection implements AutoCloseable {
      * @param sql the selecting sql
      * @return the row stream
      */
-    public Stream<Row> select(String sql) {
-        return statement(sql).execute();
+    public Stream<ResultSet> select(String sql) {
+        return statement(sql).select();
     }
 
     /**
@@ -72,8 +72,8 @@ public final class JDBCConnection implements AutoCloseable {
      * @param parameters the binding parameters
      * @return the row stream
      */
-    public Stream<Row> select(String sql, List<Object> parameters) {
-        return prepare(sql).bindAll(parameters).execute();
+    public Stream<ResultSet> select(String sql, List<Object> parameters) {
+        return prepare(sql).bindAll(parameters).select();
     }
 
     /**
@@ -125,11 +125,7 @@ public final class JDBCConnection implements AutoCloseable {
      * @return the number of rows changed
      */
     public long update(String sql) {
-        return statement(sql)
-                .execute()
-                .mapToLong(Row::updateCount)
-                .findFirst()
-                .orElse(0);
+        return statement(sql).update();
     }
 
     /**
@@ -141,18 +137,13 @@ public final class JDBCConnection implements AutoCloseable {
      * @see JDBCStatement#bindAll(List)
      */
     public long update(String sql, List<Object> parameters) {
-        return prepare(sql)
-                .bindAll(parameters)
-                .execute()
-                .mapToLong(Row::updateCount)
-                .findFirst()
-                .orElse(0);
+        return prepare(sql).bindAll(parameters).update();
     }
 
     /**
      * Create a new {@link JDBCStatement} using the given sql statement.
      *
-     * @param sql the sql that will be executed when calling {@link JDBCStatement#execute()}
+     * @param sql the sql that will be executed when calling {@link JDBCStatement#select()}
      * @return a new {@link JDBCStatement} object
      * @see Statement
      */
@@ -163,8 +154,7 @@ public final class JDBCConnection implements AutoCloseable {
                 statement = interceptor.intercept(statement);
             }
             closeables.add(new WeakReference<>(statement));
-            List<AutoCloseable> closeables = closeOnExecute ? List.of(this, statement) : List.of(statement);
-            return new JDBCStatement<>(connection, statement, sql, closeables);
+            return new JDBCStatement<>(connection, statement, sql);
         } catch (SQLException e) {
             throw new DatabaseException("error creating query", e);
         }
@@ -173,7 +163,7 @@ public final class JDBCConnection implements AutoCloseable {
     /**
      * Create a new prepared {@link JDBCStatement} using the given sql statement.
      *
-     * @param sql the sql that will be executed when calling {@link JDBCStatement#execute()}
+     * @param sql the sql that will be executed when calling {@link JDBCStatement#select()}
      * @return a new {@link JDBCStatement} object
      * @see PreparedStatement
      */
@@ -184,63 +174,27 @@ public final class JDBCConnection implements AutoCloseable {
                 statement = interceptor.intercept(statement);
             }
             closeables.add(new WeakReference<>(statement));
-            List<AutoCloseable> closeables = closeOnExecute ? List.of(this, statement) : List.of(statement);
-            return new JDBCStatement<>(connection, statement, sql, closeables);
+            return new JDBCStatement<>(connection, statement, sql);
         } catch (SQLException e) {
             throw new DatabaseException("error creating query", e);
         }
     }
 
     /**
-     * Execute the sql, ignoring the results and returning just the row count.
-     * Alias for <code>query(sql).execute().count()</code>
-     *
-     * @see JDBCStatement#execute()
-     */
-    public long executeAndSink(String sql) {
-        return statement(sql).execute().count();
-    }
-
-    /**
      * Execute a count query, returning a long representing the number of rows counted.
      *
      * @param sql         the count query
-     * @param countColumn the count column name (for use with {@link Row#getNumber(String)})
+     * @param countColumn the count column name
      * @return the count
      */
     public long count(String sql, String countColumn) {
         return statement(sql)
-                .execute()
-                .map(Row.curry(countColumn, Row::getNumber))
+                .select()
+                .map(RowMapper.apply(rs -> (Number) rs.getObject(countColumn)))
                 .filter(Objects::nonNull)
                 .mapToLong(Number::longValue)
                 .findFirst()
                 .orElse(-1L);
-    }
-
-    /**
-     * Switch to reusable mode. The caller will be responsible for closing the returned object. Failure to close the
-     * returned object will result in connection/resource leaks.
-     *
-     * @return a reusable {@link JDBCConnection}
-     */
-    public JDBCConnection reusable() {
-        if (closeOnExecute) {
-            JDBCConnection jdbcConnection = new JDBCConnection(connection, false, interceptors);
-            jdbcConnection.closeables.addAll(closeables);
-            return jdbcConnection;
-        } else {
-            return this;
-        }
-    }
-
-    /**
-     * Determine if this object is in reusable mode.
-     *
-     * @return true if the connection will remain open after executing a statement
-     */
-    public boolean isReusable() {
-        return !closeOnExecute;
     }
 
     /**
@@ -274,8 +228,8 @@ public final class JDBCConnection implements AutoCloseable {
         closeables.stream()
                 .map(Reference::get)
                 .filter(Objects::nonNull)
-                .forEach(JDBCUtils::closeQuietly);
+                .forEach(JDBC::closeQuietly);
         closeables.clear();
-        JDBCUtils.closeQuietly(connection);
+        JDBC.closeQuietly(connection);
     }
 }

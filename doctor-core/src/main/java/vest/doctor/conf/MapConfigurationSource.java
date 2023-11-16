@@ -16,12 +16,12 @@ public record MapConfigurationSource(Map<String, String> map) implements Configu
     /**
      * Create a new map configuration source backed by the values from the {@link Properties}
      * object. The key-value pairs will be copied into an immutable map which will be used
-     * as the backing maps for the configuration source.
+     * as the backing map for the configuration source.
      *
      * @param properties the properties source
      * @return a new map configuration source
      */
-    public static MapConfigurationSource properties(Properties properties) {
+    public static ConfigurationSource properties(Properties properties) {
         Map<String, String> copy = new LinkedHashMap<>();
         properties.forEach((k, v) -> copy.put(String.valueOf(k), String.valueOf(v)));
         return new MapConfigurationSource(Collections.unmodifiableMap(copy));

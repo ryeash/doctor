@@ -20,5 +20,5 @@ public interface ExceptionHandler extends Prioritized {
      * @param error          the error from the handler
      * @return a {@link Response} to send to the client
      */
-    Response handle(RequestContext requestContext, Throwable error);
+    RequestContext handle(RequestContext requestContext, Throwable error);
 }

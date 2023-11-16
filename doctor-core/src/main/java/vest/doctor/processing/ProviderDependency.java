@@ -10,7 +10,7 @@ public interface ProviderDependency {
     /**
      * The type.
      */
-    TypeElement type();
+    TypeElement type(); // TODO switch to GenericInfo
 
     /**
      * The qualifier.

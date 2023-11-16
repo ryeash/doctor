@@ -25,7 +25,6 @@ import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
 import vest.doctor.processing.ProviderDefinition;
 import vest.doctor.processing.ProviderDefinitionListener;
-import vest.doctor.reactive.Rx;
 import vest.doctor.runtime.AnnotationDataImpl;
 import vest.doctor.runtime.AnnotationMetadataImpl;
 
@@ -43,7 +42,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Flow;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 public class HandlerWriter implements ProviderDefinitionListener {
@@ -104,9 +103,7 @@ public class HandlerWriter implements ProviderDefinitionListener {
                 .addImportClass(Response.class)
                 .addImportClass(Request.class)
                 .addImportClass(Handler.class)
-                .addImportClass(Rx.class)
-                .addImportClass(Flow.class)
-                .addImportClass(Flow.Publisher.class)
+                .addImportClass(CompletableFuture.class)
                 .addImplementsInterface(GeneratedHandler.class)
                 .addField("private ProviderRegistry providerRegistry")
                 .addField("private BodyInterchange bodyInterchange")
@@ -127,56 +124,51 @@ public class HandlerWriter implements ProviderDefinitionListener {
         }
 
         isValidMethod(context, executableElement);
-        MethodBuilder handlerBuilder = handler.newMethod("@Override public Flow.Publisher<Response> handle(final RequestContext " + REQUEST_CONTEXT_REF + ") throws Exception");
+        MethodBuilder handlerBuilder = handler.newMethod("@Override public CompletableFuture<RequestContext> handle(final RequestContext " + REQUEST_CONTEXT_REF + ") throws Exception");
         GenericInfo returnTypeInfo = new GenericInfo(executableElement, executableElement.getReturnType());
         String returnTypeInfoRef = "returnType_" + executableElement.getSimpleName() + context.nextId();
         handler.addField("private static final TypeInfo " + returnTypeInfoRef + " = ", returnTypeInfo.newTypeInfo(context));
 
-        boolean bodyIsPublisher = false;
         VariableElement bodyElement = bodyParameter(executableElement);
         TypeMirror bodyParam = bodyElement != null ? bodyElement.asType() : null;
         String bodyType;
+        String bodyTypeName;
         if (bodyParam != null) {
-            GenericInfo genericInfo = new GenericInfo(bodyParam);
-            bodyIsPublisher = ProcessorUtils.isCompatibleWith(context, genericInfo.type(), Flow.Publisher.class);
             bodyType = "bodyType_" + executableElement.getSimpleName() + context.nextId();
+            bodyTypeName = bodyParam.toString();
             handler.addField("private static final TypeInfo ", bodyType, "=", new GenericInfo(bodyElement).newTypeInfo(context));
         } else {
             bodyType = "null";
+            bodyTypeName = "Object";
         }
         String parameters = executableElement.getParameters().stream()
                 .map(p -> parameterWriting(context, handler, p, p))
                 .collect(Collectors.joining(",\n", "(", ")"));
         String callMethod = "provider.get()." + executableElement.getSimpleName() + parameters;
 
-        if (bodyIsPublisher) {
-            handlerBuilder.bindLine("""
-                    {{bodyParam}} {{bodyRefName}} = bodyInterchange.read(requestContext, {{bodyType}});
-                    {{returnType}} result = {{callMethod}};
-                    return bodyInterchange.write({{reqCtcRef}}, {{returnTypeInfoRef}}, result);
-                    """, Map.of(
-                    "bodyParam", bodyParam,
-                    "bodyRefName", BODY_REF_NAME,
-                    "bodyType", bodyType,
-                    "returnType", executableElement.getReturnType().toString(),
-                    "callMethod", callMethod,
-                    "reqCtcRef", REQUEST_CONTEXT_REF,
-                    "returnTypeInfoRef", returnTypeInfoRef));
-        } else {
-            handlerBuilder.bindLine("""
-                    return Rx.<{{bodyTypeString}}>from(bodyInterchange.read({{ctxRef}}, {{bodyType}}))
-                        .onNext(({{bodyRef}}, subscription, subscriber) -> {
-                            subscriber.onNext({{call}});
-                        })
-                        .mapPublisher(result -> bodyInterchange.write(requestContext, {{returnType}}, result));
-                    """, Map.of(
-                    "bodyTypeString", bodyParam != null ? bodyParam.toString() : "Object",
-                    "ctxRef", REQUEST_CONTEXT_REF,
-                    "bodyType", bodyType,
-                    "bodyRef", BODY_REF_NAME,
-                    "call", callMethod,
-                    "returnType", returnTypeInfoRef));
-        }
+        handler.addMethod("private Object doMethodCall(final " + bodyTypeName + " body, final RequestContext " + REQUEST_CONTEXT_REF + ")", b -> {
+            b.bindLine("""
+                            try{
+                            return {{callMethod}};
+                            }catch(Exception e){
+                            throw new RuntimeException(e);
+                            }
+                            """,
+                    Map.of("callMethod", callMethod));
+        });
+
+        handlerBuilder.bindLine("""
+                return CompletableFuture.<{{bodyParam}}>supplyAsync(() -> bodyInterchange.read(requestContext, {{bodyType}}), requestContext.pool())
+                    .thenApply({{bodyRefName}} -> doMethodCall({{bodyRefName}}, {{reqCtxRef}}))
+                    .thenCompose(result -> bodyInterchange.write({{reqCtxRef}}, {{returnTypeInfoRef}}, result));
+                """, Map.of(
+                "bodyParam", bodyTypeName,
+                "bodyRefName", BODY_REF_NAME,
+                "bodyType", bodyType,
+                "returnType", executableElement.getReturnType().toString(),
+                "callMethod", callMethod,
+                "reqCtxRef", REQUEST_CONTEXT_REF,
+                "returnTypeInfoRef", returnTypeInfoRef));
 
         context.addServiceImplementation(GeneratedHandler.class, className);
         handler.writeClass(context.filer());

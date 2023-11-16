@@ -1,6 +1,7 @@
 package vest.doctor.http.server;
 
 import io.netty.channel.ChannelHandlerContext;
+import vest.doctor.http.server.impl.RequestContextImpl;
 import vest.doctor.http.server.impl.Router;
 
 import java.util.Map;
@@ -10,7 +11,7 @@ import java.util.concurrent.ExecutorService;
 /**
  * HTTP request context. Container for the {@link Request} and {@link Response} for a single request.
  */
-public interface RequestContext {
+public sealed interface RequestContext permits RequestContextImpl {
 
     /**
      * Get the {@link Request}.
@@ -33,23 +34,6 @@ public interface RequestContext {
     ExecutorService pool();
 
     /**
-     * A "mapping" function that ignores the input and just returns the response object from this
-     * request. Useful when doing things like:
-     * <pre>
-     * Rx.from(ctx.request().body().ignored())
-     *   .map(ctx::response)
-     *   .observe(response -> response.status(HttpResponseStatus.NOT_FOUND).body(ResponseBody.empty()));
-     * </pre>
-     *
-     * @param ignored ignored always
-     * @return the {@link Response}
-     */
-    @SuppressWarnings("unused")
-    default Response response(Object ignored) {
-        return response();
-    }
-
-    /**
      * Set an attribute on this request context. Attributes are preserved for the lifetime of the
      * request.
      *
@@ -65,15 +49,6 @@ public interface RequestContext {
      * @return the attribute value, or null if not present
      */
     <T> T attribute(String name);
-
-    /**
-     * Get an attribute value, returning a default if not present
-     *
-     * @param name   the attribute name
-     * @param orElse the fallback value if the attribute is not present
-     * @return the attribute value
-     */
-    <T> T attributeOrElse(String name, T orElse);
 
     /**
      * Get the names of all attributes attached to this context.

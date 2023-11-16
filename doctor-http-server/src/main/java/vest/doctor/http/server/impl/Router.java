@@ -8,9 +8,6 @@ import vest.doctor.http.server.Handler;
 import vest.doctor.http.server.HttpServerConfiguration;
 import vest.doctor.http.server.Request;
 import vest.doctor.http.server.RequestContext;
-import vest.doctor.http.server.Response;
-import vest.doctor.http.server.ResponseBody;
-import vest.doctor.reactive.Rx;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
-import java.util.concurrent.Flow;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -73,9 +70,11 @@ public final class Router implements Handler {
      */
     public static final String MATCH_ALL_PATH_SPEC = "/*";
 
-    private static final Handler NOT_FOUND = ctx -> Rx.from(ctx.request().body().ignored())
-            .map(ctx::response)
-            .observe(response -> response.status(HttpResponseStatus.NOT_FOUND).body(ResponseBody.empty()));
+    private static final Handler NOT_FOUND = ctx -> {
+        ctx.request().body().release();
+        ctx.response().status(HttpResponseStatus.NOT_FOUND);
+        return CompletableFuture.completedFuture(ctx);
+    };
 
     /**
      * The ANY method. This method can be used to create a route that responds to any HTTP method.
@@ -161,7 +160,7 @@ public final class Router implements Handler {
     }
 
     @Override
-    public Flow.Publisher<Response> handle(RequestContext requestContext) throws Exception {
+    public CompletableFuture<RequestContext> handle(RequestContext requestContext) throws Exception {
         if (conf.isDebugRequestRouting()) {
             requestContext.attribute(DEBUG_START_ATTRIBUTE, System.nanoTime());
             Request request = requestContext.request();
@@ -171,7 +170,7 @@ public final class Router implements Handler {
         return doNextFilter(requestContext);
     }
 
-    private Flow.Publisher<Response> doNextFilter(RequestContext requestContext) throws Exception {
+    private CompletableFuture<RequestContext> doNextFilter(RequestContext requestContext) throws Exception {
         Iterator<FilterAndPath> iterator = requestContext.attribute(FILTER_ITERATOR);
         while (iterator.hasNext()) {
             FilterAndPath next = iterator.next();
@@ -181,12 +180,12 @@ public final class Router implements Handler {
             addTraceMessage(requestContext, next, pathParams != null);
             if (pathParams != null) {
                 requestContext.attribute(Router.PATH_PARAMS, pathParams);
-                return Rx.from(filter.filter(requestContext, this::doNextFilter));
+                return filter.filter(requestContext, this::doNextFilter);
             }
         }
         Handler handler = selectHandler(requestContext);
-        return Rx.from(handler.handle(requestContext))
-                .observe(response -> attachRouteDebugging(requestContext, response));
+        return handler.handle(requestContext)
+                .thenApply(this::attachRouteDebugging);
     }
 
     private Handler selectHandler(RequestContext requestContext) {
@@ -259,19 +258,19 @@ public final class Router implements Handler {
     void addTraceMessage(RequestContext requestContext, String routeMethod, Route route, boolean matched) {
         if (conf.isDebugRequestRouting()) {
             addTraceMessage(requestContext, "route " +
-                                            (matched ? "match" : "not-matched") + ' ' +
-                                            routeMethod + ' ' +
-                                            route.pathSpec() + ' ' +
-                                            route.handler());
+                    (matched ? "match" : "not-matched") + ' ' +
+                    routeMethod + ' ' +
+                    route.pathSpec() + ' ' +
+                    route.handler());
         }
     }
 
     void addTraceMessage(RequestContext requestContext, FilterAndPath filter, boolean matched) {
         if (conf.isDebugRequestRouting()) {
             addTraceMessage(requestContext, "filter " +
-                                            (matched ? "match" : "not-matched") + ' ' +
-                                            filter.pathSpec() + ' ' +
-                                            filter.filter());
+                    (matched ? "match" : "not-matched") + ' ' +
+                    filter.pathSpec() + ' ' +
+                    filter.filter());
         }
     }
 
@@ -288,14 +287,14 @@ public final class Router implements Handler {
         trace.add(dur + " " + info);
     }
 
-    void attachRouteDebugging(RequestContext requestContext, Response response) {
-        if (!conf.isDebugRequestRouting()) {
-            return;
+    RequestContext attachRouteDebugging(RequestContext requestContext) {
+        if (conf.isDebugRequestRouting()) {
+            List<String> tracing = requestContext.attribute(DEBUG_ROUTING_ATTRIBUTE);
+            for (int i = 0; i < tracing.size(); i++) {
+                requestContext.response().header("X-RouteTracing-" + i, tracing.get(i));
+            }
         }
-        List<String> tracing = requestContext.attribute(DEBUG_ROUTING_ATTRIBUTE);
-        for (int i = 0; i < tracing.size(); i++) {
-            response.header("X-RouteTracing-" + i, tracing.get(i));
-        }
+        return requestContext;
     }
 
     record Route(PathSpec pathSpec, Handler handler) {

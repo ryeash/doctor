@@ -2,7 +2,11 @@ package vest.doctor.jdbc;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -11,8 +15,16 @@ import java.util.function.Function;
  * Wraps a {@link DataSource} and acts as the entry point for the fluent JDBC API.
  */
 public final class JDBC {
+    static final List<Class<?>> DISALLOWED_RETURN_TYPES = List.of(
+            JDBCStatement.class,
+            JDBCConnection.class,
+            Connection.class,
+            Statement.class,
+            ResultSet.class,
+            ResultSetMetaData.class);
+
     private final DataSource dataSource;
-    private final List<JDBCInterceptor> interceptors;
+    final List<JDBCInterceptor> interceptors;
 
     /**
      * Create a new JDBC object backed by the given {@link DataSource}
@@ -57,7 +69,7 @@ public final class JDBC {
             for (JDBCInterceptor interceptor : interceptors) {
                 connection = interceptor.intercept(connection);
             }
-            return new JDBCConnection(connection, true, interceptors);
+            return new JDBCConnection(connection, interceptors);
         } catch (SQLException e) {
             throw new DatabaseException("error acquiring connection from data source: " + dataSource, e);
         }
@@ -69,8 +81,8 @@ public final class JDBC {
      *
      * @param action the action to execute with the allocated connection
      */
-    public void withConnection(Consumer<JDBCConnection> action) {
-        try (JDBCConnection c = connection().reusable()) {
+    public void connection(Consumer<JDBCConnection> action) {
+        try (JDBCConnection c = connection()) {
             action.accept(c);
         }
     }
@@ -83,9 +95,9 @@ public final class JDBC {
      * @param <R>      the return value of the function
      * @return the result of applying the function
      */
-    public <R> R withConnection(Function<JDBCConnection, R> function) {
-        try (JDBCConnection c = connection().reusable()) {
-            return JDBCUtils.allowedFunctionReturn(function.apply(c));
+    public <R> R connection(Function<JDBCConnection, R> function) {
+        try (JDBCConnection c = connection()) {
+            return JDBC.allowedFunctionReturn(function.apply(c));
         }
     }
 
@@ -94,10 +106,13 @@ public final class JDBC {
      * automatically applying commit/rollback on the connection after the action completes.
      *
      * @param action the action to execute with the allocated connection in a transaction
-     * @see #inTransaction(Function)
+     * @see #transaction(Function)
      */
-    public void inTransaction(Consumer<JDBCConnection> action) {
-        inTransaction(new JDBCUtils.ConsumerFunction<>(action));
+    public void transaction(Consumer<JDBCConnection> action) {
+        try (Transaction tx = transaction()) {
+            action.accept(tx.connection());
+            tx.commit();
+        }
     }
 
     /**
@@ -113,17 +128,11 @@ public final class JDBC {
      * @param <R>      the return value of the function
      * @return the result of applying the function
      */
-    public <R> R inTransaction(Function<JDBCConnection, R> function) {
-        JDBCConnection connection = connection().reusable();
-        try {
-            R value = JDBCUtils.allowedFunctionReturn(function.apply(connection));
-            connection.commit();
+    public <R> R transaction(Function<JDBCConnection, R> function) {
+        try (Transaction tx = transaction()) {
+            R value = JDBC.allowedFunctionReturn(function.apply(tx.connection()));
+            tx.commit();
             return value;
-        } catch (Throwable t) {
-            JDBCUtils.closeQuietly(connection::rollback);
-            throw new DatabaseException(t);
-        } finally {
-            JDBCUtils.closeQuietly(connection);
         }
     }
 
@@ -134,5 +143,28 @@ public final class JDBC {
      */
     public Transaction transaction() {
         return new Transaction(this);
+    }
+
+    static <T> T allowedFunctionReturn(T o) {
+        for (Class<?> disallowedReturnType : DISALLOWED_RETURN_TYPES) {
+            if (disallowedReturnType.isInstance(o)) {
+                throw new IllegalArgumentException(o.getClass().getCanonicalName() + " may not be be returned from jdbc functions; these types are disallowed: " + DISALLOWED_RETURN_TYPES);
+            }
+        }
+        return o;
+    }
+
+    static void closeQuietly(AutoCloseable... closeables) {
+        closeQuietly(Arrays.asList(closeables));
+    }
+
+    static void closeQuietly(List<AutoCloseable> closeables) {
+        for (AutoCloseable closeable : closeables) {
+            try {
+                closeable.close();
+            } catch (Throwable t) {
+                // ignored
+            }
+        }
     }
 }

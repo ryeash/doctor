@@ -12,7 +12,6 @@ import vest.doctor.http.server.HttpMethod.GET;
 import vest.doctor.http.server.HttpMethod.OPTIONS;
 import vest.doctor.http.server.HttpMethod.POST;
 import vest.doctor.http.server.HttpMethod.PUT;
-import vest.doctor.http.server.MultiPartData;
 import vest.doctor.http.server.Param.Attribute;
 import vest.doctor.http.server.Param.Bean;
 import vest.doctor.http.server.Param.Body;
@@ -26,13 +25,11 @@ import vest.doctor.http.server.Request;
 import vest.doctor.http.server.RequestContext;
 import vest.doctor.http.server.Response;
 import vest.doctor.http.server.ResponseBody;
-import vest.doctor.reactive.Rx;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Flow;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
@@ -87,9 +84,8 @@ public class ReactorEndpoint {
 
     @PUT
     @Endpoint("/echo")
-    public Flow.Publisher<ByteBuf> echo(@Body Flow.Publisher<ByteBuf> dataStream) {
-        return Rx.from(dataStream)
-                .map(ByteBuf::retain);
+    public CompletableFuture<ByteBuf> echo(@Body ByteBuf dataStream) {
+        return CompletableFuture.completedFuture(dataStream.retain());
     }
 
     @DELETE
@@ -101,9 +97,9 @@ public class ReactorEndpoint {
 
     @DELETE
     @Endpoint("/responseobjectpub")
-    public Flow.Publisher<Response> responseObjectPub(@Context Response response) {
-        return Rx.one(response)
-                .map(r -> r.header("X-RouteHeader", "true")
+    public CompletableFuture<Response> responseObjectPub(@Context Response response) {
+        return CompletableFuture.supplyAsync(() -> response, ForkJoinPool.commonPool())
+                .thenApply(r -> r.header("X-RouteHeader", "true")
                         .body(ResponseBody.of("responseObjectPub")));
     }
 
@@ -121,8 +117,9 @@ public class ReactorEndpoint {
 
     @POST
     @Endpoint("/multipart")
-    public Flow.Publisher<String> multipart(@Body Flow.Publisher<MultiPartData.Part> form) {
-        return Rx.from(form)
+    public String multipart(@Body Request form) {
+        return form.multiPartBody()
+                .stream()
                 .map(data -> {
                     try {
                         return data.data().toString(StandardCharsets.UTF_8);
@@ -142,8 +139,8 @@ public class ReactorEndpoint {
 
     @OPTIONS
     @Endpoint("/asyncError")
-    public Flow.Publisher<String> asyncError() {
-        return Rx.error(new IOException("error"));
+    public CompletableFuture<String> asyncError() {
+        return CompletableFuture.failedFuture(new IOException("error"));
     }
 
     @OPTIONS
