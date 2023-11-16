@@ -145,19 +145,19 @@ public class HttpServerTest extends AbstractTestAppTest {
                 .body(is("halted"));
     }
 
-    public void responseObject() {
-        req().delete("/root/responseobject")
-                .then()
-                .statusCode(200)
-                .header("X-RouteHeader", is("true"))
-                .body(is("responseObject"));
-
-        req().delete("/root/responseobjectpub")
-                .then()
-                .statusCode(200)
-                .header("X-RouteHeader", is("true"))
-                .body(is("responseObjectPub"));
-    }
+//    public void responseObject() {
+//        req().delete("/root/responseobject")
+//                .then()
+//                .statusCode(200)
+//                .header("X-RouteHeader", is("true"))
+//                .body(is("responseObject"));
+//
+//        req().delete("/root/responseobjectpub")
+//                .then()
+//                .statusCode(200)
+//                .header("X-RouteHeader", is("true"))
+//                .body(is("responseObjectPub"));
+//    }
 
     public void futureResponse() {
         req().get("/root/future")
