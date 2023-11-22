@@ -117,7 +117,7 @@ public class ReactorEndpoint {
 
     @POST
     @Endpoint("/multipart")
-    public String multipart(@Body Request form) {
+    public String multipart(@Context Request form) {
         return form.multiPartBody()
                 .stream()
                 .map(data -> {

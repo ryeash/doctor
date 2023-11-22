@@ -37,7 +37,7 @@ public class ServerRequest implements Request {
     private Map<String, Cookie> cookies;
 
     public ServerRequest(FullHttpRequest request) {
-        this.request = request;
+        this.request = request.retain();
         this.uri = URI.create(request.uri());
         this.path = uri.getRawPath();
         this.queryStringDecoder = new QueryStringDecoder(request.uri());

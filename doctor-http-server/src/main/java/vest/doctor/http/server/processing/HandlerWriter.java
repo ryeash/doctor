@@ -146,25 +146,25 @@ public class HandlerWriter implements ProviderDefinitionListener {
                 .collect(Collectors.joining(",\n", "(", ")"));
         String callMethod = "provider.get()." + executableElement.getSimpleName() + parameters;
 
-        handler.addMethod("private Object doMethodCall(final " + bodyTypeName + " body, final RequestContext " + REQUEST_CONTEXT_REF + ")", b -> {
-            b.bindLine("""
-                            try{
-                            return {{callMethod}};
-                            }catch(Exception e){
-                            throw new RuntimeException(e);
-                            }
-                            """,
-                    Map.of("callMethod", callMethod));
-        });
+        String chainMethod = ProcessorUtils.isCompatibleWith(context, returnTypeInfo.type(), CompletableFuture.class)
+                ? "thenCompose"
+                : "thenApply";
 
         handlerBuilder.bindLine("""
                 return CompletableFuture.<{{bodyParam}}>supplyAsync(() -> bodyInterchange.read(requestContext, {{bodyType}}), requestContext.pool())
-                    .thenApply({{bodyRefName}} -> doMethodCall({{bodyRefName}}, {{reqCtxRef}}))
+                    .{{chainMethod}}({{bodyRefName}} -> {
+                        try{
+                            return {{callMethod}};
+                        }catch(Exception e){
+                            throw new RuntimeException(e);
+                        }
+                    })
                     .thenCompose(result -> bodyInterchange.write({{reqCtxRef}}, {{returnTypeInfoRef}}, result));
                 """, Map.of(
                 "bodyParam", bodyTypeName,
                 "bodyRefName", BODY_REF_NAME,
                 "bodyType", bodyType,
+                "chainMethod", chainMethod,
                 "returnType", executableElement.getReturnType().toString(),
                 "callMethod", callMethod,
                 "reqCtxRef", REQUEST_CONTEXT_REF,

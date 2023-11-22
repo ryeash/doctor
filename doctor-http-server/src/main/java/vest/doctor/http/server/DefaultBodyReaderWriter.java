@@ -5,6 +5,7 @@ import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.DefaultLastHttpContent;
+import vest.doctor.Prioritized;
 import vest.doctor.TypeInfo;
 
 import java.io.IOException;
@@ -60,25 +61,23 @@ public class DefaultBodyReaderWriter implements BodyReader, BodyWriter {
         }
 
         // things that just get converted to response bodies
-        if (responseData == null) {
-            requestContext.response().body(ResponseBody.empty());
-        } else if (responseData instanceof ByteBuf buf) {
-            requestContext.response().body(ResponseBody.of(buf));
-        } else if (responseData instanceof byte[] bytes) {
-            requestContext.response().body(ResponseBody.of(bytes));
-        } else if (responseData instanceof ByteBuffer buf) {
-            requestContext.response().body(ResponseBody.of(Unpooled.wrappedBuffer(buf)));
-        } else if (responseData instanceof String str) {
-            requestContext.response().body(ResponseBody.of(str));
-        } else if (responseData instanceof InputStream is) {
-            requestContext.response().body(ResponseBody.of(new DefaultLastHttpContent(toBuf(is))));
+        switch (responseData) {
+            case null -> requestContext.response().body(ResponseBody.empty());
+            case ByteBuf buf -> requestContext.response().body(ResponseBody.of(buf));
+            case byte[] bytes -> requestContext.response().body(ResponseBody.of(bytes));
+            case ByteBuffer buf -> requestContext.response().body(ResponseBody.of(Unpooled.wrappedBuffer(buf)));
+            case String str -> requestContext.response().body(ResponseBody.of(str));
+            case InputStream is ->
+                    requestContext.response().body(ResponseBody.of(new DefaultLastHttpContent(toBuf(is))));
+            default -> {
+            }
         }
         return CompletableFuture.completedFuture(requestContext);
     }
 
     @Override
     public int priority() {
-        return 1_000_000;
+        return Prioritized.LOWEST_PRIORITY;
     }
 
     public ByteBuf toBuf(InputStream is) {
