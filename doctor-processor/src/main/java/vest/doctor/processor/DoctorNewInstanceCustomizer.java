@@ -123,7 +123,7 @@ public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
         Scheduled scheduled = scheduledMethod.getAnnotation(Scheduled.class);
         method.addImportClass(CronTaskWrapper.class)
                 .bindLine("""
-                                CronTaskWrapper.run(providerRegistry, {{instance}}, new {{Cron}}({{schedule}}), {{executionLimit}}L, ses, (provRegistry, val) -> {
+                                CronTaskWrapper.run(providerRegistry, {{instance}}, new {{Cron}}({{schedule}}, {{timezone}}), {{executionLimit}}L, ses, (provRegistry, val) -> {
                                 try {
                                     {{call}};
                                 } catch(Throwable t) {
@@ -134,6 +134,7 @@ public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
                         Map.of(
                                 "instance", instanceRef,
                                 "schedule", "providerRegistry.resolvePlaceholders(" + ProcessorUtils.escapeAndQuoteStringForCode(scheduled.cron()) + ")",
+                                "timezone", "providerRegistry.resolvePlaceholders(" + ProcessorUtils.escapeAndQuoteStringForCode(scheduled.timezone()) + ")",
                                 "executionLimit", String.valueOf(scheduled.executionLimit()),
                                 "Cron", Cron.class.getCanonicalName(),
                                 "call", context.executableCall(providerDefinition, scheduledMethod, instanceRef, providerRegistryRef),

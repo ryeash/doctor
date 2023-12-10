@@ -2,6 +2,7 @@ package vest.doctor;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.function.BiPredicate;
@@ -15,6 +16,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Documented
 @Retention(RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
+@Repeatable(Activation.Activations.class)
 public @interface Activation {
 
     /**
@@ -25,4 +27,11 @@ public @interface Activation {
      * @return the activation predicates
      */
     Class<? extends BiPredicate<ProviderRegistry, DoctorProvider<?>>>[] value();
+
+    @Documented
+    @Retention(RUNTIME)
+    @Target({ElementType.TYPE, ElementType.METHOD})
+    @interface Activations {
+        Activation[] value();
+    }
 }

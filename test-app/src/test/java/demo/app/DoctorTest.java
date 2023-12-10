@@ -343,6 +343,9 @@ public class DoctorTest extends AbstractTestAppTest {
     @Test
     public void activation() {
         assertTrue(providerRegistry().getProviderOpt(TCActivation.class).isPresent());
+
+        assertFalse(providerRegistry().getProviderOpt(TCPropActivationA.class).isPresent());
+        assertTrue(providerRegistry().getProviderOpt(TCPropActivationB.class).isPresent());
     }
 
     @Test

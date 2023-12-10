@@ -14,7 +14,7 @@ abstract class InstanceTrackingDoctorProvider<T> extends DoctorProviderWrapper<T
 
     protected final WeakList<T> weakList = new WeakList<>(this::destroyUnchecked);
 
-    public InstanceTrackingDoctorProvider(DoctorProvider<T> delegate) {
+    protected InstanceTrackingDoctorProvider(DoctorProvider<T> delegate) {
         super(delegate);
     }
 

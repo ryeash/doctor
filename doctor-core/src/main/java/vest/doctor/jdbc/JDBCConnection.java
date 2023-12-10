@@ -14,10 +14,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /**
- * Wrapper around {@link Connection} objects. This class operates in one of
- * two modes: in one-shot mode, the connection will be closed after first execution and consumption of the
- * result stream, in reusable mode the connection will remain open, and it's the users' responsibility to close the
- * object.
+ * Wrapper around {@link Connection} objects.
  */
 @SuppressWarnings("resource")
 public final class JDBCConnection implements AutoCloseable {
@@ -66,7 +63,7 @@ public final class JDBCConnection implements AutoCloseable {
     }
 
     /**
-     * Alias for <code>preparedQuery(sql).bindAll(parameters).execute()</code>.
+     * Alias for <code>prepare(sql).bindAll(parameters).execute()</code>.
      *
      * @param sql        the selective sql
      * @param parameters the binding parameters
@@ -74,110 +71,6 @@ public final class JDBCConnection implements AutoCloseable {
      */
     public Stream<ResultSet> select(String sql, List<Object> parameters) {
         return prepare(sql).bindAll(parameters).select();
-    }
-
-    /**
-     * Execute an SQL INSERT statement and return the number of rows changed.
-     *
-     * @param sql the inserting sql statement
-     * @return the number of changed rows
-     */
-    public long insert(String sql) {
-        return update(sql);
-    }
-
-    /**
-     * Execute an SQL INSERT prepared statement and return the number of rows changed.
-     *
-     * @param sql        the inserting sql statement
-     * @param parameters the binding parameters
-     * @return the number of rows changed
-     */
-    public long insert(String sql, List<Object> parameters) {
-        return update(sql, parameters);
-    }
-
-    /**
-     * Execute an SQL DELETE statement and return the number of rows changed.
-     *
-     * @param sql the deleting sql statement
-     * @return the number of changed rows
-     */
-    public long delete(String sql) {
-        return update(sql);
-    }
-
-    /**
-     * Execute an SQL DELETE prepared statement and return the number of rows changed.
-     *
-     * @param sql        the deleting sql statement
-     * @param parameters the binding parameters
-     * @return the number of rows changed
-     */
-    public long delete(String sql, List<Object> parameters) {
-        return update(sql, parameters);
-    }
-
-    /**
-     * Execute an SQL UPDATE statement and return the number of rows changed.
-     *
-     * @param sql the updating sql statement
-     * @return the number of rows changed
-     */
-    public long update(String sql) {
-        return statement(sql).update();
-    }
-
-    /**
-     * Execute an SQL UPDATE prepared statement and return the number of rows changed.
-     *
-     * @param sql        the updating sql statement
-     * @param parameters the binding parameter
-     * @return the number of rows changed
-     * @see JDBCStatement#bindAll(List)
-     */
-    public long update(String sql, List<Object> parameters) {
-        return prepare(sql).bindAll(parameters).update();
-    }
-
-    /**
-     * Create a new {@link JDBCStatement} using the given sql statement.
-     *
-     * @param sql the sql that will be executed when calling {@link JDBCStatement#select()}
-     * @return a new {@link JDBCStatement} object
-     * @see Statement
-     */
-    public JDBCStatement<Statement> statement(String sql) {
-        try {
-            Statement statement = connection.createStatement();
-            for (JDBCInterceptor interceptor : interceptors) {
-                statement = interceptor.intercept(statement);
-            }
-            closeables.add(new WeakReference<>(statement));
-            return new JDBCStatement<>(connection, statement, sql);
-        } catch (SQLException e) {
-            throw new DatabaseException("error creating query", e);
-        }
-    }
-
-    /**
-     * Create a new prepared {@link JDBCStatement} using the given sql statement.
-     *
-     * @param sql the sql that will be executed when calling {@link JDBCStatement#select()}
-     * @return a new {@link JDBCStatement} object
-     * @see PreparedStatement
-     */
-    public JDBCStatement<PreparedStatement> prepare(String sql) {
-        try {
-            PreparedStatement statement = connection.prepareStatement(sql);
-            for (JDBCInterceptor interceptor : interceptors) {
-                statement = interceptor.intercept(statement);
-            }
-            closeables.add(new WeakReference<>(statement));
-            return new JDBCStatement<>(connection, statement, sql);
-        } catch (SQLException e) {
-            throw new DatabaseException("error creating query", e);
-        }
     }
 
     /**
@@ -195,6 +88,48 @@ public final class JDBCConnection implements AutoCloseable {
                 .mapToLong(Number::longValue)
                 .findFirst()
                 .orElse(-1L);
+    }
+
+    /**
+     * Create a new {@link JDBCStatement} using the given sql statement.
+     *
+     * @param sql the sql that will be executed when calling {@link JDBCStatement#select()}
+     * @return a new {@link JDBCStatement} object
+     * @see Statement
+     * @see Connection#createStatement() 
+     */
+    public JDBCStatement statement(String sql) {
+        try {
+            Statement statement = connection.createStatement();
+            for (JDBCInterceptor interceptor : interceptors) {
+                statement = interceptor.intercept(statement);
+            }
+            closeables.add(new WeakReference<>(statement));
+            return new JDBCStatement(connection, statement, sql);
+        } catch (SQLException e) {
+            throw new DatabaseException("error creating query", e);
+        }
+    }
+
+    /**
+     * Create a new prepared {@link JDBCStatement} using the given sql statement.
+     *
+     * @param sql the sql that will be executed when calling {@link JDBCStatement#select()}
+     * @return a new {@link JDBCStatement} object
+     * @see PreparedStatement
+     * @see Connection#prepareStatement(String)
+     */
+    public JDBCStatement prepare(String sql) {
+        try {
+            PreparedStatement statement = connection.prepareStatement(sql);
+            for (JDBCInterceptor interceptor : interceptors) {
+                statement = interceptor.intercept(statement);
+            }
+            closeables.add(new WeakReference<>(statement));
+            return new JDBCStatement(connection, statement, sql);
+        } catch (SQLException e) {
+            throw new DatabaseException("error creating query", e);
+        }
     }
 
     /**

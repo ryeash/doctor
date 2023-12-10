@@ -7,9 +7,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -37,20 +35,26 @@ public class JDBCTest extends Assert {
                 new TestCustomization()));
 
         jdbc.transaction(c -> {
-            c.update("CREATE TABLE USERS (" +
-                    "ID INT NOT NULL, " +
-                    "NAME VARCHAR(256), " +
-                    "PASSWORD VARCHAR(256), " +
-                    "PRIMARY KEY(ID))");
-            c.update("CREATE TABLE PROPERTIES (" +
-                    "USER_ID INT NOT NULL, " +
-                    "NAME VARCHAR(256)," +
-                    "DATA VARCHAR(2048), " +
-                    "PRIMARY KEY(USER_ID, NAME))");
+            c.statement("""
+                            CREATE TABLE USERS (
+                            ID INT NOT NULL,
+                            NAME VARCHAR(256),
+                            PASSWORD VARCHAR(256),
+                            PRIMARY KEY(ID))
+                            """)
+                    .update();
+            c.statement("""
+                            CREATE TABLE PROPERTIES (
+                            USER_ID INT NOT NULL,
+                            NAME VARCHAR(256),
+                            DATA VARCHAR(2048),
+                            PRIMARY KEY(USER_ID, NAME))
+                            """)
+                    .update();
         });
 
         jdbc.transaction(c -> {
-            JDBCStatement<PreparedStatement> insertUser = c.configure(conn -> {
+            JDBCStatement insertUser = c.configure(conn -> {
                         try {
                             conn.setAutoCommit(false);
                             conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
@@ -67,7 +71,7 @@ public class JDBCTest extends Assert {
 
         try (Transaction tx = jdbc.transaction()) {
             JDBCConnection c = tx.connection();
-            JDBCStatement<PreparedStatement> insertProperty = c.prepare("insert into properties values (?, ?, ?)");
+            JDBCStatement insertProperty = c.prepare("insert into properties values (?, ?, ?)");
             for (int i = 0; i < 50; i++) {
                 insertProperty.bindAll(List.of(i, "defer", ThreadLocalRandom.current().nextBoolean() + ""))
                         .addBatch()
@@ -110,12 +114,12 @@ public class JDBCTest extends Assert {
         assertFalse(rows.isEmpty());
     }
 
-    public void insertMechanisms() throws SQLException {
+    public void insertMechanisms() {
         int count = i.decrementAndGet();
         try (Transaction tx = jdbc.transaction()) {
-            tx.connection().insert("insert into users values (?, ?, ?)", List.of(count, "thing" + count, "pa$$"));
-            tx.connection().insert("insert into properties values (?, ?, ?)", List.of(count, "bats", "numerous"));
-            tx.connection().insert("insert into properties values (" + count + ", 'cats', 'none')");
+            tx.connection().prepare("insert into users values (?, ?, ?)").bindAll(List.of(count, "thing" + count, "pa$$")).update();
+            tx.connection().prepare("insert into properties values (?, ?, ?)").bindAll(List.of(count, "bats", "numerous")).update();
+            tx.connection().statement("insert into properties values (" + count + ", 'cats', 'none')").update();
             tx.commit();
         }
         try (JDBCConnection c = jdbc.connection()) {
@@ -131,11 +135,11 @@ public class JDBCTest extends Assert {
             assertEquals(cats, "none");
 
         }
-        jdbc. transaction(c -> {
+        jdbc.transaction(c -> {
             assertEquals(c.prepare("delete from properties where user_id = ?")
                     .bindAll(List.of(count))
                     .update(), 2);
-            assertEquals(  c.prepare("delete from users where id = ?")
+            assertEquals(c.prepare("delete from users where id = ?")
                     .bindAll(List.of(count))
                     .update(), 1);
         });
@@ -151,8 +155,9 @@ public class JDBCTest extends Assert {
     public void errorHandling() {
         assertThrows(() -> {
             try (Transaction tx = jdbc.transaction()) {
-                tx.connection().insert("insert into users values (?, ?, ?)", List.of(-13, "thirteen", "pa$$"));
-                tx.connection().insert("insert into users values (?, ?, ?)", List.of(-13, "thirteen1", "pa$$"));
+                JDBCStatement prepare = tx.connection().prepare("insert into users values (?, ?, ?)");
+                prepare.bindAll(List.of(-13, "thirteen", "pa$$")).update();
+                prepare.bindAll(List.of(-13, "thirteen1", "pa$$")).update();
                 tx.commit();
             }
         });

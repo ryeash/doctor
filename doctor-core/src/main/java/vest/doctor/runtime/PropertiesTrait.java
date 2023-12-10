@@ -15,7 +15,7 @@ import java.util.function.Supplier;
  * A properties/configuration trait that provides caching and reloading of processed property values.
  */
 public abstract class PropertiesTrait {
-    private static final String NO_VALUE = "<<novalue>>";
+    private static final String NO_VALUE = "<<noval>>";
     protected final ProviderRegistry providerRegistry;
     protected final ConcurrentSkipListMap<String, Object> propertiesCache;
 

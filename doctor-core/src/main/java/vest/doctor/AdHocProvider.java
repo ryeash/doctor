@@ -4,7 +4,6 @@ import jakarta.inject.Singleton;
 
 import java.lang.annotation.Annotation;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -13,14 +12,6 @@ import java.util.List;
  * @param <T> the provided type
  */
 public final class AdHocProvider<T> implements DoctorProvider<T> {
-
-    @SuppressWarnings("unchecked")
-    public static <T> AdHocProvider<T> createPrimary(T instance, Class<?>... additionalTypes) {
-        List<Class<?>> allTypes = new LinkedList<>();
-        allTypes.add(instance.getClass());
-        Collections.addAll(allTypes, additionalTypes);
-        return new AdHocProvider<>((Class<T>) instance.getClass(), instance, null, allTypes);
-    }
 
     private final Class<T> type;
     private final TypeInfo typeInfo;
@@ -31,10 +22,6 @@ public final class AdHocProvider<T> implements DoctorProvider<T> {
 
     public AdHocProvider(Class<T> type, T t, String qualifier) {
         this(type, t, qualifier, Collections.singletonList(type));
-    }
-
-    public AdHocProvider(Class<T> type, T t, String qualifier, AutoCloseable close) {
-        this(type, t, qualifier, Collections.singletonList(type), close);
     }
 
     public AdHocProvider(Class<T> type, T t, String qualifier, List<Class<?>> allProvidedTypes) {

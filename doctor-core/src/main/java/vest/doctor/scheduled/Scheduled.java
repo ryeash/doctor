@@ -7,6 +7,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.time.ZoneId;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -40,6 +41,13 @@ public @interface Scheduled {
      * The cron schedule. See {@link Cron} for details on the format.
      */
     String cron() default "";
+
+    /**
+     * The timezone to use when evaluating the fire times for {@link #cron}.
+     *
+     * @see ZoneId
+     */
+    String timezone() default "UTC";
 
     /**
      * The schedule type. Only applies when using {@link #interval()}.

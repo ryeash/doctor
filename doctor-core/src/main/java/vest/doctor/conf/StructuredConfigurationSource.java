@@ -23,7 +23,7 @@ import static java.io.StreamTokenizer.TT_EOL;
  * <p>
  * Structured properties files allow for organizing/name-spacing properties in a less dense, easier to read manner.
  * <p>
- * Definition:
+ * Definition:<br/><br/>
  * Nesting is defined by '{' and '}':
  * <code>
  * <pre>
@@ -52,7 +52,7 @@ import static java.io.StreamTokenizer.TT_EOL;
  * ';' : can be used to signify the end of a line (though it is not necessary)
  * '#' : comments
  * </pre>
- * Quoted strings using either ' or " can be used to escape reserved characters
+ * Quoted strings using either single (') or double (") quotes can be used to escape reserved characters
  * e.g. <pre>name = "value contains { } = and ;"</pre>
  * Quotes are necessary when interpolating values, i.e. values like: <literal>http://${referenced.property}/</literal>
  */

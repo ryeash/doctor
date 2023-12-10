@@ -20,7 +20,7 @@ import java.util.stream.Stream;
  * Example:
  * java -jar app.jar -Fg --debug -e "dev"
  * F, g, and debug would all be flags (i.e. {@link #flag(String)} would return true)
- * e is an option (i.e. {@link #option(String)} would return "dev" for "e")
+ * e is an option (i.e. <code>args.option("e") => "dev"</code>)
  */
 public final class Args implements Iterable<String> {
 

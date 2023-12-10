@@ -23,6 +23,16 @@ public interface JDBCInterceptor {
     }
 
     /**
+     * Intercept and initialize the {@link Transaction}.
+     *
+     * @param transaction the transaction to initialize
+     * @throws SQLException on any error operating on the connection
+     */
+    default void intercept(Transaction transaction) throws SQLException {
+        // no-op
+    }
+
+    /**
      * Intercept a newly created {@link Statement} from a {@link Connection}.
      *
      * @param statement the statement to configure

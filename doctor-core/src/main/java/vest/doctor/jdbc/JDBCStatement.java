@@ -9,21 +9,27 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 /**
  * Wrapper around a {@link Statement} to add a fluent API.
- *
- * @param <S> the statement type
  */
-public final class JDBCStatement<S extends Statement> implements AutoCloseable {
+public final class JDBCStatement implements AutoCloseable {
+    private static final Predicate<ResultSet> RS_HAS_NEXT = rs -> {
+        try {
+            return rs.next();
+        } catch (SQLException e) {
+            throw new DatabaseException(e);
+        }
+    };
+
     private final Connection connection;
-    private final S statement;
+    private final Statement statement;
     private final String sql;
 
-    JDBCStatement(Connection connection, S statement, String sql) {
+    JDBCStatement(Connection connection, Statement statement, String sql) {
         this.connection = Objects.requireNonNull(connection);
         this.statement = Objects.requireNonNull(statement);
         this.sql = Objects.requireNonNull(sql);
@@ -41,7 +47,7 @@ public final class JDBCStatement<S extends Statement> implements AutoCloseable {
      *
      * @return the statement object that this class wraps
      */
-    public S unwrap() {
+    public Statement unwrap() {
         return statement;
     }
 
@@ -53,7 +59,7 @@ public final class JDBCStatement<S extends Statement> implements AutoCloseable {
      * @see Statement#setFetchSize(int)
      * @see Statement#setMaxRows(int)
      */
-    public JDBCStatement<S> configure(Consumer<S> configuration) {
+    public JDBCStatement configure(Consumer<Statement> configuration) {
         try {
             configuration.accept(this.statement);
         } catch (Exception e) {
@@ -65,7 +71,7 @@ public final class JDBCStatement<S extends Statement> implements AutoCloseable {
     /**
      * @see Statement#addBatch(String)
      */
-    public JDBCStatement<S> addBatch(String sql) {
+    public JDBCStatement addBatch(String sql) {
         try {
             statement.addBatch(sql);
             return this;
@@ -95,7 +101,7 @@ public final class JDBCStatement<S extends Statement> implements AutoCloseable {
      * @return this object
      * @see PreparedStatement#setObject(int, Object)
      */
-    public JDBCStatement<S> bind(int i, Object value) {
+    public JDBCStatement bind(int i, Object value) {
         if (statement instanceof PreparedStatement prepared) {
             try {
                 prepared.setObject(i, value);
@@ -118,7 +124,7 @@ public final class JDBCStatement<S extends Statement> implements AutoCloseable {
      * @see #bind(int, Object, int)
      * @see JDBCType#getVendorTypeNumber()
      */
-    public JDBCStatement<S> bind(int i, Object value, JDBCType type) {
+    public JDBCStatement bind(int i, Object value, JDBCType type) {
         return bind(i, value, type.getVendorTypeNumber());
     }
 
@@ -131,7 +137,7 @@ public final class JDBCStatement<S extends Statement> implements AutoCloseable {
      * @return this object
      * @see java.sql.Types
      */
-    public JDBCStatement<S> bind(int i, Object value, int type) {
+    public JDBCStatement bind(int i, Object value, int type) {
         if (statement instanceof PreparedStatement prepared) {
             try {
                 prepared.setObject(i, value, type);
@@ -150,10 +156,9 @@ public final class JDBCStatement<S extends Statement> implements AutoCloseable {
      * @param allArgs the values to set
      * @return this object
      */
-    public JDBCStatement<S> bindAll(List<Object> allArgs) {
-        int i = 1;
-        for (Object arg : allArgs) {
-            bind(i++, arg);
+    public JDBCStatement bindAll(List<Object> allArgs) {
+        for (int i = 0; i < allArgs.size(); i++) {
+            bind(i + 1, allArgs.get(i));
         }
         return this;
     }
@@ -164,7 +169,7 @@ public final class JDBCStatement<S extends Statement> implements AutoCloseable {
      * @return this object
      * @see PreparedStatement#clearParameters()
      */
-    public JDBCStatement<S> clearParameters() {
+    public JDBCStatement clearParameters() {
         try {
             if (statement.isClosed()) {
                 return this;
@@ -184,7 +189,7 @@ public final class JDBCStatement<S extends Statement> implements AutoCloseable {
      * @return this object
      * @see PreparedStatement#addBatch()
      */
-    public JDBCStatement<S> addBatch() {
+    public JDBCStatement addBatch() {
         if (statement instanceof PreparedStatement prepared) {
             try {
                 prepared.addBatch();
@@ -218,17 +223,7 @@ public final class JDBCStatement<S extends Statement> implements AutoCloseable {
                 hasResultSet = statement.execute(sql);
             }
             if (hasResultSet) {
-                // this strange nesting then unwinding of the stream serves the purpose
-                // of automatically calling Stream.close on rowStream (read the fine print of flatMap)
-                return Stream.of(Stream.iterate(statement.getResultSet(), rs -> {
-                                    try {
-                                        return rs.next();
-                                    } catch (SQLException e) {
-                                        throw new DatabaseException(e);
-                                    }
-                                }, UnaryOperator.identity())
-                                .onClose(() -> JDBC.closeQuietly(statement)))
-                        .flatMap(Function.identity())
+                return Stream.iterate(statement.getResultSet(), RS_HAS_NEXT, UnaryOperator.identity())
                         .map(rowMapper);
             } else {
                 throw new DatabaseException("statement execution did not produce a ResultSet");
@@ -238,6 +233,15 @@ public final class JDBCStatement<S extends Statement> implements AutoCloseable {
         }
     }
 
+    /**
+     * Execute the underlying statement and return the number of changed rows as returned
+     * by {@link Statement#getLargeUpdateCount()}. The underlying statement must not produce
+     * a {@link ResultSet} or this method will throw an exception.
+     *
+     * @return the result of executing the statement as an update count
+     * @see Statement#getLargeUpdateCount()
+     * @see Statement#getResultSet()
+     */
     public long update() {
         try {
             boolean hasResultSet;
@@ -247,19 +251,17 @@ public final class JDBCStatement<S extends Statement> implements AutoCloseable {
                 hasResultSet = statement.execute(sql);
             }
             if (hasResultSet) {
-                throw new DatabaseException("statement execution did not produce a ResultSet");
+                throw new DatabaseException("statement execution produced an unexpected ResultSet");
             } else {
                 return statement.getLargeUpdateCount();
             }
         } catch (SQLException e) {
             throw new DatabaseException("error querying database", e);
-        } finally {
-            JDBC.closeQuietly(statement);
         }
     }
 
     @Override
     public void close() {
-        JDBC.closeQuietly(statement, connection);
+        JDBC.closeQuietly(statement);
     }
 }

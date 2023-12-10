@@ -215,7 +215,7 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                 String destroyMethod = destroyAnnotation.value();
                 for (TypeElement providedType : getAllProvidedTypes()) {
                     for (ExecutableElement m : ProcessorUtils.allMethods(context, providedType)) {
-                        if (m.getModifiers().contains(Modifier.PUBLIC) && m.getSimpleName().toString().equals(destroyMethod) && m.getParameters().size() == 0) {
+                        if (m.getModifiers().contains(Modifier.PUBLIC) && m.getSimpleName().toString().equals(destroyMethod) && m.getParameters().isEmpty()) {
                             destroy.line("((" + providedType.getSimpleName() + ")instance).", destroyAnnotation.value(), "();");
                             return;
                         }

@@ -18,27 +18,27 @@ public class CronTest {
 
     @Test
     public void cronTest() {
-        Cron cron = new Cron("15 * * * * *");
+        Cron cron = new Cron("15 * * * * *", ZoneId.systemDefault().toString());
         Instant next = Instant.ofEpochMilli(cron.nextFireTime());
         assertEquals(next.atZone(ZoneId.systemDefault()).getSecond(), 15);
 
-        cron = new Cron("* 21 * * * *");
+        cron = new Cron("* 21 * * * *", ZoneId.systemDefault().toString());
         next = Instant.ofEpochMilli(cron.nextFireTime());
         assertEquals(next.atZone(ZoneId.systemDefault()).getMinute(), 21);
 
-        cron = new Cron("* * 23 * * *");
+        cron = new Cron("* * 23 * * *", ZoneId.systemDefault().toString());
         next = Instant.ofEpochMilli(cron.nextFireTime());
         assertEquals(next.atZone(ZoneId.systemDefault()).getHour(), 23);
 
-        cron = new Cron("* * * 29 * *");
+        cron = new Cron("* * * 29 * *", ZoneId.systemDefault().toString());
         next = Instant.ofEpochMilli(cron.nextFireTime());
         assertEquals(next.atZone(ZoneId.systemDefault()).getDayOfMonth(), 29);
 
-        cron = new Cron("* * * * 2 *");
+        cron = new Cron("* * * * 2 *", ZoneId.systemDefault().toString());
         next = Instant.ofEpochMilli(cron.nextFireTime());
         assertEquals(next.atZone(ZoneId.systemDefault()).getMonth().getValue(), 2);
 
-        cron = new Cron("* * * * * 7");
+        cron = new Cron("* * * * * 7", ZoneId.systemDefault().toString());
         next = Instant.ofEpochMilli(cron.nextFireTime());
         assertEquals(next.atZone(ZoneId.systemDefault()).getDayOfWeek().getValue(), 7);
     }
@@ -83,7 +83,7 @@ public class CronTest {
     }
 
     private void assertLoop(String cronExpression, Consumer<ZonedDateTime> assertions) {
-        Cron c = new Cron(cronExpression);
+        Cron c = new Cron(cronExpression, ZoneId.systemDefault().toString());
         long l = c.nextFireTime();
         for (int i = 0; i < 50; i++) {
             assertions.accept(Instant.ofEpochMilli(l).atZone(ZoneId.systemDefault()));
@@ -98,7 +98,7 @@ public class CronTest {
     @Test
     public void errorConditions() {
         assertThrows(IllegalArgumentException.class, () -> {
-            new Cron("100 * * * * *");
+            new Cron("100 * * * * *", ZoneId.systemDefault().toString());
         });
     }
 }

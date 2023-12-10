@@ -15,7 +15,7 @@ import java.util.function.Function;
  * Wraps a {@link DataSource} and acts as the entry point for the fluent JDBC API.
  */
 public final class JDBC {
-    static final List<Class<?>> DISALLOWED_RETURN_TYPES = List.of(
+    private static final List<Class<?>> DISALLOWED_RETURN_TYPES = List.of(
             JDBCStatement.class,
             JDBCConnection.class,
             Connection.class,
@@ -102,7 +102,7 @@ public final class JDBC {
     }
 
     /**
-     * Allocate a new connection (using {@link #connection()}) and pass it to the given consumer,
+     * Allocate a new connection (using {@link #transaction()}) and pass the connection to the given consumer,
      * automatically applying commit/rollback on the connection after the action completes.
      *
      * @param action the action to execute with the allocated connection in a transaction
@@ -116,7 +116,7 @@ public final class JDBC {
     }
 
     /**
-     * Allocate a new connection (using {@link #connection()}) and pass it to the given function,
+     * Allocate a new transaction (using {@link #transaction()}) and pass the connection to the given function,
      * automatically applying commit/rollback on the connection after the action completes.
      * <p><br/>
      * When the function returns, {@link Connection#commit()} will be called, if it succeeds,
@@ -142,7 +142,15 @@ public final class JDBC {
      * @return the transaction
      */
     public Transaction transaction() {
-        return new Transaction(this);
+        Transaction transaction = new Transaction(this);
+        try {
+            for (JDBCInterceptor interceptor : interceptors) {
+                interceptor.intercept(transaction);
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("error executing transaction interceptors", e);
+        }
+        return transaction;
     }
 
     static <T> T allowedFunctionReturn(T o) {
