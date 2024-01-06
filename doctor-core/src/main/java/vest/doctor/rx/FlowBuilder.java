@@ -61,16 +61,9 @@ public class FlowBuilder<T> implements Flow.Publisher<T> {
 
             @Override
             public void onNext(T item) {
-                s.onComplete();
+                s.onNext(item);
                 subscriber().onNext(item);
             }
-        });
-    }
-
-    public FlowBuilder<T> observe(Consumer<T> observer) {
-        return onNext((item, sub) -> {
-            observer.accept(item);
-            sub.onNext(item);
         });
     }
 

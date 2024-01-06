@@ -1,8 +1,8 @@
 package vest.doctor.ssf;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Flow;
 
 public interface FilterChain {
 
-    CompletableFuture<RequestContext> next(RequestContext requestContext);
+    Flow.Publisher<Response> next(Request requestContext);
 }

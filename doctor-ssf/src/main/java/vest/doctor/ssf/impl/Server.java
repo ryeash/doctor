@@ -3,19 +3,20 @@ package vest.doctor.ssf.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import vest.doctor.ssf.Request;
-import vest.doctor.ssf.RequestContext;
 import vest.doctor.ssf.Response;
 import vest.doctor.ssf.Status;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Set;
+import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
 
 import static java.nio.channels.SelectionKey.OP_ACCEPT;
@@ -29,12 +30,14 @@ public class Server implements Runnable {
     private final Selector selector;
     private final ServerSocketChannel socketChannel;
     private final ByteBuffer readBuffer;
+    private final ByteBuffer writeBuffer;
 
     public Server(Configuration configuration) {
         this.conf = configuration;
         try {
             log.info("Server starting {}:{}", configuration.bindHost(), configuration.bindPort());
             readBuffer = conf.allocateBuffer(conf.readBufferSize());
+            writeBuffer = conf.allocateBuffer(conf.readBufferSize()); // TODO
             socketChannel = ServerSocketChannel.open();
             socketChannel.configureBlocking(false);
             socketChannel.socket().bind(new InetSocketAddress(conf.bindHost(), conf.bindPort()));
@@ -110,8 +113,8 @@ public class Server implements Runnable {
                     Response response = new ResponseImpl();
                     response.status(Status.BAD_REQUEST);
                     response.body("Failed to parse request");
-                    response.setHeader(Headers.CONNECTION, Utils.CLOSED);
-                    ResponseWriter rw = new ResponseWriter(conf, new RequestContextImpl(new RequestImpl(), response));
+                    response.setHeader(BaseMessage.CONNECTION, Utils.CLOSED);
+                    ResponseChannelWriter rw = new ResponseChannelWriter(conf, new RequestImpl(), response);
                     key.channel().register(selector, OP_WRITE, rw);
                     parser.reset();
                     selector.wakeup();
@@ -127,9 +130,12 @@ public class Server implements Runnable {
     void write(SelectionKey key) {
         SocketChannel ch = (SocketChannel) key.channel();
         try {
-            ResponseWriter rw = (ResponseWriter) key.attachment();
-            ch.write(rw.writeBuffers());
-            if (rw.hasRemaining()) {
+            ResponseChannelWriter rw = (ResponseChannelWriter) key.attachment();
+            writeBuffer.clear();
+            rw.read(writeBuffer);
+            writeBuffer.flip();
+            ch.write(writeBuffer);
+            if (rw.isOpen()) {
                 key.interestOps(OP_WRITE);
             } else if (rw.keepAlive()) {
                 key.interestOps(OP_READ);
@@ -144,24 +150,36 @@ public class Server implements Runnable {
     }
 
     void routeIncomingRequest(SelectionKey key, Request request) {
-        RequestContext requestContext = new RequestContextImpl(request, new ResponseImpl());
-        conf.handler().handle(requestContext)
-                .exceptionallyCompose(error -> conf.exceptionHandler().handle(requestContext, error))
-                .whenComplete((ctx, error) -> {
+        Flow.Publisher<Response> handle = conf.handler().handle(request);
+        handle.subscribe(new Flow.Subscriber<>() {
+            @Override
+            public void onSubscribe(Flow.Subscription subscription) {
+                subscription.request(Long.MAX_VALUE);
+            }
+
+            @Override
+            public void onNext(Response item) {
+                ResponseChannelWriter rw = new ResponseChannelWriter(conf, request, item);
+                if (key.channel().isOpen()) {
                     try {
-                        if (error != null) {
-                            log.error("unrecoverable error", error);
-                            close(key);
-                        } else {
-                            ResponseWriter rw = new ResponseWriter(conf, ctx);
-                            key.channel().register(selector, OP_WRITE, rw);
-                            selector.wakeup();
-                        }
-                    } catch (Exception e) {
-                        log.error("Failed to route request", e);
-                        close(key);
+                        key.channel().register(selector, OP_WRITE, rw);
+                        selector.wakeup();
+                    } catch (ClosedChannelException e) {
+                        log.error("error writing response", e);
                     }
-                });
+                }
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                log.error("error handling request: {}", request, throwable);
+            }
+
+            @Override
+            public void onComplete() {
+                // TODO: should we do something?
+            }
+        });
     }
 
     void close(SelectionKey key) {

@@ -1,7 +1,7 @@
 package vest.doctor.ssf;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Flow;
 
 public interface ExceptionHandler {
-    CompletableFuture<RequestContext> handle(RequestContext requestContext, Throwable error);
+    Flow.Publisher<Response> handle(Request request, Throwable error);
 }

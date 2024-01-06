@@ -3,11 +3,15 @@ package vest.doctor.ssf.impl;
 import vest.doctor.ssf.Response;
 import vest.doctor.ssf.Status;
 
-public final class ResponseImpl extends Headers implements Response {
-    private Status status = Status.OK;
-    private byte[] body;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.charset.StandardCharsets;
 
-     ResponseImpl() {
+public final class ResponseImpl extends BaseMessage implements Response {
+    private Status status = Status.OK;
+    private ReadableByteChannel body;
+
+    public ResponseImpl() {
         contentType("text/plain");
         server("jumpy");
         date(Utils.getServerTime());
@@ -25,19 +29,24 @@ public final class ResponseImpl extends Headers implements Response {
     }
 
     @Override
-    public byte[] body() {
+    public ReadableByteChannel body() {
         return body;
     }
 
     @Override
-    public void body(String response) {
-        body(response.getBytes());
+    public void body(ReadableByteChannel data) {
+        this.body = data;
     }
 
     @Override
-    public void body(byte[] response) {
-        this.body = response;
-        contentLength(body().length);
+    public void body(String response) {
+        body(response.getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Override
+    public void body(byte[] body) {
+        this.body = new ByteBufReadableChannel(ByteBuffer.wrap(body));
+        contentLength(body.length);
     }
 
     @Override
@@ -46,8 +55,8 @@ public final class ResponseImpl extends Headers implements Response {
         sb.append(status);
         sb.append("\n   Headers:");
         eachHeader((k, v) -> sb.append("\n      ").append(k).append(" : ").append(v));
-        if (body != null && body.length > 0) {
-            sb.append("\n   Body: ").append(new String(body));
+        if (body != null) {
+            sb.append("\n   Body: ").append(body);
         }
         return sb.toString();
     }

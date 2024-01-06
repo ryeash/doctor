@@ -1,8 +1,8 @@
 package vest.doctor.ssf;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Flow;
 
 public interface Handler {
 
-    CompletableFuture<RequestContext> handle(RequestContext requestContext);
+    Flow.Publisher<Response> handle(Request requestContext);
 }

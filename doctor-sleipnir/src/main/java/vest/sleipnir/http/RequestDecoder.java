@@ -1,17 +1,13 @@
-package vest.doctor.ssf.impl;
+package vest.sleipnir.http;
 
-import vest.doctor.ssf.HttpData;
-import vest.doctor.ssf.Request;
-import vest.doctor.ssf.SSFException;
-import vest.doctor.ssf.Status;
+import vest.doctor.rx.AbstractProcessor;
+import vest.sleipnir.BufferUtils;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Objects;
-import java.util.concurrent.Flow;
 
-public class RequestParser {
+public class RequestDecoder extends AbstractProcessor<ByteBuffer, HttpData> {
 
     public enum State {
         REQUEST_LINE,
@@ -28,29 +24,20 @@ public class RequestParser {
 
     private static final byte SPACE = ' ';
 
-    private final Configuration conf;
-
-    private RequestImpl request = new RequestImpl();
     private State state = State.REQUEST_LINE;
-    private ByteBuffer lineBuffer;
-    private Flow.Subscriber<HttpData> bodySub;
+    private final ByteBuffer lineBuffer;
+    private final long maxBodyLength;
     private int totalRead = 0;
     private int leftToRead = 0;
 
-    public RequestParser(Configuration conf) {
-        this.conf = conf;
-        this.lineBuffer = conf.allocateBuffer(conf.initialParseBufferSize());
+    public RequestDecoder(int maxLineLength, long maxBodyLength) {
+        this.lineBuffer = ByteBuffer.allocate(maxLineLength);
+        this.maxBodyLength = maxBodyLength;
     }
 
-    public State state() {
-        return state;
-    }
-
-    public Request getRequest() {
-        if (state != State.DONE) {
-            throw new SSFException(Status.INTERNAL_SERVER_ERROR, "Attempted to get an incomplete request");
-        }
-        return request;
+    @Override
+    public void onNext(ByteBuffer item) {
+        parse(item);
     }
 
     public void parse(ByteBuffer buf) {
@@ -62,10 +49,10 @@ public class RequestParser {
                         break;
                     case HEADERS:
                         state = parseHeaders(buf);
-                        if (state == State.BODY) {
-                            state = determineBodyReadType();
-                        }
                         break;
+                    case BODY:
+                        throw new UnsupportedOperationException();
+
                     case READ_CHUNK_SIZE:
                         state = parseChunkSize(buf);
                         break;
@@ -85,15 +72,15 @@ public class RequestParser {
                     case CORRUPT:
                         return;
                     default:
-                        if (bodySub != null) {
-                            bodySub.onError(new SSFException(Status.INTERNAL_SERVER_ERROR, "bad request"));
-                        }
-                        throw new SSFException(Status.INTERNAL_SERVER_ERROR, "Unhandled parse state: " + state);
+                        throw new HttpException(Status.INTERNAL_SERVER_ERROR, "Unhandled parse state: " + state);
                 }
+            }
+            if (state == State.DONE) {
+                reset();
             }
         } catch (Exception e) {
             state = State.CORRUPT;
-            bodySub.onError(e);
+            subscriber().onError(e);
             throw e;
         }
     }
@@ -106,14 +93,13 @@ public class RequestParser {
             lineBuffer.get();
             String uriStr = toString(lineBuffer, SPACE);
             lineBuffer.get();
-            String protocolVersion = toString(lineBuffer);
+            String protocolVersion = toString(lineBuffer).trim();
             if (methodStr.isEmpty()) {
                 state = State.CORRUPT;
             }
             URI uri = URI.create(uriStr);
-            request = new RequestImpl(conf.executor(), protocolVersion, methodStr, uri);
+            subscriber().onNext(new HttpData.RequestLine(methodStr, uri, protocolVersion));
             lineBuffer.clear();
-            bodySub = ((Flow.Subscriber<HttpData>) request.bodyFlow());
             return State.HEADERS;
         } else {
             return State.REQUEST_LINE;
@@ -126,47 +112,57 @@ public class RequestParser {
             if (completeLine) {
                 lineBuffer.flip();
                 if (lineBuffer.remaining() == 2) {
-                    return State.BODY;
+                    return bodyReadMode();
                 }
-                String name = toString(lineBuffer, (byte) ':');
+                String name = toString(lineBuffer, (byte) ':').trim();
                 lineBuffer.get();
-                String value = toString(lineBuffer);
+                String value = toString(lineBuffer).trim();
                 lineBuffer.clear();
-                request.addHeader(name.trim(), value.trim());
+                HttpData.Header header = new HttpData.Header(name, value);
+                determineBodyReadType(header);
+                subscriber().onNext(header);
             } else {
                 return State.HEADERS;
             }
         }
     }
 
-    public State determineBodyReadType() {
-        if (Objects.equals(Utils.CHUNKED, request.transferEncoding())) {
-            leftToRead = 0;
+    public void determineBodyReadType(HttpData.Header header) {
+        if (header.matches("Transfer-Encoding", "chunked")) {
+            leftToRead = -1;
+        } else if (header.name().equalsIgnoreCase("Content-Length")) {
+            leftToRead = Integer.parseInt(header.value());
+            if (leftToRead > maxBodyLength) {
+                throw new HttpException(Status.REQUEST_ENTITY_TOO_LARGE, "request body too large");
+            }
+        }
+    }
+
+
+    private State bodyReadMode() {
+        if (leftToRead < 0) {
             return State.READ_CHUNK_SIZE;
+        } else if (leftToRead == 0) {
+            subscriber().onNext(HttpData.Body.LAST_EMPTY);
+            return State.DONE;
         } else {
-            leftToRead = request.contentLength();
-            if (leftToRead <= 0) {
-                return State.DONE;
-            }
-            if (leftToRead > conf.bodyMaxLength()) {
-                state = State.CORRUPT;
-                throw new SSFException(Status.REQUEST_ENTITY_TOO_LARGE, "Request body content length was too large");
-            }
             return State.BODY_FIXED;
         }
     }
 
     public State parseFixedLengthBody(ByteBuffer buf) {
         if (leftToRead <= 0) {
-            bodySub.onNext(HttpData.EMPTY_LAST_CONTENT);
-            bodySub.onComplete();
+            subscriber().onNext(HttpData.Body.LAST_EMPTY);
             return State.DONE;
         }
         int toRead = Math.min(buf.remaining(), leftToRead);
+        ByteBuffer data = ByteBuffer.allocate(toRead);
+        BufferUtils.transfer(buf, data);
+        data.flip();
+        subscriber().onNext(new HttpData.Body(data, false));
         leftToRead -= toRead;
-        bodySub.onNext(HttpData.copy(buf, toRead, leftToRead <= 0));
         if (leftToRead <= 0) {
-            bodySub.onComplete();
+            subscriber().onNext(HttpData.Body.LAST_EMPTY);
             return State.DONE;
         } else {
             return State.BODY_FIXED;
@@ -178,6 +174,10 @@ public class RequestParser {
         if (completeLine) {
             String chunkSizeStr = lineBufferToString();
             leftToRead = Integer.valueOf(chunkSizeStr, 16);
+            totalRead += leftToRead;
+            if (totalRead > maxBodyLength) {
+                throw new HttpException(Status.REQUEST_ENTITY_TOO_LARGE, "request body too large");
+            }
             return (leftToRead > 0) ? State.READ_CHUNK : State.READ_CHUNK_FOOTER;
         }
         return State.READ_CHUNK_SIZE;
@@ -185,11 +185,14 @@ public class RequestParser {
 
     public State parseChunk(ByteBuffer buf) {
         int toRead = Math.min(buf.remaining(), leftToRead);
-        if ((totalRead + toRead) > conf.bodyMaxLength()) {
-            state = State.CORRUPT;
-            throw new SSFException(Status.REQUEST_ENTITY_TOO_LARGE, "Request body content length was too large");
-        }
-        bodySub.onNext(HttpData.copy(buf, toRead, false));
+//        if ((totalRead + toRead) > conf.bodyMaxLength()) {
+//            state = State.CORRUPT;
+//            throw new SSFException(Status.REQUEST_ENTITY_TOO_LARGE, "Request body content length was too large");
+//        }
+        ByteBuffer data = ByteBuffer.allocate(toRead);
+        BufferUtils.transfer(buf, data);
+        data.flip();
+        subscriber().onNext(new HttpData.Body(data, false));
         leftToRead -= toRead;
         if (leftToRead <= 0) {
             return State.READ_CHUNK_EOL;
@@ -206,8 +209,7 @@ public class RequestParser {
     public State parseChunkFooter(ByteBuffer buf) {
         boolean completeLine = readLineBytes(buf);
         if (completeLine) {
-            bodySub.onNext(HttpData.EMPTY_LAST_CONTENT);
-            bodySub.onComplete();
+            subscriber().onNext(HttpData.Body.LAST_EMPTY);
             return State.DONE;
         }
         return state;
@@ -220,12 +222,8 @@ public class RequestParser {
         while (buffer.hasRemaining()) {
             byte b = buffer.get();
             lineBuffer.put(b);
-            if (lineBuffer.position() == conf.headerMaxLength()) {
-                throw new SSFException(Status.REQUEST_HEADER_FIELDS_TOO_LARGE, "exceeded max line length: " + conf.headerMaxLength());
-            }
-            if (lineBuffer.remaining() == 0) {
-                lineBuffer = conf.allocateBuffer(Math.min(lineBuffer.capacity() + 1024, conf.headerMaxLength()))
-                        .put(lineBuffer.flip());
+            if (lineBuffer.position() == lineBuffer.limit()) {
+                throw new HttpException(Status.REQUEST_HEADER_FIELDS_TOO_LARGE, "exceeded max line length: " + lineBuffer.limit());
             }
             if (lineBuffer.position() > 1 && lineBuffer.get(lineBuffer.position() - 2) == '\r' && lineBuffer.get(lineBuffer.position() - 1) == '\n') {
                 return true;
@@ -241,7 +239,6 @@ public class RequestParser {
     }
 
     public void reset() {
-        request = new RequestImpl();
         state = State.REQUEST_LINE;
         // keep the line buffer at its current size
         lineBuffer.clear();
@@ -262,7 +259,7 @@ public class RequestParser {
     public String toString(ByteBuffer buf, byte stop) {
         int pos = indexOf(buf, stop, buf.position());
         if (pos < 0) {
-            throw new SSFException(Status.BAD_REQUEST, "missing expected character [" + (char) stop + "]");
+            throw new HttpException(Status.BAD_REQUEST, "missing expected character [" + (char) stop + "]");
         }
         if (pos == 0) {
             return "";

@@ -1,7 +1,7 @@
 package vest.doctor.ssf.impl;
 
 
-import vest.doctor.ssf.RequestContext;
+import vest.doctor.ssf.Request;
 import vest.doctor.ssf.Response;
 
 import java.io.IOException;
@@ -26,12 +26,12 @@ public class ResponseChannelWriter implements ReadableByteChannel {
     private final ReadableByteChannel statusAndHeaders;
     private final ReadableByteChannel body;
 
-    public ResponseChannelWriter(Configuration conf, RequestContext ctx) {
+    public ResponseChannelWriter(Configuration conf, Request request, Response response) {
         this.conf = conf;
-        this.response = ctx.response();
-        this.keepAlive = !CLOSED.equalsIgnoreCase(ctx.request().connection())
-                && !CLOSED.equalsIgnoreCase(ctx.response().connection());
-        
+        this.response = response;
+        this.keepAlive = !CLOSED.equalsIgnoreCase(request.connection())
+                && !CLOSED.equalsIgnoreCase(response.connection());
+
         ByteBuffer[] top = new ByteBuffer[2 + response.headerNames().size()];
         top[0] = conf.allocateBuffer(HTTP11.length + response.status().bytes().length + 3)
                 .put(HTTP11)
@@ -46,7 +46,7 @@ public class ResponseChannelWriter implements ReadableByteChannel {
         }
         top[top.length - 1] = ByteBuffer.wrap(CR_LF);
         this.statusAndHeaders = new ByteBufArrReadableChannel(top);
-        this.body = new ByteBufReadableChannel(ByteBuffer.wrap(response.body()));
+        this.body = response.body();
     }
 
     public boolean keepAlive() {
@@ -60,7 +60,7 @@ public class ResponseChannelWriter implements ReadableByteChannel {
             if (statusAndHeaders.isOpen()) {
                 statusAndHeaders.read(dst);
             } else if (body.isOpen()) {
-                body.read(dst);
+                body.read(dst); // TODO: chunked
             } else {
                 return -1;
             }
@@ -79,7 +79,6 @@ public class ResponseChannelWriter implements ReadableByteChannel {
         body.close();
     }
 
-
     private ByteBuffer headerBuf(String key, String value) {
         byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
         byte[] valueBytes = value.getBytes(StandardCharsets.UTF_8);
@@ -90,5 +89,4 @@ public class ResponseChannelWriter implements ReadableByteChannel {
                 .put(CR_LF)
                 .flip();
     }
-
 }

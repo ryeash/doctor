@@ -4,15 +4,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-import static vest.doctor.ssf.impl.Headers.CONNECTION;
-import static vest.doctor.ssf.impl.Headers.CONTENT_LENGTH;
-import static vest.doctor.ssf.impl.Headers.CONTENT_TYPE;
-import static vest.doctor.ssf.impl.Headers.DATE;
-import static vest.doctor.ssf.impl.Headers.HOST;
-import static vest.doctor.ssf.impl.Headers.SERVER;
-import static vest.doctor.ssf.impl.Headers.TRANSFER_ENCODING;
+import static vest.doctor.ssf.impl.BaseMessage.CONNECTION;
+import static vest.doctor.ssf.impl.BaseMessage.CONTENT_LENGTH;
+import static vest.doctor.ssf.impl.BaseMessage.CONTENT_TYPE;
+import static vest.doctor.ssf.impl.BaseMessage.DATE;
+import static vest.doctor.ssf.impl.BaseMessage.HOST;
+import static vest.doctor.ssf.impl.BaseMessage.SERVER;
+import static vest.doctor.ssf.impl.BaseMessage.TRANSFER_ENCODING;
 
-public interface BaseMessage {
+public interface HeaderContainer {
     void addHeader(String keyValueHeaderString);
 
     void addHeader(String headerName, String headerValue);
@@ -40,7 +40,7 @@ public interface BaseMessage {
         if (contentLength != null) {
             return Integer.parseInt(contentLength);
         }
-        return 0;
+        return -1;
     }
 
     default void contentLength(int length) {

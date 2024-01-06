@@ -1,10 +1,11 @@
 package vest.doctor.ssf.router;
 
 import vest.doctor.ssf.Handler;
-import vest.doctor.ssf.RequestContext;
+import vest.doctor.ssf.Request;
+import vest.doctor.ssf.Response;
 
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Flow;
 
 public class RoutedHandler extends Routed implements Handler {
     private final Handler handler;
@@ -15,8 +16,8 @@ public class RoutedHandler extends Routed implements Handler {
     }
 
     @Override
-    public CompletableFuture<RequestContext> handle(RequestContext requestContext) {
-        return handler.handle(requestContext);
+    public Flow.Publisher<Response> handle(Request request) {
+        return handler.handle(request);
     }
 
     @Override

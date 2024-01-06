@@ -1,6 +1,5 @@
 package vest.doctor.ssf.impl;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
@@ -34,7 +33,7 @@ public class ByteBufReadableChannel implements ReadableByteChannel {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         src.position(src.limit());
     }
 }

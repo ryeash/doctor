@@ -5,16 +5,20 @@ import io.restassured.config.RestAssuredConfig;
 import io.restassured.specification.RequestSpecification;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
+import vest.doctor.rx.FlowBuilder;
+import vest.doctor.rx.SinglePublisher;
+import vest.doctor.ssf.Response;
 import vest.doctor.ssf.ServerBuilder;
-import vest.doctor.ssf.Status;
-import vest.doctor.ssf.impl.Headers;
+import vest.doctor.ssf.impl.BodyCollector;
 import vest.doctor.ssf.impl.Server;
 import vest.doctor.ssf.router.Router;
 
-import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+
+import static org.hamcrest.Matchers.is;
 
 public class SSFTest {
 
@@ -28,36 +32,41 @@ public class SSFTest {
                 .setWorkerThreadPool(Executors.newFixedThreadPool(12))
                 .setReadBufferSize(16000)
                 .handler(new Router()
-                        .filter((ctx, chain) -> {
-                            ctx.response().setHeader("X-Before", "true");
-                            long start = System.nanoTime();
-                            return chain.next(ctx)
-                                    .thenApply(x -> {
-                                        x.response().addHeader("X-After", TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + "");
-                                        return x;
-                                    });
-                        })
-                        .get("/hello", ctx -> {
-                            ctx.response().status(Status.OK);
-                            ctx.response().body("world");
-                            return ctx.send();
-                        })
-                        .post("/echo", ctx -> {
-                            ctx.response().status(Status.OK);
-                            ctx.response().body(ctx.request().body());
-                            return ctx.send();
-                        })
-                        .put("/params/{word}/{num:[\\d^/]+}/{bool:true|false}", ctx -> {
-                            Map<String, String> params = ctx.attribute(Router.PATH_PARAMS);
-                            ctx.response()
-                                    .body(params.get("word") + " " + params.get("num") + " " + params.get("bool"));
-                            return ctx.send();
-                        })
-                        .post("/throughput", ctx -> {
-                            ctx.response().contentType(Headers.OCTET_STREAM);
-                            ctx.response().body(ctx.request().body());
-                            return ctx.send();
-                        })
+                                .filter((request, chain) -> {
+                                    long start = System.nanoTime();
+                                    return FlowBuilder.start(chain.next(request))
+                                            .onNext(response -> {
+                                                response.setHeader("X-Before", "true");
+                                                response.addHeader("X-After", TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS) + "");
+                                                return response;
+                                            });
+                                })
+                                .get("/hello", request -> {
+                                    Response ok = Response.ok();
+                                    ok.body("world");
+                                    return new SinglePublisher<>(ok, request.pool());
+                                })
+                                .post("/echo", request -> {
+                                    System.out.println("in the HANDLER");
+                                    return FlowBuilder.start(request.bodyFlow())
+                                            .chain(new BodyCollector<>(BodyCollector.TO_BYTES))
+                                            .onNext(data -> {
+                                                Response ok = Response.ok();
+                                                ok.body(data);
+                                                return ok;
+                                            });
+                                })
+//                        .put("/params/{word}/{num:[\\d^/]+}/{bool:true|false}", ctx -> {
+//                            Map<String, String> params = ctx.attribute(Router.PATH_PARAMS);
+//                            ctx.response()
+//                                    .body(params.get("word") + " " + params.get("num") + " " + params.get("bool"));
+//                            return ctx.send();
+//                        })
+//                        .post("/throughput", ctx -> {
+//                            ctx.response().contentType(BaseMessage.OCTET_STREAM);
+//                            ctx.response().body(ctx.request().body());
+//                            return ctx.send();
+//                        })
                 )
                 .start();
     }
@@ -75,15 +84,16 @@ public class SSFTest {
                 .baseUri("http://localhost:31000");
     }
 
-//    @Test
-//    public void hello() {
-//        req().get("/hello")
-//                .then()
-//                .statusCode(200)
-//                .header("X-Before", is("true"))
-//                .body(is("world"));
-//    }
-//
+    @Test
+    public void hello() {
+        req().get("/hello")
+                .prettyPeek()
+                .then()
+                .statusCode(200)
+                .header("X-Before", is("true"))
+                .body(is("world"));
+    }
+
 //    @Test
 //    public void pathParams() {
 //        req().put("/params/nougat/1234/true")
@@ -102,17 +112,17 @@ public class SSFTest {
 //                .then()
 //                .statusCode(404);
 //    }
-//
-//    @Test
-//    public void echo() {
-//        String body = generateString(1237);
-//        req().body(body)
-//                .post("/echo")
-//                .then()
-//                .statusCode(200)
-//                .body(is(body));
-//    }
-//
+
+    @Test
+    public void echo() {
+        String body = generateString(1237);
+        req().body(body)
+                .post("/echo")
+                .then()
+                .statusCode(200)
+                .body(is(body));
+    }
+
 //    @Test
 //    public void throughput() {
 //        int total = 100;

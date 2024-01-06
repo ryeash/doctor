@@ -2,10 +2,11 @@ package vest.doctor.ssf.router;
 
 import vest.doctor.ssf.Filter;
 import vest.doctor.ssf.FilterChain;
-import vest.doctor.ssf.RequestContext;
+import vest.doctor.ssf.Request;
+import vest.doctor.ssf.Response;
 
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Flow;
 
 public class RoutedFilter extends Routed implements Filter {
     private final Filter filter;
@@ -16,11 +17,11 @@ public class RoutedFilter extends Routed implements Filter {
     }
 
     @Override
-    public CompletableFuture<RequestContext> filter(RequestContext requestContext, FilterChain chain) {
-        if (matches(requestContext)) {
-            return filter.filter(requestContext, chain);
+    public Flow.Publisher<Response> filter(Request request, FilterChain chain) {
+        if (matches(request)) {
+            return filter.filter(request, chain);
         } else {
-            return chain.next(requestContext);
+            return chain.next(request);
         }
     }
 

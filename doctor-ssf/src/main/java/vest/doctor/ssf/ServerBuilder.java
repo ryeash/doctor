@@ -77,8 +77,6 @@ public class ServerBuilder {
         return this;
     }
 
-
-
     public ServerBuilder addExceptionHandler(ExceptionHandler exceptionHandler) {
         compositeExceptionHandler.add(exceptionHandler);
         return this;

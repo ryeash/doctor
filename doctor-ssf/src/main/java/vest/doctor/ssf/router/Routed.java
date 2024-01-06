@@ -1,7 +1,6 @@
 package vest.doctor.ssf.router;
 
 import vest.doctor.ssf.Request;
-import vest.doctor.ssf.RequestContext;
 import vest.doctor.ssf.impl.Utils;
 
 import java.util.Map;
@@ -18,12 +17,11 @@ public abstract class Routed implements Comparable<Routed> {
         this.pathSpec = pathSpec;
     }
 
-    public boolean matches(RequestContext ctx) {
-        Request request = ctx.request();
+    public boolean matches(Request request) {
         if (isAnyMethod || Objects.equals(request.method(), this.method)) {
             Map<String, String> pathParams = pathSpec.matchAndCollect(request.uri().getRawPath());
             if (pathParams != null) {
-                ctx.attribute(Router.PATH_PARAMS, pathParams);
+                request.attribute(Router.PATH_PARAMS, pathParams);
                 return true;
             }
         }

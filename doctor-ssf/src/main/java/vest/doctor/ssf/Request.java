@@ -1,16 +1,14 @@
 package vest.doctor.ssf;
 
-import vest.doctor.ssf.impl.Headers;
+import vest.doctor.rx.FlowBuilder;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.net.URI;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.InflaterInputStream;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Flow;
 
-public interface Request extends BaseMessage {
+public interface Request extends HeaderContainer, AttributeContainer {
+
+    ExecutorService pool();
 
     String schemaVersion();
 
@@ -18,24 +16,9 @@ public interface Request extends BaseMessage {
 
     URI uri();
 
-    byte[] body();
+    Flow.Publisher<HttpData> bodyFlow();
 
-    default InputStream bodyStream() {
-        byte[] data = body();
-        if (data == null || data.length == 0) {
-            return InputStream.nullInputStream();
-        }
-        for (String value : getHeaders(Headers.CONTENT_ENCODING)) {
-            if (value.contains(Headers.GZIP)) {
-                try {
-                    return new GZIPInputStream(new ByteArrayInputStream(data));
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            } else if (value.contains(Headers.DEFLATE)) {
-                return new InflaterInputStream(new ByteArrayInputStream(data));
-            }
-        }
-        return new ByteArrayInputStream(data);
+    default Flow.Publisher<Response> respond() {
+        return FlowBuilder.of(Response.ok(), pool());
     }
 }

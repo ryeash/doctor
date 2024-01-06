@@ -20,7 +20,8 @@
  * -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 package vest.doctor.ssf.impl;
 
-import vest.doctor.ssf.BaseMessage;
+import vest.doctor.ssf.AttributeContainer;
+import vest.doctor.ssf.HeaderContainer;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -30,7 +31,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 
-public abstract class Headers implements BaseMessage {
+public abstract class BaseMessage implements HeaderContainer, AttributeContainer {
     public static final String AUTHORIZATION = "Authorization";
     public static final String CONTENT_LENGTH = "Content-Length";
     public static final String HOST = "Host";
@@ -47,6 +48,7 @@ public abstract class Headers implements BaseMessage {
     public static final String DEFLATE = "deflate";
 
     private final Map<String, List<String>> headers = new HashMap<>();
+    private final Map<String, Object> attributes = new HashMap<>();
 
     public void addHeader(String keyValueHeaderString) {
         String[] header = keyValueHeaderString.split(":", 2);
@@ -97,6 +99,17 @@ public abstract class Headers implements BaseMessage {
     @Override
     public int numHeaders() {
         return headers.size();
+    }
+
+    @Override
+    public void attribute(String name, Object value) {
+        attributes.put(name, value);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T attribute(String name) {
+        return (T) attributes.get(name);
     }
 
     @Override
