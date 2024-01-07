@@ -14,7 +14,6 @@ public interface HttpData {
     byte[] CR_LF = new byte[]{CR, LF};
     byte COLON = ':';
     byte SPACE = ' ';
-    String HTTP1_1 = "HTTP/1.1";
 
     static String httpDate() {
         return DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now(ZoneId.of("UTC")));
@@ -48,21 +47,14 @@ public interface HttpData {
 
     record Body(ByteBuffer data, boolean last) implements HttpData {
         public static final Body LAST_EMPTY = new Body(ByteBuffer.allocate(0), true);
-
-        public ByteBuffer serialize() {
-            return data;
-        }
     }
 
-    record RequestLine(String method, URI uri, String protocolVersion) implements HttpData {
-        public ByteBuffer serialize() {
-            return ByteBuffer.wrap((method + " " + uri + " " + protocolVersion).getBytes(StandardCharsets.UTF_8));
-        }
+    record RequestLine(String method, URI uri, ProtocolVersion protocolVersion) implements HttpData {
     }
 
-    record StatusLine(String protocolVersion, Status status) implements HttpData {
+    record StatusLine(ProtocolVersion protocolVersion, Status status) implements HttpData {
         public ByteBuffer serialize() {
-            byte[] prot = protocolVersion.getBytes(StandardCharsets.US_ASCII);
+            byte[] prot = protocolVersion.bytes();
             byte[] status = status().bytes();
             ByteBuffer buf = ByteBuffer.allocate(prot.length + status.length + 3);
             buf.put(prot, 0, prot.length);
@@ -85,7 +77,7 @@ public interface HttpData {
             return requestLine.method();
         }
 
-        public String protocolVersion() {
+        public ProtocolVersion protocolVersion() {
             return requestLine.protocolVersion();
         }
 

@@ -6,6 +6,7 @@ import org.testng.annotations.Test;
 import vest.doctor.rx.FlowBuilder;
 import vest.sleipnir.http.AbstractHttpInitializer;
 import vest.sleipnir.http.HttpData;
+import vest.sleipnir.http.ProtocolVersion;
 import vest.sleipnir.http.RequestAggregator;
 import vest.sleipnir.http.Status;
 
@@ -37,9 +38,9 @@ public class MiscTest {
                 false,
                 new AbstractHttpInitializer() {
                     @Override
-                    protected Flow.Publisher<HttpData> handleData(Channel channel, Flow.Publisher<HttpData> dataInput) {
+                    protected Flow.Publisher<HttpData> handleData(ChannelContext channelContext, Flow.Publisher<HttpData> dataInput) {
                         return FlowBuilder.start(dataInput)
-                                .chain(new RequestAggregator(channel))
+                                .chain(new RequestAggregator(channelContext))
                                 .<HttpData.FullRequest>onNext((data, downstream) -> {
                                     executorService.submit(() -> downstream.onNext(data));
                                 })
@@ -48,13 +49,13 @@ public class MiscTest {
                                     System.out.println(data);
 
                                     if (ThreadLocalRandom.current().nextBoolean()) {
-                                        downstream.onNext(new HttpData.FullResponse(new HttpData.StatusLine(HttpData.HTTP1_1, Status.OK), List.of(
+                                        downstream.onNext(new HttpData.FullResponse(new HttpData.StatusLine(ProtocolVersion.HTTP1_1, Status.OK), List.of(
                                                 new HttpData.Header("Date", HttpData.httpDate()),
                                                 new HttpData.Header("Server", "sleipnir"),
                                                 new HttpData.Header("Transfer-Encoding", "chunked")
                                         ), BufferUtils.copy(data.body())));
                                     } else {
-                                        downstream.onNext(new HttpData.Response(new HttpData.StatusLine(HttpData.HTTP1_1, Status.OK), List.of(
+                                        downstream.onNext(new HttpData.Response(new HttpData.StatusLine(ProtocolVersion.HTTP1_1, Status.OK), List.of(
                                                 new HttpData.Header("Date", HttpData.httpDate()),
                                                 new HttpData.Header("Server", "sleipnir"),
                                                 new HttpData.Header("Transfer-Encoding", "chunked")
@@ -96,11 +97,11 @@ public class MiscTest {
 
     @Test
     public void http() throws IOException {
-        IntStream.range(0, 10)
-//                .parallel()
+        IntStream.range(0, 101)
+                .parallel()
                 .forEach(i -> {
                     try {
-                        HttpURLConnection c = (HttpURLConnection) URI.create("http://localhost:32123/sleipnir/test")
+                        HttpURLConnection c = (HttpURLConnection) URI.create("http://localhost:32123/sleipnir/test?param=toast")
                                 .toURL()
                                 .openConnection();
                         c.setRequestMethod("POST");

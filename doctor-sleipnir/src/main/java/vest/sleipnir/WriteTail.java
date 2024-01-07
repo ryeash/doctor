@@ -39,8 +39,6 @@ class WriteTail implements Flow.Subscriber<ByteBuffer> {
                 throw new BufferOverflowException();
             }
             try {
-//                SelectionKey key = socketChannel.keyFor(selector);
-//                key.interestOps(OP_WRITE | key.interestOps());
                 selector.wakeup();
             } catch (Throwable e) {
                 onError(e);

@@ -1,7 +1,7 @@
 package vest.sleipnir.http;
 
-import vest.doctor.rx.AbstractProcessor;
-import vest.sleipnir.Channel;
+import vest.sleipnir.BaseProcessor;
+import vest.sleipnir.ChannelContext;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -9,17 +9,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class ResponseEncoder extends AbstractProcessor<HttpData, ByteBuffer> {
+public class ResponseEncoder extends BaseProcessor<HttpData, ByteBuffer> {
 
     private static final byte[] EMPTY_FINAL_CHUNK = "0\r\n\r\n".getBytes(StandardCharsets.UTF_8);
     private static final List<String> FORBIDDEN_HEADERS = List.of("Content-Length", "Transfer-Encoding");
     private static final HttpData.Header TE_CHUNKED = new HttpData.Header("Transfer-Encoding", "chunked");
-    // TODO trailers
+    // TODO trailers???
 
-    private final Channel channel;
+    private final ChannelContext channelContext;
 
-    public ResponseEncoder(Channel channel) {
-        this.channel = channel;
+    public ResponseEncoder(ChannelContext channelContext) {
+        this.channelContext = channelContext;
     }
 
     @Override
@@ -57,7 +57,7 @@ public class ResponseEncoder extends AbstractProcessor<HttpData, ByteBuffer> {
             default -> throw new IllegalStateException("Unexpected value: " + data);
         }
 
-        SelectionKey key = channel.socketChannel().keyFor(channel.selector());
+        SelectionKey key = channelContext.socketChannel().keyFor(channelContext.selector());
         key.interestOps(SelectionKey.OP_WRITE | key.interestOps());
     }
 

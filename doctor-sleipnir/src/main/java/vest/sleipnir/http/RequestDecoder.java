@@ -1,13 +1,13 @@
 package vest.sleipnir.http;
 
-import vest.doctor.rx.AbstractProcessor;
+import vest.sleipnir.BaseProcessor;
 import vest.sleipnir.BufferUtils;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-public class RequestDecoder extends AbstractProcessor<ByteBuffer, HttpData> {
+public class RequestDecoder extends BaseProcessor<ByteBuffer, HttpData> {
 
     public enum State {
         REQUEST_LINE,
@@ -93,7 +93,7 @@ public class RequestDecoder extends AbstractProcessor<ByteBuffer, HttpData> {
             lineBuffer.get();
             String uriStr = toString(lineBuffer, SPACE);
             lineBuffer.get();
-            String protocolVersion = toString(lineBuffer).trim();
+            ProtocolVersion protocolVersion = ProtocolVersion.valueOf(toString(lineBuffer).trim());
             if (methodStr.isEmpty()) {
                 state = State.CORRUPT;
             }

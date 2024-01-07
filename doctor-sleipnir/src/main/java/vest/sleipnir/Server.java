@@ -94,8 +94,8 @@ public class Server implements Runnable {
                 s.configureBlocking(false);
                 ReadHead head = new ReadHead(s);
                 WriteTail tail = new WriteTail(selector, s);
-                Channel channel = new Channel(selector, s, UUID.randomUUID(), new ConcurrentSkipListMap<>(), head);
-                Flow.Publisher<ByteBuffer> dataOutput = conf.socketInitializer().initialize(channel);
+                ChannelContext channelContext = new ChannelContext(selector, s, UUID.randomUUID(), new ConcurrentSkipListMap<>(), head);
+                Flow.Publisher<ByteBuffer> dataOutput = conf.socketInitializer().initialize(channelContext);
                 dataOutput.subscribe(tail);
                 s.register(selector, OP_READ, new SocketMetadata(head, tail, new HashMap<>()));
             }

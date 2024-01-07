@@ -1,34 +1,34 @@
 package vest.sleipnir.http;
 
-import vest.doctor.rx.AbstractProcessor;
+import vest.sleipnir.BaseProcessor;
 import vest.sleipnir.BufferUtils;
-import vest.sleipnir.Channel;
+import vest.sleipnir.ChannelContext;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
 
-public class RequestAggregator extends AbstractProcessor<HttpData, HttpData.FullRequest> {
+public class RequestAggregator extends BaseProcessor<HttpData, HttpData.FullRequest> {
 
     private static final String REQ_AGG_ATTR = "doctor.sleipnir.requestAggregator";
-    private final Channel channel;
+    private final ChannelContext channelContext;
 
-    public RequestAggregator(Channel channel) {
-        this.channel = channel;
+    public RequestAggregator(ChannelContext channelContext) {
+        this.channelContext = channelContext;
     }
 
     @Override
     public void onNext(HttpData item) {
         switch (item) {
             case HttpData.RequestLine rl ->
-                    channel.attributes().put(REQ_AGG_ATTR, new Agg(rl, new LinkedList<>(), new LinkedList<>()));
-            case HttpData.Header h -> ((Agg) channel.attributes().get(REQ_AGG_ATTR)).headers.add(h);
+                    channelContext.attributes().put(REQ_AGG_ATTR, new Agg(rl, new LinkedList<>(), new LinkedList<>()));
+            case HttpData.Header h -> ((Agg) channelContext.attributes().get(REQ_AGG_ATTR)).headers.add(h);
             case HttpData.Body b -> {
-                Agg agg = (Agg) channel.attributes().get(REQ_AGG_ATTR);
+                Agg agg = (Agg) channelContext.attributes().get(REQ_AGG_ATTR);
                 agg.body.add(b);
                 if (b.last()) {
-                    channel.attributes().remove(REQ_AGG_ATTR);
+                    channelContext.attributes().remove(REQ_AGG_ATTR);
                     subscriber().onNext(new HttpData.FullRequest(agg.requestLine, new LinkedList<>(agg.headers), aggregateBody(agg.body)));
                 }
             }
