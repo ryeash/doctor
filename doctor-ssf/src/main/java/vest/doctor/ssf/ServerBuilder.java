@@ -2,8 +2,10 @@ package vest.doctor.ssf;
 
 
 import vest.doctor.ssf.impl.CompositeExceptionHandler;
-import vest.doctor.ssf.impl.Configuration;
-import vest.doctor.ssf.impl.Server;
+import vest.doctor.ssf.impl.HttpConfiguration;
+import vest.doctor.ssf.impl.SSFHttpInitializer;
+import vest.doctor.ssf.impl.HttpServer;
+import vest.doctor.sleipnir.Configuration;
 
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -82,24 +84,21 @@ public class ServerBuilder {
         return this;
     }
 
-    public Server start() {
-        Configuration configuration = new Configuration(
-                bindHost,
-                bindPort,
-                uriMaxLength,
-                headerMaxLength,
+    public HttpServer start() {
+        HttpConfiguration httpConfiguration = new HttpConfiguration(uriMaxLength,
                 bodyMaxLength,
-                readBufferSize,
                 initialParseBufferSize,
-                directBuffers,
+                headerMaxLength,
                 Objects.requireNonNull(handler, "must set a handler"),
                 compositeExceptionHandler,
                 Objects.requireNonNull(workerThreadPool, "worker thread pool must be set"));
-        Server s = new Server(configuration);
-        Thread t = new Thread(s);
-        t.setName("http-jumpy-" + configuration.bindHost() + ":" + configuration.bindPort());
-        Runtime.getRuntime().addShutdownHook(new Thread(s::stop));
-        t.start();
-        return s;
+        Configuration configuration = new Configuration(
+                bindHost,
+                bindPort,
+                readBufferSize,
+                readBufferSize,
+                directBuffers,
+                new SSFHttpInitializer(httpConfiguration));
+        return new HttpServer(configuration, httpConfiguration);
     }
 }

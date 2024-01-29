@@ -2,11 +2,9 @@ package vest.doctor.ssf.router;
 
 import vest.doctor.ssf.Filter;
 import vest.doctor.ssf.FilterChain;
-import vest.doctor.ssf.Request;
-import vest.doctor.ssf.Response;
+import vest.doctor.ssf.RequestContext;
 
 import java.util.Objects;
-import java.util.concurrent.Flow;
 
 public class RoutedFilter extends Routed implements Filter {
     private final Filter filter;
@@ -17,11 +15,11 @@ public class RoutedFilter extends Routed implements Filter {
     }
 
     @Override
-    public Flow.Publisher<Response> filter(Request request, FilterChain chain) {
-        if (matches(request)) {
-            return filter.filter(request, chain);
+    public void filter(RequestContext ctx, FilterChain chain) {
+        if (matches(ctx)) {
+            filter.filter(ctx, chain);
         } else {
-            return chain.next(request);
+            chain.next(ctx);
         }
     }
 

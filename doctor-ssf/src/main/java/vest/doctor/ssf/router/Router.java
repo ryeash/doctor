@@ -1,19 +1,15 @@
 package vest.doctor.ssf.router;
 
-import vest.doctor.rx.SinglePublisher;
+import vest.doctor.sleipnir.http.Status;
 import vest.doctor.ssf.Filter;
 import vest.doctor.ssf.Handler;
-import vest.doctor.ssf.Request;
-import vest.doctor.ssf.Response;
-import vest.doctor.ssf.Status;
-import vest.doctor.ssf.impl.Utils;
+import vest.doctor.ssf.RequestContext;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Flow;
 
 import static vest.doctor.ssf.impl.Utils.ANY;
 import static vest.doctor.ssf.impl.Utils.DELETE;
@@ -23,10 +19,6 @@ import static vest.doctor.ssf.impl.Utils.PUT;
 
 public final class Router implements Handler {
     public static final String PATH_PARAMS = "jumpy.path.params";
-
-    private static final RoutedHandler NOT_FOUND = new RoutedHandler(Utils.ANY, "/*", ctx -> {
-        return new SinglePublisher<>(Response.of(Status.NOT_FOUND), ctx.pool());
-    });
 
     private final List<RoutedFilter> filters = new LinkedList<>();
     private final Map<String, List<RoutedHandler>> routeMap = new HashMap<>();
@@ -67,40 +59,43 @@ public final class Router implements Handler {
     }
 
     @Override
-    public Flow.Publisher<Response> handle(Request request) {
-        return doFilters(filters.iterator(), request);
+    public void handle(RequestContext ctx) {
+        doFilters(filters.iterator(), ctx);
     }
 
-    private Flow.Publisher<Response> doFilters(Iterator<RoutedFilter> filters, Request request) {
+    private void doFilters(Iterator<RoutedFilter> filters, RequestContext ctx) {
         if (filters.hasNext()) {
-            return filters.next().filter(request, (ctx) -> doFilters(filters, ctx));
+            filters.next().filter(ctx, (c) -> doFilters(filters, c));
         } else {
-            return findRoute(request).handle(request);
+            doRoute(ctx);
         }
     }
 
-    private RoutedHandler findRoute(Request request) {
-        for (RoutedHandler route : routeMap.getOrDefault(request.method(), List.of())) {
-            if (route.matches(request)) {
-                return route;
+    private void doRoute(RequestContext ctx) {
+        for (RoutedHandler route : routeMap.getOrDefault(ctx.method(), List.of())) {
+            if (route.matches(ctx)) {
+                route.handle(ctx);
+                return;
             }
         }
-        for (RoutedHandler route : routeMap.getOrDefault(Utils.ANY, List.of())) {
-            if (route.matches(request)) {
-                return route;
+        for (RoutedHandler route : routeMap.getOrDefault(ANY, List.of())) {
+            if (route.matches(ctx)) {
+                route.handle(ctx);
+                return;
             }
         }
-        return NOT_FOUND;
+        ctx.status(Status.NOT_FOUND);
+        ctx.send();
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("Router:");
-        if (!filters.isEmpty()) {
-            sb.append("\n Filters:");
-            filters.forEach(f -> sb.append("\n   ").append(f));
-        }
+//        if (!filters.isEmpty()) {
+//            sb.append("\n Filters:");
+//            filters.forEach(f -> sb.append("\n   ").append(f));
+//        }
         if (!routeMap.isEmpty()) {
             sb.append("\n Routes:");
             routeMap.keySet()

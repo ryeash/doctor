@@ -40,14 +40,13 @@ public final class ArgValueImpl implements ArgValue {
     public boolean equals(Object o) {
         if (this == o) {
             return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
+        } else if (o instanceof ArgValue argValue) {
+            return Objects.equals(type, argValue.type())
+                    && Objects.equals(name, argValue.name())
+                    && Objects.equals(value, argValue.get());
+        } else {
             return false;
         }
-        ArgValueImpl argValue = (ArgValueImpl) o;
-        return Objects.equals(type, argValue.type)
-               && Objects.equals(name, argValue.name)
-               && Objects.equals(value, argValue.value);
     }
 
     @Override

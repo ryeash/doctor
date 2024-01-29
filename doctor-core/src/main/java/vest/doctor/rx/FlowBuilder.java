@@ -39,7 +39,7 @@ public class FlowBuilder<T> implements Flow.Publisher<T> {
         return new FlowBuilder<>(processor);
     }
 
-    public FlowBuilder<T> chain(Flow.Subscriber<T> s) {
+    public FlowBuilder<T> chain(Flow.Subscriber<? super T> s) {
         return chain(new AbstractProcessor<>() {
             @Override
             public void onSubscribe(Flow.Subscription subscription) {
@@ -67,8 +67,19 @@ public class FlowBuilder<T> implements Flow.Publisher<T> {
         });
     }
 
+    public FlowBuilder<T> onNext(Consumer<T> consumer) {
+        return onNext(t -> {
+            consumer.accept(t);
+            return t;
+        });
+    }
+
     public <R> FlowBuilder<R> onNext(Function<T, R> processor) {
         return onNext((item, sub) -> sub.onNext(processor.apply(item)));
+    }
+
+    public <R> FlowBuilder<R> onNext(BiConsumer<T, Flow.Subscriber<? super R>> consumer) {
+        return chain(new AbstractProcessor.ItemProcessor<>(consumer));
     }
 
     public <R> FlowBuilder<R> flatten(Function<T, Flow.Publisher<R>> processor) {
@@ -96,8 +107,8 @@ public class FlowBuilder<T> implements Flow.Publisher<T> {
                 }));
     }
 
-    public <R> FlowBuilder<R> onNext(BiConsumer<T, Flow.Subscriber<? super R>> consumer) {
-        return chain(new AbstractProcessor.ItemProcessor<>(consumer));
+    public FlowBuilder<T> onError(Function<Throwable, T> function) {
+        return onError((err, sub) -> sub.onNext(function.apply(err)));
     }
 
     public FlowBuilder<T> onError(BiConsumer<Throwable, Flow.Subscriber<? super T>> consumer) {
@@ -136,5 +147,9 @@ public class FlowBuilder<T> implements Flow.Publisher<T> {
         FutureSubscriber<T> sub = new FutureSubscriber<>(request);
         chain(sub);
         return sub.future();
+    }
+
+    public FlowBuilder<T> parallel(ExecutorService executorService) {
+        return chain(new ParallelProcessor<>(executorService));
     }
 }

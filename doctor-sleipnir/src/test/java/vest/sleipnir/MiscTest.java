@@ -1,27 +1,27 @@
 package vest.sleipnir;
 
+import io.restassured.RestAssured;
+import io.restassured.config.RestAssuredConfig;
+import io.restassured.specification.RequestSpecification;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import vest.doctor.rx.FlowBuilder;
-import vest.sleipnir.http.AbstractHttpInitializer;
-import vest.sleipnir.http.HttpData;
-import vest.sleipnir.http.ProtocolVersion;
-import vest.sleipnir.http.RequestAggregator;
-import vest.sleipnir.http.Status;
+import vest.doctor.sleipnir.ChannelContext;
+import vest.doctor.sleipnir.Configuration;
+import vest.doctor.sleipnir.Server;
+import vest.doctor.sleipnir.http.FullResponse;
+import vest.doctor.sleipnir.http.Header;
+import vest.doctor.sleipnir.http.HttpData;
+import vest.doctor.sleipnir.http.HttpInitializer;
+import vest.doctor.sleipnir.http.ProtocolVersion;
+import vest.doctor.sleipnir.http.RequestAggregator;
+import vest.doctor.sleipnir.http.Status;
+import vest.doctor.sleipnir.http.StatusLine;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Flow;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.IntStream;
 
 public class MiscTest {
 
@@ -29,41 +29,26 @@ public class MiscTest {
 
     @BeforeClass(alwaysRun = true)
     public void start() {
-        ExecutorService executorService = Executors.newFixedThreadPool(16);
         this.server = Server.start(new Configuration(
                 "0.0.0.0",
                 32123,
                 17,
                 13,
                 false,
-                new AbstractHttpInitializer() {
+                new HttpInitializer(1024, 8 * 1024 * 1024) {
                     @Override
-                    protected Flow.Publisher<HttpData> handleData(ChannelContext channelContext, Flow.Publisher<HttpData> dataInput) {
-                        return FlowBuilder.start(dataInput)
+                    protected void handleData(ChannelContext channelContext, Flow.Publisher<HttpData> dataInput, Flow.Subscriber<HttpData> dataOutput) {
+                        FlowBuilder.start(dataInput)
                                 .chain(new RequestAggregator(channelContext))
-                                .<HttpData.FullRequest>onNext((data, downstream) -> {
-                                    executorService.submit(() -> downstream.onNext(data));
+                                .parallel(Executors.newFixedThreadPool(7))
+                                .onNext(data -> {
+                                    return new FullResponse(new StatusLine(ProtocolVersion.HTTP1_1, Status.OK),
+                                            List.of(new Header("Date", HttpData.httpDate()),
+                                                    new Header("Server", "sleipnir"),
+                                                    new Header("x-thread", Thread.currentThread().getName())),
+                                            data.body());
                                 })
-                                .onNext((data, downstream) -> {
-                                    System.out.println(Thread.currentThread().getName());
-                                    System.out.println(data);
-
-                                    if (ThreadLocalRandom.current().nextBoolean()) {
-                                        downstream.onNext(new HttpData.FullResponse(new HttpData.StatusLine(ProtocolVersion.HTTP1_1, Status.OK), List.of(
-                                                new HttpData.Header("Date", HttpData.httpDate()),
-                                                new HttpData.Header("Server", "sleipnir"),
-                                                new HttpData.Header("Transfer-Encoding", "chunked")
-                                        ), BufferUtils.copy(data.body())));
-                                    } else {
-                                        downstream.onNext(new HttpData.Response(new HttpData.StatusLine(ProtocolVersion.HTTP1_1, Status.OK), List.of(
-                                                new HttpData.Header("Date", HttpData.httpDate()),
-                                                new HttpData.Header("Server", "sleipnir"),
-                                                new HttpData.Header("Transfer-Encoding", "chunked")
-                                        )));
-                                        downstream.onNext(new HttpData.Body(BufferUtils.copy(data.body()), false));
-                                        downstream.onNext(HttpData.Body.LAST_EMPTY);
-                                    }
-                                });
+                                .chain(dataOutput);
                     }
                 }
         ));
@@ -74,50 +59,18 @@ public class MiscTest {
         server.stop();
     }
 
-    @Test
-    public void foo() throws IOException, InterruptedException {
-        try (Socket s = new Socket()) {
-            s.connect(new InetSocketAddress("localhost", 32123));
-
-            s.getOutputStream().write("hello-----------------------------------------goodbye\n\r".getBytes(StandardCharsets.UTF_8));
-
-            byte[] buf = new byte[256];
-            for (int i = 0; i < 5; i++) {
-                int read = s.getInputStream().read(buf);
-                if (read > 0) {
-                    System.out.println(new String(buf, 0, read, StandardCharsets.UTF_8));
-                }
-                if (read == -1) {
-                    s.close();
-                    break;
-                }
-            }
-        }
+    private RequestSpecification req() {
+        RestAssuredConfig config = RestAssured.config();
+        config.getDecoderConfig().useNoWrapForInflateDecoding(true);
+        return RestAssured.given()
+                .config(config)
+                .baseUri("http://localhost:32123");
     }
 
     @Test
-    public void http() throws IOException {
-        IntStream.range(0, 101)
-                .parallel()
-                .forEach(i -> {
-                    try {
-                        HttpURLConnection c = (HttpURLConnection) URI.create("http://localhost:32123/sleipnir/test?param=toast")
-                                .toURL()
-                                .openConnection();
-                        c.setRequestMethod("POST");
-                        c.setRequestProperty("X-Cool", "very");
-                        c.setDoOutput(true);
-                        c.getOutputStream().write((i + " data").getBytes(StandardCharsets.UTF_8));
-                        c.getOutputStream().flush();
-                        System.out.println(c.getResponseCode());
-                        c.getHeaderFields().forEach((k, v) -> {
-                            System.out.println(k + ": " + v);
-                        });
-                        System.out.println(new String(c.getInputStream().readAllBytes(), StandardCharsets.UTF_8));
-
-                    } catch (Throwable t) {
-                        t.printStackTrace();
-                    }
-                });
+    public void foo() {
+        req().body("goodbye world, I'd like to be done now, and I'm taking matters into my own hands")
+                .post("/hello")
+                .prettyPeek();
     }
 }
