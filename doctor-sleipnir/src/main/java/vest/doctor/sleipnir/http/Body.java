@@ -21,10 +21,7 @@ public record Body(ByteBuffer data, boolean last) implements HttpData {
     }
 
     @Override
-    public String toString() {
-        return "Body{" +
-                "data=" + BufferUtils.toString(data) +
-                ", last=" + last +
-                '}';
+    public ByteBuffer serialize() {
+        return data;
     }
 }

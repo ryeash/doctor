@@ -6,8 +6,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -15,10 +15,10 @@ import java.util.Queue;
 import java.util.concurrent.Flow;
 import java.util.concurrent.LinkedBlockingQueue;
 
-class SocketOutput implements Flow.Subscriber<ByteBuffer> {
+class SocketOutput implements Flow.Subscriber<ReadableByteChannel> {
 
     private final static Logger log = LoggerFactory.getLogger(SocketOutput.class);
-    private final Queue<ByteBuffer> writeBuffers = new LinkedBlockingQueue<>();
+    private final Queue<ReadableByteChannel> writeBuffers = new LinkedBlockingQueue<>();
     private final Selector selector;
     private final SocketChannel socketChannel;
 
@@ -33,7 +33,7 @@ class SocketOutput implements Flow.Subscriber<ByteBuffer> {
     }
 
     @Override
-    public void onNext(ByteBuffer item) {
+    public void onNext(ReadableByteChannel item) {
         if (socketChannel.isOpen()) {
             boolean success = writeBuffers.offer(item);
             if (!success) {
@@ -69,7 +69,7 @@ class SocketOutput implements Flow.Subscriber<ByteBuffer> {
         }
     }
 
-    public Queue<ByteBuffer> writeQueue() {
+    public Queue<ReadableByteChannel> writeQueue() {
         return writeBuffers;
     }
 }

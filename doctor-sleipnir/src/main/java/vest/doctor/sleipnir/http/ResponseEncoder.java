@@ -1,16 +1,16 @@
 package vest.doctor.sleipnir.http;
 
+import vest.doctor.sleipnir.ByteBufferReadableByteChannel;
 import vest.doctor.sleipnir.ChannelContext;
 
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.Flow;
 import java.util.stream.Stream;
 
-import static vest.doctor.sleipnir.http.HttpData.COLON;
 import static vest.doctor.sleipnir.http.HttpData.CR_LF;
-import static vest.doctor.sleipnir.http.HttpData.SPACE;
 
 public class ResponseEncoder implements Flow.Subscriber<HttpData> {
 
@@ -36,27 +36,29 @@ public class ResponseEncoder implements Flow.Subscriber<HttpData> {
                 onNext(full.statusLine());
                 allowedHeaders(full.headers()).forEach(this::onNext);
                 onNext(new Header("Content-Length", Integer.toString(full.body().remaining())));
-                subscriber().onNext(ByteBuffer.wrap(CR_LF));
-                subscriber().onNext(full.body());
+                out().onNext(new ByteBufferReadableByteChannel(ByteBuffer.wrap(CR_LF)));
+                out().onNext(new ByteBufferReadableByteChannel(full.body()));
             }
-            case StatusLine statusLine -> subscriber().onNext(serialize(statusLine));
-            case Header header -> subscriber().onNext(serialize(header));
             case Body body -> {
                 // assume it's always in "chunked" encoding
+                // if the chunk is empty but not the last, just skip it
+                if (!body.last() && !body.data().hasRemaining()) {
+                    return;
+                }
                 if (body.last() && !body.data().hasRemaining()) {
-                    subscriber().onNext(ByteBuffer.wrap(EMPTY_FINAL_CHUNK));
+                    out().onNext(new ByteBufferReadableByteChannel(ByteBuffer.wrap(EMPTY_FINAL_CHUNK)));
                 } else {
                     String length = Integer.toString(body.data().remaining(), 16);
-                    subscriber().onNext(ByteBuffer.wrap((length).getBytes(StandardCharsets.UTF_8)));
-                    subscriber().onNext(ByteBuffer.wrap(CR_LF));
-                    subscriber().onNext(body.data());
-                    subscriber().onNext(ByteBuffer.wrap(CR_LF));
+                    out().onNext(new ByteBufferReadableByteChannel(ByteBuffer.wrap((length).getBytes(StandardCharsets.UTF_8))));
+                    out().onNext(new ByteBufferReadableByteChannel(ByteBuffer.wrap(CR_LF)));
+                    out().onNext(new ByteBufferReadableByteChannel(body.data()));
+                    out().onNext(new ByteBufferReadableByteChannel(ByteBuffer.wrap(CR_LF)));
                     if (body.last()) {
-                        subscriber().onNext(ByteBuffer.wrap(EMPTY_FINAL_CHUNK));
+                        out().onNext(new ByteBufferReadableByteChannel(ByteBuffer.wrap(EMPTY_FINAL_CHUNK)));
                     }
                 }
             }
-            default -> throw new IllegalStateException("Unexpected value: " + data);
+            default -> out().onNext(new HttpDataReadableChannel(data));
         }
     }
 
@@ -70,7 +72,7 @@ public class ResponseEncoder implements Flow.Subscriber<HttpData> {
         channelContext.dataOutput().onComplete();
     }
 
-    private Flow.Subscriber<ByteBuffer> subscriber() {
+    private Flow.Subscriber<ReadableByteChannel> out() {
         return channelContext.dataOutput();
     }
 
@@ -82,29 +84,4 @@ public class ResponseEncoder implements Flow.Subscriber<HttpData> {
                     .filter(header -> FORBIDDEN_HEADERS.stream().noneMatch(header.name()::equalsIgnoreCase));
         }
     }
-
-    private static ByteBuffer serialize(StatusLine statusLine) {
-        byte[] prot = statusLine.protocolVersion().bytes();
-        byte[] status = statusLine.status().bytes();
-        ByteBuffer buf = ByteBuffer.allocate(prot.length + status.length + 3);
-        buf.put(prot, 0, prot.length);
-        buf.put(SPACE);
-        buf.put(status, 0, status.length);
-        buf.put(CR_LF);
-        buf.flip();
-        return buf;
-    }
-
-    private static ByteBuffer serialize(Header header) {
-        byte[] n = header.name().getBytes(StandardCharsets.UTF_8);
-        byte[] v = header.value().getBytes(StandardCharsets.UTF_8);
-        ByteBuffer buf = ByteBuffer.allocate(n.length + v.length + 3);
-        buf.put(n);
-        buf.put(COLON);
-        buf.put(v);
-        buf.put(CR_LF);
-        buf.flip();
-        return buf;
-    }
-
 }

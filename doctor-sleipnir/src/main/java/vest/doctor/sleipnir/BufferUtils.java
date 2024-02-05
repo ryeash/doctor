@@ -2,11 +2,27 @@ package vest.doctor.sleipnir;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 
 public class BufferUtils {
     public static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
     public static final ByteBuffer CLOSE_BUFFER = ByteBuffer.allocate(0);
+    public static final ReadableByteChannel CLOSE_CHANNEL = new ReadableByteChannel() {
+        @Override
+        public int read(ByteBuffer dst) {
+            return 0;
+        }
+
+        @Override
+        public boolean isOpen() {
+            return false;
+        }
+
+        @Override
+        public void close() {
+        }
+    };
 
     public static ByteBuffer copy(ByteBuffer bb) {
         ByteBuffer copy = ByteBuffer.allocate(bb.remaining());
@@ -15,10 +31,11 @@ public class BufferUtils {
         return copy;
     }
 
-    public static void transfer(ByteBuffer src, ByteBuffer dst) {
+    public static int transfer(ByteBuffer src, ByteBuffer dst) {
         int toTx = Math.min(src.remaining(), dst.remaining());
         dst.put(src.slice(src.position(), toTx));
         src.position(src.position() + toTx);
+        return toTx;
     }
 
     public static String toString(ByteBuffer bb) {

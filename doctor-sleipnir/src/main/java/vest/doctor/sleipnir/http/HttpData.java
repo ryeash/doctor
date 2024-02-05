@@ -1,5 +1,6 @@
 package vest.doctor.sleipnir.http;
 
+import java.nio.ByteBuffer;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -14,4 +15,6 @@ public interface HttpData {
     static String httpDate() {
         return DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now(ZoneId.of("UTC")));
     }
+
+    ByteBuffer serialize();
 }

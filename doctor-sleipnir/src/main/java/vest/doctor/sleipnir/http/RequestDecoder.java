@@ -100,7 +100,7 @@ public class RequestDecoder extends BaseProcessor<ByteBuffer, HttpData> {
             lineBuffer.get();
             String uriStr = toString(lineBuffer, SPACE);
             lineBuffer.get();
-            ProtocolVersion protocolVersion = ProtocolVersion.valueOf(toString(lineBuffer).trim());
+            ProtocolVersion protocolVersion = ProtocolVersion.valueOf(BufferUtils.toString(lineBuffer).trim());
             if (methodStr.isEmpty()) {
                 state = State.CORRUPT;
             }
@@ -123,7 +123,7 @@ public class RequestDecoder extends BaseProcessor<ByteBuffer, HttpData> {
                 }
                 String name = toString(lineBuffer, (byte) ':').trim();
                 lineBuffer.get();
-                String value = toString(lineBuffer).trim();
+                String value = BufferUtils.toString(lineBuffer).trim();
                 lineBuffer.clear();
                 Header header = new Header(name, value);
                 determineBodyReadType(header);
@@ -207,13 +207,13 @@ public class RequestDecoder extends BaseProcessor<ByteBuffer, HttpData> {
         return State.READ_CHUNK;
     }
 
-    public State parseChunkEOL(ByteBuffer buf) {
+    private State parseChunkEOL(ByteBuffer buf) {
         boolean completeLine = readLineBytes(buf);
         return completeLine ? State.READ_CHUNK_SIZE : State.READ_CHUNK_EOL;
     }
 
     // read the final \r\n at the end of chunked content
-    public State parseChunkFooter(ByteBuffer buf) {
+    private State parseChunkFooter(ByteBuffer buf) {
         boolean completeLine = readLineBytes(buf);
         if (completeLine) {
             subscriber().onNext(Body.LAST_EMPTY);
@@ -240,7 +240,7 @@ public class RequestDecoder extends BaseProcessor<ByteBuffer, HttpData> {
     }
 
     public String lineBufferToString() {
-        String s = toString(lineBuffer).trim();
+        String s = BufferUtils.toString(lineBuffer).trim();
         lineBuffer.clear();
         return s;
     }
@@ -274,9 +274,5 @@ public class RequestDecoder extends BaseProcessor<ByteBuffer, HttpData> {
         byte[] b = new byte[pos];
         buf.get(b);
         return new String(b, StandardCharsets.UTF_8);
-    }
-
-    public String toString(ByteBuffer buf) {
-        return StandardCharsets.UTF_8.decode(buf).toString();
     }
 }

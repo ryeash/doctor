@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedSelectorException;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -126,17 +127,17 @@ public class Server implements Runnable {
         SocketChannel ch = (SocketChannel) key.channel();
         SocketMetadata meta = (SocketMetadata) key.attachment();
         try {
-            Queue<ByteBuffer> byteBuffers = meta.output.writeQueue();
+            Queue<ReadableByteChannel> queue = meta.output.writeQueue();
             while (writeBuffer.hasRemaining()) {
-                ByteBuffer peek = byteBuffers.peek();
-                if (peek == null || peek == BufferUtils.CLOSE_BUFFER) {
+                ReadableByteChannel peek = queue.peek();
+                if (peek == null || peek == BufferUtils.CLOSE_CHANNEL) {
                     break;
                 }
-                if (peek.hasRemaining()) {
-                    BufferUtils.transfer(peek, writeBuffer);
+                if (peek.isOpen()) {
+                    peek.read(writeBuffer);
                 }
-                if (!peek.hasRemaining()) {
-                    byteBuffers.poll();
+                if (!peek.isOpen()) {
+                    queue.poll();
                 }
             }
             writeBuffer.flip();
@@ -146,7 +147,7 @@ public class Server implements Runnable {
             } else {
                 key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
             }
-            if (byteBuffers.peek() == BufferUtils.CLOSE_BUFFER) {
+            if (queue.peek() == BufferUtils.CLOSE_CHANNEL) {
                 close(key);
             }
             if (writeBuffer.hasRemaining()) {
@@ -161,6 +162,7 @@ public class Server implements Runnable {
 
     private void close(SelectionKey key) {
         try {
+            key.attach(null);
             key.channel().close();
         } catch (Exception e) {
             log.error("failure trying to close key", e);
