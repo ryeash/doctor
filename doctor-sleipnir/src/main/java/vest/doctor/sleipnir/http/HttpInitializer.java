@@ -17,7 +17,7 @@ public abstract class HttpInitializer extends AbstractCodecSocketInitializer<Htt
 
     @Override
     protected Flow.Processor<ByteBuffer, HttpData> inputDecoder(ChannelContext channelContext) {
-        return new RequestDecoder(uriMaxLength, maxBodyLength);
+        return new HTTPDecoder(channelContext, uriMaxLength, maxBodyLength);
     }
 
     @Override

@@ -1,13 +1,18 @@
 package vest.doctor.ssf;
 
+import vest.doctor.sleipnir.ChannelContext;
+import vest.doctor.sleipnir.http.Headers;
 import vest.doctor.sleipnir.http.ProtocolVersion;
 import vest.doctor.sleipnir.http.Status;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 
 public interface RequestContext {
+
+    ChannelContext channelContext();
 
     void attribute(String key, Object value);
 
@@ -29,7 +34,7 @@ public interface RequestContext {
 
     Headers responseHeaders();
 
-    ByteBuffer responseBody();
+    ReadableByteChannel responseBody();
 
     void responseBody(ByteBuffer body);
 

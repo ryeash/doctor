@@ -10,7 +10,7 @@ import java.util.concurrent.Flow;
 
 public class RequestDecoder extends BaseProcessor<ByteBuffer, HttpData> {
 
-    public enum State {
+    private enum State {
         REQUEST_LINE,
         HEADERS,
         BODY,
@@ -22,8 +22,6 @@ public class RequestDecoder extends BaseProcessor<ByteBuffer, HttpData> {
         DONE,
         CORRUPT
     }
-
-    private static final byte SPACE = ' ';
 
     private State state = State.REQUEST_LINE;
     private final ByteBuffer lineBuffer;
@@ -85,24 +83,24 @@ public class RequestDecoder extends BaseProcessor<ByteBuffer, HttpData> {
             if (state == State.DONE) {
                 reset();
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             state = State.CORRUPT;
             subscriber().onError(e);
             throw e;
         }
     }
 
-    public State parseRequestLine(ByteBuffer buf) {
+    private State parseRequestLine(ByteBuffer buf) {
         boolean completeLine = readLineBytes(buf);
         if (completeLine) {
             lineBuffer.flip();
-            String methodStr = toString(lineBuffer, SPACE);
+            String methodStr = toString(lineBuffer, HttpData.SPACE);
             lineBuffer.get();
-            String uriStr = toString(lineBuffer, SPACE);
+            String uriStr = toString(lineBuffer, HttpData.SPACE);
             lineBuffer.get();
             ProtocolVersion protocolVersion = ProtocolVersion.valueOf(BufferUtils.toString(lineBuffer).trim());
             if (methodStr.isEmpty()) {
-                state = State.CORRUPT;
+                throw new HttpException(Status.BAD_REQUEST, "");
             }
             URI uri = URI.create(uriStr);
             subscriber().onNext(new RequestLine(methodStr, uri, protocolVersion));
@@ -113,7 +111,7 @@ public class RequestDecoder extends BaseProcessor<ByteBuffer, HttpData> {
         }
     }
 
-    public State parseHeaders(ByteBuffer buf) {
+    private State parseHeaders(ByteBuffer buf) {
         while (true) {
             boolean completeLine = readLineBytes(buf);
             if (completeLine) {
@@ -134,7 +132,7 @@ public class RequestDecoder extends BaseProcessor<ByteBuffer, HttpData> {
         }
     }
 
-    public void determineBodyReadType(Header header) {
+    private void determineBodyReadType(Header header) {
         if (header.matches("Transfer-Encoding", "chunked")) {
             leftToRead = -1;
         } else if (header.name().equalsIgnoreCase("Content-Length")) {
@@ -144,7 +142,6 @@ public class RequestDecoder extends BaseProcessor<ByteBuffer, HttpData> {
             }
         }
     }
-
 
     private State bodyReadMode() {
         if (leftToRead < 0) {
@@ -157,7 +154,7 @@ public class RequestDecoder extends BaseProcessor<ByteBuffer, HttpData> {
         }
     }
 
-    public State parseFixedLengthBody(ByteBuffer buf) {
+    private State parseFixedLengthBody(ByteBuffer buf) {
         if (leftToRead <= 0) {
             subscriber().onNext(Body.LAST_EMPTY);
             return State.DONE;
@@ -176,7 +173,7 @@ public class RequestDecoder extends BaseProcessor<ByteBuffer, HttpData> {
         }
     }
 
-    public State parseChunkSize(ByteBuffer buf) {
+    private State parseChunkSize(ByteBuffer buf) {
         boolean completeLine = readLineBytes(buf);
         if (completeLine) {
             String chunkSizeStr = lineBufferToString();
@@ -190,7 +187,7 @@ public class RequestDecoder extends BaseProcessor<ByteBuffer, HttpData> {
         return State.READ_CHUNK_SIZE;
     }
 
-    public State parseChunk(ByteBuffer buf) {
+    private State parseChunk(ByteBuffer buf) {
         int toRead = Math.min(buf.remaining(), leftToRead);
         if ((totalRead + toRead) > maxBodyLength) {
             state = State.CORRUPT;
@@ -225,7 +222,7 @@ public class RequestDecoder extends BaseProcessor<ByteBuffer, HttpData> {
     // fills the lineBuffer,
     // returns true if it actually read a line,
     // false if the buffer ran out before the \r\n was reached
-    public boolean readLineBytes(ByteBuffer buffer) {
+    private boolean readLineBytes(ByteBuffer buffer) {
         while (buffer.hasRemaining()) {
             byte b = buffer.get();
             lineBuffer.put(b);
@@ -239,13 +236,13 @@ public class RequestDecoder extends BaseProcessor<ByteBuffer, HttpData> {
         return false;
     }
 
-    public String lineBufferToString() {
+    private String lineBufferToString() {
         String s = BufferUtils.toString(lineBuffer).trim();
         lineBuffer.clear();
         return s;
     }
 
-    public void reset() {
+    private void reset() {
         state = State.REQUEST_LINE;
         // keep the line buffer at its current size
         lineBuffer.clear();
@@ -253,18 +250,8 @@ public class RequestDecoder extends BaseProcessor<ByteBuffer, HttpData> {
         leftToRead = 0;
     }
 
-    public int indexOf(ByteBuffer buf, byte b, int from) {
-        int pos = buf.position();
-        for (int i = from; i < buf.remaining(); i++) {
-            if (buf.get(pos + i) == b) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    public String toString(ByteBuffer buf, byte stop) {
-        int pos = indexOf(buf, stop, buf.position());
+    private String toString(ByteBuffer buf, byte stop) {
+        int pos = BufferUtils.indexOf(buf, stop, buf.position());
         if (pos < 0) {
             throw new HttpException(Status.BAD_REQUEST, "missing expected character [" + (char) stop + "]");
         }

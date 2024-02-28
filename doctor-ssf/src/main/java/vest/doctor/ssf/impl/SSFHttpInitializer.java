@@ -1,14 +1,13 @@
 package vest.doctor.ssf.impl;
 
 import vest.doctor.rx.FlowBuilder;
-import vest.doctor.ssf.Headers;
-import vest.doctor.ssf.RequestContext;
 import vest.doctor.sleipnir.ChannelContext;
 import vest.doctor.sleipnir.http.FullRequest;
-import vest.doctor.sleipnir.http.Header;
 import vest.doctor.sleipnir.http.HttpData;
 import vest.doctor.sleipnir.http.HttpInitializer;
 import vest.doctor.sleipnir.http.RequestAggregator;
+import vest.doctor.sleipnir.ws.Frame;
+import vest.doctor.ssf.RequestContext;
 
 import java.util.concurrent.Flow;
 
@@ -26,16 +25,16 @@ public class SSFHttpInitializer extends HttpInitializer {
                 // TODO: gzip
                 .chain(new RequestAggregator(channelContext))
                 .onNext(req -> {
-                    doRequest(req, dataOutput);
+                    if (req instanceof FullRequest full) {
+                        doRequest(channelContext, full, dataOutput);
+                    } else if (req instanceof Frame frame) {
+                        doFrame(channelContext, frame, dataOutput);
+                    }
                 });
     }
 
-    private void doRequest(FullRequest req, Flow.Subscriber<HttpData> dataOutput) {
-        Headers headers = new HeadersImpl();
-        for (Header header : req.headers()) {
-            headers.add(header.name(), header.value());
-        }
-        RequestContext ctx = new RequestContextImpl(req.requestLine(), headers, req.body(), dataOutput);
+    private void doRequest(ChannelContext channelContext, FullRequest req, Flow.Subscriber<HttpData> dataOutput) {
+        RequestContext ctx = new RequestContextImpl(channelContext, req, dataOutput);
         try {
             httpConfiguration.handler().handle(ctx);
         } catch (Throwable t) {
@@ -45,5 +44,9 @@ public class SSFHttpInitializer extends HttpInitializer {
                 ctx.send();
             }
         }
+    }
+
+    private void doFrame(ChannelContext channelContext, Frame frame, Flow.Subscriber<HttpData> dataOutput) {
+        throw new UnsupportedOperationException();
     }
 }

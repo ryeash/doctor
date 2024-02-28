@@ -7,19 +7,23 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import vest.doctor.rx.FlowBuilder;
+import vest.doctor.sleipnir.BufferUtils;
 import vest.doctor.sleipnir.ChannelContext;
 import vest.doctor.sleipnir.Configuration;
 import vest.doctor.sleipnir.Server;
+import vest.doctor.sleipnir.http.FullRequest;
 import vest.doctor.sleipnir.http.FullResponse;
-import vest.doctor.sleipnir.http.Header;
 import vest.doctor.sleipnir.http.HttpData;
+import vest.doctor.sleipnir.http.HttpException;
 import vest.doctor.sleipnir.http.HttpInitializer;
-import vest.doctor.sleipnir.http.ProtocolVersion;
 import vest.doctor.sleipnir.http.RequestAggregator;
 import vest.doctor.sleipnir.http.Status;
-import vest.doctor.sleipnir.http.StatusLine;
 
-import java.util.List;
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.Base64;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Flow;
 
@@ -42,11 +46,16 @@ public class MiscTest {
                                 .chain(new RequestAggregator(channelContext))
                                 .parallel(Executors.newFixedThreadPool(7))
                                 .onNext(data -> {
-                                    return new FullResponse(new StatusLine(ProtocolVersion.HTTP1_1, Status.OK),
-                                            List.of(new Header("Date", HttpData.httpDate()),
-                                                    new Header("Server", "sleipnir"),
-                                                    new Header("x-thread", Thread.currentThread().getName())),
-                                            data.body());
+                                    if (data instanceof FullRequest fullRequest) {
+                                        FullResponse response = new FullResponse();
+                                        response.status(Status.OK);
+                                        response.headers().set("Date", HttpData.httpDate());
+                                        response.headers().set("Server", "sleipnir");
+                                        response.headers().set("x-thread", Thread.currentThread().getName());
+                                        response.body(fullRequest.body());
+                                    } else {
+                                        throw new UnsupportedOperationException();
+                                    }
                                 })
                                 .chain(dataOutput);
                     }
@@ -72,5 +81,37 @@ public class MiscTest {
         req().body("goodbye world, I'd like to be done now, and I'm taking matters into my own hands")
                 .post("/hello")
                 .prettyPeek();
+    }
+
+    @Test
+    public void multipart() {
+        req().multiPart("stuff", new File("C:/dev/doctor/doctor-sleipnir/pom.xml"))
+                .post("/multipart")
+                .prettyPeek();
+    }
+
+    @Test
+    public void bufferIndex() {
+        ByteBuffer test = ByteBuffer.wrap("this is a line\r\nthis is antoher\r\n".getBytes(StandardCharsets.UTF_8));
+        System.out.println(BufferUtils.indexOf(test, (byte) '\r', (byte) '\n'));
+        ByteBuffer dest = ByteBuffer.allocate(BufferUtils.indexOf(test, (byte) '\r', (byte) '\n'));
+        BufferUtils.transfer(test, dest);
+        dest.flip();
+        System.out.println(BufferUtils.toString(dest));
+    }
+
+    @Test
+    public void wsSha() {
+        try {
+            String key = "x3JJHMbDL1EzLkh9GBhXDw==";
+            MessageDigest crypt = MessageDigest.getInstance("SHA-1");
+            crypt.reset();
+            crypt.update((key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").getBytes(StandardCharsets.UTF_8));
+            byte[] digest = crypt.digest();
+            String secKeyAccept = Base64.getEncoder().encodeToString(digest);
+            System.out.println(secKeyAccept);
+        } catch (Throwable e) {
+            throw new HttpException(Status.INTERNAL_SERVER_ERROR, "failed to digest key");
+        }
     }
 }

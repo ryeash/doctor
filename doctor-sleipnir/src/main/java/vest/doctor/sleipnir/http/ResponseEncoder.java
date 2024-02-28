@@ -1,21 +1,32 @@
 package vest.doctor.sleipnir.http;
 
+import vest.doctor.sleipnir.BufferUtils;
 import vest.doctor.sleipnir.ByteBufferReadableByteChannel;
 import vest.doctor.sleipnir.ChannelContext;
+import vest.doctor.sleipnir.ws.Frame;
+import vest.doctor.sleipnir.ws.FrameHeader;
+import vest.doctor.sleipnir.ws.Payload;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.Flow;
-import java.util.stream.Stream;
 
 import static vest.doctor.sleipnir.http.HttpData.CR_LF;
 
 public class ResponseEncoder implements Flow.Subscriber<HttpData> {
 
     private static final byte[] EMPTY_FINAL_CHUNK = "0\r\n\r\n".getBytes(StandardCharsets.UTF_8);
-    private static final List<String> FORBIDDEN_HEADERS = List.of("Content-Length", "Transfer-Encoding");
+    private static final Set<String> FORBIDDEN_HEADERS;
+
+    static {
+        FORBIDDEN_HEADERS = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        FORBIDDEN_HEADERS.add("Content-Length");
+        FORBIDDEN_HEADERS.add("Transfer-Encoding");
+    }
+
     private static final Header TE_CHUNKED = new Header("Transfer-Encoding", "chunked");
     // TODO trailers???
 
@@ -34,10 +45,25 @@ public class ResponseEncoder implements Flow.Subscriber<HttpData> {
         switch (data) {
             case FullResponse full -> {
                 onNext(full.statusLine());
-                allowedHeaders(full.headers()).forEach(this::onNext);
-                onNext(new Header("Content-Length", Integer.toString(full.body().remaining())));
-                out().onNext(new ByteBufferReadableByteChannel(ByteBuffer.wrap(CR_LF)));
-                out().onNext(new ByteBufferReadableByteChannel(full.body()));
+
+                full.headers().forEach((name, values) -> {
+                    if (!FORBIDDEN_HEADERS.contains(name)) {
+                        onNext(new Header(name, String.join(",", values)));
+                    }
+                });
+
+                if (full.body() == null || full.body() == BufferUtils.EMPTY_CHANNEL) {
+                    onNext(new Header("Content-Length", "0"));
+                    out().onNext(new ByteBufferReadableByteChannel(ByteBuffer.wrap(CR_LF)));
+                } else if (full.body() instanceof ByteBufferReadableByteChannel buffer) {
+                    onNext(new Header("Content-Length", Integer.toString(buffer.length())));
+                    out().onNext(new ByteBufferReadableByteChannel(ByteBuffer.wrap(CR_LF)));
+                    out().onNext(buffer);
+                } else {
+                    onNext(TE_CHUNKED);
+                    out().onNext(new ByteBufferReadableByteChannel(ByteBuffer.wrap(CR_LF)));
+                    out().onNext(full.body());
+                }
             }
             case Body body -> {
                 // assume it's always in "chunked" encoding
@@ -58,6 +84,16 @@ public class ResponseEncoder implements Flow.Subscriber<HttpData> {
                     }
                 }
             }
+            case Frame frame -> {
+                onNext(frame.getHeader());
+                onNext(frame.getPayload());
+            }
+            case FrameHeader frameHeader -> {
+                out().onNext(new ByteBufferReadableByteChannel(frameHeader.serialize()));
+            }
+            case Payload payload -> {
+                out().onNext(new ByteBufferReadableByteChannel(payload.serialize()));
+            }
             default -> out().onNext(new HttpDataReadableChannel(data));
         }
     }
@@ -74,14 +110,5 @@ public class ResponseEncoder implements Flow.Subscriber<HttpData> {
 
     private Flow.Subscriber<ReadableByteChannel> out() {
         return channelContext.dataOutput();
-    }
-
-    private Stream<Header> allowedHeaders(List<Header> headers) {
-        if (headers == null) {
-            return Stream.empty();
-        } else {
-            return headers.stream()
-                    .filter(header -> FORBIDDEN_HEADERS.stream().noneMatch(header.name()::equalsIgnoreCase));
-        }
     }
 }

@@ -7,7 +7,21 @@ import java.nio.charset.StandardCharsets;
 
 public class BufferUtils {
     public static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
-    public static final ByteBuffer CLOSE_BUFFER = ByteBuffer.allocate(0);
+    public static final ReadableByteChannel EMPTY_CHANNEL = new ReadableByteChannel() {
+        @Override
+        public int read(ByteBuffer dst) {
+            return -1;
+        }
+
+        @Override
+        public boolean isOpen() {
+            return false;
+        }
+
+        @Override
+        public void close() {
+        }
+    };
     public static final ReadableByteChannel CLOSE_CHANNEL = new ReadableByteChannel() {
         @Override
         public int read(ByteBuffer dst) {
@@ -36,6 +50,35 @@ public class BufferUtils {
         dst.put(src.slice(src.position(), toTx));
         src.position(src.position() + toTx);
         return toTx;
+    }
+
+    public static int indexOf(ByteBuffer src, byte... stop) {
+        int position = src.position();
+        for (int i = position; i < src.remaining() - stop.length + 1; i++) {
+            if (src.get(i) == stop[0]) {
+                boolean fullMatch = true;
+                for (int j = 0; j < stop.length; j++) {
+                    fullMatch = src.get(i + j) == stop[j];
+                    if (!fullMatch) {
+                        break;
+                    }
+                }
+                if (fullMatch) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    public static int indexOf(ByteBuffer buf, byte b, int from) {
+        int pos = buf.position();
+        for (int i = from; i < buf.remaining(); i++) {
+            if (buf.get(pos + i) == b) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     public static String toString(ByteBuffer bb) {

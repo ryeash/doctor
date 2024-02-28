@@ -7,7 +7,6 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import vest.doctor.sleipnir.http.Status;
-import vest.doctor.ssf.Headers;
 import vest.doctor.ssf.ServerBuilder;
 import vest.doctor.ssf.impl.HttpServer;
 import vest.doctor.ssf.router.Router;
@@ -53,7 +52,7 @@ public class SSFTest {
                             ctx.responseBody(params.get("word") + " " + params.get("num") + " " + params.get("bool"));
                         })
                         .post("/throughput", ctx -> {
-                            ctx.responseHeaders().contentType(Headers.OCTET_STREAM);
+                            ctx.responseHeaders().set("Content-Type", "application/octet-stream");
                             ctx.responseBody(ctx.requestBody());
                         })
                 )

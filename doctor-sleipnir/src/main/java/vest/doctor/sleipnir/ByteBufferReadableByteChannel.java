@@ -11,6 +11,10 @@ public class ByteBufferReadableByteChannel implements ReadableByteChannel {
         this.byteBuffer = byteBuffer;
     }
 
+    public int length(){
+        return byteBuffer.remaining();
+    }
+
     @Override
     public int read(ByteBuffer dst) {
         if (byteBuffer.hasRemaining()) {

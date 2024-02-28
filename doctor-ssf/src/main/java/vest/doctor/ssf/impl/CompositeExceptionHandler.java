@@ -2,10 +2,10 @@ package vest.doctor.ssf.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import vest.doctor.sleipnir.http.Headers;
 import vest.doctor.sleipnir.http.HttpException;
 import vest.doctor.sleipnir.http.Status;
 import vest.doctor.ssf.ExceptionHandler;
-import vest.doctor.ssf.Headers;
 import vest.doctor.ssf.RequestContext;
 
 import java.util.LinkedList;

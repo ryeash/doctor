@@ -1,51 +1,48 @@
 package vest.doctor.ssf.impl;
 
-import vest.doctor.sleipnir.BufferUtils;
+import vest.doctor.sleipnir.ChannelContext;
+import vest.doctor.sleipnir.http.FullRequest;
 import vest.doctor.sleipnir.http.FullResponse;
-import vest.doctor.sleipnir.http.Header;
+import vest.doctor.sleipnir.http.Headers;
 import vest.doctor.sleipnir.http.HttpData;
 import vest.doctor.sleipnir.http.ProtocolVersion;
-import vest.doctor.sleipnir.http.RequestLine;
 import vest.doctor.sleipnir.http.Status;
-import vest.doctor.sleipnir.http.StatusLine;
-import vest.doctor.ssf.Headers;
 import vest.doctor.ssf.RequestContext;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RequestContextImpl implements RequestContext {
 
+    private final ChannelContext channelContext;
     private final Map<String, Object> attributes;
-    private final RequestLine requestLine;
-    private final Headers requestHeaders;
-    private final ByteBuffer requestBody;
     private final Flow.Subscriber<HttpData> dataOutput;
 
-    private Status status;
-    private final Headers responseHeaders;
-    private ByteBuffer responseBody;
+    private final FullRequest fullRequest;
+    private final FullResponse fullResponse;
 
     private final AtomicBoolean committed = new AtomicBoolean(false);
 
-    public RequestContextImpl(RequestLine requestLine, Headers requestHeaders, ByteBuffer requestBody, Flow.Subscriber<HttpData> dataOutput) {
+    public RequestContextImpl(ChannelContext channelContext, FullRequest fullRequest, Flow.Subscriber<HttpData> dataOutput) {
+        this.channelContext = channelContext;
         this.attributes = new HashMap<>();
-        this.requestLine = requestLine;
-        this.requestHeaders = requestHeaders;
-        this.requestBody = requestBody;
+        this.fullRequest = fullRequest;
         this.dataOutput = dataOutput;
 
-        this.status = Status.OK;
-        this.responseHeaders = new HeadersImpl();
-        responseHeaders.add("Date", HttpData.httpDate());
-        responseHeaders.add("Server", "ssf");
-        this.responseBody = BufferUtils.EMPTY_BUFFER;
+        this.fullResponse = new FullResponse();
+        fullResponse.status(Status.OK);
+        fullResponse.headers().set("Date", HttpData.httpDate());
+        fullResponse.headers().set("Server", "ssf");
+    }
+
+    @Override
+    public ChannelContext channelContext() {
+        return channelContext;
     }
 
     @Override
@@ -61,63 +58,58 @@ public class RequestContextImpl implements RequestContext {
 
     @Override
     public String method() {
-        return requestLine.method();
+        return fullRequest.requestLine().method();
     }
 
     @Override
     public URI uri() {
-        return requestLine.uri();
+        return fullRequest.requestLine().uri();
     }
 
     @Override
     public ProtocolVersion protocolVersion() {
-        return requestLine.protocolVersion();
+        return fullRequest.requestLine().protocolVersion();
     }
 
     @Override
     public Headers requestHeaders() {
-        return requestHeaders;
+        return fullRequest.headers();
     }
 
     @Override
     public ByteBuffer requestBody() {
-        return requestBody;
+        return fullRequest.body();
     }
 
     @Override
     public Status status() {
-        return status;
+        return fullResponse.statusLine().status();
     }
 
     @Override
     public void status(Status status) {
-        this.status = status;
+        this.fullResponse.status(status);
     }
 
     @Override
     public Headers responseHeaders() {
-        return responseHeaders;
+        return fullResponse.headers();
     }
 
     @Override
-    public ByteBuffer responseBody() {
-        return responseBody;
+    public ReadableByteChannel responseBody() {
+        return fullResponse.body();
     }
 
     @Override
     public void responseBody(ByteBuffer body) {
-        this.responseBody = body;
+        this.fullResponse.body(body);
     }
 
     @Override
     public void send() {
         if (committed.compareAndSet(false, true)) {
-            List<Header> headers = new LinkedList<>();
-            for (Map.Entry<String, String> entry : responseHeaders) {
-                headers.add(new Header(entry.getKey(), entry.getValue()));
-            }
-            FullResponse full = new FullResponse(new StatusLine(ProtocolVersion.HTTP1_1, status), headers, responseBody != null ? responseBody : BufferUtils.EMPTY_BUFFER);
-            dataOutput.onNext(full);
+            dataOutput.onNext(fullResponse);
         } else {
             throw new IllegalStateException("response already committed");
         }
