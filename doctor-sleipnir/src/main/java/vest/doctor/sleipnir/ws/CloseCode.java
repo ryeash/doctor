@@ -26,4 +26,16 @@ public enum CloseCode {
     public short code() {
         return code;
     }
+
+    public static CloseCode readCloseCode(Payload payload) {
+        if (payload.getData().remaining() >= 2) {
+            short code = payload.getData().getShort();
+            for (CloseCode value : values()) {
+                if (value.code == code) {
+                    return value;
+                }
+            }
+        }
+        return UNKNOWN;
+    }
 }

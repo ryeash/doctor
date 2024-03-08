@@ -31,7 +31,6 @@ import vest.doctor.sleipnir.ws.Frame;
 import vest.doctor.sleipnir.ws.FrameHeader;
 import vest.doctor.sleipnir.ws.WebsocketUpgradeHandler;
 
-import java.io.File;
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
@@ -81,7 +80,8 @@ public class MiscTest {
                                     } else if (data instanceof Frame frame) {
                                         System.out.println(frame);
                                         if (frame.getHeader().getOpCode() == FrameHeader.OpCode.CLOSE) {
-//                                            output.onNext(Frame.close(CloseCode.NORMAL, "AllDone"));
+                                            System.out.println(CloseCode.readCloseCode(frame.getPayload()));
+                                            System.out.println(BufferUtils.toString(frame.getPayload().getData()));
                                         } else {
                                             output.onNext(Frame.text("go away " + BufferUtils.toString(frame.getPayload().getData())));
                                             output.onNext(Frame.close(CloseCode.NORMAL, "AllDone"));
@@ -113,13 +113,6 @@ public class MiscTest {
     public void simple() {
         req().body("goodbye world, I'd like to be done now, and I'm taking matters into my own hands")
                 .post("/hello")
-                .prettyPeek();
-    }
-
-    @Test
-    public void multipart() {
-        req().multiPart("stuff", new File("C:/dev/doctor/doctor-sleipnir/pom.xml"))
-                .post("/multipart")
                 .prettyPeek();
     }
 
