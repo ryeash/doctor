@@ -26,24 +26,16 @@ public class WebsocketUpgradeHandler {
             throw new UnsupportedOperationException("only full requests are supported");
         }
         FullResponse response = new FullResponse();
-        /*
-         * GET /chat HTTP/1.1
-         * Host: server.example.com
-         * Upgrade: websocket
-         * Connection: Upgrade
-         * Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==
-         * Sec-WebSocket-Protocol: chat, superchat
-         * Sec-WebSocket-Version: 13
-         */
+
         String connection = request.getHeader(Headers.CONNECTION);
-        if (!Objects.equals(connection, "Upgrade")) {
+        if (!Objects.equals(connection, Headers.UPGRADE)) {
             throw new IllegalArgumentException("not an upgrade request");
         }
-        String upgrade = request.getHeader("Upgrade");
-        if (!Objects.equals(upgrade, "websocket")) {
+        String upgrade = request.getHeader(Headers.UPGRADE);
+        if (!Objects.equals(upgrade, Headers.WEBSOCKET)) {
             throw new IllegalArgumentException("not a websocket upgrade request");
         }
-        String key = request.getHeader("Sec-WebSocket-Key");
+        String key = request.getHeader(Headers.SEC_WEBSOCKET_KEY);
         if (key != null) {
             byte[] decode = Base64.getDecoder().decode(key);
             if (decode.length != 16) {
@@ -55,14 +47,14 @@ public class WebsocketUpgradeHandler {
                 crypt.update((key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").getBytes(StandardCharsets.UTF_8));
                 byte[] digest = crypt.digest();
                 String secKeyAccept = Base64.getEncoder().encodeToString(digest);
-                response.headers().set("Sec-WebSocket-Accept", secKeyAccept);
+                response.headers().set(Headers.SEC_WEBSOCKET_ACCEPT, secKeyAccept);
             } catch (Throwable e) {
                 throw new HttpException(Status.INTERNAL_SERVER_ERROR, "failed to digest key");
             }
         }
 
-        String version = request.getHeader("Sec-WebSocket-Version");
-        Set<String> protocol = Optional.ofNullable(request.getHeader("Sec-WebSocket-Protocol"))
+        String version = request.getHeader(Headers.SEC_WEBSOCKET_VERSION);
+        Set<String> protocol = Optional.ofNullable(request.getHeader(Headers.SEC_WEBSOCKET_PROTOCOL))
                 .map(p -> p.split(","))
                 .stream()
                 .flatMap(Arrays::stream)
@@ -70,16 +62,10 @@ public class WebsocketUpgradeHandler {
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         upgrade(channelContext, request, response, version, protocol);
-        /*
-         * HTTP/1.1 101 Switching Protocols
-         * Upgrade: websocket
-         * Connection: Upgrade
-         * Sec-WebSocket-Accept: HSmrc0sMlYUkAGmm5OPpG2HaGWk=
-         * Sec-WebSocket-Protocol: chat
-         */
+
         response.status(Status.SWITCHING_PROTOCOLS);
-        response.headers().set("Upgrade", "websocket");
-        response.headers().set("Connection", "Upgrade");
+        response.headers().set(Headers.UPGRADE, Headers.WEBSOCKET);
+        response.headers().set(Headers.CONNECTION, Headers.UPGRADE);
         channelContext.attributes().put(HTTPDecoder.WS_UPGRADED, true);
         return response;
     }

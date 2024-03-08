@@ -15,12 +15,18 @@ public class Headers extends TreeMap<String, List<String>> {
     public static final String CONTENT_ENCODING = "Content-Encoding";
     public static final String TRANSFER_ENCODING = "Transfer-Encoding";
     public static final String CONNECTION = "Connection";
+    public static final String SEC_WEBSOCKET_KEY = "Sec-WebSocket-Key";
+    public static final String SEC_WEBSOCKET_VERSION = "Sec-WebSocket-Version";
+    public static final String SEC_WEBSOCKET_PROTOCOL = "Sec-WebSocket-Protocol";
+    public static final String SEC_WEBSOCKET_ACCEPT = "Sec-WebSocket-Accept";
+    public static final String UPGRADE = "Upgrade";
     // values
     public static final String TEXT_PLAIN = "text/plain";
     public static final String APPLICATION_JSON = "application/json";
     public static final String OCTET_STREAM = "application/octet-stream";
     public static final String GZIP = "gzip";
     public static final String DEFLATE = "deflate";
+    public static final String WEBSOCKET = "websocket";
 
     public Headers() {
         super(String.CASE_INSENSITIVE_ORDER);
