@@ -1,7 +1,11 @@
 package vest.doctor.sleipnir.ws;
 
+import vest.doctor.sleipnir.ChannelContext;
 import vest.doctor.sleipnir.http.FullRequest;
 import vest.doctor.sleipnir.http.FullResponse;
+import vest.doctor.sleipnir.http.HTTPDecoder;
+import vest.doctor.sleipnir.http.Headers;
+import vest.doctor.sleipnir.http.HttpData;
 import vest.doctor.sleipnir.http.HttpException;
 import vest.doctor.sleipnir.http.Status;
 
@@ -11,11 +15,16 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class WebsocketUpgradeHandler {
-    public static FullResponse upgrade(FullRequest request, String... supportedProtocols) {
+
+    public HttpData upgrade(ChannelContext channelContext, HttpData httpData) {
+        if (!(httpData instanceof FullRequest request)) {
+            throw new UnsupportedOperationException("only full requests are supported");
+        }
         FullResponse response = new FullResponse();
         /*
          * GET /chat HTTP/1.1
@@ -26,7 +35,7 @@ public class WebsocketUpgradeHandler {
          * Sec-WebSocket-Protocol: chat, superchat
          * Sec-WebSocket-Version: 13
          */
-        String connection = request.getHeader("Connection");
+        String connection = request.getHeader(Headers.CONNECTION);
         if (!Objects.equals(connection, "Upgrade")) {
             throw new IllegalArgumentException("not an upgrade request");
         }
@@ -53,26 +62,14 @@ public class WebsocketUpgradeHandler {
         }
 
         String version = request.getHeader("Sec-WebSocket-Version");
-        if (!Objects.equals(version, "13")) {
-            throw new IllegalArgumentException("invalid websocket version: " + version + ", only 13 is supported");
-        }
-
-        String protocol = request.getHeader("Sec-WebSocket-Protocol");
-        if (protocol != null && supportedProtocols.length > 0) {
-            Set<String> protocols = Arrays.stream(protocol.split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
-
-            Set<String> toSupport = Arrays.stream(supportedProtocols)
-                    .filter(protocols::contains)
-                    .collect(Collectors.toSet());
-            if (toSupport.isEmpty()) {
-                throw new IllegalArgumentException("no supported protocols requested: " + protocols + ", supported: " + Arrays.toString(supportedProtocols));
-            }
-            response.headers().set("Sec-WebSocket-Protocol", String.join(",", toSupport));
-        }
-
+        Set<String> protocol = Optional.ofNullable(request.getHeader("Sec-WebSocket-Protocol"))
+                .map(p -> p.split(","))
+                .stream()
+                .flatMap(Arrays::stream)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        upgrade(channelContext, request, response, version, protocol);
         /*
          * HTTP/1.1 101 Switching Protocols
          * Upgrade: websocket
@@ -83,6 +80,11 @@ public class WebsocketUpgradeHandler {
         response.status(Status.SWITCHING_PROTOCOLS);
         response.headers().set("Upgrade", "websocket");
         response.headers().set("Connection", "Upgrade");
+        channelContext.attributes().put(HTTPDecoder.WS_UPGRADED, true);
         return response;
+    }
+
+    protected void upgrade(ChannelContext channelContext, FullRequest request, FullResponse response, String version, Set<String> protocols) {
+        // no-op
     }
 }

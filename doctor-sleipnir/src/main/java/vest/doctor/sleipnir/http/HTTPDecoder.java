@@ -9,6 +9,7 @@ import java.util.concurrent.Flow;
 
 public class HTTPDecoder extends BaseProcessor<ByteBuffer, HttpData> {
 
+    public static final String WS_UPGRADED = "doctor.sleipnir.websocketHandshakeComplete";
     private final ChannelContext channelContext;
     private final RequestDecoder requestDecoder;
     private final WebsocketDecoder websocketDecoder;
@@ -42,7 +43,7 @@ public class HTTPDecoder extends BaseProcessor<ByteBuffer, HttpData> {
     }
 
     private boolean isWebsocket() {
-        Boolean b = (Boolean) channelContext.attributes().get("doctor.sleipnir.websocketHandshakeComplete");
+        Boolean b = (Boolean) channelContext.attributes().get(WS_UPGRADED);
         return b != null && b;
     }
 }

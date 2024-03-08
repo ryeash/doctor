@@ -3,6 +3,7 @@ package vest.doctor.sleipnir.ws;
 import vest.doctor.sleipnir.http.HttpData;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class FrameHeader implements HttpData {
 
@@ -109,5 +110,16 @@ public class FrameHeader implements HttpData {
 
         buf.flip();
         return buf;
+    }
+
+    @Override
+    public String toString() {
+        return "FrameHeader{" +
+                "finished=" + finished +
+                ", opCode=" + opCode +
+                ", mask=" + mask +
+                ", payloadSize=" + payloadSize +
+                ", maskingKey=" + Arrays.toString(maskingKey) +
+                '}';
     }
 }

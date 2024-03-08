@@ -13,6 +13,7 @@
         <module>doctor-processor</module>
         <module>doctor-test</module>
         <module>doctor-jersey</module>
+        <module>doctor-sleipnir</module>
         <module>doctor-ssf</module>
         <module>doctor-http-server</module>
         <module>doctor-grpc</module>
@@ -21,7 +22,6 @@
 
         <module>test-app-ext</module>
         <module>test-app</module>
-        <module>doctor-sleipnir</module>
     </modules>
 
     <properties>
@@ -35,7 +35,7 @@
         <hibernate.version>6.4.4.Final</hibernate.version>
         <jackson.version>2.15.2</jackson.version>
         <grpc.version>1.62.2</grpc.version>
-        <protoc.version>3.24.4</protoc.version>
+        <protoc.version>3.25.3</protoc.version>
     </properties>
 
     <dependencyManagement>

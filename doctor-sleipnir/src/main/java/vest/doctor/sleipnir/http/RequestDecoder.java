@@ -251,14 +251,14 @@ public class RequestDecoder extends BaseProcessor<ByteBuffer, HttpData> {
     }
 
     private String toString(ByteBuffer buf, byte stop) {
-        int pos = BufferUtils.indexOf(buf, stop, buf.position());
+        int pos = BufferUtils.indexOf(buf, stop);
         if (pos < 0) {
-            throw new HttpException(Status.BAD_REQUEST, "missing expected character [" + (char) stop + "]");
+            throw new HttpException(Status.BAD_REQUEST, "missing expected character [" + (char) stop + "] " + BufferUtils.toString(buf));
         }
         if (pos == 0) {
             return "";
         }
-        byte[] b = new byte[pos];
+        byte[] b = new byte[pos - buf.position()];
         buf.get(b);
         return new String(b, StandardCharsets.UTF_8);
     }

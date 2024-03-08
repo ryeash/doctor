@@ -76,11 +76,11 @@ public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
 
     private void postCreateSchedule(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef, ExecutableElement executableElement) {
         if (executableElement.getAnnotation(Scheduled.class) != null) {
+            Scheduled scheduled = executableElement.getAnnotation(Scheduled.class);
             if (!executorInitialized) {
-                method.line("java.util.concurrent.ScheduledExecutorService ses = " + providerRegistryRef + ".getInstance(java.util.concurrent.ScheduledExecutorService.class, \"scheduled\");\n");
+                method.line("java.util.concurrent.ScheduledExecutorService ses = " + providerRegistryRef + ".getInstance(java.util.concurrent.ScheduledExecutorService.class, " + ProcessorUtils.escapeAndQuoteStringForCode(scheduled.scheduler()) + ");\n");
                 executorInitialized = true;
             }
-            Scheduled scheduled = executableElement.getAnnotation(Scheduled.class);
             if (scheduled.interval().isEmpty() && scheduled.cron().isEmpty()) {
                 throw new CodeProcessingException("cron or interval must be set for the @Scheduled annotation", executableElement);
             }

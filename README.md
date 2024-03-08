@@ -312,6 +312,19 @@ public class SomethingPeriodic {
 }
 ```
 
+A ScheduledExecutorService must be available to execute the tasks, by default it uses the name "scheduled".
+
+```java
+@Factory
+@Singleton
+@Named(Scheduled.DEFAULT_SCHEDULED_EXECUTOR_NAME)
+public ScheduledExecutorService scheduledExecutorService() {
+    return ExecutorBuilder.start()
+            .setMinThreads(8)
+            .setMaxThreads(8)
+            .scheduled();
+}
+```
 Internally, the object instances for scheduled methods are tracked using weak references so scheduling method execution
 will _not_ prevent the provided object from being garbage collected.
 

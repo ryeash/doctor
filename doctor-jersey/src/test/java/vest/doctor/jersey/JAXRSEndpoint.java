@@ -1,7 +1,6 @@
 package vest.doctor.jersey;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
-import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
@@ -64,7 +63,7 @@ public class JAXRSEndpoint {
     @GET
     @Path("/async")
     public void async(@Suspended AsyncResponse ar,
-                      @Provided @Named("default") ExecutorService executorService) {
+                      @Provided ExecutorService executorService) {
         Assert.assertNotNull(executorService);
         CompletableFuture.supplyAsync(() -> {
                     try {

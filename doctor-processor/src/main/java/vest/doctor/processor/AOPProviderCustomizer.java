@@ -52,7 +52,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
- * Customization that handles the aspected class generation and wrapping.
+ * Customization that handles the aspect-ed class generation and wrapping.
  */
 public class AOPProviderCustomizer implements ProviderCustomizationPoint {
 

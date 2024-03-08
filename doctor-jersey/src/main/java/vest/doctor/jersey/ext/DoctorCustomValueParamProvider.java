@@ -55,7 +55,7 @@ public final class DoctorCustomValueParamProvider implements ValueParamProvider 
         if (providerRegistry.hasProvider(type, qualifier)) {
             return cr -> providerRegistry.getInstance(type, qualifier);
         } else {
-            throw new InjectionException("unsatisfied dependency " + type + " for " + annotationSource, null);
+            throw new InjectionException("unsatisfied dependency " + type + "/" + qualifier + " for " + annotationSource, null);
         }
     }
 

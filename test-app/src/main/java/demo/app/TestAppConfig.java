@@ -7,6 +7,7 @@ import jakarta.persistence.PersistenceProperty;
 import org.testng.Assert;
 import vest.doctor.Cached;
 import vest.doctor.Configuration;
+import vest.doctor.ExecutorBuilder;
 import vest.doctor.Factory;
 import vest.doctor.Import;
 import vest.doctor.Modules;
@@ -16,10 +17,13 @@ import vest.doctor.ThreadLocal;
 import vest.doctor.aop.Aspects;
 import vest.doctor.grpc.GrpcFeature;
 import vest.doctor.http.server.processing.HttpServerFeature;
+import vest.doctor.scheduled.Scheduled;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 
 @Configuration
 @GrpcFeature
@@ -44,6 +48,39 @@ import java.io.OutputStream;
                 @PersistenceProperty(name = "jakarta.persistence.jdbc.url", value = "${db.url:_missingurl_}"),
         })
 public class TestAppConfig {
+
+    @Factory
+    @Singleton
+    public ExecutorService defaultExecutorService() {
+        return ExecutorBuilder.start().standard();
+    }
+
+    @Factory
+    @Singleton
+    @Named("background")
+    public ExecutorService backgroundExecutorService() {
+        return ExecutorBuilder.start().setMaxThreads(32).standard();
+    }
+
+    @Factory
+    @Singleton
+    @Named(Scheduled.DEFAULT_SCHEDULED_EXECUTOR_NAME)
+    public ScheduledExecutorService scheduledExecutorService() {
+        return ExecutorBuilder.start()
+                .setMinThreads(8)
+                .setMaxThreads(8)
+                .scheduled();
+    }
+
+    @Factory
+    @Singleton
+    @Named("fixed")
+    public ExecutorService fixed() {
+        return ExecutorBuilder.start()
+                .setMinThreads(2)
+                .setMaxThreads(32)
+                .scheduled();
+    }
 
     @Factory
     public InputStream io() {

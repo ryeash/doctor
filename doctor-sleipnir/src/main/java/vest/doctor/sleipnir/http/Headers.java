@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.TreeMap;
 
 public class Headers extends TreeMap<String, List<String>> {
+    // names
     public static final String AUTHORIZATION = "Authorization";
     public static final String CONTENT_LENGTH = "Content-Length";
     public static final String HOST = "Host";
@@ -14,6 +15,7 @@ public class Headers extends TreeMap<String, List<String>> {
     public static final String CONTENT_ENCODING = "Content-Encoding";
     public static final String TRANSFER_ENCODING = "Transfer-Encoding";
     public static final String CONNECTION = "Connection";
+    // values
     public static final String TEXT_PLAIN = "text/plain";
     public static final String APPLICATION_JSON = "application/json";
     public static final String OCTET_STREAM = "application/octet-stream";

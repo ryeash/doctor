@@ -5,7 +5,6 @@ import vest.doctor.sleipnir.http.FullRequest;
 import vest.doctor.sleipnir.http.FullResponse;
 import vest.doctor.sleipnir.http.Headers;
 import vest.doctor.sleipnir.http.HttpData;
-import vest.doctor.sleipnir.http.ProtocolVersion;
 import vest.doctor.sleipnir.http.Status;
 import vest.doctor.ssf.RequestContext;
 
@@ -57,6 +56,16 @@ public class RequestContextImpl implements RequestContext {
     }
 
     @Override
+    public FullRequest request() {
+        return fullRequest;
+    }
+
+    @Override
+    public FullResponse response() {
+        return fullResponse;
+    }
+
+    @Override
     public String method() {
         return fullRequest.requestLine().method();
     }
@@ -64,11 +73,6 @@ public class RequestContextImpl implements RequestContext {
     @Override
     public URI uri() {
         return fullRequest.requestLine().uri();
-    }
-
-    @Override
-    public ProtocolVersion protocolVersion() {
-        return fullRequest.requestLine().protocolVersion();
     }
 
     @Override
@@ -82,11 +86,6 @@ public class RequestContextImpl implements RequestContext {
     }
 
     @Override
-    public Status status() {
-        return fullResponse.statusLine().status();
-    }
-
-    @Override
     public void status(Status status) {
         this.fullResponse.status(status);
     }
@@ -97,13 +96,13 @@ public class RequestContextImpl implements RequestContext {
     }
 
     @Override
-    public ReadableByteChannel responseBody() {
-        return fullResponse.body();
+    public void responseBody(ByteBuffer body) {
+        fullResponse.body(body);
     }
 
     @Override
-    public void responseBody(ByteBuffer body) {
-        this.fullResponse.body(body);
+    public void responseBody(ReadableByteChannel readableByteChannel) {
+        fullResponse.body(readableByteChannel);
     }
 
     @Override

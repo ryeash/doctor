@@ -21,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 @Target({ElementType.METHOD})
 public @interface Scheduled {
 
+    String DEFAULT_SCHEDULED_EXECUTOR_NAME = "scheduled";
+
     enum Type {
         /**
          * corresponds to {@link java.util.concurrent.ScheduledExecutorService#scheduleWithFixedDelay(Runnable, long, long, TimeUnit)}
@@ -31,6 +33,12 @@ public @interface Scheduled {
          */
         FIXED_RATE
     }
+
+    /**
+     * The qualifier for the {@link java.util.concurrent.ScheduledExecutorService} that will execute the
+     * scheduled method;
+     */
+    String scheduler() default DEFAULT_SCHEDULED_EXECUTOR_NAME;
 
     /**
      * The interval for the schedule. See {@link Interval} for details on the format.

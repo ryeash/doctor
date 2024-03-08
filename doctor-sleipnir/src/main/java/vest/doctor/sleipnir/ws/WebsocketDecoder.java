@@ -40,11 +40,7 @@ public class WebsocketDecoder extends BaseProcessor<ByteBuffer, HttpData> {
     }
 
     @Override
-    public void onNext(ByteBuffer item) {
-        parse(item);
-    }
-
-    public void parse(ByteBuffer buf) {
+    public void onNext(ByteBuffer buf) {
         try {
             while (buf.hasRemaining()) {
                 switch (state) {
@@ -99,8 +95,9 @@ public class WebsocketDecoder extends BaseProcessor<ByteBuffer, HttpData> {
             byte initialPayloadLength = (byte) (0b01111111 & second);
             if (initialPayloadLength < 126) {
                 frameHeader.setPayloadSize(initialPayloadLength);
+                payloadLeft = frameHeader.getPayloadSize();
                 lineBuffer.clear();
-                return State.WS_MASK_KEY;
+                return maskKey(buf);
             } else if (initialPayloadLength == 126) {
                 lineBuffer.clear();
                 return State.WS_PAYLOAD_SHORT;
@@ -114,12 +111,13 @@ public class WebsocketDecoder extends BaseProcessor<ByteBuffer, HttpData> {
     }
 
     public State payloadShort(ByteBuffer buf) {
-        while (buf.hasRemaining() && lineBuffer.remaining() < 2) {
+        while (buf.hasRemaining() && lineBuffer.position() < 2) {
             lineBuffer.put(buf.get());
         }
-        if (lineBuffer.remaining() >= 2) {
-            short payloadSize = lineBuffer.getShort();
-            frameHeader.setPayloadSize(payloadSize);
+        if (lineBuffer.position() >= 2) {
+            lineBuffer.flip();
+            frameHeader.setPayloadSize(lineBuffer.getShort());
+            payloadLeft = frameHeader.getPayloadSize();
             lineBuffer.clear();
             return State.WS_MASK_KEY;
         } else {
@@ -128,12 +126,13 @@ public class WebsocketDecoder extends BaseProcessor<ByteBuffer, HttpData> {
     }
 
     public State payloadLong(ByteBuffer buf) {
-        while (buf.hasRemaining() && lineBuffer.remaining() < 8) {
+        while (buf.hasRemaining() && lineBuffer.position() < 8) {
             lineBuffer.put(buf.get());
         }
-        if (lineBuffer.remaining() >= 8) {
-            long payloadSize = lineBuffer.getLong();
-            frameHeader.setPayloadSize(payloadSize);
+        if (lineBuffer.position() >= 8) {
+            lineBuffer.flip();
+            frameHeader.setPayloadSize(lineBuffer.getLong());
+            payloadLeft = frameHeader.getPayloadSize();
             lineBuffer.clear();
             return State.WS_MASK_KEY;
         } else {
@@ -146,10 +145,11 @@ public class WebsocketDecoder extends BaseProcessor<ByteBuffer, HttpData> {
             subscriber().onNext(frameHeader);
             return State.WS_PAYLOAD_DATA;
         }
-        while (buf.hasRemaining() && lineBuffer.remaining() < 4) {
+        while (buf.hasRemaining() && lineBuffer.position() < 4) {
             lineBuffer.put(buf.get());
         }
-        if (lineBuffer.remaining() >= 4) {
+        if (lineBuffer.position() >= 4) {
+            lineBuffer.flip();
             byte[] key = new byte[4];
             lineBuffer.get(key);
             frameHeader.setMaskingKey(key);
