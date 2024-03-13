@@ -4,7 +4,6 @@ import vest.doctor.DoctorProvider;
 import vest.doctor.PropertyActivation;
 import vest.doctor.ProviderRegistry;
 
-import java.util.List;
 import java.util.function.BiPredicate;
 
 /**
@@ -23,8 +22,9 @@ public final class PropertyActivationPredicate implements BiPredicate<ProviderRe
                 .allMatch(ad -> {
                     String name = ad.stringValue("name");
                     String value = ad.stringValue("value");
-                    List<String> properties = providerRegistry.configuration().getList(name);
-                    return properties.contains(value);
+                    return providerRegistry.configuration()
+                            .getList(providerRegistry.resolvePlaceholders(name))
+                            .contains(providerRegistry.resolvePlaceholders(value));
                 });
     }
 }

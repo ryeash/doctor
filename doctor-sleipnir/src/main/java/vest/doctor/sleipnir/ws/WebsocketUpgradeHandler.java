@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 
 public class WebsocketUpgradeHandler {
 
+    private static final String WS_SECRET_HASH_KEY = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
     public HttpData upgrade(ChannelContext channelContext, HttpData httpData) {
         if (!(httpData instanceof FullRequest request)) {
             throw new UnsupportedOperationException("only full requests are supported");
@@ -44,7 +46,7 @@ public class WebsocketUpgradeHandler {
             try {
                 MessageDigest crypt = MessageDigest.getInstance("SHA-1");
                 crypt.reset();
-                crypt.update((key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").getBytes(StandardCharsets.UTF_8));
+                crypt.update((key + WS_SECRET_HASH_KEY).getBytes(StandardCharsets.UTF_8));
                 byte[] digest = crypt.digest();
                 String secKeyAccept = Base64.getEncoder().encodeToString(digest);
                 response.headers().set(Headers.SEC_WEBSOCKET_ACCEPT, secKeyAccept);
