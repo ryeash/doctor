@@ -20,13 +20,6 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-<!--            <dependency>-->
-<!--                <groupId>io.grpc</groupId>-->
-<!--                <artifactId>grpc-bom</artifactId>-->
-<!--                <version>${grpc.version}</version>-->
-<!--                <type>pom</type>-->
-<!--                <scope>import</scope>-->
-<!--            </dependency>-->
         </dependencies>
     </dependencyManagement>
 
@@ -39,10 +32,6 @@
             <artifactId>doctor-processor</artifactId>
             <groupId>${project.groupId}</groupId>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <artifactId>doctor-http-server</artifactId>
-            <groupId>${project.groupId}</groupId>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -61,11 +50,11 @@
         </dependency>
 
         <dependency>
-            <artifactId>doctor-grpc</artifactId>
+            <artifactId>doctor-jaxrs</artifactId>
             <groupId>${project.groupId}</groupId>
         </dependency>
         <dependency>
-            <artifactId>doctor-jpa</artifactId>
+            <artifactId>doctor-grpc</artifactId>
             <groupId>${project.groupId}</groupId>
         </dependency>
         <dependency>

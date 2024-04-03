@@ -1,30 +1,27 @@
 package demo.app.service;
 
 import jakarta.inject.Singleton;
-import vest.doctor.http.server.Filter;
-import vest.doctor.http.server.FilterChain;
-import vest.doctor.http.server.Request;
-import vest.doctor.http.server.RequestContext;
-import vest.doctor.http.server.ResponseBody;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.ContainerResponseContext;
+import jakarta.ws.rs.container.ContainerResponseFilter;
+import jakarta.ws.rs.core.Response;
 
+import java.io.IOException;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 
 @Singleton
-public class TestFilter implements Filter {
+public class TestFilter implements ContainerRequestFilter, ContainerResponseFilter {
     @Override
-    public CompletableFuture<RequestContext> filter(RequestContext requestContext, FilterChain chain) throws Exception {
-        Request request = requestContext.request();
-        if (Objects.equals(request.queryParam("halt"), "true")) {
-            requestContext.response().status(202).body(ResponseBody.of("halted"));
-            return CompletableFuture.completedFuture(requestContext);
+    public void filter(ContainerRequestContext requestContext) throws IOException {
+        if (Objects.equals(requestContext.getUriInfo().getQueryParameters().getFirst("halt"), "true")) {
+            throw new WebApplicationException(Response.status(202).entity("halted").build());
         }
+    }
 
-        requestContext.attribute("test.attribute", "value");
-        return chain.next(requestContext)
-                .thenApply(r -> {
-                    r.response().header("X-After", "true");
-                    return r;
-                });
+    @Override
+    public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) throws IOException {
+        responseContext.getHeaders().putSingle("X-After", "true");
     }
 }

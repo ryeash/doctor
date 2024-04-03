@@ -2,6 +2,7 @@ module doctor.core {
     requires static java.compiler;
 
     requires jakarta.inject;
+    requires jakarta.persistence;
     requires java.sql;
     requires org.slf4j;
 

@@ -16,7 +16,7 @@ import vest.doctor.Prototype;
 import vest.doctor.ThreadLocal;
 import vest.doctor.aop.Aspects;
 import vest.doctor.grpc.GrpcFeature;
-import vest.doctor.http.server.processing.HttpServerFeature;
+import vest.doctor.jaxrs.JAXRSFeature;
 import vest.doctor.scheduled.Scheduled;
 
 import java.io.ByteArrayInputStream;
@@ -27,7 +27,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 @Configuration
 @GrpcFeature
-@HttpServerFeature
+@JAXRSFeature
 @Named("duck")
 @Import({"app.ext", "app.ext.sub"})
 @PersistenceContext(

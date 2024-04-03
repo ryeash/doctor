@@ -12,12 +12,8 @@
         <module>doctor-core</module>
         <module>doctor-processor</module>
         <module>doctor-test</module>
-        <module>doctor-jersey</module>
-        <module>doctor-sleipnir</module>
-        <module>doctor-ssf</module>
-        <module>doctor-http-server</module>
+        <module>doctor-jaxrs</module>
         <module>doctor-grpc</module>
-        <module>doctor-jpa</module>
         <module>doctor-bom</module>
 
         <module>test-app-ext</module>
@@ -84,6 +80,13 @@
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
                 <version>1.16.1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey</groupId>
+                <artifactId>jersey-bom</artifactId>
+                <version>3.1.5</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
