@@ -21,8 +21,10 @@ import jakarta.ws.rs.ProcessingException;
 import org.glassfish.jersey.server.ResourceConfig;
 import vest.doctor.CustomThreadFactory;
 import vest.doctor.jaxrs.JAXRSConfiguration;
+import vest.doctor.jaxrs.ServerBootstrapCustomizer;
 
 import java.net.URI;
+import java.util.List;
 
 public class NettyJersey extends ChannelInitializer<SocketChannel> implements AutoCloseable {
 
@@ -35,7 +37,10 @@ public class NettyJersey extends ChannelInitializer<SocketChannel> implements Au
     private final URI baseUri;
     private final Channel channel;
 
-    public NettyJersey(JAXRSConfiguration config, SslContext sslContext, ResourceConfig resourceConfig) {
+    public NettyJersey(JAXRSConfiguration config,
+                       SslContext sslContext,
+                       ResourceConfig resourceConfig,
+                       List<ServerBootstrapCustomizer> serverBootstrapCustomizers) {
         this.config = config;
         this.sslContext = sslContext;
         this.container = new NettyHttpContainer(resourceConfig);
@@ -56,14 +61,19 @@ public class NettyJersey extends ChannelInitializer<SocketChannel> implements Au
         String path = uriPath.substring(0, doubleSlash) + uriPath.substring(doubleSlash).replaceAll("/{2,}", "/");
         this.baseUri = URI.create(path);
 
-        ServerBootstrap b = new ServerBootstrap();
-        b.option(ChannelOption.SO_BACKLOG, config.socketBacklog().orElse(1024));
-        b.group(bossGroup, workerGroup)
+        ServerBootstrap serverBootstrap = new ServerBootstrap()
+                .group(bossGroup, workerGroup)
+                .option(ChannelOption.SO_BACKLOG, config.socketBacklog().orElse(1024))
+                .option(ChannelOption.SO_KEEPALIVE, true)
+                .option(ChannelOption.TCP_NODELAY, true)
                 .channel(NioServerSocketChannel.class)
                 .childHandler(this);
 
+        serverBootstrap = serverBootstrapCustomizers.stream()
+                .reduce(serverBootstrap, (c, customizer) -> customizer.customize(c), (a, b) -> b);
+
         try {
-            this.channel = b.bind(uri.getPort()).sync().channel();
+            this.channel = serverBootstrap.bind(uri.getPort()).sync().channel();
             channel.closeFuture().addListener(future -> {
                 container.getApplicationHandler().onShutdown(container);
                 bossGroup.shutdownGracefully();

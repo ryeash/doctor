@@ -29,6 +29,10 @@
             <groupId>${project.groupId}</groupId>
         </dependency>
         <dependency>
+            <artifactId>doctor-jpa</artifactId>
+            <groupId>${project.groupId}</groupId>
+        </dependency>
+        <dependency>
             <artifactId>doctor-processor</artifactId>
             <groupId>${project.groupId}</groupId>
             <scope>provided</scope>

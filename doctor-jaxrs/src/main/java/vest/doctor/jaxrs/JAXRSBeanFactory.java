@@ -22,6 +22,7 @@ import vest.doctor.ProviderRegistry;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.ServiceStarted;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -34,6 +35,8 @@ public final class JAXRSBeanFactory implements ApplicationLoader {
     public NettyJersey jerseyFactory(ProviderRegistry providerRegistry,
                                      EventBus eventBus,
                                      JAXRSConfiguration httpConfig,
+                                     List<ResourceConfigCustomizer> resourceConfigCustomizers,
+                                     List<ServerBootstrapCustomizer> serverBootstrapCustomizers,
                                      @Named("server") Optional<SslContext> sslContext) {
         ResourceConfig config = new ResourceConfig();
         config.setApplicationName("netty-jaxrs");
@@ -50,10 +53,10 @@ public final class JAXRSBeanFactory implements ApplicationLoader {
                 .map(DoctorProvider::get)
                 .forEach(config::register);
 
-        config = providerRegistry.getInstances(ResourceConfigCustomizer.class)
+        config = resourceConfigCustomizers.stream()
                 .reduce(config, (c, customizer) -> customizer.customize(c), (a, b) -> b);
 
-        NettyJersey nettyJersey = new NettyJersey(httpConfig, sslContext.orElse(null), config);
+        NettyJersey nettyJersey = new NettyJersey(httpConfig, sslContext.orElse(null), config, serverBootstrapCustomizers);
         eventBus.publish(new ServiceStarted("netty-jersey-http", nettyJersey));
         return nettyJersey;
     }

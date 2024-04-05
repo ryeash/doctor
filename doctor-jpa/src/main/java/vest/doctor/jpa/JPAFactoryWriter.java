@@ -103,6 +103,7 @@ public class JPAFactoryWriter implements ProviderDefinitionListener {
             propertyMap.put(property.name(), property.value());
         }
 
+
         CodeSnippet propCode = new CodeSnippet();
         propCode.line("Map<String, String> map = new LinkedHashMap<>();");
         for (PersistenceProperty property : persistenceContext.properties()) {

@@ -5,7 +5,6 @@ import org.glassfish.jersey.server.ResourceConfig;
 /**
  * Customizes the {@link ResourceConfig} for the jersey JAX-RS provider.
  */
-
 public interface ResourceConfigCustomizer {
 
     /**
