@@ -32,5 +32,4 @@
             <artifactId>slf4j-simple</artifactId>
         </dependency>
     </dependencies>
-
 </project>
