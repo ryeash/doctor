@@ -15,6 +15,7 @@ import io.grpc.protobuf.services.HealthStatusManager;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import vest.doctor.Activation;
 import vest.doctor.Configuration;
 import vest.doctor.Eager;
 import vest.doctor.Factory;
@@ -35,6 +36,7 @@ public final class GrpcFactory {
 
     @Factory
     @Singleton
+    @Activation(StartGRPCService.class)
     public HealthStatusManager healthStatusManagerFactory() {
         return new HealthStatusManager();
     }
@@ -42,14 +44,11 @@ public final class GrpcFactory {
     @Eager
     @Factory
     @Singleton
-    public GrpcServerHandle grpcServerFactory(ProviderRegistry providerRegistry,
-                                              HealthStatusManager healthStatusManager,
-                                              GrpcConfig grpcConfig) throws IOException {
-        if (grpcConfig.port().isEmpty()) {
-            log.warn("grpc.port not set, not starting grpc server");
-            return new GrpcServerHandle(null);
-        }
-        int port = grpcConfig.port().get();
+    @Activation(StartGRPCService.class)
+    public Server grpcServerFactory(ProviderRegistry providerRegistry,
+                                    HealthStatusManager healthStatusManager,
+                                    GrpcConfig grpcConfig) throws IOException {
+        int port = grpcConfig.port().orElseThrow(() -> new IllegalStateException("missing port configuration for grpc server"));
         Interval handshakeTimeout = grpcConfig.handshakeTimeout().orElse(new Interval("5s"));
         Interval keepAlive = grpcConfig.keepAlive().orElse(new Interval("2h"));
         Interval keepAliveTimeout = grpcConfig.keepAliveTimeout().orElse(new Interval("20s"));
@@ -98,7 +97,7 @@ public final class GrpcFactory {
         log.info("starting grpc server on port {}", port);
         Server build = serverBuilder.build().start();
         healthStatusManager.setStatus("grpc-" + port, HealthCheckResponse.ServingStatus.SERVING);
-        return new GrpcServerHandle(build);
+        return build;
     }
 
     private static <T> void providedList(Class<T> type, ProviderRegistry providerRegistry, Consumer<? super T> consumer) {

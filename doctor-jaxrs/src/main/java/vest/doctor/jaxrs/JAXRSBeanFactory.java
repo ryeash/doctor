@@ -1,6 +1,5 @@
 package vest.doctor.jaxrs;
 
-import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
@@ -13,11 +12,11 @@ import jakarta.ws.rs.ext.MessageBodyWriter;
 import org.glassfish.jersey.netty.httpserver.NettyJersey;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.ServerProperties;
+import vest.doctor.Activation;
 import vest.doctor.ApplicationLoader;
 import vest.doctor.Configuration;
 import vest.doctor.DoctorProvider;
 import vest.doctor.Eager;
-import vest.doctor.ExplicitProvidedTypes;
 import vest.doctor.Factory;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.event.EventBus;
@@ -31,14 +30,11 @@ public final class JAXRSBeanFactory implements ApplicationLoader {
     @Eager
     @Singleton
     @Factory
-    @ExplicitProvidedTypes(AutoCloseable.class)
-    public JAXRSServerHandle jerseyFactory(ProviderRegistry providerRegistry,
-                                           EventBus eventBus,
-                                           JAXRSConfiguration httpConfig,
-                                           @Named("server") Optional<SslContext> sslContext) {
-        if (httpConfig.bindAddress().isEmpty()) {
-            return new JAXRSServerHandle(null);
-        }
+    @Activation(StartNettyJerseyService.class)
+    public NettyJersey jerseyFactory(ProviderRegistry providerRegistry,
+                                     EventBus eventBus,
+                                     JAXRSConfiguration httpConfig,
+                                     @Named("server") Optional<SslContext> sslContext) {
         ResourceConfig config = new ResourceConfig();
         config.setApplicationName("netty-jaxrs");
         config.property(ServerProperties.TRACING, "ALL");
@@ -57,8 +53,8 @@ public final class JAXRSBeanFactory implements ApplicationLoader {
         config = providerRegistry.getInstances(ResourceConfigCustomizer.class)
                 .reduce(config, (c, customizer) -> customizer.customize(c), (a, b) -> b);
 
-        Channel server = NettyJersey.jerseyNettyStartup(httpConfig, sslContext.orElse(null), config);
-        eventBus.publish(new ServiceStarted("netty-jersey-http", server));
-        return new JAXRSServerHandle(server);
+        NettyJersey nettyJersey = new NettyJersey(httpConfig, sslContext.orElse(null), config);
+        eventBus.publish(new ServiceStarted("netty-jersey-http", nettyJersey));
+        return nettyJersey;
     }
 }
