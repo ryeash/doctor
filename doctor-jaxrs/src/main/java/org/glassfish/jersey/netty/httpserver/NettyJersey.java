@@ -74,11 +74,6 @@ public class NettyJersey extends ChannelInitializer<SocketChannel> implements Au
 
         try {
             this.channel = serverBootstrap.bind(uri.getPort()).sync().channel();
-            channel.closeFuture().addListener(future -> {
-                container.getApplicationHandler().onShutdown(container);
-                bossGroup.shutdownGracefully();
-                workerGroup.shutdownGracefully();
-            });
         } catch (InterruptedException e) {
             throw new ProcessingException(e);
         }
