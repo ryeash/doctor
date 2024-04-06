@@ -61,7 +61,7 @@ public interface RowMapper<T> extends Function<ResultSet, T> {
      * that doesn't throw a checked exception.
      * <p>
      * Mostly just to appease the compiler and make it easier to use the result stream
-     * (from {@link JDBCStatement#select()}) and map to values without have to try-catch every usage.
+     * (from {@link JDBCStatement#select()}) and map to values without having to try-catch every usage.
      *
      * @param map the mapper function to unwrap
      * @return the function
