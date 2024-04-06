@@ -11,10 +11,6 @@
 
     <artifactId>doctor-processor</artifactId>
 
-    <properties>
-        <maven.deploy.skip>false</maven.deploy.skip>
-    </properties>
-
     <dependencies>
         <dependency>
             <artifactId>doctor-core</artifactId>
@@ -45,5 +41,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

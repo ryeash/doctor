@@ -1,44 +1,24 @@
 package demo.app.service;
 
 import jakarta.inject.Inject;
-import vest.doctor.http.server.Param.Context;
-import vest.doctor.http.server.Request;
-import vest.doctor.http.server.Response;
-
-import java.util.Optional;
-
-import static vest.doctor.http.server.Param.Cookie;
-import static vest.doctor.http.server.Param.Header;
-import static vest.doctor.http.server.Param.Path;
-import static vest.doctor.http.server.Param.Query;
+import jakarta.ws.rs.CookieParam;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 
 public class BeanParamObject {
 
-    private final Request request;
-    private final Response response;
     private final String path;
-    @Query
+    @QueryParam("size")
     private Integer size;
-    @Header("X-Param")
+    @HeaderParam("X-Param")
     private String param;
-    @Cookie
-    private Optional<String> cook;
+    @CookieParam("cook")
+    private String cook;
 
     @Inject
-    public BeanParamObject(@Context Request request,
-                           @Context Response response,
-                           @Path String path) {
-        this.request = request;
-        this.response = response;
+    public BeanParamObject(@PathParam("path") String path) {
         this.path = path;
-    }
-
-    public Request getRequest() {
-        return request;
-    }
-
-    public Response getResponse() {
-        return response;
     }
 
     public String getPath() {
@@ -61,16 +41,16 @@ public class BeanParamObject {
         this.param = param;
     }
 
-    public Optional<String> getCook() {
+    public String getCook() {
         return cook;
     }
 
-    public void setCook(Optional<String> cook) {
+    public void setCook(String cook) {
         this.cook = cook;
     }
 
     @Override
     public String toString() {
-        return path + " " + size + " " + param + " " + cook.get();
+        return path + " " + size + " " + param + " " + cook;
     }
 }

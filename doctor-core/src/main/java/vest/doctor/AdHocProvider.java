@@ -4,7 +4,6 @@ import jakarta.inject.Singleton;
 
 import java.lang.annotation.Annotation;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -14,15 +13,8 @@ import java.util.List;
  */
 public final class AdHocProvider<T> implements DoctorProvider<T> {
 
-    @SuppressWarnings("unchecked")
-    public static <T> AdHocProvider<T> createPrimary(T instance, Class<?>... additionalTypes) {
-        List<Class<?>> allTypes = new LinkedList<>();
-        allTypes.add(instance.getClass());
-        Collections.addAll(allTypes, additionalTypes);
-        return new AdHocProvider<>((Class<T>) instance.getClass(), instance, null, allTypes);
-    }
-
     private final Class<T> type;
+    private final TypeInfo typeInfo;
     private final T t;
     private final String qualifier;
     private final List<Class<?>> allProvidedTypes;
@@ -32,16 +24,13 @@ public final class AdHocProvider<T> implements DoctorProvider<T> {
         this(type, t, qualifier, Collections.singletonList(type));
     }
 
-    public AdHocProvider(Class<T> type, T t, String qualifier, AutoCloseable close) {
-        this(type, t, qualifier, Collections.singletonList(type), close);
-    }
-
     public AdHocProvider(Class<T> type, T t, String qualifier, List<Class<?>> allProvidedTypes) {
         this(type, t, qualifier, allProvidedTypes, null);
     }
 
     public AdHocProvider(Class<T> type, T t, String qualifier, List<Class<?>> allProvidedTypes, AutoCloseable close) {
         this.type = type;
+        this.typeInfo = new TypeInfo(type);
         this.t = t;
         this.qualifier = qualifier;
         this.allProvidedTypes = Collections.unmodifiableList(allProvidedTypes);
@@ -51,6 +40,11 @@ public final class AdHocProvider<T> implements DoctorProvider<T> {
     @Override
     public Class<T> type() {
         return type;
+    }
+
+    @Override
+    public TypeInfo typeInfo() {
+        return typeInfo;
     }
 
     @Override

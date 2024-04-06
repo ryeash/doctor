@@ -22,7 +22,6 @@ public class ClassBuilder extends AbstractCodeBuilder<ClassBuilder> {
     private Set<String> classAnnotations;
     private List<String> fields;
     private List<MethodBuilder> methods;
-    private List<ClassBuilder> nestedClasses;
 
     public ClassBuilder() {
         super();
@@ -122,14 +121,6 @@ public class ClassBuilder extends AbstractCodeBuilder<ClassBuilder> {
         return this;
     }
 
-    public ClassBuilder addNestedClass(ClassBuilder nested) {
-        if (nestedClasses == null) {
-            nestedClasses = new LinkedList<>();
-        }
-        nestedClasses.add(nested);
-        return this;
-    }
-
     public void writeClass(Filer filer) {
         try {
             JavaFileObject builderFile = filer.createSourceFile(fullyQualifiedClassName);
@@ -140,13 +131,6 @@ public class ClassBuilder extends AbstractCodeBuilder<ClassBuilder> {
                 out.println(";");
                 out.println();
 
-                if (nestedClasses != null) {
-                    for (ClassBuilder nestedClass : nestedClasses) {
-                        for (String importClass : nestedClass.importClasses) {
-                            addImportClass(importClass);
-                        }
-                    }
-                }
                 if (importClasses != null) {
                     for (String importClass : new LinkedHashSet<>(importClasses)) {
                         out.println("import " + importClass + ";");
@@ -191,12 +175,6 @@ public class ClassBuilder extends AbstractCodeBuilder<ClassBuilder> {
             for (MethodBuilder method : builder.methods) {
                 method.writeTo(out);
                 out.println();
-            }
-        }
-
-        if (builder.nestedClasses != null) {
-            for (ClassBuilder nestedClass : builder.nestedClasses) {
-                writeNestedClass(nestedClass, out);
             }
         }
     }

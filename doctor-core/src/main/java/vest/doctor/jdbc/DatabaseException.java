@@ -12,4 +12,8 @@ public class DatabaseException extends RuntimeException {
     public DatabaseException(Throwable t) {
         super(t);
     }
+
+    public DatabaseException(String message) {
+        super(message);
+    }
 }

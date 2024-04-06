@@ -23,7 +23,7 @@ import static java.io.StreamTokenizer.TT_EOL;
  * <p>
  * Structured properties files allow for organizing/name-spacing properties in a less dense, easier to read manner.
  * <p>
- * Definition:
+ * Definition:<br/><br/>
  * Nesting is defined by '{' and '}':
  * <code>
  * <pre>
@@ -49,20 +49,20 @@ import static java.io.StreamTokenizer.TT_EOL;
  * '{' : used to nest a level deeper in the structure
  * '}' : used to close a nested structure
  * '=', ':' : sets the value of a property, e.g. name = value OR name: value
- * ';' : can be used to signify the end of a line (though it is not necessary)
+ * ';' : can be used to signify the end of a line (optional)
  * '#' : comments
  * </pre>
- * Quoted strings using either ' or " can be used to escape reserved characters
- * e.g. <pre>name = "value contains { } = : and ;"</pre>
- * Quotes are necessary when interpolating values, i.e. values like: <pre>http://${referenced.property}/</pre>
+ * Quoted strings using either single (') or double (") quotes can be used to escape reserved characters
+ * e.g. <pre>name = "value contains { } = and ;"</pre>
+ * Quotes are necessary when interpolating values, i.e. values like: <literal>http://${referenced.property}/</literal>
  */
 public class StructuredConfigurationSource implements ConfigurationSource {
 
     private final FileLocation propertyFile;
-    private MapConfigurationSource delegate;
+    private ConfigurationSource delegate;
 
     public StructuredConfigurationSource(String location) {
-        this(new FileLocation(location));
+        this(new FileLocation(Objects.requireNonNull(location, "the configuration location can not be null")));
     }
 
     public StructuredConfigurationSource(FileLocation url) {
@@ -92,7 +92,7 @@ public class StructuredConfigurationSource implements ConfigurationSource {
 
     @Override
     public String toString() {
-        return "StructuredConfigurationSource{" + propertyFile + "}";
+        return getClass().getSimpleName() + "{" + propertyFile + "}";
     }
 
     private Map<String, String> parse(Reader reader) {

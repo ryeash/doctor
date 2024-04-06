@@ -7,6 +7,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.time.ZoneId;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -20,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 @Target({ElementType.METHOD})
 public @interface Scheduled {
 
+    String DEFAULT_SCHEDULED_EXECUTOR_NAME = "scheduled";
+
     enum Type {
         /**
          * corresponds to {@link java.util.concurrent.ScheduledExecutorService#scheduleWithFixedDelay(Runnable, long, long, TimeUnit)}
@@ -32,6 +35,12 @@ public @interface Scheduled {
     }
 
     /**
+     * The qualifier for the {@link java.util.concurrent.ScheduledExecutorService} that will execute the
+     * scheduled method;
+     */
+    String scheduler() default DEFAULT_SCHEDULED_EXECUTOR_NAME;
+
+    /**
      * The interval for the schedule. See {@link Interval} for details on the format.
      */
     String interval() default "";
@@ -40,6 +49,13 @@ public @interface Scheduled {
      * The cron schedule. See {@link Cron} for details on the format.
      */
     String cron() default "";
+
+    /**
+     * The timezone to use when evaluating the fire times for {@link #cron}.
+     *
+     * @see ZoneId
+     */
+    String timezone() default "UTC";
 
     /**
      * The schedule type. Only applies when using {@link #interval()}.

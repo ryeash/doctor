@@ -18,7 +18,7 @@ public @interface DestroyMethod {
 
     /**
      * The name of the method to call to destroy the instances of the provided type.
-     * The target method may not have any arguments.
+     * The target method must be <code>public</code> and may not have any arguments.
      */
     String value();
 }

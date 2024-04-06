@@ -1,17 +1,18 @@
 package demo.app;
 
 import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
-import vest.doctor.Async;
 import vest.doctor.Eager;
 import vest.doctor.event.ApplicationStarted;
 import vest.doctor.event.EventBus;
 import vest.doctor.event.EventConsumer;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 @Eager
 @Singleton
@@ -29,9 +30,8 @@ public class TCEvent implements EventConsumer<Object> {
     }
 
     @Inject
-    @Async("background")
-    public void message() {
-        producer.publish("test");
+    public void message(@Named("background") ExecutorService exec) {
+        exec.submit(() -> producer.publish("test"));
     }
 
     @Override

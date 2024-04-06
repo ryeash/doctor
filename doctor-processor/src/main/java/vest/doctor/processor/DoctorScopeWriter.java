@@ -4,6 +4,7 @@ import jakarta.inject.Singleton;
 import vest.doctor.Cached;
 import vest.doctor.Configuration;
 import vest.doctor.DestroyMethod;
+import vest.doctor.Prioritized;
 import vest.doctor.Prototype;
 import vest.doctor.Reloadable;
 import vest.doctor.ThreadLocal;
@@ -39,13 +40,13 @@ class DoctorScopeWriter implements ScopeWriter {
         } else if (ProcessorUtils.isCompatibleWith(context, scope.getAnnotationType(), Reloadable.class)) {
             return reloadable(context, providerDefinition, providerRef);
         } else {
-            return null;
+            return providerRef;
         }
     }
 
     @Override
     public int priority() {
-        return Integer.MAX_VALUE;
+        return Prioritized.LOWEST_PRIORITY;
     }
 
     private String singleton(String providerRef) {

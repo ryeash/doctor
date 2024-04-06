@@ -44,6 +44,9 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
             /_.'/_//_ / /_//
             """;
 
+    public static final String DOCTOR_SKIP_VALIDATION_PROPERTY = "doctor.skipValidation";
+    public static final String DOCTOR_AUTO_SHUTDOWN_PROPERTY = "doctor.autoShutdown";
+
     private static final Logger log = LoggerFactory.getLogger(Doctor.class);
 
     /**
@@ -107,6 +110,8 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         return new Doctor(configurationFacade, modules);
     }
 
+    private static Doctor doctor;
+
     /**
      * Can be used as the application main when packaging/running applications backed by doctor.
      * When used as the main for an application, the arguments to the application will be made
@@ -133,7 +138,11 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
                 default -> new StructuredConfigurationSource(new FileLocation(propLocation));
             });
         }
-        new Doctor(facade, RuntimeUtils.split(modules, ConfigurationFacade.LIST_DELIMITER), new ArgsLoader(a));
+        doctor = new Doctor(facade, RuntimeUtils.split(modules, ConfigurationFacade.LIST_DELIMITER), new ArgsLoader(a));
+    }
+
+    public static Doctor mainInstance() {
+        return Objects.requireNonNull(doctor, "Doctor.main not used to start application");
     }
 
     private final List<String> activeModules;
@@ -185,13 +194,13 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
             loader.stage5(this);
         }
 
-        if (!configurationFacade.get("doctor.skipValidation", false, Boolean::valueOf)) {
+        if (!configurationFacade.get(DOCTOR_SKIP_VALIDATION_PROPERTY, false, Boolean::valueOf)) {
             providerIndex.allProviders().forEach(np -> np.validateDependencies(this));
         } else {
             log.warn("provider dependency validation skipped");
         }
 
-        if (configurationFacade.get("doctor.autoShutdown", true, Boolean::valueOf)) {
+        if (configurationFacade.get(DOCTOR_AUTO_SHUTDOWN_PROPERTY, true, Boolean::valueOf)) {
             Runtime.getRuntime().addShutdownHook(new Thread(this::close, "doctor-shutdown-" + this.hashCode()));
         }
         EventBus eventBus = getInstance(EventBus.class);

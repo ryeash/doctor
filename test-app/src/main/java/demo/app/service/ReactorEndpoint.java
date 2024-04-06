@@ -1,76 +1,58 @@
 package demo.app.service;
 
 import io.netty.buffer.ByteBuf;
-import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
+import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.CookieParam;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.OPTIONS;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Request;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 import org.testng.Assert;
 import vest.doctor.Eager;
-import vest.doctor.http.server.Endpoint;
-import vest.doctor.http.server.HttpMethod.ANY;
-import vest.doctor.http.server.HttpMethod.DELETE;
-import vest.doctor.http.server.HttpMethod.GET;
-import vest.doctor.http.server.HttpMethod.OPTIONS;
-import vest.doctor.http.server.HttpMethod.POST;
-import vest.doctor.http.server.HttpMethod.PUT;
-import vest.doctor.http.server.MultiPartData;
-import vest.doctor.http.server.Param.Attribute;
-import vest.doctor.http.server.Param.Bean;
-import vest.doctor.http.server.Param.Body;
-import vest.doctor.http.server.Param.Context;
-import vest.doctor.http.server.Param.Cookie;
-import vest.doctor.http.server.Param.Header;
-import vest.doctor.http.server.Param.Path;
-import vest.doctor.http.server.Param.Provided;
-import vest.doctor.http.server.Param.Query;
-import vest.doctor.http.server.Request;
-import vest.doctor.http.server.RequestContext;
-import vest.doctor.http.server.Response;
-import vest.doctor.http.server.ResponseBody;
-import vest.doctor.reactive.Rx;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Flow;
 import java.util.concurrent.ForkJoinPool;
-import java.util.stream.Collectors;
 
 @Singleton
 @Eager
-@Endpoint("/root")
+@Path("/root")
 public class ReactorEndpoint {
 
     @GET
-    @Endpoint("/hello")
+    @Path("/hello")
     public String hello() {
         return "Hello World!";
     }
 
     @POST
-    @Endpoint("/throughput")
-    public byte[] throughput(@Body byte[] body) {
+    @Path("/throughput")
+    public byte[] throughput(byte[] body) {
         return body;
     }
 
     @GET
-    @Endpoint("/params/{path}")
-    public String params(@Path String path,
-                         @Query Integer size,
-                         @Header("X-Param") String param,
-                         @Cookie String cook,
-                         @Bean BeanParamObject bean,
-                         @Provided ProvidedThing thing,
-                         @Provided Provider<ProvidedThing> thingProvider,
-                         @Attribute("test.attribute") String attribute,
-                         @Context RequestContext ctx,
-                         @Context Request request,
-                         @Context Response response) {
-        Assert.assertNotNull(ctx);
+    @Path("/params/{path}")
+    public String params(@PathParam("path") String path,
+                         @QueryParam("size") Integer size,
+                         @HeaderParam("X-Param") String param,
+                         @CookieParam("cook") String cook,
+                         @BeanParam BeanParamObject bean,
+                         @Context Request request) {
         Assert.assertNotNull(request);
-        Assert.assertNotNull(response);
-        System.out.println(Thread.currentThread().getName() + "  " + ctx);
-        return path + " " + size + " " + param + " " + cook + " " + bean + " " + thing + " " + thingProvider.get() + " " + attribute;
+        System.out.println(Thread.currentThread().getName() + "  " + request);
+        return path + " " + size + " " + param + " " + cook + " " + bean;
     }
 
     @POST
@@ -78,90 +60,54 @@ public class ReactorEndpoint {
         return "noPath";
     }
 
-    @GET
-    @POST
-    @Endpoint({"/multimethod", "/multimethod2"})
-    public String multiMethodAndPath(@Context Request request) {
-        return request.method().toString();
-    }
-
     @PUT
-    @Endpoint("/echo")
-    public Flow.Publisher<ByteBuf> echo(@Body Flow.Publisher<ByteBuf> dataStream) {
-        return Rx.from(dataStream)
-                .map(ByteBuf::retain);
+    @Path("/echo")
+    public CompletableFuture<byte[]> echo(byte[] dataStream) {
+        return CompletableFuture.completedFuture(dataStream);
     }
 
     @DELETE
-    @Endpoint("/responseobject")
-    public Response responseObject(@Context Response response) {
-        return response.header("X-RouteHeader", "true")
-                .body(ResponseBody.of("responseObject"));
-    }
-
-    @DELETE
-    @Endpoint("/responseobjectpub")
-    public Flow.Publisher<Response> responseObjectPub(@Context Response response) {
-        return Rx.one(response)
-                .map(r -> r.header("X-RouteHeader", "true")
-                        .body(ResponseBody.of("responseObjectPub")));
+    @Path("/responseobject")
+    public Response responseObject() {
+        return Response.ok("responseObject")
+                .header("X-RouteHeader", "true")
+                .build();
     }
 
     @GET
-    @Endpoint("/future")
+    @Path("/future")
     public CompletableFuture<String> futureString() {
         return CompletableFuture.supplyAsync(() -> "future", ForkJoinPool.commonPool());
     }
 
     @GET
-    @Endpoint("/locale")
-    public String locale(@Header("Accept-Language") Locale locale) {
+    @Path("/locale")
+    public String locale(@HeaderParam("Accept-Language") Locale locale) {
         return locale.toString();
     }
 
-    @POST
-    @Endpoint("/multipart")
-    public Flow.Publisher<String> multipart(@Body Flow.Publisher<MultiPartData.Part> form) {
-        return Rx.from(form)
-                .map(data -> {
-                    try {
-                        return data.data().toString(StandardCharsets.UTF_8);
-                    } finally {
-                        data.data().release();
-                    }
-                })
-                .collect(Collectors.joining());
-    }
-
     @GET
-    @Endpoint("/splat/*")
-    public String splat(@Context RequestContext ctx,
-                        @Path("*") String splat) {
-        return ctx.request().uri().toString() + " " + splat;
+    @Path("/splat/{splat:.*}")
+    public String splat(@Context UriInfo uri,
+                        @PathParam("splat") String splat) {
+        return uri.getPath() + " " + splat;
     }
 
     @OPTIONS
-    @Endpoint("/asyncError")
-    public Flow.Publisher<String> asyncError() {
-        return Rx.error(new IOException("error"));
+    @Path("/asyncError")
+    public CompletableFuture<String> asyncError() {
+        return CompletableFuture.failedFuture(new IOException("error"));
     }
 
     @OPTIONS
-    @Endpoint("/syncError")
+    @Path("/syncError")
     public ByteBuf syncError() throws IOException {
         throw new IOException("error");
     }
 
     @KILL
-    @Endpoint("/kill")
+    @Path("/kill")
     public String customMethod() {
         return "kill";
     }
-
-    @ANY
-    @Endpoint("/anymethod")
-    public String anyMethod(@Context io.netty.handler.codec.http.HttpMethod method) {
-        return method.toString();
-    }
-
 }

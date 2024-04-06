@@ -18,7 +18,7 @@ import java.lang.annotation.Target;
 public @interface Import {
     /**
      * The packages to import into the compilation environment. All top level elements found in the package
-     * will be processed; elements in sub-packages will <i>not</i> be processed.
+     * will be processed; elements in sub-packages will <strong>not</strong> be processed.
      *
      * @return an array of packages to import into the compilation environment
      * @see javax.lang.model.util.Elements#getAllPackageElements(CharSequence)

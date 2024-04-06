@@ -43,3 +43,8 @@ executors.fixed {
     minThreads: 2
     maxThreads: 32
 }
+
+enable {
+    a: false
+    b: true
+}

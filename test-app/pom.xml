@@ -11,16 +11,12 @@
 
     <artifactId>test-app</artifactId>
 
-    <properties>
-        <protoc.version>3.21.9</protoc.version>
-    </properties>
-
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>io.grpc</groupId>
-                <artifactId>grpc-bom</artifactId>
-                <version>${grpc.version}</version>
+                <artifactId>doctor-bom</artifactId>
+                <groupId>${project.groupId}</groupId>
+                <version>${project.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -31,18 +27,15 @@
         <dependency>
             <artifactId>doctor-core</artifactId>
             <groupId>${project.groupId}</groupId>
-            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <artifactId>doctor-jpa</artifactId>
+            <groupId>${project.groupId}</groupId>
         </dependency>
         <dependency>
             <artifactId>doctor-processor</artifactId>
             <groupId>${project.groupId}</groupId>
-            <version>${project.version}</version>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <artifactId>doctor-http-server</artifactId>
-            <groupId>${project.groupId}</groupId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -61,9 +54,12 @@
         </dependency>
 
         <dependency>
+            <artifactId>doctor-jaxrs</artifactId>
+            <groupId>${project.groupId}</groupId>
+        </dependency>
+        <dependency>
             <artifactId>doctor-grpc</artifactId>
             <groupId>${project.groupId}</groupId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat</groupId>
@@ -75,12 +71,17 @@
         <dependency>
             <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-core</artifactId>
-            <version>6.1.4.Final</version>
+            <version>${hibernate.version}</version>
         </dependency>
         <dependency>
             <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-hikaricp</artifactId>
-            <version>6.1.4.Final</version>
+            <version>${hibernate.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>com.zaxxer</groupId>
@@ -98,16 +99,11 @@
         <dependency>
             <artifactId>doctor-test</artifactId>
             <groupId>${project.groupId}</groupId>
-            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty.websocket</groupId>
-            <artifactId>websocket-jetty-client</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -117,7 +113,7 @@
             <extension>
                 <groupId>kr.motd.maven</groupId>
                 <artifactId>os-maven-plugin</artifactId>
-                <version>1.6.2</version>
+                <version>1.7.1</version>
             </extension>
         </extensions>
         <plugins>

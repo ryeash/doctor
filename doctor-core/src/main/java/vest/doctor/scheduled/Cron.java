@@ -3,7 +3,9 @@ package vest.doctor.scheduled;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
@@ -203,6 +205,7 @@ public final class Cron {
     }
 
     private final String expression;
+    private final ZoneId zoneId;
     private final int[] seconds;
     private final int[] minutes;
     private final int[] hours;
@@ -210,8 +213,9 @@ public final class Cron {
     private final int[] month;
     private final int[] dayOfWeek;
 
-    public Cron(String cronExpression) {
+    public Cron(String cronExpression, String timezone) {
         this.expression = translateMacro(cronExpression);
+        this.zoneId = ZoneId.of(timezone);
         String[] split = expression.split("\\s+");
         if (split.length != 6) {
             throw new IllegalArgumentException("invalid cron expression [" + cronExpression + "]; expression must have 6 segments, white space delimited");
@@ -231,7 +235,7 @@ public final class Cron {
 
     public long nextFireTime(long fromEpochMillis) {
         ZonedDateTime next = Instant.ofEpochMilli(fromEpochMillis + 1000)
-                .atZone(ZoneId.systemDefault());
+                .atZone(zoneId);
         for (int i = 0; i < 15; i++) {
             long starting = next.toEpochSecond();
 

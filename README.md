@@ -156,165 +156,6 @@ the [@Named](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/n
 qualifier packaged in java.inject. To create qualifiers see example here:
 [@Qualifier](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/qualifier).
 
-### [@Modules](doctor-core/src/main/java/vest/doctor/Modules.java)
-
-Providers can be enabled for a specific set of modules.
-
-```java
-@Singleton
-@Modules({"dev", "test"}) // this class will only be available when either the "dev" or "test" module is active.
-public class MockDao implements Dao {
-}
-```
-
-To start the app with this provider enabled:
-
-```java
-public class App {
-    public static void main(String[] args) {
-        Doctor.load("dev");
-        // or
-        // Doctor.load("test");
-        // or
-        // Doctor.load("dev", "test");
-    }
-}
-```
-
-Any provider that has modules will _only_ be active if the app is started with one of the modules listed in the
-activation list. Providers without modules will _always_ be active.
-
-### [@Eager](doctor-core/src/main/java/vest/doctor/Eager.java)
-
-By default, providers will not instantiate an instance when they are initialized; they're lazy. If you want an instance
-automatically created on startup, you can mark the class or factory method with `@Eager`.
-
-```java
-@Eager
-@Singleton
-public class Heater {
-    // ...
-}
-```
-
-On startup, one instance of Heater will be created automatically.
-
-While `@Eager` can be used on any scope, it makes the most sense for singletons.
-
-### [@Primary](doctor-core/src/main/java/vest/doctor/Primary.java)
-
-A qualified provider definition can be marked with @Primary to register the provider with both it's marked qualifier and
-the `null` qualifier; making the provider available with and without its qualifier.
-
-```java
-@Singleton
-public class AppConfig {
-    @Singleton
-    @Primary
-    @Named("primary")
-    public DataSource primaryDataSource() {
-        return ...
-    }
-}
-```
-
-This will make the datasource retrievable with the qualifier or without:
-
-```java
-doctor.getInstance(DataSource.class) == doctor.getInstance(DataSource.class, "primary")
-```
-
-### [@SkipInjection](doctor-core/src/main/java/vest/doctor/SkipInjection.java)
-
-There are rare occasions where it may be necessary to skip the post-instantiation injection phase for a provided
-instance (Skip calling `@Inject` marked methods and similar processing). In these cases use `@SkipInjection`.
-
-```java
-@SkipInjectin
-@Prototype
-public class NoInject {
-    @Inject
-    public void postInstantiation() {
-        // this method will not be called automatically during initialization
-    }
-}
-```
-
-### [@Scheduled](doctor-core/src/main/java/vest/doctor/scheduled/Scheduled.java)
-
-Methods in provided objects can be scheduled for periodic execution using the `@Scheduled` annotation.
-
-```java
-
-@Singleton
-public class SomethingPeriodic {
-    @Scheduled(interval = "10ms")
-    public void every10Milliseconds() {
-        // do something every 10 milliseconds
-    }
-
-    @Scheduled(cron = "0 0 * * * *")
-    public void everyHourOnTheHour() {
-        // do something every hour
-    }
-}
-```
-
-Internally, the object instances for scheduled methods are tracked using weak references so scheduling method execution
-will _not_ prevent the provided object from being garbage collected.
-
-> Aspect interactions:
-> Due to the initialization order for providers, scheduled methods will use the non-aspected instance
-> of provided objects. In effect, if a method is marked with @Scheduled and an aspect, the aspect will
-> be ignored during execution of the resulting scheduled task; however, any place where the class is
-> injected, calling the scheduled method explicitly will go through the aspect(s).
-
-### Event Bus
-
-Messages can be published and consumed via the EventBus.
-
-Basics of event publish and consume:
-
-```java
-// This class implements EventConsumer and will receive String events.
-@Singleton
-public class EventExample implements EventConsumer<String> {
-
-  private final EventBus bus;
-
-  @Inject
-  public EventExample(EventBus bus) {
-    this.bus = bus;
-  }
-
-  @Inject
-  @Async
-  public void sendMessage() {
-    // publish a string event when this class is instantiated 
-    bus.publish("test");
-  }
-
-  @Override
-  public void receive(String message) {
-    System.out.println("message received: " + message);
-  }
-}
-```
-
-### [@Async](doctor-core/src/main/java/vest/doctor/Async.java)
-
-The @Async annotation can be used to perform certain actions in a background thread.
-
-```java
-@Singleton
-public class AsyncDemo {
-    @Inject
-    @Async // this method will be called asynchronously when this class is instantiated
-    public void injectAsync() {
-        ...
-    }
-}
-```
 
 ### [@Activation](doctor-core/src/main/java/vest/doctor/Activation.java)
 
@@ -368,7 +209,7 @@ A note on factory providers: Activation predicates marked at the class level are
 factory providers. So in this example:
 
 ```java
-@Singleton
+@Configuration
 @Activation(SomePredicate.class)
 public class AppConfig {
     @Factory
@@ -382,6 +223,149 @@ public class AppConfig {
 
 The provider generated from coffeeMakerFactory will be subject to both SomePredicate and AnotherPredicate.
 
+
+#### [@Modules](doctor-core/src/main/java/vest/doctor/Modules.java)
+
+@Modules is a built-in @Activation that enables providers based on ProviderRegistry.getActiveModules().
+
+```java
+@Singleton
+@Modules({"dev", "test"}) // this class will only be available when either the "dev" or "test" module is active.
+public class MockDao implements Dao {
+}
+```
+
+To start the app with this provider enabled:
+
+```java
+public class App {
+    public static void main(String[] args) {
+        Doctor.load("dev");
+        // or
+        // Doctor.load("test");
+        // or
+        // Doctor.load("dev", "test");
+    }
+}
+```
+
+Any provider that has modules will _only_ be active if the app is started with one of the modules listed in the
+activation list. Providers without modules (or any other @Activation requirements) will _always_ be active.
+
+### [@Eager](doctor-core/src/main/java/vest/doctor/Eager.java)
+
+By default, providers will not instantiate an instance when they are initialized; they're lazy. If you want an instance
+automatically created on startup, you can mark the class or factory method with `@Eager`.
+
+```java
+@Eager
+@Singleton
+public class Heater {
+    // ...
+}
+```
+
+On startup, one instance of Heater will be created automatically.
+
+While `@Eager` can be used on any scope, it makes the most sense for singletons.
+
+### [@Primary](doctor-core/src/main/java/vest/doctor/Primary.java)
+
+A qualified provider definition can be marked with @Primary to register the provider with both it's marked qualifier and
+the `null` qualifier; making the provider available with and without its qualifier.
+
+```java
+@Singleton
+public class AppConfig {
+    @Singleton
+    @Primary
+    @Named("primary")
+    public DataSource primaryDataSource() {
+        return ...
+    }
+}
+```
+
+This will make the datasource retrievable with the qualifier or without:
+
+```java
+doctor.getInstance(DataSource.class) == doctor.getInstance(DataSource.class, "primary")
+```
+
+### [@Scheduled](doctor-core/src/main/java/vest/doctor/scheduled/Scheduled.java)
+
+Methods in provided objects can be scheduled for periodic execution using the `@Scheduled` annotation.
+
+```java
+
+@Singleton
+public class SomethingPeriodic {
+    @Scheduled(interval = "10ms")
+    public void every10Milliseconds() {
+        // do something every 10 milliseconds
+    }
+
+    @Scheduled(cron = "0 0 * * * *")
+    public void everyHourOnTheHour() {
+        // do something every hour
+    }
+}
+```
+
+A ScheduledExecutorService must be available to execute the tasks, by default it uses the name "scheduled".
+
+```java
+@Factory
+@Singleton
+@Named(Scheduled.DEFAULT_SCHEDULED_EXECUTOR_NAME)
+public ScheduledExecutorService scheduledExecutorService() {
+    return ExecutorBuilder.start()
+            .setMinThreads(8)
+            .setMaxThreads(8)
+            .scheduled();
+}
+```
+Internally, the object instances for scheduled methods are tracked using weak references so scheduling method execution
+will _not_ prevent the provided object from being garbage collected.
+
+> Aspect interactions:
+> Due to the initialization order for providers, scheduled methods will use the non-aspected instance
+> of provided objects. In effect, if a method is marked with @Scheduled and an aspect, the aspect will
+> be ignored during execution of the resulting scheduled task; however, any place where the class is
+> injected, calling the scheduled method explicitly will go through the aspect(s).
+
+### Event Bus
+
+Messages can be published and consumed via the EventBus.
+
+Basics of event publish and consume:
+
+```java
+// This class implements EventConsumer and will receive String events.
+@Singleton
+public class EventExample implements EventConsumer<String> {
+
+  private final EventBus bus;
+
+  @Inject
+  public EventExample(EventBus bus) {
+    this.bus = bus;
+  }
+  
+  @Inject
+  public void message(@Named("background") ExecutorService exec) {
+    // publish a string event when this class is instantiated 
+    exec.submit(() -> bus.publish("test"));
+  }
+
+  @Override
+  public void receive(String message) {
+    System.out.println("message received: " + message);
+  }
+}
+```
+
+
 ### [@Import](doctor-core/src/main/java/vest/doctor/Import.java)
 
 If you use library dependencies that use jakarta.inject-api annotations (or doctor-core annotations)
@@ -391,7 +375,7 @@ annotation to make the external packages known to the compilation environment.
 Typical usage is to add the @Import to a provider factory class:
 
 ```java
-@Singleton
+@Configuration
 @Import({"org.company", "org.company.ext"})
 public class AppConfig {
   @Factory
@@ -447,8 +431,7 @@ for an application.
 @Singleton
 @Properties("db.") // all property names marked on methods will be prefixed with `db.`
 public interface DBProps { // must be an interface
-  @Property("url")
-    // this will use the property named `db.url`
+  @Property("url") // this will use the property named `db.url`
   String url();
 
   @Property("username")
@@ -456,6 +439,9 @@ public interface DBProps { // must be an interface
 
   @Property("password")
   String password();
+  
+  @Property("acquireTimeout")
+  int acquireTimeout();
   
   ...
 }
@@ -467,7 +453,7 @@ Properties are defined as strings and require conversion to specific types when 
 conversions are supported:
 
 * primitives and their associated java.lang wrappers
-* any type that has a public constructor with a single string argument and does not throw an exception (e.g. BigInteger)
+* any type that has a public constructor with a single string argument and does not throw an exception (e.g. `new BigInteger("num")`)
 * any type that has a public static method that takes a single string argument and does not throw an exception (like
   URI::create)
 

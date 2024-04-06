@@ -8,12 +8,7 @@ import java.util.Map;
  * Runtime metadata for an annotation.
  * All values on the annotations are referenced via the string name of their method.
  */
-public interface AnnotationData extends Iterable<Map.Entry<String, Object>> {
-
-    /**
-     * The annotation type.
-     */
-    Class<? extends Annotation> type();
+public interface AnnotationData extends Iterable<Map.Entry<String, Object>>, Annotation {
 
     /**
      * Get a string value.

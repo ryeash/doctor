@@ -7,7 +7,6 @@ import java.util.List;
  * Used internally for wrapping and altering the behaviors of a {@link DoctorProvider}.
  */
 public abstract class DoctorProviderWrapper<T> implements DoctorProvider<T> {
-
     protected final DoctorProvider<T> delegate;
 
     public DoctorProviderWrapper(DoctorProvider<T> delegate) {
@@ -15,8 +14,8 @@ public abstract class DoctorProviderWrapper<T> implements DoctorProvider<T> {
     }
 
     @Override
-    public Class<T> type() {
-        return delegate.type();
+    public TypeInfo typeInfo() {
+        return delegate.typeInfo();
     }
 
     @Override
@@ -32,11 +31,6 @@ public abstract class DoctorProviderWrapper<T> implements DoctorProvider<T> {
     @Override
     public List<Class<?>> allProvidedTypes() {
         return delegate.allProvidedTypes();
-    }
-
-    @Override
-    public AnnotationMetadata annotationMetadata() {
-        return delegate.annotationMetadata();
     }
 
     @Override

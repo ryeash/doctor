@@ -1,5 +1,6 @@
 package vest.doctor.processor;
 
+import vest.doctor.Prioritized;
 import vest.doctor.codegen.ProcessorUtils;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.StringConversionGenerator;
@@ -69,7 +70,7 @@ public class StandardConversionGenerator implements StringConversionGenerator {
 
     @Override
     public int priority() {
-        return Integer.MAX_VALUE;
+        return Prioritized.LOWEST_PRIORITY;
     }
 
     private static boolean hasStringConstructor(AnnotationProcessorContext context, TypeMirror targetType) {

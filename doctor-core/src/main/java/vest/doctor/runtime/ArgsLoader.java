@@ -9,7 +9,7 @@ record ArgsLoader(Args args) implements ApplicationLoader {
 
     @Override
     public void stage1(ProviderRegistry providerRegistry) {
-        providerRegistry.register(AdHocProvider.createPrimary(args));
+        providerRegistry.register(new AdHocProvider<>(Args.class, args, null));
     }
 
     @Override

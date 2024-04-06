@@ -57,6 +57,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -64,13 +65,12 @@ import java.util.stream.Stream;
 
 import static vest.doctor.codegen.Constants.PROVIDER_REGISTRY;
 
-@SupportedSourceVersion(SourceVersion.RELEASE_18)
+@SupportedSourceVersion(SourceVersion.RELEASE_17)
 @SupportedOptions({DoctorAnnotationProcessor.PACKAGE_NAME_OPTION, DoctorAnnotationProcessor.IGNORE_PACKAGES})
 public class DoctorAnnotationProcessor extends AbstractProcessor implements AnnotationProcessorContext {
 
     /**
-     * Sets the package name for the generated classes. If unset, the default
-     * uses a random package structure to avoid collisions.
+     * Sets the package name for the generated classes.
      */
     public static final String PACKAGE_NAME_OPTION = "doctor.generated.packagename";
 
@@ -238,6 +238,10 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
         if (additionalSatisfiedDependencies.contains(dependency)) {
             return true;
         }
+        // TODO: how to properly ignore dependencies that are config based
+        if (ProcessorUtils.isCompatibleWith(this, dependency.type(), Executor.class)) {
+            return true;
+        }
         for (ProviderDefinition providerDefinition : providerDefinitions) {
             for (TypeElement type : providerDefinition.getAllProvidedTypes()) {
                 Dependency provided = new Dependency(type, providerDefinition.qualifier());
@@ -397,11 +401,14 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
         for (Map.Entry<ProviderDependency, Set<ProviderDependency>> entry : graph.getMap().entrySet()) {
             ProviderDependency target = entry.getKey();
             for (ProviderDependency dependency : entry.getValue()) {
-                if (dependency != null && dependency.required() && !isProvided(dependency)) {
+                if (dependency != null
+                        && !ProcessorUtils.isContainerType(this, dependency.type())
+                        && dependency.required()
+                        && !isProvided(dependency)) {
                     Stream<ProviderDependency> deps = providerDefinitions.stream().map(ProviderDefinition::asDependency);
                     Stream<ProviderDependency> add = additionalSatisfiedDependencies.stream();
                     throw new CodeProcessingException("missing provider dependency for\ntarget: " + target + "\ndependency: " + dependency + "\nknown types:\n  " +
-                                                      Stream.of(deps, add).flatMap(Function.identity()).map(String::valueOf).collect(Collectors.joining("\n  ")));
+                            Stream.of(deps, add).flatMap(Function.identity()).map(String::valueOf).collect(Collectors.joining("\n  ")));
                 }
             }
         }

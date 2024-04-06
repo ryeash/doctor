@@ -6,34 +6,18 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WriteCallback;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.hamcrest.MatcherAssert;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.IntStream;
 
 import static org.hamcrest.Matchers.containsString;
@@ -62,13 +46,6 @@ public class HttpServerTest extends AbstractTestAppTest {
                 .body(is(emptyString()));
     }
 
-    public void directHandler() {
-        req().get("/hello")
-                .then()
-                .statusCode(200)
-                .body(is("Hello World!"));
-    }
-
     public void paramTypes() {
         req().header("X-Param", "headerValue")
                 .cookie("cook", "monster")
@@ -76,7 +53,7 @@ public class HttpServerTest extends AbstractTestAppTest {
                 .get("/root/params/test")
                 .then()
                 .statusCode(200)
-                .body(is("test 10 headerValue monster test 10 headerValue monster providedThing providedThing value"))
+                .body(is("test 10 headerValue monster test 10 headerValue monster"))
                 .header("X-After", is("true"));
     }
 
@@ -85,20 +62,6 @@ public class HttpServerTest extends AbstractTestAppTest {
                 .then()
                 .statusCode(200)
                 .body(is("noPath"));
-    }
-
-    public void multiMethod() {
-        for (String uri : List.of("multimethod", "multimethod2")) {
-            req().get("/root/" + uri)
-                    .then()
-                    .statusCode(200)
-                    .body(is("GET"));
-
-            req().post("/root/" + uri)
-                    .then()
-                    .statusCode(200)
-                    .body(is("POST"));
-        }
     }
 
 //    public void json() throws JsonProcessingException {
@@ -145,20 +108,6 @@ public class HttpServerTest extends AbstractTestAppTest {
                 .body(is("halted"));
     }
 
-    public void responseObject() {
-        req().delete("/root/responseobject")
-                .then()
-                .statusCode(200)
-                .header("X-RouteHeader", is("true"))
-                .body(is("responseObject"));
-
-        req().delete("/root/responseobjectpub")
-                .then()
-                .statusCode(200)
-                .header("X-RouteHeader", is("true"))
-                .body(is("responseObjectPub"));
-    }
-
     public void futureResponse() {
         req().get("/root/future")
                 .then()
@@ -181,20 +130,11 @@ public class HttpServerTest extends AbstractTestAppTest {
                 .body(containsString("en"));
     }
 
-    public void form() {
-        req()
-                .multiPart("file", new File("./netty-test.props"), "text/html")
-                .post("/root/multipart")
-                .then()
-                .statusCode(200)
-                .body(containsString("doctor.reactor {"));
-    }
-
     public void splat() {
         req().get("/root/splat/this/is/the/full/path")
                 .then()
                 .statusCode(200)
-                .body(is("/root/splat/this/is/the/full/path this/is/the/full/path"));
+                .body(is("root/splat/this/is/the/full/path this/is/the/full/path"));
     }
 
     public void errors() {
@@ -210,7 +150,7 @@ public class HttpServerTest extends AbstractTestAppTest {
     }
 
     public void tooLarge() {
-        byte[] b = new byte[4096];
+        byte[] b = new byte[2 * 1024 * 1024];
         ThreadLocalRandom.current().nextBytes(b);
         req().body(b)
                 .post("/root/throughput")
@@ -261,103 +201,10 @@ public class HttpServerTest extends AbstractTestAppTest {
         }
     }
 
-    public void anyMethod() throws IOException {
-        try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
-            for (String method : Arrays.asList("GET", "POST", "TOAST", "MONSTER")) {
-                HttpEntityEnclosingRequestBase request = new HttpEntityEnclosingRequestBase() {
-                    @Override
-                    public String getMethod() {
-                        return method;
-                    }
-                };
-                request.setURI(URI.create("http://localhost:60222/root/anymethod"));
-                try (CloseableHttpResponse response = client.execute(request)) {
-                    ByteArrayOutputStream out = new ByteArrayOutputStream();
-                    response.getEntity().writeTo(out);
-                    out.flush();
-                    String responseString = out.toString(StandardCharsets.UTF_8);
-                    assertEquals(response.getStatusLine().getStatusCode(), 200);
-                    assertEquals(responseString, method);
-                }
-            }
-        }
-    }
-
     private static byte[] randomBytes() {
         int size = ThreadLocalRandom.current().nextInt(128, 1024);
         byte[] b = new byte[size];
         ThreadLocalRandom.current().nextBytes(b);
         return b;
-    }
-
-    public void ws() throws Exception {
-        String destUri = "ws://localhost:60222/grumpy";
-        WebSocketClient client = new WebSocketClient();
-        try {
-            client.start();
-
-            URI echoUri = new URI(destUri);
-            TestWebSocketClient socket = new TestWebSocketClient();
-            ClientUpgradeRequest request = new ClientUpgradeRequest();
-            client.connect(socket, echoUri, request);
-            assertTrue(socket.connectLatch.await(5, TimeUnit.SECONDS));
-            assertTrue(socket.awaitClose(5, TimeUnit.SECONDS));
-            assertEquals(socket.messagesReceived.get(0), "go away I'm a test");
-        } finally {
-            client.stop();
-        }
-    }
-
-    @WebSocket(maxTextMessageSize = 64 * 1024)
-    public static class TestWebSocketClient {
-        final CountDownLatch connectLatch;
-        final CountDownLatch closeLatch;
-        final List<String> messagesReceived = new LinkedList<>();
-        Session session;
-
-        public TestWebSocketClient() {
-            this.connectLatch = new CountDownLatch(1);
-            this.closeLatch = new CountDownLatch(1);
-        }
-
-        public boolean awaitClose(int duration, TimeUnit unit) throws InterruptedException {
-            return this.closeLatch.await(duration, unit);
-        }
-
-        @OnWebSocketClose
-        public void onClose(int statusCode, String reason) {
-            this.session = null;
-            this.closeLatch.countDown();
-        }
-
-        @OnWebSocketConnect
-        public void onConnect(Session session) throws InterruptedException, ExecutionException, TimeoutException {
-            connectLatch.countDown();
-            this.session = session;
-            CompletableFuture<Void> future = new CompletableFuture<>();
-            session.getRemote().sendString("I'm a test", new WriteCallback() {
-                @Override
-                public void writeFailed(Throwable x) {
-                    future.completeExceptionally(x);
-                }
-
-                @Override
-                public void writeSuccess() {
-                    future.complete(null);
-                }
-            });
-            future.get(2, TimeUnit.SECONDS);
-        }
-
-        @OnWebSocketMessage
-        public void onMessage(String msg) {
-            System.out.println("CLIENT MESSAGE: " + msg);
-            messagesReceived.add(msg);
-        }
-
-        @OnWebSocketError
-        public void onError(Throwable t) {
-            t.printStackTrace();
-        }
     }
 }

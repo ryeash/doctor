@@ -3,7 +3,6 @@ package vest.doctor.processor;
 import jakarta.inject.Inject;
 import vest.doctor.InjectionException;
 import vest.doctor.ProviderRegistry;
-import vest.doctor.SkipInjection;
 import vest.doctor.codegen.ClassBuilder;
 import vest.doctor.codegen.Constants;
 import vest.doctor.codegen.ProcessorUtils;
@@ -78,10 +77,8 @@ public class ConstructorProviderDefinition extends AbstractProviderDefinition {
         classBuilder.addMethod("@Override public " + providedType.getSimpleName() + " get()", b -> {
             b.line("try {");
             b.line(providedType.getSimpleName() + " instance = " + context.constructorCall(this, injectableConstructor, Constants.PROVIDER_REGISTRY) + ";");
-            if (!markedWith(SkipInjection.class)) {
-                for (NewInstanceCustomizer customizer : context.customizations(NewInstanceCustomizer.class)) {
-                    customizer.customize(context, this, b, "instance", Constants.PROVIDER_REGISTRY);
-                }
+            for (NewInstanceCustomizer customizer : context.customizations(NewInstanceCustomizer.class)) {
+                customizer.customize(context, this, b, "instance", Constants.PROVIDER_REGISTRY);
             }
             b.line("return instance;");
             b.line("} catch(Throwable t) { throw new ", InjectionException.class, "(\"error instantiating provided type: ", providedType(), "\", t); }");

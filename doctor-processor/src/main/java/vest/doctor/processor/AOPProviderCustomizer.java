@@ -52,7 +52,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
- * Customization that handles the aspected class generation and wrapping.
+ * Customization that handles the aspect-ed class generation and wrapping.
  */
 public class AOPProviderCustomizer implements ProviderCustomizationPoint {
 
@@ -92,6 +92,8 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
                 .addImportClass(ArgValueImpl.class)
                 .addImportClass(Map.class)
                 .addImportClass(List.class)
+                .addImportClass(Aspect.class)
+                .addImportClass(AspectCoordinator.class)
                 .addImportClass(AnnotationData.class)
                 .addImportClass(AnnotationMetadata.class)
                 .addImportClass(AnnotationDataImpl.class)
@@ -186,8 +188,7 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
         sb.append(parameters);
 
         if (!method.getThrownTypes().isEmpty()) {
-            sb.append(" throws ");
-            sb.append(method.getThrownTypes().stream().map(TypeMirror::toString).collect(Collectors.joining(", ")));
+            sb.append(method.getThrownTypes().stream().map(TypeMirror::toString).collect(Collectors.joining(", " ," throws ", "")));
         }
 
         return sb.toString();
@@ -251,8 +252,6 @@ public class AOPProviderCustomizer implements ProviderCustomizationPoint {
 
         String aspectName = initializedAspects.computeIfAbsent(aspectClassUniqueKey, s -> {
             String an = uniqueId + "_aspect";
-            classBuilder.addImportClass(Aspect.class);
-            classBuilder.addImportClass(AspectCoordinator.class);
             classBuilder.addField("private final " + AspectCoordinator.class.getSimpleName() + " " + an);
 
             String params = aspectClasses.stream()

@@ -35,6 +35,37 @@ public abstract class AbstractCodeBuilder<S extends AbstractCodeBuilder<?>> {
         return (S) this;
     }
 
+    public S printfLine(String string, Object... args) {
+        lines.add(String.format(string, args));
+        return (S) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public S bindLine(String value, Map<String, Object> bindings) {
+        StringBuilder sb = new StringBuilder();
+        Matcher matcher = MACRO.matcher(value);
+        int pos = 0;
+        while (matcher.find()) {
+            if (pos != matcher.start()) {
+                sb.append(value, pos, matcher.start());
+            }
+            if (!matcher.group().startsWith("$")) {
+                String name = matcher.group(1);
+                Object val = bindings.get(name);
+                if (val == null) {
+                    throw new IllegalArgumentException("missing binding for " + name + ": " + value);
+                }
+                sb.append(fill(String.valueOf(val)));
+            } else {
+                sb.append(matcher.group());
+            }
+            pos = matcher.end();
+        }
+        sb.append(value, pos, value.length());
+        lines.add(sb.toString());
+        return (S) this;
+    }
+
     @SuppressWarnings("unchecked")
     public S bind(String name, Object... value) {
         vars.put(name, join(value));
