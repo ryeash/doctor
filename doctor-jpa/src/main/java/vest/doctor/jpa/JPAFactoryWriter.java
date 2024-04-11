@@ -99,14 +99,10 @@ public class JPAFactoryWriter implements ProviderDefinitionListener {
                 .orElse(unitName));
 
         Map<String, String> propertyMap = new LinkedHashMap<>();
-        for (PersistenceProperty property : persistenceContext.properties()) {
-            propertyMap.put(property.name(), property.value());
-        }
-
-
         CodeSnippet propCode = new CodeSnippet();
         propCode.line("Map<String, String> map = new LinkedHashMap<>();");
         for (PersistenceProperty property : persistenceContext.properties()) {
+            propertyMap.put(property.name(), property.value());
             propCode.printfLine("map.put(config.resolvePlaceholders(%s), config.resolvePlaceholders(%s));",
                     ProcessorUtils.escapeAndQuoteStringForCode(property.name()), ProcessorUtils.escapeAndQuoteStringForCode(property.value()));
         }

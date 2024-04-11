@@ -141,6 +141,11 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         doctor = new Doctor(facade, RuntimeUtils.split(modules, ConfigurationFacade.LIST_DELIMITER), new ArgsLoader(a));
     }
 
+    /**
+     * Get the instance of the {@link Doctor}, if the {@link #main(String[])} method was used
+     * to start the application.
+     * @return the doctor instance, or throw a {@link NullPointerException} if Doctor.main was not used to start the app
+     */
     public static Doctor mainInstance() {
         return Objects.requireNonNull(doctor, "Doctor.main not used to start application");
     }

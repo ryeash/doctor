@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Base test for testing {@link Doctor} applications . Automatically configures
+ * Base test for testing {@link Doctor} applications. Automatically configures
  * a doctor instance using the {@link TestConfiguration} annotation. The annotation is required
  * and the test will fail to start with an {@link IllegalStateException} if missing.
  */

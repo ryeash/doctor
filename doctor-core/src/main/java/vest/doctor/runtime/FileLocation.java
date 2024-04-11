@@ -1,6 +1,5 @@
 package vest.doctor.runtime;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -11,7 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Represents a location for a file. Locations can be on the classpath, served by http(s) endpoints, or
+ * Represents a location for a file. Locations can be on the classpath or
  * on the local file system.
  */
 public record FileLocation(String location) {
@@ -84,18 +83,11 @@ public record FileLocation(String location) {
      * @throws UncheckedIOException for any IO error
      */
     public byte[] readToBytes() {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
-        int read;
-        byte[] buf = new byte[1024];
         try (InputStream inputStream = openStream()) {
-            while ((read = inputStream.read(buf)) >= 0) {
-                baos.write(buf, 0, read);
-            }
-            baos.close();
+            return inputStream.readAllBytes();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-        return baos.toByteArray();
     }
 
     @Override

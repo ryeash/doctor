@@ -24,7 +24,7 @@ public class CompositeConfigurationFacade implements ConfigurationFacade {
     /**
      * The environment or system property name used by {@link #defaultConfigurationFacade()}
      * to load a list of property files. The value must be a comma separated list of locations
-     * (classpath, file, http(s)).
+     * (classpath/file).
      */
     public static final String PROPERTIES = "doctor.app.properties";
 
