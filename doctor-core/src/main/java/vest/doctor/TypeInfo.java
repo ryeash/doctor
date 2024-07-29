@@ -62,18 +62,21 @@ public final class TypeInfo {
     }
 
     /**
-     * The raw type of the parameter.
+     * The raw type of the element.
      */
     public Class<?> getRawType() {
         return rawType;
     }
 
+    /**
+     * Get the full annotation metadata for the element.
+     */
     public AnnotationMetadata annotationMetadata() {
         return annotationData;
     }
 
     /**
-     * A list of any parameterized types declared on the target parameter.
+     * A list of any parameterized types declared on the target element.
      */
     public List<TypeInfo> getParameterTypes() {
         return parameterTypes;

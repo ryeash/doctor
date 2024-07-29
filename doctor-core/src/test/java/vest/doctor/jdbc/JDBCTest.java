@@ -69,8 +69,7 @@ public class JDBCTest extends Assert {
             insertUser.executeBatch();
         });
 
-        try (Transaction tx = jdbc.transaction()) {
-            JDBCConnection c = tx.connection();
+        jdbc.transaction(c -> {
             JDBCStatement insertProperty = c.prepare("insert into properties values (?, ?, ?)");
             for (int i = 0; i < 50; i++) {
                 insertProperty.bindAll(List.of(i, "defer", ThreadLocalRandom.current().nextBoolean() + ""))
@@ -79,7 +78,7 @@ public class JDBCTest extends Assert {
                         .addBatch();
             }
             insertProperty.executeBatch();
-        }
+        });
     }
 
     @AfterClass(alwaysRun = true)
@@ -116,12 +115,11 @@ public class JDBCTest extends Assert {
 
     public void insertMechanisms() {
         int count = i.decrementAndGet();
-        try (Transaction tx = jdbc.transaction()) {
-            tx.connection().prepare("insert into users values (?, ?, ?)").bindAll(List.of(count, "thing" + count, "pa$$")).update();
-            tx.connection().prepare("insert into properties values (?, ?, ?)").bindAll(List.of(count, "bats", "numerous")).update();
-            tx.connection().statement("insert into properties values (" + count + ", 'cats', 'none')").update();
-            tx.commit();
-        }
+        jdbc.transaction(c -> {
+            c.prepare("insert into users values (?, ?, ?)").bindAll(List.of(count, "thing" + count, "pa$$")).update();
+            c.prepare("insert into properties values (?, ?, ?)").bindAll(List.of(count, "bats", "numerous")).update();
+            c.statement("insert into properties values (" + count + ", 'cats', 'none')").update();
+        });
         try (JDBCConnection c = jdbc.connection()) {
             String bats = c.select("select * from properties where user_id = " + count + " and name = 'bats'")
                     .map(RowMapper.apply(row -> row.getString("data")))
@@ -154,12 +152,11 @@ public class JDBCTest extends Assert {
 
     public void errorHandling() {
         assertThrows(() -> {
-            try (Transaction tx = jdbc.transaction()) {
-                JDBCStatement prepare = tx.connection().prepare("insert into users values (?, ?, ?)");
+            jdbc.transaction(c -> {
+                JDBCStatement prepare = c.prepare("insert into users values (?, ?, ?)");
                 prepare.bindAll(List.of(-13, "thirteen", "pa$$")).update();
                 prepare.bindAll(List.of(-13, "thirteen1", "pa$$")).update();
-                tx.commit();
-            }
+            });
         });
     }
 }

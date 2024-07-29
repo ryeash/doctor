@@ -23,7 +23,7 @@ public final class JDBCConnection implements AutoCloseable {
     private final List<JDBCInterceptor> interceptors;
     private final List<WeakReference<AutoCloseable>> closeables = new LinkedList<>();
 
-    JDBCConnection(Connection connection,List<JDBCInterceptor> interceptors) {
+    JDBCConnection(Connection connection, List<JDBCInterceptor> interceptors) {
         this.connection = connection;
         this.interceptors = interceptors;
     }
@@ -96,7 +96,7 @@ public final class JDBCConnection implements AutoCloseable {
      * @param sql the sql that will be executed when calling {@link JDBCStatement#select()}
      * @return a new {@link JDBCStatement} object
      * @see Statement
-     * @see Connection#createStatement() 
+     * @see Connection#createStatement()
      */
     public JDBCStatement statement(String sql) {
         try {

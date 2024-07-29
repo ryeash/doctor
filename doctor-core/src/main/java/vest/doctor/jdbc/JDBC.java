@@ -2,10 +2,7 @@ package vest.doctor.jdbc;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
@@ -15,14 +12,6 @@ import java.util.function.Function;
  * Wraps a {@link DataSource} and acts as the entry point for the fluent JDBC API.
  */
 public final class JDBC {
-    private static final List<Class<?>> DISALLOWED_RETURN_TYPES = List.of(
-            JDBCStatement.class,
-            JDBCConnection.class,
-            Connection.class,
-            Statement.class,
-            ResultSet.class,
-            ResultSetMetaData.class);
-
     private final DataSource dataSource;
     final List<JDBCInterceptor> interceptors;
 
@@ -58,7 +47,7 @@ public final class JDBC {
     /**
      * Allocate a {@link Connection} from the datasource and return the {@link JDBCConnection} wrapper.
      * Ensure you close the connection, else resources will leak. Consider using one of the {@link #transaction(Consumer)}
-     * or {@link #connection(Consumer)} methods that handle closing the connection automatically.
+     * or {@link #connection(Consumer)} methods that handle resources automatically.
      *
      * @return a new jdbc connection wrapper
      */
@@ -76,19 +65,25 @@ public final class JDBC {
 
     /**
      * Allocate a new connection (using {@link #connection()}) and pass it to the given consumer.
-     * The connection will be in reusable mode and will be closed automatically after the action returns.
+     * The connection will be closed automatically after the action completes.
      *
      * @param action the action to execute with the allocated connection
+     * @return this JDBC instance
      */
-    public void connection(Consumer<JDBCConnection> action) {
+    public JDBC connection(Consumer<JDBCConnection> action) {
         try (JDBCConnection c = connection()) {
             action.accept(c);
         }
+        return this;
     }
 
     /**
      * Allocate a new connection (using {@link #connection()}) and pass it to the given function.
-     * The connection will be in reusable mode and will be closed automatically after the action returns.
+     * The connection will be closed automatically after the function returns.
+     * <p>
+     * Note: Any {@link java.sql} objects returned by the function that are attached to executed
+     * statements will likely be broken upon returning as the statements will be closed and their
+     * related objects rendered unusable.
      *
      * @param function the function to call with the allocated connection
      * @param <R>      the return value of the function
@@ -96,26 +91,28 @@ public final class JDBC {
      */
     public <R> R connection(Function<JDBCConnection, R> function) {
         try (JDBCConnection c = connection()) {
-            return JDBC.allowedFunctionReturn(function.apply(c));
+            return function.apply(c);
         }
     }
 
     /**
-     * Allocate a new connection (using {@link #transaction()}) and pass the connection to the given consumer,
+     * Allocate a new connection and pass it to the given consumer,
      * automatically applying commit/rollback on the connection after the action completes.
      *
      * @param action the action to execute with the allocated connection in a transaction
+     * @return this JDBC instance
      * @see #transaction(Function)
      */
-    public void transaction(Consumer<JDBCConnection> action) {
-        try (Transaction tx = transaction()) {
-            action.accept(tx.connection());
-            tx.commit();
-        }
+    public JDBC transaction(Consumer<JDBCConnection> action) {
+        transaction(c -> {
+            action.accept(c);
+            return null;
+        });
+        return this;
     }
 
     /**
-     * Allocate a new transaction (using {@link #transaction()}) and pass the connection to the given function,
+     * Allocate a new connection and pass it to the given function,
      * automatically applying commit/rollback on the connection after the action completes.
      * <p><br/>
      * When the function returns, {@link Connection#commit()} will be called, if it succeeds,
@@ -128,37 +125,16 @@ public final class JDBC {
      * @return the result of applying the function
      */
     public <R> R transaction(Function<JDBCConnection, R> function) {
-        try (Transaction tx = transaction()) {
-            R value = JDBC.allowedFunctionReturn(function.apply(tx.connection()));
-            tx.commit();
-            return value;
-        }
-    }
-
-    /**
-     * Create a new {@link Transaction}.
-     *
-     * @return the transaction
-     */
-    public Transaction transaction() {
-        Transaction transaction = new Transaction(this);
-        try {
-            for (JDBCInterceptor interceptor : interceptors) {
-                interceptor.intercept(transaction);
-            }
-        } catch (SQLException e) {
-            throw new DatabaseException("error executing transaction interceptors", e);
-        }
-        return transaction;
-    }
-
-    static <T> T allowedFunctionReturn(T o) {
-        for (Class<?> disallowedReturnType : DISALLOWED_RETURN_TYPES) {
-            if (disallowedReturnType.isInstance(o)) {
-                throw new IllegalArgumentException(o.getClass().getCanonicalName() + " may not be be returned from jdbc functions; these types are disallowed: " + DISALLOWED_RETURN_TYPES);
+        try (JDBCConnection connection = connection()) {
+            try {
+                R result = function.apply(connection);
+                connection.commit();
+                return result;
+            } catch (Throwable t) {
+                JDBC.closeQuietly(connection::rollback);
+                throw new DatabaseException(t);
             }
         }
-        return o;
     }
 
     static void closeQuietly(AutoCloseable... closeables) {

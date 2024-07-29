@@ -1,8 +1,11 @@
 package vest.doctor.rx;
 
+import java.util.Objects;
 import java.util.concurrent.Flow;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Collector;
 
 public abstract class AbstractProcessor<I, O> implements Flow.Processor<I, O> {
 
@@ -27,9 +30,16 @@ public abstract class AbstractProcessor<I, O> implements Flow.Processor<I, O> {
         }
     }
 
-    @SuppressWarnings("unchecked")
+    protected boolean hasSubscriber() {
+        return subscriber != null;
+    }
+
     protected Flow.Subscriber<? super O> subscriber() {
-        return subscriber != null ? subscriber : (Flow.Subscriber<? super O>) VOID_SUB;
+        if (hasSubscriber()) {
+            return subscriber;
+        } else {
+            throw new IllegalStateException("no subscriber");
+        }
     }
 
     @Override
@@ -105,21 +115,53 @@ public abstract class AbstractProcessor<I, O> implements Flow.Processor<I, O> {
         }
     }
 
-    private static final Flow.Subscriber<?> VOID_SUB = new Flow.Subscriber<>() {
-        @Override
-        public void onSubscribe(Flow.Subscription subscription) {
+    public static final class CollectorProcessor<I, A, O> extends AbstractProcessor<I, O> {
+
+        private final Collector<? super I, A, ? extends O> collector;
+        private final A container;
+        private final boolean concurrent;
+        private final AtomicBoolean collecting = new AtomicBoolean(true);
+
+        public CollectorProcessor(Collector<? super I, A, ? extends O> collector) {
+            this.collector = Objects.requireNonNull(collector);
+            this.container = collector.supplier().get();
+            this.concurrent = collector.characteristics().contains(Collector.Characteristics.CONCURRENT);
         }
 
         @Override
-        public void onNext(Object item) {
+        public void onNext(I item) {
+            if (collecting.get()) {
+                if (concurrent) {
+                    collector.accumulator().accept(container, item);
+                } else {
+                    synchronized (container) {
+                        collector.accumulator().accept(container, item);
+                    }
+                }
+            }
         }
 
         @Override
         public void onError(Throwable throwable) {
+            collecting.set(false);
+            super.onError(throwable);
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public void onComplete() {
+            if (collecting.compareAndSet(true, false)) {
+                O collected;
+                if (collector.characteristics().contains(Collector.Characteristics.IDENTITY_FINISH)) {
+                    collected = (O) container;
+                } else {
+                    collected = collector.finisher().apply(container);
+                }
+                if (subscription != null) {
+                    subscriber.onNext(collected);
+                }
+                super.onComplete();
+            }
         }
-    };
+    }
 }

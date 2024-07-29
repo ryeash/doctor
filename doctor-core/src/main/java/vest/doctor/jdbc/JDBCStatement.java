@@ -202,6 +202,13 @@ public final class JDBCStatement implements AutoCloseable {
         }
     }
 
+    /**
+     * Execute the underlying statement and return a stream of results. The stream will automatically
+     * iterate the rows of the {@link ResultSet} via {@link ResultSet#next()}.
+     *
+     * @return a stream of {@link ResultSet} representing the rows returned by the query
+     * @see #select(RowMapper)
+     */
     public Stream<ResultSet> select() {
         return select(RowMapper.identity());
     }
@@ -212,24 +219,15 @@ public final class JDBCStatement implements AutoCloseable {
      * Note: A terminal operation (like {@link Stream#forEach(Consumer)}) must be called on the returned stream
      * in order to release the underlying database resources.
      *
-     * @return a stream of {@link ResultSet} representing the rows returned by the query
+     * @param rowMapper a mapper that will be used to map each result row from the {@link ResultSet}
+     * @return a stream of data mapped from the result set of the query
      */
     public <T> Stream<T> select(RowMapper<T> rowMapper) {
-        try {
-            boolean hasResultSet;
-            if (statement instanceof PreparedStatement preparedStatement) {
-                hasResultSet = preparedStatement.execute();
-            } else {
-                hasResultSet = statement.execute(sql);
-            }
-            if (hasResultSet) {
-                return Stream.iterate(statement.getResultSet(), RS_HAS_NEXT, UnaryOperator.identity())
-                        .map(rowMapper);
-            } else {
-                throw new DatabaseException("statement execution did not produce a ResultSet");
-            }
-        } catch (SQLException e) {
-            throw new DatabaseException("error querying database", e);
+        Result execute = execute();
+        if (execute.hasResults) {
+            return execute.stream.map(rowMapper);
+        } else {
+            throw new DatabaseException("statement execution did not produce a ResultSet");
         }
     }
 
@@ -243,6 +241,20 @@ public final class JDBCStatement implements AutoCloseable {
      * @see Statement#getResultSet()
      */
     public long update() {
+        Result execute = execute();
+        if (execute.hasResults) {
+            throw new DatabaseException("statement execution produced an unexpected ResultSet");
+        } else {
+            return execute.updates;
+        }
+    }
+
+    @Override
+    public void close() {
+        JDBC.closeQuietly(statement);
+    }
+
+    private Result execute() {
         try {
             boolean hasResultSet;
             if (statement instanceof PreparedStatement preparedStatement) {
@@ -250,18 +262,16 @@ public final class JDBCStatement implements AutoCloseable {
             } else {
                 hasResultSet = statement.execute(sql);
             }
-            if (hasResultSet) {
-                throw new DatabaseException("statement execution produced an unexpected ResultSet");
-            } else {
-                return statement.getLargeUpdateCount();
-            }
+            return new Result(hasResultSet,
+                    hasResultSet
+                            ? Stream.iterate(statement.getResultSet(), RS_HAS_NEXT, UnaryOperator.identity())
+                            : Stream.empty(),
+                    statement.getLargeUpdateCount());
         } catch (SQLException e) {
             throw new DatabaseException("error querying database", e);
         }
     }
 
-    @Override
-    public void close() {
-        JDBC.closeQuietly(statement);
+    record Result(boolean hasResults, Stream<ResultSet> stream, long updates) {
     }
 }

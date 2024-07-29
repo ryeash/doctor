@@ -1,6 +1,5 @@
 package vest.doctor.rx;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 import java.util.concurrent.ForkJoinPool;
@@ -11,16 +10,16 @@ import java.util.stream.Collector;
 
 public class FlowBuilder<T> implements Flow.Publisher<T> {
 
-    public static <T> FlowBuilder<T> start(Flow.Publisher<T> publisher) {
+    public static <T> FlowBuilder<T> of(Flow.Publisher<T> publisher) {
         return new FlowBuilder<>(publisher);
     }
 
     public static <T> FlowBuilder<T> of(T item) {
-        return start(new SinglePublisher<>(item, ForkJoinPool.commonPool()));
+        return of(new SinglePublisher<>(item, ForkJoinPool.commonPool()));
     }
 
     public static <T> FlowBuilder<T> of(T item, ExecutorService executorService) {
-        return start(new SinglePublisher<>(item, executorService));
+        return of(new SinglePublisher<>(item, executorService));
     }
 
     private final Flow.Publisher<T> publisher;
@@ -136,20 +135,6 @@ public class FlowBuilder<T> implements Flow.Publisher<T> {
     }
 
     public <R> FlowBuilder<R> collect(Collector<T, ?, R> collector) {
-        return chain(new CollectorProcessor<>(collector));
-    }
-
-    public CompletableFuture<T> future() {
-        return future(Long.MAX_VALUE);
-    }
-
-    public CompletableFuture<T> future(long request) {
-        FutureSubscriber<T> sub = new FutureSubscriber<>(request);
-        chain(sub);
-        return sub.future();
-    }
-
-    public FlowBuilder<T> parallel(ExecutorService executorService) {
-        return chain(new ParallelProcessor<>(executorService));
+        return chain(new AbstractProcessor.CollectorProcessor<>(collector));
     }
 }
