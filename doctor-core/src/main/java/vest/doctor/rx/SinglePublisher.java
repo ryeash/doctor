@@ -5,7 +5,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Flow;
 
-public class SinglePublisher<T> implements Flow.Publisher<T> {
+class SinglePublisher<T> implements Flow.Publisher<T> {
 
     private final T item;
     private final ExecutorService executorService;

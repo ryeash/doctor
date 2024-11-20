@@ -197,6 +197,21 @@ public final class ProcessorUtils {
         return isCompatibleWith(context, context.toTypeElement(mirror), checkType);
     }
 
+    public static boolean isCompatibleWith(AnnotationProcessorContext context, ExecutableElement exec, Class<?>... checkTypes) {
+        if (exec.getParameters().size() == checkTypes.length) {
+            for (int i = 0; i < checkTypes.length; i++) {
+                Class<?> checkType = checkTypes[i];
+                TypeElement typeElement = context.toTypeElement(exec.getParameters().get(i).asType());
+                boolean matches = ProcessorUtils.isCompatibleWith(context, typeElement, checkType);
+                if (!matches) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
     public static boolean isCompatibleWith(AnnotationProcessorContext context, TypeElement type, Class<?> checkType) {
         for (TypeElement typeElement : hierarchy(context, type)) {
             if (Objects.equals(typeElement.toString(), checkType.getCanonicalName())) {

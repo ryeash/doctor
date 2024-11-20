@@ -10,14 +10,13 @@ import java.sql.Statement;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /**
  * Wrapper around {@link Connection} objects.
  */
 @SuppressWarnings("resource")
-public final class JDBCConnection implements AutoCloseable {
+public final class JDBCConnection extends JDBCWrapper<JDBCConnection, Connection> {
 
     private final Connection connection;
     private final List<JDBCInterceptor> interceptors;
@@ -28,28 +27,9 @@ public final class JDBCConnection implements AutoCloseable {
         this.interceptors = interceptors;
     }
 
-    /**
-     * Get the underlying {@link Connection}.
-     */
+    @Override
     public Connection unwrap() {
         return connection;
-    }
-
-    /**
-     * Configure the underlying connection.
-     *
-     * @param configuration the configuration consumer
-     * @return this object for chaining
-     * @see Connection#setAutoCommit(boolean)
-     * @see Connection#setTransactionIsolation(int)
-     */
-    public JDBCConnection configure(Consumer<Connection> configuration) {
-        try {
-            configuration.accept(connection);
-        } catch (Exception e) {
-            throw new DatabaseException("error configuring connection", e);
-        }
-        return this;
     }
 
     /**
@@ -63,7 +43,7 @@ public final class JDBCConnection implements AutoCloseable {
     }
 
     /**
-     * Alias for <code>prepare(sql).bindAll(parameters).execute()</code>.
+     * Alias for <code>prepare(sql).bindAll(parameters).select()</code>.
      *
      * @param sql        the selective sql
      * @param parameters the binding parameters
@@ -105,7 +85,7 @@ public final class JDBCConnection implements AutoCloseable {
                 statement = interceptor.intercept(statement);
             }
             closeables.add(new WeakReference<>(statement));
-            return new JDBCStatement(connection, statement, sql);
+            return new JDBCStatement(statement, sql);
         } catch (SQLException e) {
             throw new DatabaseException("error creating query", e);
         }
@@ -126,7 +106,7 @@ public final class JDBCConnection implements AutoCloseable {
                 statement = interceptor.intercept(statement);
             }
             closeables.add(new WeakReference<>(statement));
-            return new JDBCStatement(connection, statement, sql);
+            return new JDBCStatement(statement, sql);
         } catch (SQLException e) {
             throw new DatabaseException("error creating query", e);
         }
@@ -165,6 +145,6 @@ public final class JDBCConnection implements AutoCloseable {
                 .filter(Objects::nonNull)
                 .forEach(JDBC::closeQuietly);
         closeables.clear();
-        JDBC.closeQuietly(connection);
+        super.close();
     }
 }

@@ -83,7 +83,7 @@ public class JDBCTest extends Assert {
 
     @AfterClass(alwaysRun = true)
     public void teardown() {
-        ((HikariDataSource) jdbc.dataSource()).close();
+        jdbc.close();
     }
 
     public void connectionConsumerAndFunction() {

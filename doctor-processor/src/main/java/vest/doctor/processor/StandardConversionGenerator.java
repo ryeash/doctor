@@ -73,12 +73,16 @@ public class StandardConversionGenerator implements StringConversionGenerator {
         return Prioritized.LOWEST_PRIORITY;
     }
 
+    /**
+     * Find a string constructor.
+     * Requires a public, single CharSequence parameter, no checked exceptions thrown constructor.
+     */
     private static boolean hasStringConstructor(AnnotationProcessorContext context, TypeMirror targetType) {
         TypeElement typeElement = context.toTypeElement(targetType);
         for (ExecutableElement constructor : ElementFilter.constructorsIn(typeElement.getEnclosedElements())) {
             if (constructor.getParameters().size() == 1
                 && constructor.getModifiers().contains(Modifier.PUBLIC)
-                && ProcessorUtils.isCompatibleWith(context, context.toTypeElement(constructor.getParameters().get(0).asType()), CharSequence.class)
+                && ProcessorUtils.isCompatibleWith(context, constructor, CharSequence.class)
                 && constructor.getThrownTypes().isEmpty()) {
                 return true;
             }
@@ -86,13 +90,17 @@ public class StandardConversionGenerator implements StringConversionGenerator {
         return false;
     }
 
+    /**
+     * Find a string static factory method.
+     * Requires a public, static, single CharSequence parameter, compatible return type, no checked exception thrown method.
+     */
     private static String buildStaticConstructorReference(AnnotationProcessorContext context, TypeMirror targetType) {
         TypeElement typeElement = context.toTypeElement(targetType);
         for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements())) {
             if (method.getParameters().size() == 1
                 && method.getModifiers().contains(Modifier.STATIC)
                 && method.getModifiers().contains(Modifier.PUBLIC)
-                && ProcessorUtils.isCompatibleWith(context, context.toTypeElement(method.getParameters().get(0).asType()), String.class)
+                && ProcessorUtils.isCompatibleWith(context, method, CharSequence.class)
                 && Objects.equals(method.getReturnType().toString(), targetType.toString())
                 && method.getThrownTypes().isEmpty()) {
                 return targetType + "::" + method.getSimpleName();

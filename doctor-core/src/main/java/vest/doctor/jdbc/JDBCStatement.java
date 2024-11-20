@@ -1,6 +1,5 @@
 package vest.doctor.jdbc;
 
-import java.sql.Connection;
 import java.sql.JDBCType;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -16,7 +15,7 @@ import java.util.stream.Stream;
 /**
  * Wrapper around a {@link Statement} to add a fluent API.
  */
-public final class JDBCStatement implements AutoCloseable {
+public final class JDBCStatement extends JDBCWrapper<JDBCStatement, Statement> {
     private static final Predicate<ResultSet> RS_HAS_NEXT = rs -> {
         try {
             return rs.next();
@@ -25,47 +24,17 @@ public final class JDBCStatement implements AutoCloseable {
         }
     };
 
-    private final Connection connection;
     private final Statement statement;
     private final String sql;
 
-    JDBCStatement(Connection connection, Statement statement, String sql) {
-        this.connection = Objects.requireNonNull(connection);
+    JDBCStatement(Statement statement, String sql) {
         this.statement = Objects.requireNonNull(statement);
         this.sql = Objects.requireNonNull(sql);
     }
 
-    /**
-     * Get the underlying {@link Connection}.
-     */
-    public Connection connection() {
-        return connection;
-    }
-
-    /**
-     * Unwrap the underlying {@link Statement} object.
-     *
-     * @return the statement object that this class wraps
-     */
+    @Override
     public Statement unwrap() {
         return statement;
-    }
-
-    /**
-     * Configure the underlying statement.
-     *
-     * @param configuration the configuration consumer
-     * @return this object for chaining
-     * @see Statement#setFetchSize(int)
-     * @see Statement#setMaxRows(int)
-     */
-    public JDBCStatement configure(Consumer<Statement> configuration) {
-        try {
-            configuration.accept(this.statement);
-        } catch (Exception e) {
-            throw new DatabaseException("error configuring statement", e);
-        }
-        return this;
     }
 
     /**
@@ -247,11 +216,6 @@ public final class JDBCStatement implements AutoCloseable {
         } else {
             return execute.updates;
         }
-    }
-
-    @Override
-    public void close() {
-        JDBC.closeQuietly(statement);
     }
 
     private Result execute() {

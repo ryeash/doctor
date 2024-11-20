@@ -11,7 +11,7 @@ import java.util.function.Function;
 /**
  * Wraps a {@link DataSource} and acts as the entry point for the fluent JDBC API.
  */
-public final class JDBC {
+public final class JDBC extends JDBCWrapper<JDBC, DataSource> {
     private final DataSource dataSource;
     final List<JDBCInterceptor> interceptors;
 
@@ -35,12 +35,8 @@ public final class JDBC {
         this.interceptors = interceptors;
     }
 
-    /**
-     * Get the underlying data source.
-     *
-     * @return the data source this object was created with
-     */
-    public DataSource dataSource() {
+    @Override
+    public DataSource unwrap() {
         return dataSource;
     }
 
