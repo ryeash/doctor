@@ -16,5 +16,4 @@ module doctor.core {
     exports vest.doctor.processing;
     exports vest.doctor.runtime;
     exports vest.doctor.scheduled;
-    exports vest.doctor.rx;
 }

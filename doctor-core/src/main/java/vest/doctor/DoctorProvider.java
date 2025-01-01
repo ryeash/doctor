@@ -55,7 +55,8 @@ public interface DoctorProvider<T> extends Provider<T>, AutoCloseable {
     void validateDependencies(ProviderRegistry providerRegistry);
 
     /**
-     * Destroy the given instance that was provided by this provider.
+     * Destroy the given instance that was instantiated by this provider. User internally
+     * for lifecycle management and shouldn't be called directly.
      *
      * @param instance the instance to destroy
      */

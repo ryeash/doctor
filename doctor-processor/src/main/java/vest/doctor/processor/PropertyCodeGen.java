@@ -50,7 +50,7 @@ public final class PropertyCodeGen {
         String confMethod = "get";
 
         if (ProcessorUtils.isCompatibleWith(context, typeElement, Collection.class)) {
-            // TODO: this incomplete (NavigableSet)
+            // TODO: this is incomplete (NavigableSet)
             isCollection = true;
             confMethod = ProcessorUtils.isCompatibleWith(context, typeElement, Set.class)
                     ? "getSet"

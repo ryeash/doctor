@@ -13,6 +13,7 @@
         <module>doctor-processor</module>
         <module>doctor-test</module>
         <module>doctor-jaxrs</module>
+        <module>doctor-apache-http</module>
         <module>doctor-grpc</module>
         <module>doctor-jpa</module>
         <module>doctor-bom</module>
@@ -25,13 +26,15 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <slf4j.version>2.0.12</slf4j.version>
-        <jersey.version>3.1.6</jersey.version>
-        <netty.version>4.1.109.Final</netty.version>
-        <hibernate.version>6.4.4.Final</hibernate.version>
-        <jackson.version>2.17.0</jackson.version>
-        <grpc.version>1.63.0</grpc.version>
-        <protoc.version>3.25.3</protoc.version>
+        <slf4j.version>2.0.16</slf4j.version>
+        <jersey.version>3.1.9</jersey.version>
+        <netty.version>4.1.115.Final</netty.version>
+        <hibernate.version>6.6.2.Final</hibernate.version>
+        <jackson.version>2.18.1</jackson.version>
+        <grpc.version>1.68.1</grpc.version>
+        <protoc.version>3.25.5</protoc.version>
+        <guava.version>33.3.1-jre</guava.version>
+        <apache.http.version>5.3.1</apache.http.version>
     </properties>
 
     <dependencyManagement>
@@ -55,12 +58,12 @@
             <dependency>
                 <groupId>com.zaxxer</groupId>
                 <artifactId>HikariCP</artifactId>
-                <version>5.1.0</version>
+                <version>6.2.1</version>
             </dependency>
             <dependency>
                 <groupId>org.hsqldb</groupId>
                 <artifactId>hsqldb</artifactId>
-                <version>2.7.2</version>
+                <version>2.7.4</version>
             </dependency>
             <dependency>
                 <groupId>org.testng</groupId>
@@ -70,12 +73,17 @@
             <dependency>
                 <groupId>io.rest-assured</groupId>
                 <artifactId>rest-assured</artifactId>
-                <version>5.4.0</version>
+                <version>5.5.0</version>
             </dependency>
             <dependency>
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
-                <version>1.17.0</version>
+                <version>1.17.1</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.glassfish.jersey</groupId>
@@ -123,7 +131,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-enforcer-plugin</artifactId>
-                    <version>3.4.1</version>
+                    <version>3.5.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -143,7 +151,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>3.6.3</version>
+                    <version>3.11.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

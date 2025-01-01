@@ -168,7 +168,7 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
                 .addImplementsInterface(DoctorProvider.class.getSimpleName() + "<" + providedType().getSimpleName() + ">")
                 .addClassAnnotation("@SuppressWarnings(\"unchecked\")")
                 .addField("private final ", ProviderRegistry.class.getSimpleName(), " {{providerRegistry}}")
-                .addField("private final ", TypeInfo.class.getSimpleName(), " typeInfo = ", new GenericInfo(annotationSource, providedType.asType()).newTypeInfo(context));
+                .addField("private static final ", TypeInfo.class.getSimpleName(), " typeInfo = ", new GenericInfo(annotationSource, providedType.asType()).newTypeInfo(context));
 
         MethodBuilder constructor = classBuilder.newMethod("public ", generatedClassName().substring(generatedClassName().lastIndexOf('.') + 1), "(", ProviderRegistry.class, " {{providerRegistry}})");
         constructor.line("this.{{providerRegistry}} = {{providerRegistry}};");
@@ -188,7 +188,7 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
 
         List<TypeElement> allProvidedTypes = getAllProvidedTypes();
         if (!allProvidedTypes.isEmpty()) {
-            classBuilder.addField("private final List<Class<?>> allTypes = " + allProvidedTypes.stream()
+            classBuilder.addField("private static final List<Class<?>> allTypes = " + allProvidedTypes.stream()
                             .map(TypeElement::getQualifiedName)
                             .map(n -> n + ".class")
                             .collect(AS_LIST))
@@ -199,7 +199,7 @@ public abstract class AbstractProviderDefinition implements ProviderDefinition {
 
         List<String> modules = modules();
         if (!modules.isEmpty()) {
-            classBuilder.addField("private final List<String> modules = " + modules.stream()
+            classBuilder.addField("private static final List<String> modules = " + modules.stream()
                             .filter(Objects::nonNull)
                             .map(String::trim)
                             .filter(s -> !s.isEmpty())

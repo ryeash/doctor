@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
 
@@ -37,17 +38,18 @@ public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
         postInstantiateCalls = Collections.unmodifiableList(temp);
     }
 
-    boolean executorInitialized = false;
-
     @Override
     public void customize(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef) {
+        customize(context, providerDefinition, method, instanceRef, providerRegistryRef, new AtomicBoolean(false));
+    }
+
+    public void customize(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef, AtomicBoolean executorInitialized) {
         TypeElement typeElement = providerDefinition.providedType();
         postCreateEventBusRegister(context, providerDefinition, method, instanceRef, providerRegistryRef);
         for (ExecutableElement executableElement : ProcessorUtils.allMethods(context, typeElement)) {
             postCreateInjectCalls(context, providerDefinition, method, instanceRef, providerRegistryRef, executableElement);
-            postCreateSchedule(context, providerDefinition, method, instanceRef, providerRegistryRef, executableElement);
+            postCreateSchedule(context, providerDefinition, method, instanceRef, providerRegistryRef, executableElement, executorInitialized);
         }
-        executorInitialized = false;
     }
 
     private void postCreateEventBusRegister(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder methodBuilder, String instanceRef, String providerRegistryRef) {
@@ -56,7 +58,7 @@ public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
                     .stream()
                     .filter(method -> method.getParameters().size() == 1 && method.getSimpleName().toString().equals("accept"))
                     .findFirst()
-                    .map(method -> method.getParameters().get(0))
+                    .map(method -> method.getParameters().getFirst())
                     .map(param -> param.asType().toString() + ".class")
                     .orElseThrow(() -> new CodeProcessingException("couldn't determine event type for consumer: " + providerDefinition.providedType()));
             methodBuilder.addImportClass(EventBus.class)
@@ -74,12 +76,12 @@ public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
         }
     }
 
-    private void postCreateSchedule(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef, ExecutableElement executableElement) {
+    private void postCreateSchedule(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef, ExecutableElement executableElement, AtomicBoolean executorInitialized) {
         if (executableElement.getAnnotation(Scheduled.class) != null) {
             Scheduled scheduled = executableElement.getAnnotation(Scheduled.class);
-            if (!executorInitialized) {
+            if (!executorInitialized.get()) {
                 method.line("java.util.concurrent.ScheduledExecutorService ses = " + providerRegistryRef + ".getInstance(java.util.concurrent.ScheduledExecutorService.class, " + ProcessorUtils.escapeAndQuoteStringForCode(scheduled.scheduler()) + ");\n");
-                executorInitialized = true;
+                executorInitialized.set(true);
             }
             if (scheduled.interval().isEmpty() && scheduled.cron().isEmpty()) {
                 throw new CodeProcessingException("cron or interval must be set for the @Scheduled annotation", executableElement);
