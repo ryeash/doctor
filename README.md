@@ -105,8 +105,7 @@ These are the built-in scopes supported:
 - [@ThreadLocal](doctor-core/src/main/java/vest/doctor/ThreadLocal.java): one instance is created per thread
 - [@Cached](doctor-core/src/main/java/vest/doctor/Cached.java): an instance is created and shared for a configurable
   length of time
-- [@Reloadable](doctor-core/src/main/java/vest/doctor/Reloadable.java): an instance is created and cached until a
-  [ReloadProviders](doctor-core/src/main/java/vest/doctor/event/ReloadProviders.java) event is published, at which point
+- [@Reloadable](doctor-core/src/main/java/vest/doctor/Reloadable.java): an instance is created and cached until a reload is requested, at which point
   the cached instance will be cleared and a new instance will be created the next time an instance is requested (lazily)
 
 ### Qualifiers
@@ -333,37 +332,6 @@ will _not_ prevent the provided object from being garbage collected.
 > of provided objects. In effect, if a method is marked with @Scheduled and an aspect, the aspect will
 > be ignored during execution of the resulting scheduled task; however, any place where the class is
 > injected, calling the scheduled method explicitly will go through the aspect(s).
-
-### Event Bus
-
-Messages can be published and consumed via the EventBus.
-
-Basics of event publish and consume:
-
-```java
-// This class implements EventConsumer and will receive String events.
-@Singleton
-public class EventExample implements EventConsumer<String> {
-
-  private final EventBus bus;
-
-  @Inject
-  public EventExample(EventBus bus) {
-    this.bus = bus;
-  }
-  
-  @Inject
-  public void message(@Named("background") ExecutorService exec) {
-    // publish a string event when this class is instantiated 
-    exec.submit(() -> bus.publish("test"));
-  }
-
-  @Override
-  public void receive(String message) {
-    System.out.println("message received: " + message);
-  }
-}
-```
 
 
 ### [@Import](doctor-core/src/main/java/vest/doctor/Import.java)

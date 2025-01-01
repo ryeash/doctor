@@ -4,8 +4,6 @@ import jakarta.inject.Inject;
 import vest.doctor.InjectionException;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
-import vest.doctor.event.EventBus;
-import vest.doctor.event.EventConsumer;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
 import vest.doctor.processing.NewInstanceCustomizer;
@@ -45,27 +43,9 @@ public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
 
     public void customize(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef, AtomicBoolean executorInitialized) {
         TypeElement typeElement = providerDefinition.providedType();
-        postCreateEventBusRegister(context, providerDefinition, method, instanceRef, providerRegistryRef);
         for (ExecutableElement executableElement : ProcessorUtils.allMethods(context, typeElement)) {
             postCreateInjectCalls(context, providerDefinition, method, instanceRef, providerRegistryRef, executableElement);
             postCreateSchedule(context, providerDefinition, method, instanceRef, providerRegistryRef, executableElement, executorInitialized);
-        }
-    }
-
-    private void postCreateEventBusRegister(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder methodBuilder, String instanceRef, String providerRegistryRef) {
-        if (ProcessorUtils.isCompatibleWith(context, providerDefinition.providedType(), EventConsumer.class)) {
-            String type = ProcessorUtils.allMethods(context, providerDefinition.providedType())
-                    .stream()
-                    .filter(method -> method.getParameters().size() == 1 && method.getSimpleName().toString().equals("accept"))
-                    .findFirst()
-                    .map(method -> method.getParameters().getFirst())
-                    .map(param -> param.asType().toString() + ".class")
-                    .orElseThrow(() -> new CodeProcessingException("couldn't determine event type for consumer: " + providerDefinition.providedType()));
-            methodBuilder.addImportClass(EventBus.class)
-                    .printfLine("""
-                            EventBus bus = %s.getInstance(%s.class, null);
-                            bus.addConsumer(%s,%s);
-                            """, providerRegistryRef, EventBus.class.getCanonicalName(), type, instanceRef);
         }
     }
 

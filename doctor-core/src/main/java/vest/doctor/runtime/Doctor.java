@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import vest.doctor.AdHocProvider;
 import vest.doctor.ApplicationLoader;
 import vest.doctor.DoctorProvider;
+import vest.doctor.DoctorProviderWrapper;
 import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.conf.CompositeConfigurationFacade;
@@ -14,9 +15,6 @@ import vest.doctor.conf.EnvironmentVariablesConfigurationSource;
 import vest.doctor.conf.StructuredConfigurationSource;
 import vest.doctor.conf.SystemPropertiesConfigurationSource;
 import vest.doctor.conf.UnmodifiableConfigurationFacade;
-import vest.doctor.event.ApplicationShutdown;
-import vest.doctor.event.ApplicationStarted;
-import vest.doctor.event.EventBus;
 
 import java.lang.annotation.Annotation;
 import java.util.Collections;
@@ -36,7 +34,7 @@ import java.util.stream.Stream;
  * The entrypoint for applications to access generated {@link Provider providers}.
  * Initializes (and serves as) the {@link ProviderRegistry} for an application.
  */
-public class Doctor implements ProviderRegistry, AutoCloseable {
+public final class Doctor implements ProviderRegistry, AutoCloseable {
 
     private static final String ASCII_ART = """
               _
@@ -144,6 +142,7 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
     /**
      * Get the instance of the {@link Doctor}, if the {@link #main(String[])} method was used
      * to start the application.
+     *
      * @return the doctor instance, or throw a {@link NullPointerException} if Doctor.main was not used to start the app
      */
     public static Doctor mainInstance() {
@@ -208,8 +207,6 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
         if (configurationFacade.get(DOCTOR_AUTO_SHUTDOWN_PROPERTY, true, Boolean::valueOf)) {
             Runtime.getRuntime().addShutdownHook(new Thread(this::close, "doctor-shutdown-" + this.hashCode()));
         }
-        EventBus eventBus = getInstance(EventBus.class);
-        eventBus.publish(new ApplicationStarted(this));
         log.info("\n{}\ninitialized in {}ms", ASCII_ART, (System.currentTimeMillis() - start));
     }
 
@@ -302,9 +299,6 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
                     log.error("error closing provider {}", p, t);
                 }
             });
-            getProviderOpt(EventBus.class, null)
-                    .map(Provider::get)
-                    .ifPresent(ep -> ep.publish(new ApplicationShutdown(this)));
         }
     }
 
@@ -339,5 +333,18 @@ public class Doctor implements ProviderRegistry, AutoCloseable {
             }
         }
         return sb.toString();
+    }
+
+    @Override
+    public void reloadProviders() {
+        allProviders().forEach(p -> {
+            DoctorProvider<?> temp = p;
+            while (temp instanceof DoctorProviderWrapper<?> wrapper) {
+                if (wrapper instanceof ReloadableScopeProvider<?> reloadable) {
+                    reloadable.clearValue();
+                }
+                temp = wrapper.unwrap();
+            }
+        });
     }
 }

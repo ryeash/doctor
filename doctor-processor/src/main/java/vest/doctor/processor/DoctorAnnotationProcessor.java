@@ -15,7 +15,6 @@ import vest.doctor.codegen.Constants;
 import vest.doctor.codegen.MethodBuilder;
 import vest.doctor.codegen.ProcessorUtils;
 import vest.doctor.conf.ConfigurationFacade;
-import vest.doctor.event.EventBus;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
 import vest.doctor.processing.CustomizationPoint;
@@ -116,7 +115,6 @@ public class DoctorAnnotationProcessor extends AbstractProcessor implements Anno
 
         addSatisfiedDependency(ProviderRegistry.class, null);
         addSatisfiedDependency(ConfigurationFacade.class, null);
-        addSatisfiedDependency(EventBus.class, null);
         appLoaderWriter = new AppLoaderWriter(this);
     }
 

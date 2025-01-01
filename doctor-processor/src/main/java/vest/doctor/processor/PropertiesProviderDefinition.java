@@ -9,7 +9,6 @@ import vest.doctor.codegen.ProcessorUtils;
 import vest.doctor.conf.ConfigurationFacade;
 import vest.doctor.processing.AnnotationProcessorContext;
 import vest.doctor.processing.CodeProcessingException;
-import vest.doctor.runtime.PropertiesTrait;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
@@ -38,8 +37,8 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
         ClassBuilder impl = new ClassBuilder()
                 .setClassName(context.generatedPackageName(type) + "." + implClass)
                 .addImportClass(ConfigurationFacade.class)
-                .setExtendsClass(PropertiesTrait.class)
-                .addImplementsInterface(type.toString());
+                .addImplementsInterface(type.toString())
+                .addField("private final ProviderRegistry {{providerRegistry}}");
 
         this.propertyPrefix = Optional.ofNullable(type.getAnnotation(Properties.class))
                 .map(Properties::value)
@@ -47,19 +46,18 @@ public class PropertiesProviderDefinition extends AbstractProviderDefinition {
 
         impl.addImportClass(ProviderRegistry.class);
         MethodBuilder constructor = impl.newMethod("public ", implClass, "(", ProviderRegistry.class, " {{providerRegistry}})");
-        constructor.line("super({{providerRegistry}});");
+        constructor.line("this.{{providerRegistry}} = {{providerRegistry}};");
 
         for (ExecutableElement method : ProcessorUtils.allMethods(context, providedType())) {
             if (method.getAnnotation(Property.class) != null) {
-                if (method.getParameters().size() > 0) {
+                if (!method.getParameters().isEmpty()) {
                     throw new CodeProcessingException("@Property methods in @Properties definition interfaces may not have parameters", method);
                 }
                 MethodBuilder mb = impl.newMethod("@Override public ", method.getReturnType(), " ", method.getSimpleName(), "()");
                 TypeMirror returnType = method.getReturnType();
                 String propertyName = propertyPrefix + method.getAnnotation(Property.class).value();
                 String code = PropertyCodeGen.getPropertyCode(context, method, propertyName, returnType, PROVIDER_REGISTRY);
-                String cacheKey = method.getSimpleName() + "$" + returnType + "$" + propertyName;
-                mb.line("return cached(" + ProcessorUtils.escapeAndQuoteStringForCode(cacheKey) + ", () ->" + code + ");");
+                mb.line("return " + code + ";");
             } else if (!method.isDefault() && !method.getModifiers().contains(Modifier.STATIC)) {
                 throw new CodeProcessingException("all non-default methods defined in a @Properties interface must have a @Property annotation", method);
             }

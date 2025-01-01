@@ -12,7 +12,8 @@ public final class CollectingSubscriber<I, A, O> implements Flow.Subscriber<I> {
 
     public static final Collector<byte[], ?, Void> IGNORING = Collector.<byte[], Void, Void>of(
             () -> null,
-            (a, b) -> {},
+            (a, b) -> {
+            },
             (a, b) -> {
                 throw new UnsupportedOperationException();
             },
@@ -23,7 +24,8 @@ public final class CollectingSubscriber<I, A, O> implements Flow.Subscriber<I> {
             List::add,
             (a, b) -> {
                 throw new UnsupportedOperationException();
-            }, (list) -> {
+            },
+            (list) -> {
                 int totalSize = list.stream().mapToInt(a -> a.length).sum();
                 byte[] data = new byte[totalSize];
                 int i = 0;

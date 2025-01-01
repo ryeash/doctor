@@ -1,5 +1,6 @@
 package vest.doctor.jaxrs;
 
+import org.glassfish.jersey.server.ServerProperties;
 import vest.doctor.Properties;
 import vest.doctor.Property;
 
@@ -89,4 +90,14 @@ public interface JAXRSConfiguration {
      */
     @Property("minGzipSize")
     Optional<Integer> minGzipSize();
+
+    /**
+     * Whether to enable jersey tracing headers in response data. Adds a lot
+     * of overhead but can be useful to debug mis-configured routes.
+     *
+     * @see ServerProperties#TRACING_THRESHOLD
+     * @see ServerProperties#TRACING
+     */
+    @Property("tracing")
+    Optional<Boolean> tracing();
 }

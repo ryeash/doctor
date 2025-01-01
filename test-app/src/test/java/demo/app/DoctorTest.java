@@ -13,9 +13,6 @@ import vest.doctor.AnnotationData;
 import vest.doctor.DoctorProvider;
 import vest.doctor.ThreadLocal;
 import vest.doctor.conf.ConfigurationFacade;
-import vest.doctor.event.EventBus;
-import vest.doctor.event.ReloadConfiguration;
-import vest.doctor.event.ReloadProviders;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -26,7 +23,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -47,13 +43,6 @@ public class DoctorTest extends AbstractTestAppTest {
     @Test
     public void eager() {
         assertTrue(TCEager.created);
-    }
-
-    @Test
-    public void event() throws InterruptedException, ExecutionException, TimeoutException {
-        TCEvent event = providerRegistry().getInstance(TCEvent.class);
-        event.eventListened.get(100, TimeUnit.MILLISECONDS);
-        assertEquals(event.messageReceived, "test");
     }
 
     @Test
@@ -217,8 +206,7 @@ public class DoctorTest extends AbstractTestAppTest {
 
     @Test
     public void configurationReload() {
-        EventBus instance = providerRegistry().getInstance(EventBus.class);
-        instance.publish(new ReloadConfiguration());
+        providerRegistry().configuration().reload();
         assertTrue(TCConfigReload.reloaded);
     }
 
@@ -243,7 +231,7 @@ public class DoctorTest extends AbstractTestAppTest {
     public void reloadable() {
         TCReloadable first = providerRegistry().getInstance(TCReloadable.class);
         TCReloadable second = providerRegistry().getInstance(TCReloadable.class);
-        providerRegistry().getInstance(EventBus.class).publish(new ReloadProviders());
+        providerRegistry().reloadProviders();
         TCReloadable third = providerRegistry().getInstance(TCReloadable.class);
         assertEquals(first, second);
         assertNotEquals(first, third);

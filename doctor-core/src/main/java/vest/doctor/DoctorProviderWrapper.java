@@ -13,6 +13,10 @@ public abstract class DoctorProviderWrapper<T> implements DoctorProvider<T> {
         this.delegate = delegate;
     }
 
+    public DoctorProvider<T> unwrap() {
+        return delegate;
+    }
+
     @Override
     public TypeInfo typeInfo() {
         return delegate.typeInfo();

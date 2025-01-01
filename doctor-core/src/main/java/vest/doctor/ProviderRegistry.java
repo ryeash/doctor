@@ -2,6 +2,7 @@ package vest.doctor;
 
 import jakarta.inject.Provider;
 import vest.doctor.conf.ConfigurationFacade;
+import vest.doctor.runtime.Doctor;
 
 import java.lang.annotation.Annotation;
 import java.util.List;
@@ -12,7 +13,7 @@ import java.util.stream.Stream;
  * The primary means of (programmatically) interacting with the generated provider
  * instances at runtime in application code.
  */
-public interface ProviderRegistry {
+public sealed interface ProviderRegistry permits Doctor {
 
     /**
      * The list of active modules.
@@ -193,4 +194,9 @@ public interface ProviderRegistry {
      * @return a new string with placeholders resolved using properties
      */
     String resolvePlaceholders(String string);
+
+    /**
+     * For all providers with {@link Reloadable} scope, call reload.
+     */
+    void reloadProviders();
 }

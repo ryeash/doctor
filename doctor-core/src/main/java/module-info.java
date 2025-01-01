@@ -11,7 +11,6 @@ module doctor.core {
     exports vest.doctor.aop;
     exports vest.doctor.codegen;
     exports vest.doctor.conf;
-    exports vest.doctor.event;
     exports vest.doctor.jdbc;
     exports vest.doctor.processing;
     exports vest.doctor.runtime;

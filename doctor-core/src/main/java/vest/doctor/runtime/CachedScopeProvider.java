@@ -1,21 +1,21 @@
 package vest.doctor.runtime;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import vest.doctor.Cached;
 import vest.doctor.DoctorProvider;
 import vest.doctor.DoctorProviderWrapper;
 import vest.doctor.ProviderRegistry;
-import vest.doctor.event.ErrorEvent;
-import vest.doctor.event.EventBus;
 
 /**
  * Provider wrapper that supports the {@link Cached} scope.
  */
 public final class CachedScopeProvider<T> extends DoctorProviderWrapper<T> {
 
+    private static final Logger log = LoggerFactory.getLogger(CachedScopeProvider.class);
     private final long ttlNanos;
     private volatile long expires = 0;
     private volatile T value;
-    private final EventBus eventBus;
 
     public CachedScopeProvider(DoctorProvider<T> delegate, long ttlNanos, ProviderRegistry providerRegistry) {
         super(delegate);
@@ -23,7 +23,6 @@ public final class CachedScopeProvider<T> extends DoctorProviderWrapper<T> {
             throw new IllegalArgumentException("cached scope ttl must be greater than 0; on provider: " + delegate);
         }
         this.ttlNanos = ttlNanos;
-        this.eventBus = providerRegistry.getInstance(EventBus.class);
     }
 
     @Override
@@ -51,7 +50,7 @@ public final class CachedScopeProvider<T> extends DoctorProviderWrapper<T> {
         try {
             destroy(value);
         } catch (Throwable e) {
-            eventBus.publish(new ErrorEvent(e));
+            log.warn("error clearing cached instance", e);
         }
     }
 }

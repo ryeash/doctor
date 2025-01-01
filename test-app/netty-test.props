@@ -2,6 +2,7 @@
 doctor.jaxrs {
     bind: "http://0.0.0.0:60222/"
     maxContentLength: 1
+    tracing: true
 }
 
 grpc {
