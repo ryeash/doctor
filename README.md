@@ -153,7 +153,7 @@ Only one qualifier is allowed per provided type.
 Doctor does not provide any built-in qualifiers beyond
 the [@Named](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/named)
 qualifier packaged in java.inject. To create qualifiers see example here:
-[@Qualifier](https://jakarta.ee/specifications/platform/8/apidocs/javax/inject/qualifier).
+[@Qualifier](https://jakarta.ee/specifications/dependency-injection/2.0/apidocs/jakarta/inject/qualifier).
 
 
 ### [@Activation](doctor-core/src/main/java/vest/doctor/Activation.java)
