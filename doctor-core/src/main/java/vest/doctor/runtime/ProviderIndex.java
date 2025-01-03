@@ -10,25 +10,20 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 
 final class ProviderIndex {
 
-    private final Lock writeLock = new ReentrantLock();
-    private final Map<String, Map<String, DoctorProvider<?>>> primary = new ConcurrentSkipListMap<>();
-    private final Map<String, Map<String, Collection<DoctorProvider<?>>>> secondary = new ConcurrentSkipListMap<>();
+    private final Map<TypeQualifier, DoctorProvider<?>> primary = new HashMap<>();
+    private final Map<String, Map<String, Collection<DoctorProvider<?>>>> secondary = new HashMap<>();
 
     void setProvider(DoctorProvider<?> provider) {
         Objects.requireNonNull(provider);
         Objects.requireNonNull(provider.typeInfo());
-        writeLock.lock();
-        try {
+        synchronized (primary) {
             // primary
-            Map<String, DoctorProvider<?>> qualifierToProvider = primary.computeIfAbsent(provider.typeInfo().getRawType().getName(), t -> new HashMap<>());
-            qualifierToProvider.merge(provider.qualifier(), provider, (existing, insert) -> {
+            TypeQualifier tq = new TypeQualifier(provider.typeInfo().getRawType(), provider.qualifier());
+            primary.merge(tq, provider, (existing, insert) -> {
                 throw new IllegalArgumentException("there is already a provider registered under: " + provider.qualifier() + ":" + provider.typeInfo().getRawType().getCanonicalName());
             });
 
@@ -38,15 +33,14 @@ final class ProviderIndex {
                         .computeIfAbsent(provider.qualifier(), q -> new ArrayList<>())
                         .add(provider);
             }
-        } finally {
-            writeLock.unlock();
         }
     }
 
     @SuppressWarnings("unchecked")
     <T> Optional<DoctorProvider<T>> getProvider(Class<T> type, String qualifier) {
         // check primary
-        DoctorProvider<?> doctorProvider = primary.getOrDefault(type.getName(), Collections.emptyMap()).get(qualifier);
+        TypeQualifier tq = new TypeQualifier(type, qualifier);
+        DoctorProvider<?> doctorProvider = primary.get(tq);
         if (doctorProvider != null) {
             return Optional.of((DoctorProvider<T>) doctorProvider);
         }
@@ -78,16 +72,13 @@ final class ProviderIndex {
     }
 
     Stream<DoctorProvider<?>> allProviders() {
-        return primary.values()
-                .stream()
-                .map(Map::values)
-                .flatMap(Collection::stream);
+        return primary.values().stream();
     }
 
     int size() {
-        return (int) primary.values()
-                .stream()
-                .mapToInt(Map::size)
-                .count();
+        return primary.size();
+    }
+
+    record TypeQualifier(Class<?> type, String qualifier) {
     }
 }
