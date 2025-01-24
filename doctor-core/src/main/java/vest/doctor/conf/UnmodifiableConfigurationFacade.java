@@ -76,21 +76,6 @@ public class UnmodifiableConfigurationFacade implements ConfigurationFacade {
     }
 
     @Override
-    public Collection<String> getSubGroups(String prefix) {
-        return delegate.getSubGroups(prefix);
-    }
-
-    @Override
-    public Collection<String> getSubGroups(String prefix, String terminal) {
-        return delegate.getSubGroups(prefix, terminal);
-    }
-
-    @Override
-    public ConfigurationFacade prefix(String prefix) {
-        return delegate.prefix(prefix);
-    }
-
-    @Override
     public Collection<String> propertyNames() {
         return delegate.propertyNames();
     }

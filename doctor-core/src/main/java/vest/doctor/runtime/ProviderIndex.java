@@ -4,9 +4,8 @@ import vest.doctor.DoctorProvider;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -14,24 +13,24 @@ import java.util.stream.Stream;
 
 final class ProviderIndex {
 
-    private final Map<TypeQualifier, DoctorProvider<?>> primary = new HashMap<>();
-    private final Map<String, Map<String, Collection<DoctorProvider<?>>>> secondary = new HashMap<>();
+    private final Map<TypeQualifier, List<DoctorProvider<?>>> index = new HashMap<>();
+    private int size = 0;
 
     void setProvider(DoctorProvider<?> provider) {
         Objects.requireNonNull(provider);
         Objects.requireNonNull(provider.typeInfo());
-        synchronized (primary) {
+        synchronized (index) {
             // primary
-            TypeQualifier tq = new TypeQualifier(provider.typeInfo().getRawType(), provider.qualifier());
-            primary.merge(tq, provider, (existing, insert) -> {
+            TypeQualifier tq = new TypeQualifier(provider.typeInfo().getRawType(), provider.qualifier(), true);
+            index.merge(tq, List.of(provider), (existing, insert) -> {
                 throw new IllegalArgumentException("there is already a provider registered under: " + provider.qualifier() + ":" + provider.typeInfo().getRawType().getCanonicalName());
             });
+            size++;
 
             // secondary
             for (Class<?> type : provider.allProvidedTypes()) {
-                secondary.computeIfAbsent(type.getName(), t -> new HashMap<>())
-                        .computeIfAbsent(provider.qualifier(), q -> new ArrayList<>())
-                        .add(provider);
+                TypeQualifier secondary = new TypeQualifier(type, provider.qualifier(), false);
+                index.computeIfAbsent(secondary, v -> new ArrayList<>()).add(provider);
             }
         }
     }
@@ -39,27 +38,30 @@ final class ProviderIndex {
     @SuppressWarnings("unchecked")
     <T> Optional<DoctorProvider<T>> getProvider(Class<T> type, String qualifier) {
         // check primary
-        TypeQualifier tq = new TypeQualifier(type, qualifier);
-        DoctorProvider<?> doctorProvider = primary.get(tq);
-        if (doctorProvider != null) {
-            return Optional.of((DoctorProvider<T>) doctorProvider);
+        TypeQualifier primary = new TypeQualifier(type, qualifier, true);
+        List<DoctorProvider<?>> primaryList = index.get(primary);
+        if (primaryList != null) {
+            return Optional.of((DoctorProvider<T>) primaryList.getFirst());
         }
 
-        // fallback to secondary
-        return secondary.getOrDefault(type.getName(), Collections.emptyMap())
-                .getOrDefault(qualifier, Collections.emptyList())
-                .stream()
-                .map(p -> (DoctorProvider<T>) p)
-                .findFirst();
+        // check secondary
+        TypeQualifier secondary = new TypeQualifier(type, qualifier, false);
+        List<DoctorProvider<?>> secondaryList = index.get(secondary);
+        if (secondaryList != null) {
+            return Optional.of((DoctorProvider<T>) secondaryList.getFirst());
+        }
+
+        // not found
+        return Optional.empty();
     }
 
     @SuppressWarnings("unchecked")
     <T> Stream<DoctorProvider<T>> getProviders(Class<T> type) {
-        return Optional.ofNullable(secondary.get(type.getName()))
-                .map(Map::values)
+        return index.entrySet()
                 .stream()
-                .flatMap(Collection::stream)
-                .flatMap(Collection::stream)
+                .filter(e -> e.getKey().primary)
+                .flatMap(e -> e.getValue().stream())
+                .filter(p -> p.allProvidedTypes().contains(type))
                 .distinct()
                 .map(p -> (DoctorProvider<T>) p);
     }
@@ -72,13 +74,17 @@ final class ProviderIndex {
     }
 
     Stream<DoctorProvider<?>> allProviders() {
-        return primary.values().stream();
+        return index.entrySet()
+                .stream()
+                .filter(e -> e.getKey().primary)
+                .flatMap(e -> e.getValue().stream())
+                .distinct();
     }
 
     int size() {
-        return primary.size();
+        return size;
     }
 
-    record TypeQualifier(Class<?> type, String qualifier) {
+    private record TypeQualifier(Class<?> type, String qualifier, boolean primary) {
     }
 }

@@ -45,7 +45,7 @@ public final class ProcessorUtils {
             throw new CodeProcessingException("only one scope is allowed for providers: " + debugString(element) + " has " + scopes.size() + ": " + scopes);
         }
         if (!scopes.isEmpty()) {
-            return scopes.get(0);
+            return scopes.getFirst();
         } else {
             return null;
         }
@@ -62,7 +62,7 @@ public final class ProcessorUtils {
         }
 
         if (!qualifiers.isEmpty()) {
-            return annotationString(context, qualifiers.get(0));
+            return annotationString(context, qualifiers.getFirst());
         } else {
             return null;
         }
@@ -106,17 +106,14 @@ public final class ProcessorUtils {
             return null;
         }
         Object value = annotationValue.getValue();
-        if (value == null) {
-            return null;
-        }
+        return switch (value) {
+            case null -> null;
+            case AnnotationMirror am -> annotationString(context, am);
+            case List<?> list ->
+                    ((List<AnnotationValue>) list).stream().map(v -> annotationString(context, v)).collect(Collectors.joining(", ", "(", ")"));
+            default -> value.toString();
+        };
 
-        if (value instanceof AnnotationMirror am) {
-            return annotationString(context, am);
-        } else if (value instanceof List<?> list) {
-            return ((List<AnnotationValue>) list).stream().map(v -> annotationString(context, v)).collect(Collectors.joining(", ", "(", ")"));
-        } else {
-            return value.toString();
-        }
     }
 
     public static String escapeAndQuoteStringForCode(String str) {
@@ -353,7 +350,7 @@ public final class ProcessorUtils {
     public static TypeMirror unwrapJustOne(TypeMirror mirror) {
         GenericInfo info = new GenericInfo(mirror);
         if (info.hasTypeParameters() && info.parameterTypes().size() == 1) {
-            GenericInfo genericInfo = info.parameterTypes().get(0);
+            GenericInfo genericInfo = info.parameterTypes().getFirst();
             return genericInfo.type();
         }
         throw new CodeProcessingException("no type parameters provided for: " + mirror);
@@ -397,7 +394,7 @@ public final class ProcessorUtils {
 
             case INTERSECTION:
                 IntersectionType it = (IntersectionType) mirror;
-                return rawClass(it.getBounds().get(0));
+                return rawClass(it.getBounds().getFirst());
 
             default:
                 return null;

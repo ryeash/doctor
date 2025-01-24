@@ -44,8 +44,8 @@ public class CompositeConfigurationFacade implements ConfigurationFacade {
      */
     public static ConfigurationFacade defaultConfigurationFacade() {
         CompositeConfigurationFacade facade = new CompositeConfigurationFacade(new ArrayList<>());
-        facade.addSource(new EnvironmentVariablesConfigurationSource());
-        facade.addSource(new SystemPropertiesConfigurationSource());
+        facade.addSource(new ConfigurationSource.Env());
+        facade.addSource(new ConfigurationSource.SystemProperties());
 
         facade.getList(PROPERTIES, Function.identity())
                 .stream()
@@ -219,32 +219,6 @@ public class CompositeConfigurationFacade implements ConfigurationFacade {
         }
         sb.append(value, prev, value.length());
         return sb.toString();
-    }
-
-    @Override
-    public Collection<String> getSubGroups(String prefix) {
-        return getSubGroups(prefix, String.valueOf(ConfigurationFacade.NESTING_DELIMITER));
-    }
-
-    @Override
-    public Collection<String> getSubGroups(String prefix, String terminal) {
-        return sources.stream()
-                .map(ConfigurationSource::propertyNames)
-                .flatMap(Collection::stream)
-                .filter(name -> name.startsWith(prefix))
-                .map(name -> {
-                    int start = name.indexOf(prefix) + prefix.length();
-                    int end = name.indexOf(terminal, start + 1);
-                    return end > 0
-                            ? name.substring(start, end)
-                            : name.substring(start);
-                })
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-    }
-
-    @Override
-    public ConfigurationFacade prefix(String prefix) {
-        return new PrefixedConfigurationFacade(prefix, this);
     }
 
     @Override

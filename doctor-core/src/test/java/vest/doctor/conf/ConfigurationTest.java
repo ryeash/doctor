@@ -10,8 +10,8 @@ import java.util.Set;
 public class ConfigurationTest extends Assert {
 
     ConfigurationFacade conf = new CompositeConfigurationFacade()
-            .addSource(new EnvironmentVariablesConfigurationSource())
-            .addSource(new SystemPropertiesConfigurationSource())
+            .addSource(new ConfigurationSource.Env())
+            .addSource(new ConfigurationSource.SystemProperties())
             .addSource(new MapConfigurationSource(Map.of(
                     "string", "value",
                     "boolean", "true",
@@ -40,17 +40,6 @@ public class ConfigurationTest extends Assert {
         assertEquals(conf.getSet("col"), Set.of("1", "2", "3", "6"));
         assertEquals(conf.getSet("col", Integer::parseInt), Set.of(1, 2, 3, 6));
         assertEquals(conf.getSet("missing", Set.of(1, 2), Integer::parseInt), Set.of(1, 2));
-    }
-
-    @Test
-    public void groups() {
-        assertTrue(conf.getSubGroups("executors.").containsAll(Set.of("default", "background", "io")));
-    }
-
-    @Test
-    public void prefix() {
-        ConfigurationFacade prefix = conf.prefix("executors.default.");
-        assertEquals(prefix.get("threads"), "1");
     }
 
     @Test

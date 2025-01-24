@@ -11,9 +11,8 @@ import vest.doctor.Prioritized;
 import vest.doctor.ProviderRegistry;
 import vest.doctor.conf.CompositeConfigurationFacade;
 import vest.doctor.conf.ConfigurationFacade;
-import vest.doctor.conf.EnvironmentVariablesConfigurationSource;
+import vest.doctor.conf.ConfigurationSource;
 import vest.doctor.conf.StructuredConfigurationSource;
-import vest.doctor.conf.SystemPropertiesConfigurationSource;
 import vest.doctor.conf.UnmodifiableConfigurationFacade;
 
 import java.lang.annotation.Annotation;
@@ -119,8 +118,8 @@ public final class Doctor implements ProviderRegistry, AutoCloseable {
      * <ul>
      *     <li>-m, --modules : a comma delimited list of modules to enable; defaults to an empty list</li>
      *     <li>-p, --properties : a comma delimited list of properties files to load (in precedence order);
-     *     the locations 'env' and 'system' can be used to add {@link EnvironmentVariablesConfigurationSource}
-     *     and {@link SystemPropertiesConfigurationSource} sources respectively; the default is "env,system"</li>
+     *     the locations 'env' and 'system' can be used to add {@link ConfigurationSource.Env}
+     *     and {@link ConfigurationSource.SystemProperties} sources respectively; the default is "env,system"</li>
      * </ul>
      */
     public static void main(String[] args) {
@@ -131,8 +130,8 @@ public final class Doctor implements ProviderRegistry, AutoCloseable {
         ConfigurationFacade facade = new CompositeConfigurationFacade();
         for (String propLocation : RuntimeUtils.split(properties.trim(), ConfigurationFacade.LIST_DELIMITER)) {
             facade.addSource(switch (propLocation) {
-                case "env" -> new EnvironmentVariablesConfigurationSource();
-                case "system" -> new SystemPropertiesConfigurationSource();
+                case "env" -> new ConfigurationSource.Env();
+                case "system" -> new ConfigurationSource.SystemProperties();
                 default -> new StructuredConfigurationSource(new FileLocation(propLocation));
             });
         }

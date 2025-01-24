@@ -26,4 +26,53 @@ public interface ConfigurationSource {
      * Reload this configuration source.
      */
     void reload();
+
+    /**
+     * Configuration source that gets properties from {@link System#getenv(String)}.
+     */
+    final class Env implements ConfigurationSource {
+
+        @Override
+        public String get(String propertyName) {
+            return System.getenv(propertyName);
+        }
+
+        @Override
+        public Collection<String> propertyNames() {
+            return System.getenv().keySet();
+        }
+
+        @Override
+        public void reload() {
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName();
+        }
+    }
+
+    /**
+     * Configuration source that gets properties from {@link System#getProperty(String)}.
+     */
+    final class SystemProperties implements ConfigurationSource {
+        @Override
+        public String get(String propertyName) {
+            return System.getProperty(propertyName);
+        }
+
+        @Override
+        public Collection<String> propertyNames() {
+            return System.getProperties().stringPropertyNames();
+        }
+
+        @Override
+        public void reload() {
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName();
+        }
+    }
 }

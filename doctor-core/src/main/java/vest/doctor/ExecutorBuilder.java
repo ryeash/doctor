@@ -25,7 +25,7 @@ import java.util.function.Supplier;
  * <literal>@</literal>Singleton
  * <literal>@</literal>Named("background")
  * public ScheduledExecutorService scheduledExecutorService() {
- *     return ExecutorBuilder.start()
+ *     return ExecutorBuilder.create()
  *             .setMinThreads(8)
  *             .setMaxThreads(8)
  *             .scheduled();
@@ -37,7 +37,7 @@ public class ExecutorBuilder {
     /**
      * Start building an executor.
      */
-    public static ExecutorBuilder start() {
+    public static ExecutorBuilder create() {
         return new ExecutorBuilder();
     }
 

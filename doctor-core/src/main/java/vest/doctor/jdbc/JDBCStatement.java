@@ -52,9 +52,9 @@ public final class JDBCStatement extends JDBCWrapper<JDBCStatement, Statement> {
     /**
      * @see Statement#executeBatch()
      */
-    public int[] executeBatch() {
+    public long[] executeBatch() {
         try {
-            return statement.executeBatch();
+            return statement.executeLargeBatch();
         } catch (SQLException e) {
             throw new DatabaseException("error executing batch request", e);
         } finally {
@@ -124,6 +124,7 @@ public final class JDBCStatement extends JDBCWrapper<JDBCStatement, Statement> {
      *
      * @param allArgs the values to set
      * @return this object
+     * @see #bind(int, Object) 
      */
     public JDBCStatement bindAll(List<Object> allArgs) {
         for (int i = 0; i < allArgs.size(); i++) {

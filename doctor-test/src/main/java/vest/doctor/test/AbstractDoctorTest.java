@@ -152,7 +152,6 @@ public abstract class AbstractDoctorTest extends Assert {
                         return annotationString(a);
                     }
                 })
-                .map(String::valueOf)
                 .orElse(null);
     }
 

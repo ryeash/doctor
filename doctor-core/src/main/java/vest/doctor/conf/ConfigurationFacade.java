@@ -142,43 +142,6 @@ public interface ConfigurationFacade {
     String resolvePlaceholders(String value);
 
     /**
-     * Get a collection of unique property subgroups that exist in this configuration facade.
-     * Equivalent to calling <code>getSubGroups(prefix, String.valueOf(ConfigurationFacade.NESTING_DELIMITER))</code>.
-     *
-     * @param prefix the subgroup prefix
-     * @return a collection of subgroups
-     * @see #getSubGroups(String, String)
-     */
-    Collection<String> getSubGroups(String prefix);
-
-    /**
-     * Get a collection of unique property subgroups that exist in this configuration facade.
-     * <p>
-     * For example, with properties like:
-     * <pre>
-     * executors.fixed.threadCount=1
-     * executors.background.threadCount=3
-     * executors.io.threadCount=32
-     * </pre>
-     * Calling <code>config.getSubGroups("executors.", ".")</code> will return the collection
-     * <code>["fixed", "background", "io"]</code>.
-     *
-     * @param prefix   the subgroup prefix
-     * @param terminal the terminal value for the subgroup
-     * @return a collection of subgroups
-     */
-    Collection<String> getSubGroups(String prefix, String terminal);
-
-    /**
-     * Get a view into this configuration facade that will prefix all requests to get properties
-     * with the given prefix.
-     *
-     * @param prefix the prefix to add to property requests in the returned configuration facade
-     * @return a configuration facade that uses the given prefix for property values
-     */
-    ConfigurationFacade prefix(String prefix);
-
-    /**
      * Get a list of all property names this configuration facade knows about.
      *
      * @return a collection of property names

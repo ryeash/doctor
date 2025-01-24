@@ -2,7 +2,7 @@ package vest.doctor.test;
 
 import vest.doctor.conf.CompositeConfigurationFacade;
 import vest.doctor.conf.ConfigurationFacade;
-import vest.doctor.conf.SystemPropertiesConfigurationSource;
+import vest.doctor.conf.ConfigurationSource;
 
 import java.util.function.Supplier;
 
@@ -10,6 +10,6 @@ public class TestConfigurationFacadeBuilder implements Supplier<ConfigurationFac
     @Override
     public ConfigurationFacade get() {
         return new CompositeConfigurationFacade()
-                .addSource(new SystemPropertiesConfigurationSource());
+                .addSource(new ConfigurationSource.SystemProperties());
     }
 }

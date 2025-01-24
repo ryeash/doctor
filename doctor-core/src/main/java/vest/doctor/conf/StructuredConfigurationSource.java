@@ -31,8 +31,9 @@ import static java.io.StreamTokenizer.TT_EOL;
  *  child {
  *   propertyName1 = propertyValue1
  *   propertyName2 = propertyValue2
- *   ... more properties defined ...
+ *   ... etc ...
  *  }
+ *  propertyName3 = propertyValue3
  * }
  * </pre>
  * </code>
@@ -40,6 +41,7 @@ import static java.io.StreamTokenizer.TT_EOL;
  * <code>
  * root.child.propertyName1 = propertyValue1<br>
  * root.child.propertyName2 = propertyValue2<br>
+ * root.propertyName3 = propertyValue3<br>
  * ...
  * </code>
  * <br/>
@@ -54,7 +56,7 @@ import static java.io.StreamTokenizer.TT_EOL;
  * </pre>
  * Quoted strings using either single (') or double (") quotes can be used to escape reserved characters
  * e.g. <pre>name = "value contains { } = and ;"</pre>
- * Quotes are necessary when interpolating values, i.e. values like: <literal>http://${referenced.property}/</literal>
+ * Quotes are necessary when interpolating values, i.e. values like: {@literal http://${referenced.property}/}
  */
 public class StructuredConfigurationSource implements ConfigurationSource {
 
@@ -130,7 +132,7 @@ public class StructuredConfigurationSource implements ConfigurationSource {
         StreamTokenizer tokenizer = new StreamTokenizer(reader);
 
         tokenizer.resetSyntax();
-        tokenizer.wordChars(0x21, 0xFF);
+        tokenizer.wordChars(0x21, 0xFFFFFFFF);
         tokenizer.whitespaceChars(0x00, 0x20);
 
         tokenizer.slashSlashComments(false);

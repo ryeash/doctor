@@ -178,21 +178,4 @@ public class ClassBuilder extends AbstractCodeBuilder<ClassBuilder> {
             }
         }
     }
-
-    private static void writeNestedClass(ClassBuilder nested, PrintWriter out) {
-        out.print("public static final class ");
-        out.print(nested.className);
-        if (nested.extendsClass != null && !nested.extendsClass.isEmpty()) {
-            out.print(" extends " + nested.extendsClass);
-        }
-
-        if (nested.implementsInterfaces != null && !nested.implementsInterfaces.isEmpty()) {
-            String interfaces = String.join(", ", nested.implementsInterfaces);
-            out.print(" implements " + interfaces);
-        }
-        out.println("{");
-        writeClassBody(nested, out);
-        out.println("}");
-    }
-
 }

@@ -66,11 +66,6 @@ public class DoctorTest extends AbstractTestAppTest {
         assertTrue(conf.get("boolean", Boolean::valueOf));
         assertEquals(conf.get("override.this"), "overridden");
 
-        ConfigurationFacade db = configuration().prefix("db.");
-        assertNotNull(db.get("url"));
-        assertNotNull(db.get("username"));
-        assertNotNull(db.get("password"));
-
         assertEquals(conf.get("dot.nested.object.a"), "b");
         assertEquals(conf.get("dot.nested.object.c"), "d");
     }

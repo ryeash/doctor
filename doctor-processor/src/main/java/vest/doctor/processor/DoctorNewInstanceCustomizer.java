@@ -59,15 +59,15 @@ public class DoctorNewInstanceCustomizer implements NewInstanceCustomizer {
     private void postCreateSchedule(AnnotationProcessorContext context, ProviderDefinition providerDefinition, MethodBuilder method, String instanceRef, String providerRegistryRef, ExecutableElement executableElement, AtomicBoolean executorInitialized) {
         if (executableElement.getAnnotation(Scheduled.class) != null) {
             Scheduled scheduled = executableElement.getAnnotation(Scheduled.class);
-            if (!executorInitialized.get()) {
-                method.line("java.util.concurrent.ScheduledExecutorService ses = " + providerRegistryRef + ".getInstance(java.util.concurrent.ScheduledExecutorService.class, " + ProcessorUtils.escapeAndQuoteStringForCode(scheduled.scheduler()) + ");\n");
-                executorInitialized.set(true);
-            }
             if (scheduled.interval().isEmpty() && scheduled.cron().isEmpty()) {
                 throw new CodeProcessingException("cron or interval must be set for the @Scheduled annotation", executableElement);
             }
             if (!scheduled.interval().isEmpty() && !scheduled.cron().isEmpty()) {
                 throw new CodeProcessingException("can not set both cron and interval for the @Scheduled annotation", executableElement);
+            }
+            if (!executorInitialized.get()) {
+                method.line("java.util.concurrent.ScheduledExecutorService ses = " + providerRegistryRef + ".getInstance(java.util.concurrent.ScheduledExecutorService.class, " + ProcessorUtils.escapeAndQuoteStringForCode(scheduled.scheduler()) + ");\n");
+                executorInitialized.set(true);
             }
             if (!scheduled.interval().isEmpty()) {
                 processInterval(context, providerDefinition, method, instanceRef, providerRegistryRef, executableElement);

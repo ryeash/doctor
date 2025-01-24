@@ -13,7 +13,6 @@
         <module>doctor-processor</module>
         <module>doctor-test</module>
         <module>doctor-jaxrs</module>
-        <module>doctor-apache-http</module>
         <module>doctor-grpc</module>
         <module>doctor-jpa</module>
         <module>doctor-bom</module>
@@ -34,7 +33,6 @@
         <grpc.version>1.68.1</grpc.version>
         <protoc.version>3.25.5</protoc.version>
         <guava.version>33.3.1-jre</guava.version>
-        <apache.http.version>5.3.1</apache.http.version>
     </properties>
 
     <dependencyManagement>

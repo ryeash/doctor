@@ -43,14 +43,14 @@ public final class CronTaskWrapper<T> implements Runnable {
         if (t != null) {
             try {
                 execute.accept(providerRegistry, t);
-                if (executionLimit != null && executionLimit.decrementAndGet() <= 0) {
-                    ref.clear();
-                    return;
-                }
             } catch (Throwable error) {
                 log.error("error running scheduled cron task", error);
             }
-            scheduleNext();
+            if (executionLimit != null && executionLimit.decrementAndGet() <= 0) {
+                ref.clear();
+            } else {
+                scheduleNext();
+            }
         }
     }
 

@@ -52,21 +52,21 @@ public class TestAppConfig {
     @Factory
     @Singleton
     public ExecutorService defaultExecutorService() {
-        return ExecutorBuilder.start().standard();
+        return ExecutorBuilder.create().standard();
     }
 
     @Factory
     @Singleton
     @Named("background")
     public ExecutorService backgroundExecutorService() {
-        return ExecutorBuilder.start().setMaxThreads(32).standard();
+        return ExecutorBuilder.create().setMaxThreads(32).standard();
     }
 
     @Factory
     @Singleton
     @Named(Scheduled.DEFAULT_SCHEDULED_EXECUTOR_NAME)
     public ScheduledExecutorService scheduledExecutorService() {
-        return ExecutorBuilder.start()
+        return ExecutorBuilder.create()
                 .setMinThreads(8)
                 .setMaxThreads(8)
                 .scheduled();
@@ -76,10 +76,10 @@ public class TestAppConfig {
     @Singleton
     @Named("fixed")
     public ExecutorService fixed() {
-        return ExecutorBuilder.start()
+        return ExecutorBuilder.create()
                 .setMinThreads(2)
                 .setMaxThreads(32)
-                .scheduled();
+                .standard();
     }
 
     @Factory
