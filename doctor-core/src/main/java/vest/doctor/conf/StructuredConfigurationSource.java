@@ -132,7 +132,7 @@ public class StructuredConfigurationSource implements ConfigurationSource {
         StreamTokenizer tokenizer = new StreamTokenizer(reader);
 
         tokenizer.resetSyntax();
-        tokenizer.wordChars(0x21, 0xFFFFFFFF);
+        tokenizer.wordChars(0x21, Integer.MAX_VALUE);
         tokenizer.whitespaceChars(0x00, 0x20);
 
         tokenizer.slashSlashComments(false);

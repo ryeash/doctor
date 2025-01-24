@@ -12,8 +12,10 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Request;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
@@ -109,5 +111,15 @@ public class ReactorEndpoint {
     @Path("/kill")
     public String customMethod() {
         return "kill";
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/json")
+    public JSONModel getJson(){
+        JSONModel json = new JSONModel();
+        json.setName("Emerson");
+        json.setSuperhero(true);
+        return json;
     }
 }

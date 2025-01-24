@@ -3,9 +3,8 @@ package vest.doctor.runtime;
 import vest.doctor.DoctorProvider;
 import vest.doctor.DoctorProviderWrapper;
 
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.LinkedList;
 import java.util.WeakHashMap;
 
 /**
@@ -14,7 +13,7 @@ import java.util.WeakHashMap;
  */
 abstract class InstanceTrackingDoctorProvider<T> extends DoctorProviderWrapper<T> {
 
-    protected final Map<T, Boolean> tracking = Collections.synchronizedMap(new WeakHashMap<>());
+    protected final WeakHashMap<T, Boolean> tracking = new WeakHashMap<>();
 
     protected InstanceTrackingDoctorProvider(DoctorProvider<T> delegate) {
         super(delegate);
@@ -23,13 +22,18 @@ abstract class InstanceTrackingDoctorProvider<T> extends DoctorProviderWrapper<T
     @Override
     public T get() {
         T value = delegate.get();
-        tracking.put(value, Boolean.TRUE);
+        synchronized (tracking) {
+            tracking.put(value, Boolean.TRUE);
+        }
         return value;
     }
 
     @Override
     public final void close() throws Exception {
-        Iterator<T> iterator = tracking.keySet().iterator();
+        Iterator<T> iterator;
+        synchronized (tracking) {
+            iterator = new LinkedList<>(tracking.keySet()).iterator();
+        }
         while (iterator.hasNext()) {
             T next = iterator.next();
             iterator.remove();

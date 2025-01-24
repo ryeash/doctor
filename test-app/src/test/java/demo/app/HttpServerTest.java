@@ -64,29 +64,6 @@ public class HttpServerTest extends AbstractTestAppTest {
                 .body(is("noPath"));
     }
 
-//    public void json() throws JsonProcessingException {
-//        Person p = new Person();
-//        p.setName("Herman Hermits");
-//        p.setAddress("Hermitage");
-//        req().body(JacksonInterchange.defaultConfig().writeValueAsBytes(p))
-//                .contentType(ContentType.JSON)
-//                .accept(ContentType.JSON)
-//                .post("/root/json")
-//                .then()
-//                .statusCode(200)
-//                .body("name", is(p.getName()))
-//                .body("address", is(p.getAddress()));
-//
-//        req().body(JacksonInterchange.defaultConfig().writeValueAsBytes(p))
-//                .contentType(ContentType.JSON)
-//                .accept(ContentType.JSON)
-//                .post("/root/jsonpub")
-//                .then()
-//                .statusCode(200)
-//                .body("name", is(p.getName()))
-//                .body("address", is(p.getAddress()));
-//    }
-
     public void echo() {
         byte[] sent = randomBytes();
         byte[] returned = req()
@@ -199,6 +176,14 @@ public class HttpServerTest extends AbstractTestAppTest {
                 assertEquals(responseString, "kill");
             }
         }
+    }
+
+    public void json() {
+        req().get("/root/json")
+                .then()
+                .statusCode(200)
+                .body("name", is("Emerson"))
+                .body("superhero", is(true));
     }
 
     private static byte[] randomBytes() {

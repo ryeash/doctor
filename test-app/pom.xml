@@ -58,6 +58,11 @@
             <groupId>${project.groupId}</groupId>
         </dependency>
         <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-json-jackson</artifactId>
+        </dependency>
+
+        <dependency>
             <artifactId>doctor-grpc</artifactId>
             <groupId>${project.groupId}</groupId>
         </dependency>
