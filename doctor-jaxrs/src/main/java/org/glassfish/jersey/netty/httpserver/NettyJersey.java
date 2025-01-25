@@ -4,7 +4,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.netty4.NettyAllocatorMetrics;
 import io.micrometer.core.instrument.binder.netty4.NettyEventExecutorMetrics;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -21,6 +21,7 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.HttpServerExpectContinueHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.util.ResourceLeakDetector;
 import jakarta.ws.rs.ProcessingException;
 import org.glassfish.jersey.server.ResourceConfig;
 import vest.doctor.CustomThreadFactory;
@@ -48,13 +49,14 @@ public class NettyJersey extends ChannelInitializer<SocketChannel> implements Au
                        ResourceConfig resourceConfig,
                        List<ServerBootstrapCustomizer> serverBootstrapCustomizers,
                        Optional<MeterRegistry> meterRegistry) {
+        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.SIMPLE);
         this.config = config;
         this.sslContext = sslContext;
         this.container = new NettyHttpContainer(resourceConfig);
         this.bossGroup = new NioEventLoopGroup(config.tcpManagementThreads().orElse(1),
-                new CustomThreadFactory(false, config.tcpThreadFormat().orElse("tcp-%d"), null, null));
+                new CustomThreadFactory(false, config.tcpThreadFormat().orElse("doctor-netty-tcp-%d"), null, null));
         this.workerGroup = new NioEventLoopGroup(config.workerThreads().orElse(0),
-                new CustomThreadFactory(true, config.workerThreadFormat().orElse("worker-%d"), null, null));
+                new CustomThreadFactory(true, config.workerThreadFormat().orElse("doctor-netty-worker-%d"), null, null));
 
         URI uri = URI.create(config.bindAddress().orElseThrow());
 
@@ -68,7 +70,7 @@ public class NettyJersey extends ChannelInitializer<SocketChannel> implements Au
         String path = uriPath.substring(0, doubleSlash) + uriPath.substring(doubleSlash).replaceAll("/{2,}", "/");
         this.baseUri = URI.create(path);
 
-        UnpooledByteBufAllocator bufAllocator = new UnpooledByteBufAllocator(true);
+        PooledByteBufAllocator bufAllocator = new PooledByteBufAllocator(false);
         meterRegistry.ifPresent(mr -> {
             new NettyEventExecutorMetrics(bossGroup).bindTo(mr);
             new NettyEventExecutorMetrics(workerGroup).bindTo(mr);

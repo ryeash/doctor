@@ -30,7 +30,7 @@ import java.util.concurrent.ForkJoinPool;
 @Singleton
 @Eager
 @Path("/root")
-public class ReactorEndpoint {
+public class JaxrsEndpoint {
 
     @GET
     @Path("/hello")
@@ -53,7 +53,6 @@ public class ReactorEndpoint {
                          @BeanParam BeanParamObject bean,
                          @Context Request request) {
         Assert.assertNotNull(request);
-        System.out.println(Thread.currentThread().getName() + "  " + request);
         return path + " " + size + " " + param + " " + cook + " " + bean;
     }
 
