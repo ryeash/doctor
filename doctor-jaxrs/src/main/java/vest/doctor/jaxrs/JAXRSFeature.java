@@ -11,7 +11,6 @@ import java.lang.annotation.Target;
 /**
  * Enable the jax-rs processing feature. When added to a bean factory class,
  * jax-rs http server classes will be wired together to initialize and execute when configured.
- * <p><br>
  * To use, add to a bean factory configuration class; example:
  * <pre>
  * <literal>@</literal>Configuration

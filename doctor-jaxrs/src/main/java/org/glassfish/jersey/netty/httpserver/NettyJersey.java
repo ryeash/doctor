@@ -1,6 +1,10 @@
 package org.glassfish.jersey.netty.httpserver;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.binder.netty4.NettyAllocatorMetrics;
+import io.micrometer.core.instrument.binder.netty4.NettyEventExecutorMetrics;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -25,6 +29,7 @@ import vest.doctor.jaxrs.ServerBootstrapCustomizer;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 
 public class NettyJersey extends ChannelInitializer<SocketChannel> implements AutoCloseable {
 
@@ -36,11 +41,13 @@ public class NettyJersey extends ChannelInitializer<SocketChannel> implements Au
     private final String applicationPath;
     private final URI baseUri;
     private final Channel channel;
+    private final HttpDecoderConfig httpDecoderConfig;
 
     public NettyJersey(JAXRSConfiguration config,
                        SslContext sslContext,
                        ResourceConfig resourceConfig,
-                       List<ServerBootstrapCustomizer> serverBootstrapCustomizers) {
+                       List<ServerBootstrapCustomizer> serverBootstrapCustomizers,
+                       Optional<MeterRegistry> meterRegistry) {
         this.config = config;
         this.sslContext = sslContext;
         this.container = new NettyHttpContainer(resourceConfig);
@@ -61,16 +68,34 @@ public class NettyJersey extends ChannelInitializer<SocketChannel> implements Au
         String path = uriPath.substring(0, doubleSlash) + uriPath.substring(doubleSlash).replaceAll("/{2,}", "/");
         this.baseUri = URI.create(path);
 
+        UnpooledByteBufAllocator bufAllocator = new UnpooledByteBufAllocator(true);
+        meterRegistry.ifPresent(mr -> {
+            new NettyEventExecutorMetrics(bossGroup).bindTo(mr);
+            new NettyEventExecutorMetrics(workerGroup).bindTo(mr);
+            new NettyAllocatorMetrics(bufAllocator).bindTo(mr);
+        });
+
         ServerBootstrap serverBootstrap = new ServerBootstrap()
                 .group(bossGroup, workerGroup)
                 .option(ChannelOption.SO_BACKLOG, config.socketBacklog().orElse(1024))
                 .option(ChannelOption.SO_KEEPALIVE, true)
                 .option(ChannelOption.TCP_NODELAY, true)
+                .option(ChannelOption.ALLOCATOR, bufAllocator)
                 .channel(NioServerSocketChannel.class)
                 .childHandler(this);
 
         serverBootstrap = serverBootstrapCustomizers.stream()
                 .reduce(serverBootstrap, (c, customizer) -> customizer.customize(c), (a, b) -> b);
+
+        this.httpDecoderConfig = new HttpDecoderConfig();
+        httpDecoderConfig.setChunkedSupported(true);
+        httpDecoderConfig.setAllowPartialChunks(true);
+        httpDecoderConfig.setAllowDuplicateContentLengths(false);
+        httpDecoderConfig.setValidateHeaders(config.validateHeaders().orElse(true));
+        config.maxInitialLineLength().ifPresent(httpDecoderConfig::setMaxInitialLineLength);
+        config.maxHeaderSize().ifPresent(httpDecoderConfig::setMaxHeaderSize);
+        config.maxChunkSize().ifPresent(httpDecoderConfig::setMaxChunkSize);
+        config.initialBufferSize().ifPresent(httpDecoderConfig::setInitialBufferSize);
 
         try {
             this.channel = serverBootstrap.bind(uri.getPort()).sync().channel();
@@ -85,17 +110,6 @@ public class NettyJersey extends ChannelInitializer<SocketChannel> implements Au
         if (sslContext != null) {
             p.addLast(sslContext.newHandler(ch.alloc()));
         }
-
-        HttpDecoderConfig httpDecoderConfig = new HttpDecoderConfig();
-        httpDecoderConfig.setChunkedSupported(true);
-        httpDecoderConfig.setAllowPartialChunks(true);
-        httpDecoderConfig.setAllowDuplicateContentLengths(false);
-        config.maxInitialLineLength().ifPresent(httpDecoderConfig::setMaxInitialLineLength);
-        config.maxHeaderSize().ifPresent(httpDecoderConfig::setMaxHeaderSize);
-        config.maxChunkSize().ifPresent(httpDecoderConfig::setMaxChunkSize);
-        config.validateHeaders().ifPresent(httpDecoderConfig::setValidateHeaders);
-        config.initialBufferSize().ifPresent(httpDecoderConfig::setInitialBufferSize);
-
         p.addLast(new HttpServerCodec(httpDecoderConfig));
         p.addLast(new HttpContentDecompressor());
         p.addLast(new HttpContentCompressor(config.minGzipSize().orElse(814), StandardCompressionOptions.gzip()));

@@ -1,5 +1,6 @@
 package vest.doctor.jaxrs;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.handler.ssl.SslContext;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
@@ -34,7 +35,8 @@ public final class JAXRSBeanFactory implements ApplicationLoader {
                                      JAXRSConfiguration httpConfig,
                                      List<ResourceConfigCustomizer> resourceConfigCustomizers,
                                      List<ServerBootstrapCustomizer> serverBootstrapCustomizers,
-                                     @Named("server") Optional<SslContext> sslContext) {
+                                     @Named("server") Optional<SslContext> sslContext,
+                                     Optional<MeterRegistry> meterRegistry) {
         ResourceConfig config = new ResourceConfig();
         config.setApplicationName("netty-jaxrs");
         if (httpConfig.tracing().orElse(false)) {
@@ -55,6 +57,6 @@ public final class JAXRSBeanFactory implements ApplicationLoader {
         config = resourceConfigCustomizers.stream()
                 .reduce(config, (c, customizer) -> customizer.customize(c), (a, b) -> b);
 
-        return new NettyJersey(httpConfig, sslContext.orElse(null), config, serverBootstrapCustomizers);
+        return new NettyJersey(httpConfig, sslContext.orElse(null), config, serverBootstrapCustomizers, meterRegistry);
     }
 }

@@ -121,15 +121,16 @@ public final class JDBC extends JDBCWrapper<JDBC, DataSource> {
      * @return the result of applying the function
      */
     public <R> R transaction(Function<JDBCConnection, R> function) {
-        try (JDBCConnection connection = connection()) {
-            try {
-                R result = function.apply(connection);
-                connection.commit();
-                return result;
-            } catch (Throwable t) {
-                JDBC.closeQuietly(connection::rollback);
-                throw new DatabaseException(t);
-            }
+        JDBCConnection connection = connection();
+        try {
+            R result = function.apply(connection);
+            connection.commit();
+            return result;
+        } catch (Throwable t) {
+            JDBC.closeQuietly(connection::rollback);
+            throw new DatabaseException(t);
+        } finally {
+            connection.close();
         }
     }
 
