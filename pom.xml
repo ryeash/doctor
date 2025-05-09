@@ -25,13 +25,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <slf4j.version>2.0.16</slf4j.version>
+        <slf4j.version>2.0.17</slf4j.version>
         <jersey.version>3.1.10</jersey.version>
-        <netty.version>4.1.117.Final</netty.version>
+        <netty.version>4.1.119.Final</netty.version>
         <hibernate.version>6.6.2.Final</hibernate.version>
-        <grpc.version>1.70.0</grpc.version>
+        <grpc.version>1.71.0</grpc.version>
         <protoc.version>3.25.5</protoc.version>
-        <guava.version>33.4.0-jre</guava.version>
+        <guava.version>33.4.8-jre</guava.version>
     </properties>
 
     <dependencyManagement>
@@ -55,7 +55,7 @@
             <dependency>
                 <groupId>com.zaxxer</groupId>
                 <artifactId>HikariCP</artifactId>
-                <version>6.2.1</version>
+                <version>6.3.0</version>
             </dependency>
             <dependency>
                 <groupId>org.hsqldb</groupId>
@@ -65,17 +65,17 @@
             <dependency>
                 <groupId>org.testng</groupId>
                 <artifactId>testng</artifactId>
-                <version>7.10.2</version>
+                <version>7.11.0</version>
             </dependency>
             <dependency>
                 <groupId>io.rest-assured</groupId>
                 <artifactId>rest-assured</artifactId>
-                <version>5.5.0</version>
+                <version>5.5.1</version>
             </dependency>
             <dependency>
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
-                <version>1.17.2</version>
+                <version>1.18.0</version>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
