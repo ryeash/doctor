@@ -83,7 +83,7 @@ public interface JAXRSConfiguration {
      * The maximum allowed size for request bodies.
      */
     @Property("maxContentLength")
-    Optional<Integer> maxContentLength();
+    Optional<Long> maxContentLength();
 
     /**
      * The minimum response size to enable gzip-ing the response body.

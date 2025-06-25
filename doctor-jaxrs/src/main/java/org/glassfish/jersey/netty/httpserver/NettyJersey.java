@@ -22,17 +22,23 @@ import io.netty.handler.codec.http.HttpServerExpectContinueHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.ResourceLeakDetector;
+import jakarta.ws.rs.Path;
 import jakarta.ws.rs.ProcessingException;
 import org.glassfish.jersey.server.ResourceConfig;
 import vest.doctor.CustomThreadFactory;
+import vest.doctor.DoctorProvider;
 import vest.doctor.jaxrs.JAXRSConfiguration;
 import vest.doctor.jaxrs.ServerBootstrapCustomizer;
+import vest.doctor.websocket.Websocket;
+import vest.doctor.websocket.WebsocketRouter;
 
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
-public class NettyJersey extends ChannelInitializer<SocketChannel> implements AutoCloseable {
+public final class NettyJersey extends ChannelInitializer<SocketChannel> implements AutoCloseable {
+
+    public static final String JERSEY_HANDLER = "org.glassfish.jersey.netty.httpserver.JerseyServerHandler";
 
     private final JAXRSConfiguration config;
     private final SslContext sslContext;
@@ -43,12 +49,14 @@ public class NettyJersey extends ChannelInitializer<SocketChannel> implements Au
     private final URI baseUri;
     private final Channel channel;
     private final HttpDecoderConfig httpDecoderConfig;
+    private final WebsocketRouter websocketRouter = new WebsocketRouter();
 
     public NettyJersey(JAXRSConfiguration config,
                        SslContext sslContext,
                        ResourceConfig resourceConfig,
                        List<ServerBootstrapCustomizer> serverBootstrapCustomizers,
-                       Optional<MeterRegistry> meterRegistry) {
+                       Optional<MeterRegistry> meterRegistry,
+                       List<DoctorProvider<Websocket>> websockets) {
         ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.SIMPLE);
         this.config = config;
         this.sslContext = sslContext;
@@ -59,10 +67,6 @@ public class NettyJersey extends ChannelInitializer<SocketChannel> implements Au
                 new CustomThreadFactory(true, config.workerThreadFormat().orElse("doctor-netty-worker-%d"), null, null));
 
         URI uri = URI.create(config.bindAddress().orElseThrow());
-
-        System.setProperty("jersey.max.http.request.entitySizeMb", config.maxContentLength()
-                .map(String::valueOf)
-                .orElse("8"));
 
         this.applicationPath = container.getApplicationHandler().getConfiguration().getApplicationPath();
         String uriPath = applicationPath == null ? uri.toString() : uri + "/" + applicationPath + "/";
@@ -99,6 +103,11 @@ public class NettyJersey extends ChannelInitializer<SocketChannel> implements Au
         config.maxChunkSize().ifPresent(httpDecoderConfig::setMaxChunkSize);
         config.initialBufferSize().ifPresent(httpDecoderConfig::setInitialBufferSize);
 
+        for (DoctorProvider<Websocket> websocket : websockets) {
+            String wsPath = websocket.typeInfo().annotationMetadata().stringValue(Path.class, "value");
+            websocketRouter.addWebsocket(wsPath, websocket::get);
+        }
+
         try {
             this.channel = serverBootstrap.bind(uri.getPort()).sync().channel();
         } catch (InterruptedException e) {
@@ -117,7 +126,7 @@ public class NettyJersey extends ChannelInitializer<SocketChannel> implements Au
         p.addLast(new HttpContentCompressor(config.minGzipSize().orElse(814), StandardCompressionOptions.gzip()));
         p.addLast(new HttpServerExpectContinueHandler());
         p.addLast(new ChunkedWriteHandler());
-        p.addLast(new JerseyServerHandler(baseUri, applicationPath, container, container.getConfiguration()));
+        p.addLast(JERSEY_HANDLER, new JerseyServerHandler(config, baseUri, applicationPath, container, container.getConfiguration(), websocketRouter));
     }
 
     @Override

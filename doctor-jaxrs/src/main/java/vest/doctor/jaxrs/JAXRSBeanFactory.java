@@ -22,6 +22,7 @@ import vest.doctor.DoctorProvider;
 import vest.doctor.Eager;
 import vest.doctor.Factory;
 import vest.doctor.ProviderRegistry;
+import vest.doctor.websocket.Websocket;
 
 import java.util.List;
 import java.util.Optional;
@@ -38,7 +39,8 @@ public final class JAXRSBeanFactory implements ApplicationLoader {
                                      List<ResourceConfigCustomizer> resourceConfigCustomizers,
                                      List<ServerBootstrapCustomizer> serverBootstrapCustomizers,
                                      @Named("server") Optional<SslContext> sslContext,
-                                     Optional<MeterRegistry> meterRegistry) {
+                                     Optional<MeterRegistry> meterRegistry,
+                                     List<DoctorProvider<Websocket>> websockets) {
         ResourceConfig config = new ResourceConfig();
         config.setApplicationName("netty-jaxrs");
         if (httpConfig.tracing().orElse(false)) {
@@ -53,6 +55,7 @@ public final class JAXRSBeanFactory implements ApplicationLoader {
                 .forEach(config::register);
 
         providerRegistry.getProvidersWithAnnotation(Path.class)
+                .filter(p -> !p.typeInfo().matches(Websocket.class))
                 .map(DoctorProvider::get)
                 .forEach(config::register);
 
@@ -67,6 +70,6 @@ public final class JAXRSBeanFactory implements ApplicationLoader {
                     true));
         }
 
-        return new NettyJersey(httpConfig, sslContext.orElse(null), config, serverBootstrapCustomizers, meterRegistry);
+        return new NettyJersey(httpConfig, sslContext.orElse(null), config, serverBootstrapCustomizers, meterRegistry, websockets);
     }
 }

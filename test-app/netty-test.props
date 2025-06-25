@@ -1,7 +1,7 @@
 
 doctor.jaxrs {
     bind: "http://0.0.0.0:60222/"
-    maxContentLength: 1
+    maxContentLength: 1000000
     tracing: true
 }
 
